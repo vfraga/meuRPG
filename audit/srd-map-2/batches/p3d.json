@@ -1,0 +1,1228 @@
+[
+ {
+  "key": "ac:alternate",
+  "name": "Alternate armor class",
+  "list": "monster-ac",
+  "verdict": "by-hand-silent",
+  "says": "The printed AC can change with armor or a spell (archmage 12, 15 with mage armor; ankheg 14, 11 while prone).",
+  "does": "The combatant uses the single printed AC number; the alternate is only a note on the stat block, and Mage Armor cast on a basic sheet takes no hold, so the master edits the AC by hand.",
+  "seen": "The AC line and its note on the bestiary stat block; the combat card shows the one number",
+  "code": "backend/internal/rules/creatures.go armorClassNote:647; backend/internal/characters/castingoutside.go MageArmorAC:188-207; backend/internal/play/lasting_effects_armor.go modifiersFor",
+  "fix": "Show the alternate AC and its condition on the NPC card, or let the master toggle it.",
+  "checked": "",
+  "count": 5,
+  "examples": [
+   "monster:ankheg",
+   "monster:archmage",
+   "monster:druid"
+  ]
+ },
+ {
+  "key": "action-usage:per-day",
+  "name": "Action usable N times a day",
+  "list": "monster-usage",
+  "verdict": "runs",
+  "says": "An action with a daily limit (1/day, 3/day, 4/day) can be used only that many times until the creature finishes a long rest.",
+  "does": "The plan reads the limit; each use writes use:<key> in combatants.creature_spent, the action is refused when the count is spent, and a persistent NPC keeps the count until the table's long rest (RN-29).",
+  "seen": "A '3/dia' style tag with uses left on the Outras ações card; the log has one line per use",
+  "code": "backend/internal/rules/monsterplan.go parseUsage:276; backend/internal/play/combat_action_limit.go limitKeyOf:22; combat_spent.go keptUntilLongRest; backend/internal/characters/resources.go:413-421",
+  "fix": "",
+  "checked": "",
+  "count": 14,
+  "examples": [
+   "monster:aboleth",
+   "monster:androsphinx",
+   "monster:darkmantle"
+  ]
+ },
+ {
+  "key": "action-usage:recharge 4-6",
+  "name": "Recharge 4-6",
+  "list": "monster-usage",
+  "verdict": "runs",
+  "says": "After the action is used it recharges when a d6 rolled at the start of the creature's turn shows 4 or more.",
+  "does": "The plan reads the minimum face; the use writes recharge:<key>; the server rolls a d6 at the start of the creature's own turn, in stat block order, and clears the key on the face (master-only log line); a new combat starts with every Recharge action ready.",
+  "seen": "A recharge tag on the Outras ações card and a recharge notice on the master's NPC card at the roll",
+  "code": "backend/internal/rules/monsterplan.go parseUsage:276; backend/internal/play/combat_recharge.go rechargeAtTurnStart/rollRecharge; backend/internal/play/combat_recharge_test.go:42-100",
+  "fix": "",
+  "checked": "",
+  "count": 3,
+  "examples": [
+   "monster:air-elemental",
+   "monster:blink-dog",
+   "monster:water-elemental"
+  ]
+ },
+ {
+  "key": "action-usage:recharge 5-6",
+  "name": "Recharge 5-6",
+  "list": "monster-usage",
+  "verdict": "runs",
+  "says": "After the action is used it recharges when a d6 rolled at the start of the creature's turn shows 5 or more.",
+  "does": "The plan reads the minimum face; the use writes recharge:<key>; the server rolls a d6 at the start of the creature's own turn, in stat block order, and clears the key on the face (master-only log line); a new combat starts with every Recharge action ready.",
+  "seen": "A recharge tag on the Outras ações card and a recharge notice on the master's NPC card at the roll",
+  "code": "backend/internal/rules/monsterplan.go parseUsage:276; backend/internal/play/combat_recharge.go rechargeAtTurnStart/rollRecharge; backend/internal/play/combat_recharge_test.go:42-100",
+  "fix": "",
+  "checked": "",
+  "count": 55,
+  "examples": [
+   "monster:adult-black-dragon",
+   "monster:adult-blue-dragon",
+   "monster:adult-brass-dragon"
+  ]
+ },
+ {
+  "key": "action-usage:recharge 6",
+  "name": "Recharge 6",
+  "list": "monster-usage",
+  "verdict": "runs",
+  "says": "After the action is used it recharges when a d6 rolled at the start of the creature's turn shows 6.",
+  "does": "The plan reads the minimum face; the use writes recharge:<key>; the server rolls a d6 at the start of the creature's own turn, in stat block order, and clears the key on the face (master-only log line); a new combat starts with every Recharge action ready.",
+  "seen": "A recharge tag on the Outras ações card and a recharge notice on the master's NPC card at the roll",
+  "code": "backend/internal/rules/monsterplan.go parseUsage:276; backend/internal/play/combat_recharge.go rechargeAtTurnStart/rollRecharge; backend/internal/play/combat_recharge_test.go:42-100",
+  "fix": "",
+  "checked": "",
+  "count": 7,
+  "examples": [
+   "monster:ankheg",
+   "monster:dust-mephit",
+   "monster:ghost"
+  ]
+ },
+ {
+  "key": "action-usage:recharge-after-rest",
+  "name": "Recharges after a short or long rest",
+  "list": "monster-usage",
+  "verdict": "runs",
+  "says": "A limited action that is ready again after the creature finishes a short or long rest.",
+  "does": "The plan reads the usage as rest; the use writes rest:<key> in creature_spent, the action is refused while it stands, and the rests clear it (RN-29).",
+  "seen": "A limit tag on the Outras ações card",
+  "code": "backend/internal/rules/monsterplan.go parseUsage:276; backend/internal/play/combat_spent.go keptUntilLongRest; backend/internal/characters/resources.go:413-421",
+  "fix": "",
+  "checked": "",
+  "count": 6,
+  "examples": [
+   "monster:chain-devil",
+   "monster:cloaker",
+   "monster:duergar"
+  ]
+ },
+ {
+  "key": "action:melee-attack",
+  "name": "Melee weapon attack",
+  "list": "monster-action",
+  "verdict": "wrong",
+  "says": "A monster's melee weapon attack rolls the stated bonus and damage; some say the damage changes (a swarm at half its hit points, a thrown weapon at range).",
+  "does": "The attack is rolled and its damage applied, but only the first damage clause is read: a swarm always rolls its full dice (swarm of insects 4d4, not 2d4 at half HP) and a melee-or-ranged weapon rolls the melee dice for the throw (bugbear Javelin 2d6+2, not 1d6+2). The master can correct the figure by hand before applying the damage. Also only the first three valid attacks of a stat block reach the NPC sheet.",
+  "seen": "The master's NPC card lists the action under 'Outras ações' with the SRD text; the bestiary stat block ('Ficha da criatura') shows the same text; the damage clause text is in the attack's notes",
+  "code": "backend/internal/rules/creatures.go monsterAttack:862-900 (Damage[0] only); backend/internal/characters/npcfromcreature.go maxNpcAttacks:132,169",
+  "fix": "Read the half-HP and ranged damage clauses as alternates the master picks, or note them on the card.",
+  "checked": "",
+  "count": 277,
+  "examples": [
+   "monster:aboleth",
+   "monster:acolyte",
+   "monster:adult-black-dragon"
+  ]
+ },
+ {
+  "key": "action:melee-attack+grapple",
+  "name": "Melee attack that grapples",
+  "list": "monster-action",
+  "verdict": "runs-part",
+  "says": "A hit grapples the target with an escape DC, often only for a limited size, and may restrain or bar another use of the attack.",
+  "does": "The attack is rolled; on a hit the master gets Aplicar or Dispensar (RN-40) and Aplicar gives grappled with the escape DC noted. The size limit, the restrained clause and 'cannot use it on another' are not checked: the master reads them.",
+  "seen": "The rider offer with the escape DC; the action text on the card",
+  "code": "backend/internal/rules/monsterplan.go planHitCondition:482; backend/internal/play/combat_creature_rider.go grapplingRider:93 (MaxSize read in the plan, never checked)",
+  "fix": "Check MaxSize when the rider is offered, and give restrained where the text says it.",
+  "checked": "",
+  "count": 29,
+  "examples": [
+   "monster:ankheg",
+   "monster:behir",
+   "monster:chain-devil"
+  ]
+ },
+ {
+  "key": "action:melee-attack+save",
+  "name": "Melee attack with a saving throw",
+  "list": "monster-action",
+  "verdict": "wrong",
+  "says": "A hit forces a saving throw against poison damage, a condition or a disease, as the sentence says.",
+  "does": "The hit offers the rider (RN-40) and the save and damage are read, but the condition is the first condition word after 'saving throw': cockatrice Bite petrifies at once instead of restrained first and petrified after the second failed save. The master can Dispensar the rider and set the conditions by hand.",
+  "seen": "The rider offer names the wrong condition; the action text on the card",
+  "code": "backend/internal/rules/monsterplan.go failedSaveCondition:377 (cockatrice Bite plan: condition:petrified)",
+  "fix": "Read staged conditions (restrained then petrified) from the text, or leave a staged petrification as a reminder.",
+  "checked": "test",
+  "count": 51,
+  "examples": [
+   "monster:aboleth",
+   "monster:assassin",
+   "monster:balor"
+  ]
+ },
+ {
+  "key": "action:melee-attack+save+grapple+prone",
+  "name": "Melee attack that grapples and may knock prone",
+  "list": "monster-action",
+  "verdict": "runs-part",
+  "says": "Giant crocodile: the bite grapples and restrains; the tail knocks a creature prone on a failed Strength save.",
+  "does": "Each attack is rolled, grapple and prone riders are offered (RN-40) with their DC; the restrained clause and the 'cannot bite another' limit are left to the master.",
+  "seen": "The rider offers; the action text on the card",
+  "code": "backend/internal/play/combat_creature_rider.go grapplingRider/savingRider; backend/internal/rules/monsterplan.go planSave",
+  "fix": "",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:giant-crocodile"
+  ]
+ },
+ {
+  "key": "action:melee-attack+save+grapple+swallow",
+  "name": "Melee attack that grapples and swallows",
+  "list": "monster-action",
+  "verdict": "wrong",
+  "says": "SRD (kraken Bite): a Large or smaller creature grappled by the kraken is swallowed and the grapple ends; while swallowed it is blinded and restrained.",
+  "does": "The bite is rolled, but the planner takes prone from the regurgitation sentence as the failed-save condition, so the rider offers prone and nothing says swallowed. The master can Dispensar it and track the swallow by hand.",
+  "seen": "A rider offer for prone on the bite; the action text on the card",
+  "code": "backend/internal/rules/monsterplan.go failedSaveCondition:377 (kraken Bite plan: condition:prone)",
+  "fix": "Read the swallow sentence as text only (no save rider).",
+  "checked": "test",
+  "count": 1,
+  "examples": [
+   "monster:kraken"
+  ]
+ },
+ {
+  "key": "action:melee-attack+save+prone",
+  "name": "Melee attack that knocks prone on a failed save",
+  "list": "monster-action",
+  "verdict": "runs",
+  "says": "A hit forces a Strength saving throw or the target is knocked prone.",
+  "does": "The hit offers the rider (RN-40); Aplicar rolls the target's save against the DC and gives prone on a failure.",
+  "seen": "The rider offer with the DC; the action text on the card",
+  "code": "backend/internal/play/combat_creature_rider.go riderOffered:29/savingRider; backend/internal/rules/monsterplan.go planSave",
+  "fix": "",
+  "checked": "",
+  "count": 9,
+  "examples": [
+   "monster:dire-wolf",
+   "monster:dragon-turtle",
+   "monster:gibbering-mouther"
+  ]
+ },
+ {
+  "key": "action:melee-attack+save+swallow",
+  "name": "Melee attack that swallows",
+  "list": "monster-action",
+  "verdict": "wrong",
+  "says": "SRD (purple worm Bite): a Large or smaller grappled target is swallowed; while swallowed it is blinded and restrained and takes acid damage each turn.",
+  "does": "The bite is rolled but the regurgitation sentence's prone becomes the rider's condition; swallowed and the acid damage each turn are not applied. The master can Dispensar the rider and apply them by hand.",
+  "seen": "A rider offer for prone on the bite; the action text on the card",
+  "code": "backend/internal/rules/monsterplan.go failedSaveCondition:377 (purple worm Bite plan: condition:prone)",
+  "fix": "Read the swallow sentence as text only.",
+  "checked": "test",
+  "count": 1,
+  "examples": [
+   "monster:purple-worm"
+  ]
+ },
+ {
+  "key": "action:multiattack",
+  "name": "Multiattack",
+  "list": "monster-action",
+  "verdict": "runs-part",
+  "says": "The creature makes the listed attacks as one Attack action, sometimes replacing one with another action.",
+  "does": "The routine is read into attacks per Attack action and the NPC card counts them down (routineLeft); a replacement by a non-attack action (Fling), an alternative ('or') or a spell step is left to the master.",
+  "seen": "Multiattack routines with the attacks left on the master's NPC card; the full text on the stat block",
+  "code": "backend/internal/rules/monsterplan.go planRoutines; backend/internal/rules/creatures.go routineWeaponAttacks:828, multiattackProblem:225; backend/internal/rules/content.go correctAttacksPerAction:1385; backend/internal/play/combat_attack.go routineLeft:459; web npc-card/multiattack.ts",
+  "fix": "",
+  "checked": "",
+  "count": 148,
+  "examples": [
+   "monster:aboleth",
+   "monster:adult-black-dragon",
+   "monster:adult-blue-dragon"
+  ]
+ },
+ {
+  "key": "action:other:breath weapons",
+  "name": "Breath weapons",
+  "list": "monster-action",
+  "verdict": "wrong",
+  "says": "SRD (adult-brass-dragon): Breath Weapons (Recharge 5-6): the dragon uses one of the following breath weapons (fire or sleep), so one use spends the one recharge.",
+  "does": "The data lists Breath Weapons plus each sub-breath as its own action, each with its own Recharge key: a dragon can breathe one kind, then the other the same round, and each rolls its own recharge. The master can refuse the second use by hand; the app does not.",
+  "seen": "The master's NPC card lists the action under 'Outras ações' with the SRD text; the bestiary stat block ('Ficha da criatura') shows the same text; each breath shows its own recharge tag",
+  "code": "backend/internal/play/combat_action_limit.go limitKeyOf:22 (per plan key); backend/internal/play/combat_recharge_test.go:90-100 (breath-weapons, lightning-breath, repulsion-breath keys roll separately)",
+  "fix": "Share one recharge key among the sub-breaths of a Breath Weapons action.",
+  "checked": "test",
+  "count": 20,
+  "examples": [
+   "monster:adult-brass-dragon",
+   "monster:adult-bronze-dragon",
+   "monster:adult-copper-dragon"
+  ]
+ },
+ {
+  "key": "action:other:animate chains",
+  "name": "Animate chains",
+  "list": "monster-action",
+  "verdict": "by-design",
+  "says": "SRD (chain-devil): Up to four chains the devil can see within 60 feet of it magically sprout razor-edged barbs and animate under the devil's control, provided that the...",
+  "does": "RN-41: an action that rolls nothing spends the action and writes a log line; the master reads the SRD text and applies the effect.",
+  "seen": "The master's NPC card lists the action under 'Outras ações' with the SRD text; the bestiary stat block ('Ficha da criatura') shows the same text (limit tag when it has one)",
+  "code": "backend/internal/rules/monsterplan.go planClass:540 (class text); backend/internal/play/combat_creature_action.go UseCreatureAction",
+  "fix": "",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:chain-devil"
+  ]
+ },
+ {
+  "key": "action:other:animate trees",
+  "name": "Animate trees",
+  "list": "monster-action",
+  "verdict": "by-design",
+  "says": "SRD (treant): The treant magically animates one or two trees it can see within 60 feet of it. These trees have the same statistics as a treant, except they have...",
+  "does": "RN-41: an action that rolls nothing spends the action and writes a log line; the master reads the SRD text and applies the effect.",
+  "seen": "The master's NPC card lists the action under 'Outras ações' with the SRD text; the bestiary stat block ('Ficha da criatura') shows the same text (limit tag when it has one)",
+  "code": "backend/internal/rules/monsterplan.go planClass:540 (class text); backend/internal/play/combat_creature_action.go UseCreatureAction",
+  "fix": "",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:treant"
+  ]
+ },
+ {
+  "key": "action:other:change shape",
+  "name": "Change shape",
+  "list": "monster-action",
+  "verdict": "by-design",
+  "says": "SRD (ancient-brass-dragon): The dragon magically polymorphs into a humanoid or beast that has a challenge rating no higher than its own, or back into its true form. It reverts...",
+  "does": "RN-41: an action that rolls nothing spends the action and writes a log line; the master reads the SRD text and applies the effect.",
+  "seen": "The master's NPC card lists the action under 'Outras ações' with the SRD text; the bestiary stat block ('Ficha da criatura') shows the same text (limit tag when it has one)",
+  "code": "backend/internal/rules/monsterplan.go planClass:540 (class text); backend/internal/play/combat_creature_action.go UseCreatureAction",
+  "fix": "",
+  "checked": "",
+  "count": 9,
+  "examples": [
+   "monster:ancient-brass-dragon",
+   "monster:ancient-bronze-dragon",
+   "monster:ancient-copper-dragon"
+  ]
+ },
+ {
+  "key": "action:other:children of the night",
+  "name": "Children of the night",
+  "list": "monster-action",
+  "verdict": "by-design",
+  "says": "SRD (vampire-bat): The vampire magically calls 2d4 swarms of bats or rats, provided that the sun isn't up. While outdoors, the vampire can call 3d6 wolves instead. The...",
+  "does": "RN-41: an action that rolls nothing spends the action and writes a log line; the master reads the SRD text and applies the effect.",
+  "seen": "The master's NPC card lists the action under 'Outras ações' with the SRD text; the bestiary stat block ('Ficha da criatura') shows the same text (limit tag when it has one)",
+  "code": "backend/internal/rules/monsterplan.go planClass:540 (class text); backend/internal/play/combat_creature_action.go UseCreatureAction",
+  "fix": "",
+  "checked": "",
+  "count": 2,
+  "examples": [
+   "monster:vampire-bat",
+   "monster:vampire-vampire"
+  ]
+ },
+ {
+  "key": "action:other:create specter",
+  "name": "Create specter",
+  "list": "monster-action",
+  "verdict": "by-design",
+  "says": "SRD (wraith): The wraith targets a humanoid within 10 feet of it that has been dead for no longer than 1 minute and died violently. The target's spirit rises as a...",
+  "does": "RN-41: an action that rolls nothing spends the action and writes a log line; the master reads the SRD text and applies the effect.",
+  "seen": "The master's NPC card lists the action under 'Outras ações' with the SRD text; the bestiary stat block ('Ficha da criatura') shows the same text (limit tag when it has one)",
+  "code": "backend/internal/rules/monsterplan.go planClass:540 (class text); backend/internal/play/combat_creature_action.go UseCreatureAction",
+  "fix": "",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:wraith"
+  ]
+ },
+ {
+  "key": "action:other:darkness aura",
+  "name": "Darkness aura",
+  "list": "monster-action",
+  "verdict": "by-design",
+  "says": "SRD (darkmantle): A 15-foot radius of magical darkness extends out from the darkmantle, moves with it, and spreads around corners. The darkness lasts as long as the...",
+  "does": "RN-41: an action that rolls nothing spends the action and writes a log line; the master reads the SRD text and applies the effect.",
+  "seen": "The master's NPC card lists the action under 'Outras ações' with the SRD text; the bestiary stat block ('Ficha da criatura') shows the same text (limit tag when it has one)",
+  "code": "backend/internal/rules/monsterplan.go planClass:540 (class text); backend/internal/play/combat_creature_action.go UseCreatureAction",
+  "fix": "",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:darkmantle"
+  ]
+ },
+ {
+  "key": "action:other:enlarge",
+  "name": "Enlarge",
+  "list": "monster-action",
+  "verdict": "by-design",
+  "says": "SRD (duergar): For 1 minute, the duergar magically increases in size, along with anything it is wearing or carrying. While enlarged, the duergar is Large, doubles...",
+  "does": "RN-41: an action that rolls nothing spends the action and writes a log line; the master reads the SRD text and applies the effect.",
+  "seen": "The master's NPC card lists the action under 'Outras ações' with the SRD text; the bestiary stat block ('Ficha da criatura') shows the same text (limit tag when it has one)",
+  "code": "backend/internal/rules/monsterplan.go planClass:540 (class text); backend/internal/play/combat_creature_action.go UseCreatureAction",
+  "fix": "",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:duergar"
+  ]
+ },
+ {
+  "key": "action:other:ethereal stride",
+  "name": "Ethereal stride",
+  "list": "monster-action",
+  "verdict": "by-design",
+  "says": "SRD (nightmare): The nightmare and up to three willing creatures within 5 feet of it magically enter the Ethereal Plane from the Material Plane, or vice versa.",
+  "does": "RN-41: an action that rolls nothing spends the action and writes a log line; the master reads the SRD text and applies the effect.",
+  "seen": "The master's NPC card lists the action under 'Outras ações' with the SRD text; the bestiary stat block ('Ficha da criatura') shows the same text (limit tag when it has one)",
+  "code": "backend/internal/rules/monsterplan.go planClass:540 (class text); backend/internal/play/combat_creature_action.go UseCreatureAction",
+  "fix": "",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:nightmare"
+  ]
+ },
+ {
+  "key": "action:other:etherealness",
+  "name": "Etherealness",
+  "list": "monster-action",
+  "verdict": "by-design",
+  "says": "SRD (ghost): The ghost enters the Ethereal Plane from the Material Plane, or vice versa. It is visible on the Material Plane while it is in the Border Ethereal,...",
+  "does": "RN-41: an action that rolls nothing spends the action and writes a log line; the master reads the SRD text and applies the effect.",
+  "seen": "The master's NPC card lists the action under 'Outras ações' with the SRD text; the bestiary stat block ('Ficha da criatura') shows the same text (limit tag when it has one)",
+  "code": "backend/internal/rules/monsterplan.go planClass:540 (class text); backend/internal/play/combat_creature_action.go UseCreatureAction",
+  "fix": "",
+  "checked": "",
+  "count": 3,
+  "examples": [
+   "monster:ghost",
+   "monster:night-hag",
+   "monster:succubus-incubus"
+  ]
+ },
+ {
+  "key": "action:other:flying sword",
+  "name": "Flying sword",
+  "list": "monster-action",
+  "verdict": "by-design",
+  "says": "SRD (solar): The solar releases its greatsword to hover magically in an unoccupied space within 5 ft. of it. If the solar can see the sword, the solar can...",
+  "does": "RN-41: an action that rolls nothing spends the action and writes a log line; the master reads the SRD text and applies the effect.",
+  "seen": "The master's NPC card lists the action under 'Outras ações' with the SRD text; the bestiary stat block ('Ficha da criatura') shows the same text (limit tag when it has one)",
+  "code": "backend/internal/rules/monsterplan.go planClass:540 (class text); backend/internal/play/combat_creature_action.go UseCreatureAction",
+  "fix": "",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:solar"
+  ]
+ },
+ {
+  "key": "action:other:haste",
+  "name": "Haste",
+  "list": "monster-action",
+  "verdict": "by-design",
+  "says": "SRD (clay-golem): Until the end of its next turn, the golem magically gains a +2 bonus to its AC, has advantage on Dexterity saving throws, and can use its slam attack...",
+  "does": "RN-41: an action that rolls nothing spends the action and writes a log line; the master reads the SRD text and applies the effect.",
+  "seen": "The master's NPC card lists the action under 'Outras ações' with the SRD text; the bestiary stat block ('Ficha da criatura') shows the same text (limit tag when it has one)",
+  "code": "backend/internal/rules/monsterplan.go planClass:540 (class text); backend/internal/play/combat_creature_action.go UseCreatureAction",
+  "fix": "",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:clay-golem"
+  ]
+ },
+ {
+  "key": "action:other:healing touch",
+  "name": "Healing touch",
+  "list": "monster-action",
+  "verdict": "by-design",
+  "says": "SRD (deva): The deva touches another creature. The target magically regains 20 (4d8 + 2) hit points and is freed from any curse, disease, poison, blindness, or...",
+  "does": "RN-41: an action that rolls nothing spends the action and writes a log line; the master reads the SRD text and applies the effect.",
+  "seen": "The master's NPC card lists the action under 'Outras ações' with the SRD text; the bestiary stat block ('Ficha da criatura') shows the same text (limit tag when it has one)",
+  "code": "backend/internal/rules/monsterplan.go planClass:540 (class text); backend/internal/play/combat_creature_action.go UseCreatureAction",
+  "fix": "",
+  "checked": "",
+  "count": 4,
+  "examples": [
+   "monster:deva",
+   "monster:planetar",
+   "monster:solar"
+  ]
+ },
+ {
+  "key": "action:other:illusory appearance",
+  "name": "Illusory appearance",
+  "list": "monster-action",
+  "verdict": "by-design",
+  "says": "SRD (green-hag): The hag covers herself and anything she is wearing or carrying with a magical illusion that makes her look like another creature of her general size...",
+  "does": "RN-41: an action that rolls nothing spends the action and writes a log line; the master reads the SRD text and applies the effect.",
+  "seen": "The master's NPC card lists the action under 'Outras ações' with the SRD text; the bestiary stat block ('Ficha da criatura') shows the same text (limit tag when it has one)",
+  "code": "backend/internal/rules/monsterplan.go planClass:540 (class text); backend/internal/play/combat_creature_action.go UseCreatureAction",
+  "fix": "",
+  "checked": "",
+  "count": 2,
+  "examples": [
+   "monster:green-hag",
+   "monster:sea-hag"
+  ]
+ },
+ {
+  "key": "action:other:ink cloud",
+  "name": "Ink cloud",
+  "list": "monster-action",
+  "verdict": "by-design",
+  "says": "SRD (giant-octopus): A 20-foot-radius cloud of ink extends all around the octopus if it is underwater. The area is heavily obscured for 1 minute, although a significant...",
+  "does": "RN-41: an action that rolls nothing spends the action and writes a log line; the master reads the SRD text and applies the effect.",
+  "seen": "The master's NPC card lists the action under 'Outras ações' with the SRD text; the bestiary stat block ('Ficha da criatura') shows the same text (limit tag when it has one)",
+  "code": "backend/internal/rules/monsterplan.go planClass:540 (class text); backend/internal/play/combat_creature_action.go UseCreatureAction",
+  "fix": "",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:giant-octopus"
+  ]
+ },
+ {
+  "key": "action:other:invisibility",
+  "name": "Invisibility",
+  "list": "monster-action",
+  "verdict": "by-design",
+  "says": "SRD (duergar): The duergar magically turns invisible until it attacks, casts a spell, or uses its Enlarge, or until its concentration is broken, up to 1 hour (as if...",
+  "does": "RN-41: an action that rolls nothing spends the action and writes a log line; the master reads the SRD text and applies the effect.",
+  "seen": "The master's NPC card lists the action under 'Outras ações' with the SRD text; the bestiary stat block ('Ficha da criatura') shows the same text (limit tag when it has one)",
+  "code": "backend/internal/rules/monsterplan.go planClass:540 (class text); backend/internal/play/combat_creature_action.go UseCreatureAction",
+  "fix": "",
+  "checked": "",
+  "count": 5,
+  "examples": [
+   "monster:duergar",
+   "monster:imp",
+   "monster:quasit"
+  ]
+ },
+ {
+  "key": "action:other:invisible passage",
+  "name": "Invisible passage",
+  "list": "monster-action",
+  "verdict": "by-design",
+  "says": "SRD (green-hag): The hag magically turns invisible until she attacks or casts a spell, or until her concentration ends (as if concentrating on a spell). While...",
+  "does": "RN-41: an action that rolls nothing spends the action and writes a log line; the master reads the SRD text and applies the effect.",
+  "seen": "The master's NPC card lists the action under 'Outras ações' with the SRD text; the bestiary stat block ('Ficha da criatura') shows the same text (limit tag when it has one)",
+  "code": "backend/internal/rules/monsterplan.go planClass:540 (class text); backend/internal/play/combat_creature_action.go UseCreatureAction",
+  "fix": "",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:green-hag"
+  ]
+ },
+ {
+  "key": "action:other:leadership",
+  "name": "Leadership",
+  "list": "monster-action",
+  "verdict": "by-design",
+  "says": "SRD (knight): For 1 minute, the knight can utter a special command or warning whenever a nonhostile creature that it can see within 30 ft. of it makes an attack...",
+  "does": "RN-41: an action that rolls nothing spends the action and writes a log line; the master reads the SRD text and applies the effect.",
+  "seen": "The master's NPC card lists the action under 'Outras ações' with the SRD text; the bestiary stat block ('Ficha da criatura') shows the same text (limit tag when it has one)",
+  "code": "backend/internal/rules/monsterplan.go planClass:540 (class text); backend/internal/play/combat_creature_action.go UseCreatureAction",
+  "fix": "",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:knight"
+  ]
+ },
+ {
+  "key": "action:other:nightmare haunting",
+  "name": "Nightmare haunting",
+  "list": "monster-action",
+  "verdict": "by-design",
+  "says": "SRD (night-hag): While on the Ethereal Plane, the hag magically touches a sleeping humanoid on the Material Plane. A protection from evil and good spell cast on the...",
+  "does": "RN-41: an action that rolls nothing spends the action and writes a log line; the master reads the SRD text and applies the effect.",
+  "seen": "The master's NPC card lists the action under 'Outras ações' with the SRD text; the bestiary stat block ('Ficha da criatura') shows the same text (limit tag when it has one)",
+  "code": "backend/internal/rules/monsterplan.go planClass:540 (class text); backend/internal/play/combat_creature_action.go UseCreatureAction",
+  "fix": "",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:night-hag"
+  ]
+ },
+ {
+  "key": "action:other:phantasms",
+  "name": "Phantasms",
+  "list": "monster-action",
+  "verdict": "by-design",
+  "says": "SRD (cloaker): The cloaker magically creates three illusory duplicates of itself if it isn't in bright light. The duplicates move with it and mimic its actions,...",
+  "does": "RN-41: an action that rolls nothing spends the action and writes a log line; the master reads the SRD text and applies the effect.",
+  "seen": "The master's NPC card lists the action under 'Outras ações' with the SRD text; the bestiary stat block ('Ficha da criatura') shows the same text (limit tag when it has one)",
+  "code": "backend/internal/rules/monsterplan.go planClass:540 (class text); backend/internal/play/combat_creature_action.go UseCreatureAction",
+  "fix": "",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:cloaker"
+  ]
+ },
+ {
+  "key": "action:other:read thoughts",
+  "name": "Read thoughts",
+  "list": "monster-action",
+  "verdict": "by-design",
+  "says": "SRD (doppelganger): The doppelganger magically reads the surface thoughts of one creature within 60 ft. of it. The effect can penetrate barriers, but 3 ft. of wood or...",
+  "does": "RN-41: an action that rolls nothing spends the action and writes a log line; the master reads the SRD text and applies the effect.",
+  "seen": "The master's NPC card lists the action under 'Outras ações' with the SRD text; the bestiary stat block ('Ficha da criatura') shows the same text (limit tag when it has one)",
+  "code": "backend/internal/rules/monsterplan.go planClass:540 (class text); backend/internal/play/combat_creature_action.go UseCreatureAction",
+  "fix": "",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:doppelganger"
+  ]
+ },
+ {
+  "key": "action:other:reel",
+  "name": "Reel",
+  "list": "monster-action",
+  "verdict": "by-design",
+  "says": "SRD (roper): The roper pulls each creature grappled by it up to 25 ft. straight toward it.",
+  "does": "RN-41: an action that rolls nothing spends the action and writes a log line; the master reads the SRD text and applies the effect.",
+  "seen": "The master's NPC card lists the action under 'Outras ações' with the SRD text; the bestiary stat block ('Ficha da criatura') shows the same text (limit tag when it has one)",
+  "code": "backend/internal/rules/monsterplan.go planClass:540 (class text); backend/internal/play/combat_creature_action.go UseCreatureAction",
+  "fix": "",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:roper"
+  ]
+ },
+ {
+  "key": "action:other:roar",
+  "name": "Roar",
+  "list": "monster-action",
+  "verdict": "by-design",
+  "says": "SRD (androsphinx): The sphinx emits a magical roar. Each time it roars before finishing a long rest, the roar is louder and the effect is different, as detailed below....",
+  "does": "RN-41: an action that rolls nothing spends the action and writes a log line; the master reads the SRD text and applies the effect.",
+  "seen": "The master's NPC card lists the action under 'Outras ações' with the SRD text; the bestiary stat block ('Ficha da criatura') shows the same text (limit tag when it has one)",
+  "code": "backend/internal/rules/monsterplan.go planClass:540 (class text); backend/internal/play/combat_creature_action.go UseCreatureAction",
+  "fix": "",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:androsphinx"
+  ]
+ },
+ {
+  "key": "action:other:swallow",
+  "name": "Swallow",
+  "list": "monster-action",
+  "verdict": "by-design",
+  "says": "SRD (giant-frog): The frog makes one bite attack against a Small or smaller target it is grappling. If the attack hits, the target is swallowed, and the grapple ends....",
+  "does": "RN-41: an action that rolls nothing spends the action and writes a log line; the master reads the SRD text and applies the effect.",
+  "seen": "The master's NPC card lists the action under 'Outras ações' with the SRD text; the bestiary stat block ('Ficha da criatura') shows the same text (limit tag when it has one)",
+  "code": "backend/internal/rules/monsterplan.go planClass:540 (class text); backend/internal/play/combat_creature_action.go UseCreatureAction",
+  "fix": "",
+  "checked": "",
+  "count": 2,
+  "examples": [
+   "monster:giant-frog",
+   "monster:giant-toad"
+  ]
+ },
+ {
+  "key": "action:other:teleport",
+  "name": "Teleport",
+  "list": "monster-action",
+  "verdict": "by-design",
+  "says": "SRD (balor): The balor magically teleports, along with any equipment it is wearing or carrying, up to 120 feet to an unoccupied space it can see.",
+  "does": "RN-41: an action that rolls nothing spends the action and writes a log line; the master reads the SRD text and applies the effect.",
+  "seen": "The master's NPC card lists the action under 'Outras ações' with the SRD text; the bestiary stat block ('Ficha da criatura') shows the same text (limit tag when it has one)",
+  "code": "backend/internal/rules/monsterplan.go planClass:540 (class text); backend/internal/play/combat_creature_action.go UseCreatureAction",
+  "fix": "",
+  "checked": "",
+  "count": 5,
+  "examples": [
+   "monster:balor",
+   "monster:blink-dog",
+   "monster:marilith"
+  ]
+ },
+ {
+  "key": "action:ranged-attack",
+  "name": "Ranged weapon attack",
+  "list": "monster-action",
+  "verdict": "runs",
+  "says": "A monster's ranged weapon attack rolls the stated bonus and damage within its range.",
+  "does": "The attack is rolled with the bonus, range and damage read from the text and the damage applied; only the first three valid attacks of a stat block reach the NPC sheet.",
+  "seen": "The master's NPC card lists the action under 'Outras ações' with the SRD text; the bestiary stat block ('Ficha da criatura') shows the same text",
+  "code": "backend/internal/rules/creatures.go monsterAttack:862; backend/internal/characters/npcfromcreature.go basicAttackOf:225",
+  "fix": "",
+  "checked": "",
+  "count": 36,
+  "examples": [
+   "monster:ape",
+   "monster:bandit",
+   "monster:barbed-devil"
+  ]
+ },
+ {
+  "key": "action:ranged-attack+save",
+  "name": "Ranged attack with a saving throw",
+  "list": "monster-action",
+  "verdict": "runs",
+  "says": "A hit forces a saving throw: poison damage on a failure, half on a success.",
+  "does": "The hit offers the rider (RN-40) and the extra damage is part of the hit (RN-42); the save is rolled by the app, or asked of the master for a Legendary Resistance creature.",
+  "seen": "The rider offer with the DC and damage; the action text on the card",
+  "code": "backend/internal/play/combat_creature_rider.go savingRider; backend/internal/rules/monsterplan.go planSave",
+  "fix": "",
+  "checked": "",
+  "count": 7,
+  "examples": [
+   "monster:assassin",
+   "monster:deep-gnome-svirfneblin",
+   "monster:drow"
+  ]
+ },
+ {
+  "key": "action:ranged-attack+save+prone",
+  "name": "Ranged attack that knocks prone on a failed save",
+  "list": "monster-action",
+  "verdict": "runs",
+  "says": "Stone giant Rock: a hit with a failed Strength save knocks the target prone.",
+  "does": "The hit offers the rider (RN-40); Aplicar rolls the save and gives prone on a failure.",
+  "seen": "The rider offer with the DC; the action text on the card",
+  "code": "backend/internal/play/combat_creature_rider.go savingRider; backend/internal/rules/monsterplan.go planSave",
+  "fix": "",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:stone-giant"
+  ]
+ },
+ {
+  "key": "action:save-effect",
+  "name": "Save effect (no damage)",
+  "list": "monster-action",
+  "verdict": "wrong",
+  "says": "An action that forces a saving throw with a condition on a failure (a gaze, a roar, a swallow).",
+  "does": "The save is rolled and the condition given by the planner, but it takes the first condition word after 'saving throw': remorhaz and tarrasque Swallow give prone from the regurgitation line, and bulette Deadly Leap asks Strength only where the SRD lets the target pick Strength or Dexterity. The master can Dispensar and set the conditions or the save by hand.",
+  "seen": "The master's NPC card lists the action under 'Outras ações' with the SRD text; the bestiary stat block ('Ficha da criatura') shows the same text",
+  "code": "backend/internal/rules/monsterplan.go failedSaveCondition:377, planSave; plan dump: remorhaz/tarrasque Swallow = condition:prone; bulette plan save = str only (monsters.json save ability str, SRD text Strength or Dexterity)",
+  "fix": "Read swallow text as a reminder; offer both abilities where the text says Strength or Dexterity.",
+  "checked": "test",
+  "count": 62,
+  "examples": [
+   "monster:aboleth",
+   "monster:adult-black-dragon",
+   "monster:adult-blue-dragon"
+  ]
+ },
+ {
+  "key": "action:save-effect+damage",
+  "name": "Save effect with damage",
+  "list": "monster-action",
+  "verdict": "wrong",
+  "says": "A breath, stomp or gaze: a saving throw, damage on a failure and often half on a success, in the stated area.",
+  "does": "Damage, save DC, half on success and the area (line, cone, radius) are read and applied for most; the behir Swallow gets a prone rider from the regurgitation sentence, and the metallic dragons' breaths do not share one recharge. The master can correct the damage or conditions by hand.",
+  "seen": "The master's NPC card lists the action under 'Outras ações' with the SRD text; the bestiary stat block ('Ficha da criatura') shows the same text",
+  "code": "backend/internal/rules/monsterplan.go planSave, areaOf, failedSaveCondition:377",
+  "fix": "Read swallow text as a reminder; share one recharge among the sub-breaths.",
+  "checked": "test",
+  "count": 57,
+  "examples": [
+   "monster:adult-black-dragon",
+   "monster:adult-blue-dragon",
+   "monster:adult-brass-dragon"
+  ]
+ },
+ {
+  "key": "condition_immunities",
+  "name": "Condition immunities",
+  "list": "monster-defense",
+  "verdict": "runs",
+  "says": "The creature cannot gain the listed conditions.",
+  "does": "The stat block's immunities are on the NPC's derived data; a spell, a hit rider, a trap, a zone and a forced prone refuse to give an immune creature the condition.",
+  "seen": "A refusal with the reason when a condition is refused; the Imunidades line on the stat block",
+  "code": "backend/internal/characters/combatturn.go basicDerived (StatBlockConditionImmunities); backend/internal/play/condition_immunity.go immuneToCondition; backend/internal/play/combat_spells_hp.go giveCondition:348",
+  "fix": "",
+  "checked": "",
+  "count": 92,
+  "examples": [
+   "monster:adult-green-dragon",
+   "monster:air-elemental",
+   "monster:ancient-green-dragon"
+  ]
+ },
+ {
+  "key": "immunities:nonmagical-clause",
+  "name": "Damage immunity to nonmagical attacks",
+  "list": "monster-defense",
+  "verdict": "runs",
+  "says": "Immune to bludgeoning, piercing and slashing from nonmagical attacks (some: unless silvered or adamantine).",
+  "does": "The clause is applied by the attack's origin: a sheet attack counts as magical, silvered or adamantine by its marks, a spell is magical, and the damage is zeroed otherwise.",
+  "seen": "The damage line of the hit shows the zero; the Imunidades line on the stat block",
+  "code": "backend/internal/rules/combat/steps.go Adjust, Modifier.Covers; backend/internal/play/combat_damage.go originOf:505-540; backend/internal/characters/charactercreatures_roster.go typeModifiersOf:768",
+  "fix": "",
+  "checked": "",
+  "count": 26,
+  "examples": [
+   "monster:androsphinx",
+   "monster:clay-golem",
+   "monster:couatl"
+  ]
+ },
+ {
+  "key": "immunities:plain",
+  "name": "Damage immunity",
+  "list": "monster-defense",
+  "verdict": "runs",
+  "says": "Takes no damage of the listed types.",
+  "does": "Immunity is applied before resistance and vulnerability in the damage steps.",
+  "seen": "The damage line shows the immunity applied; the Imunidades line on the stat block",
+  "code": "backend/internal/rules/combat/steps.go Adjust; backend/internal/characters/charactercreatures_roster.go DamageModifiers, damageTypesOf:780",
+  "fix": "",
+  "checked": "",
+  "count": 120,
+  "examples": [
+   "monster:adult-black-dragon",
+   "monster:adult-blue-dragon",
+   "monster:adult-brass-dragon"
+  ]
+ },
+ {
+  "key": "resistances:nonmagical-clause",
+  "name": "Resistance to nonmagical attacks",
+  "list": "monster-defense",
+  "verdict": "runs",
+  "says": "Resistance to bludgeoning, piercing and slashing from nonmagical attacks (some: unless silvered or adamantine).",
+  "does": "Halved (rounded down) by the attack's origin, as for the immunity; a creature's weapon with the Magic Weapons trait is judged under that trait's row.",
+  "seen": "The damage line shows the resistance applied; the Resistências line on the stat block",
+  "code": "backend/internal/rules/combat/steps.go Adjust, Modifier.Covers; backend/internal/play/combat_damage.go originOf:505-540",
+  "fix": "",
+  "checked": "",
+  "count": 44,
+  "examples": [
+   "monster:air-elemental",
+   "monster:archmage",
+   "monster:balor"
+  ]
+ },
+ {
+  "key": "resistances:plain",
+  "name": "Damage resistance",
+  "list": "monster-defense",
+  "verdict": "wrong",
+  "says": "Takes half damage (rounded down) of the listed types, or of the listed source (damage from spells).",
+  "does": "Plain type resistances are halved, but a plain entry that carries a note instead of a type is skipped: the archmage's resistance to damage from spells is not applied to spell damage the app applies. The master can correct the damage by hand.",
+  "seen": "The Resistências line on the stat block; no mark on the damage line",
+  "code": "backend/internal/characters/charactercreatures_roster.go damageTypesOf:783 (qualifier \"\" with a Note is skipped)",
+  "fix": "Apply 'damage from spells' by the spell origin.",
+  "checked": "",
+  "count": 59,
+  "examples": [
+   "monster:air-elemental",
+   "monster:archmage",
+   "monster:assassin"
+  ]
+ },
+ {
+  "key": "vulnerabilities:plain",
+  "name": "Damage vulnerability",
+  "list": "monster-defense",
+  "verdict": "wrong",
+  "says": "Takes double damage of the listed types or from the listed source.",
+  "does": "Type vulnerabilities are doubled after resistance, but an entry with a note instead of a type is skipped: the rakshasa's vulnerability to piercing from magic weapons wielded by good creatures never applies. The master can correct the damage by hand.",
+  "seen": "The Vulnerabilidades line on the stat block; no mark on the damage line",
+  "code": "backend/internal/characters/charactercreatures_roster.go damageTypesOf:783; backend/internal/rules/combat/steps.go Adjust",
+  "fix": "Apply sourced vulnerabilities by origin (magic weapon, good wielder), or note them on the card.",
+  "checked": "",
+  "count": 15,
+  "examples": [
+   "monster:awakened-shrub",
+   "monster:awakened-tree",
+   "monster:dust-mephit"
+  ]
+ },
+ {
+  "key": "legendary:actions",
+  "name": "Legendary actions",
+  "list": "monster-legendary",
+  "verdict": "runs",
+  "says": "The creature can take 3 legendary actions at the end of another creature's turn, and regains them at the start of its own turn.",
+  "does": "The pool is 3 a round (RN-29), spent at the end of another combatant's turn, restored at its own turn start, and not kept between combats; the options are read from the stat block.",
+  "seen": "The legendary card on the master's NPC card with the pool and the options",
+  "code": "backend/internal/rules/legendary.go LegendaryActionsPerRound, ReadLegendaryProfile; backend/internal/play/combat_legendary.go, combat_legendary_spend.go legendaryNow/legendaryCheck",
+  "fix": "",
+  "checked": "",
+  "count": 32,
+  "examples": [
+   "monster:aboleth",
+   "monster:adult-black-dragon",
+   "monster:adult-blue-dragon"
+  ]
+ },
+ {
+  "key": "legendary:cost-1",
+  "name": "Legendary option costing 1",
+  "list": "monster-legendary",
+  "verdict": "runs-part",
+  "says": "A legendary option that costs 1 action of the pool.",
+  "does": "The option is taken at the end of another creature's turn and its cost comes off the pool of 3; an attack, a save or a move option is run by the app and an option that rolls nothing is a log reminder (RN-41). (the cost is checked against what is left)",
+  "seen": "The option and its cost on the legendary card; the pool left",
+  "code": "backend/internal/rules/legendary.go legendaryOption, attackActionOf; backend/internal/play/combat_legendary_spend.go legendaryCheck",
+  "fix": "",
+  "checked": "",
+  "count": 32,
+  "examples": [
+   "monster:aboleth",
+   "monster:adult-black-dragon",
+   "monster:adult-blue-dragon"
+  ]
+ },
+ {
+  "key": "legendary:cost-2",
+  "name": "Legendary option costing 2",
+  "list": "monster-legendary",
+  "verdict": "runs-part",
+  "says": "A legendary option that costs 2 actions of the pool.",
+  "does": "The option is taken at the end of another creature's turn and its cost comes off the pool of 3; an attack, a save or a move option is run by the app and an option that rolls nothing is a log reminder (RN-41). (the cost is checked against what is left)",
+  "seen": "The option and its cost on the legendary card; the pool left",
+  "code": "backend/internal/rules/legendary.go legendaryOption, attackActionOf; backend/internal/play/combat_legendary_spend.go legendaryCheck",
+  "fix": "",
+  "checked": "",
+  "count": 32,
+  "examples": [
+   "monster:aboleth",
+   "monster:adult-black-dragon",
+   "monster:adult-blue-dragon"
+  ]
+ },
+ {
+  "key": "legendary:cost-3",
+  "name": "Legendary option costing 3",
+  "list": "monster-legendary",
+  "verdict": "runs-part",
+  "says": "A legendary option that costs 3 actions of the pool.",
+  "does": "The option is taken at the end of another creature's turn and its cost comes off the pool of 3; an attack, a save or a move option is run by the app and an option that rolls nothing is a log reminder (RN-41). (the cost is checked against what is left)",
+  "seen": "The option and its cost on the legendary card; the pool left",
+  "code": "backend/internal/rules/legendary.go legendaryOption, attackActionOf; backend/internal/play/combat_legendary_spend.go legendaryCheck",
+  "fix": "",
+  "checked": "",
+  "count": 6,
+  "examples": [
+   "monster:androsphinx",
+   "monster:gynosphinx",
+   "monster:kraken"
+  ]
+ },
+ {
+  "key": "reaction:parry",
+  "name": "Parry",
+  "list": "monster-reaction",
+  "verdict": "runs",
+  "says": "Adds 2 to 5 to AC against one melee weapon attack that would hit, if the creature sees the attacker and wields a melee weapon.",
+  "does": "The server decides the Parry by itself with no window (RN-29, RN-31): it adds the bonus against a melee weapon hit that would land, spends the reaction, and needs the NPC to see the attacker.",
+  "seen": "The log line for the master; the player sees only the miss",
+  "code": "backend/internal/play/combat_parry_auto.go autoParry, parryApplies, parryCanAnswer; backend/internal/characters/combatreactions.go creatureReactionStats:46-66",
+  "fix": "",
+  "checked": "",
+  "count": 6,
+  "examples": [
+   "monster:bandit-captain",
+   "monster:erinyes",
+   "monster:gladiator"
+  ]
+ },
+ {
+  "key": "reaction:rock catching",
+  "name": "Rock catching",
+  "list": "monster-reaction",
+  "verdict": "by-design",
+  "says": "SRD (stone-giant): If a rock or similar object is hurled at the giant, the giant can, with a successful DC 10 Dexterity saving throw, catch the missile and take no...",
+  "does": "RN-29: the other reactions (Split, Shriek, Rock Catching, Unnerving Mask, Shield) are text on the creature sheet that the app does not resolve; the NPC has a reaction chip the master marks.",
+  "seen": "The reaction text on the bestiary stat block; the Reação disponível/usada chip on the NPC card",
+  "code": "backend/internal/rules/legendary.go monsterReaction (Parry only); docs/product/rules.md RN-29 line 1101",
+  "fix": "",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:stone-giant"
+  ]
+ },
+ {
+  "key": "reaction:shield",
+  "name": "Shield",
+  "list": "monster-reaction",
+  "verdict": "by-design",
+  "says": "SRD (shield-guardian): When a creature makes an attack against the wearer of the guardian's amulet, the guardian grants a +2 bonus to the wearer's AC if the guardian is...",
+  "does": "RN-29: the other reactions (Split, Shriek, Rock Catching, Unnerving Mask, Shield) are text on the creature sheet that the app does not resolve; the NPC has a reaction chip the master marks.",
+  "seen": "The reaction text on the bestiary stat block; the Reação disponível/usada chip on the NPC card",
+  "code": "backend/internal/rules/legendary.go monsterReaction (Parry only); docs/product/rules.md RN-29 line 1101",
+  "fix": "",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:shield-guardian"
+  ]
+ },
+ {
+  "key": "reaction:shriek",
+  "name": "Shriek",
+  "list": "monster-reaction",
+  "verdict": "by-design",
+  "says": "SRD (shrieker): When bright light or a creature is within 30 feet of the shrieker, it emits a shriek audible within 300 feet of it. The shrieker continues to shriek...",
+  "does": "RN-29: the other reactions (Split, Shriek, Rock Catching, Unnerving Mask, Shield) are text on the creature sheet that the app does not resolve; the NPC has a reaction chip the master marks.",
+  "seen": "The reaction text on the bestiary stat block; the Reação disponível/usada chip on the NPC card",
+  "code": "backend/internal/rules/legendary.go monsterReaction (Parry only); docs/product/rules.md RN-29 line 1101",
+  "fix": "",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:shrieker"
+  ]
+ },
+ {
+  "key": "reaction:split",
+  "name": "Split",
+  "list": "monster-reaction",
+  "verdict": "by-design",
+  "says": "SRD (black-pudding): When a pudding that is Medium or larger is subjected to lightning or slashing damage, it splits into two new puddings if it has at least 10 hit...",
+  "does": "RN-29: the other reactions (Split, Shriek, Rock Catching, Unnerving Mask, Shield) are text on the creature sheet that the app does not resolve; the NPC has a reaction chip the master marks.",
+  "seen": "The reaction text on the bestiary stat block; the Reação disponível/usada chip on the NPC card",
+  "code": "backend/internal/rules/legendary.go monsterReaction (Parry only); docs/product/rules.md RN-29 line 1101",
+  "fix": "",
+  "checked": "",
+  "count": 2,
+  "examples": [
+   "monster:black-pudding",
+   "monster:ochre-jelly"
+  ]
+ },
+ {
+  "key": "reaction:unnerving mask",
+  "name": "Unnerving mask",
+  "list": "monster-reaction",
+  "verdict": "by-design",
+  "says": "SRD (chain-devil): When a creature the devil can see starts its turn within 30 feet of the devil, the devil can create the illusion that it looks like one of the...",
+  "does": "RN-29: the other reactions (Split, Shriek, Rock Catching, Unnerving Mask, Shield) are text on the creature sheet that the app does not resolve; the NPC has a reaction chip the master marks.",
+  "seen": "The reaction text on the bestiary stat block; the Reação disponível/usada chip on the NPC card",
+  "code": "backend/internal/rules/legendary.go monsterReaction (Parry only); docs/product/rules.md RN-29 line 1101",
+  "fix": "",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:chain-devil"
+  ]
+ },
+ {
+  "key": "sense:blindsight",
+  "name": "Blindsight",
+  "list": "monster-sense",
+  "verdict": "wrong",
+  "says": "The creature perceives its surroundings within range without sight, even blinded, and sees what hides or is invisible there.",
+  "does": "The sense feeds the sight of the NPC in the fog, but the reaction-sight check ignores it: a blinded NPC sees nothing and an invisible actor is unseen, even for a creature with blindsight, so opportunity attacks and reaction windows are wrongly refused. No override of the sight check was found.",
+  "seen": "Nothing on the card; the Sentidos line on the stat block",
+  "code": "backend/internal/play/combat_reaction_counterspell.go eyesCannotSee:82; backend/internal/characters/partyvision.go sensesOf:80",
+  "fix": "Let blindsight or truesight within range override blinded and invisible in eyesCannotSee.",
+  "checked": "",
+  "count": 83,
+  "examples": [
+   "monster:adult-black-dragon",
+   "monster:adult-blue-dragon",
+   "monster:adult-brass-dragon"
+  ]
+ },
+ {
+  "key": "sense:darkvision",
+  "name": "Darkvision",
+  "list": "monster-sense",
+  "verdict": "runs-part",
+  "says": "The creature sees in darkness within range as in dim light, and in dim light as in bright light.",
+  "does": "The range feeds the NPC's sight in dark squares for reactions, opportunity attacks, fog and trap noticing; it adds no mark on attack rolls and no card text.",
+  "seen": "The Sentidos line on the stat block; nothing on the combat card",
+  "code": "backend/internal/rules/creatures.go monsterSenses:679; backend/internal/characters/partyvision.go sensesOf:80, senseRanges:99; backend/internal/rules/vision/vision.go lightSeen",
+  "fix": "",
+  "checked": "",
+  "count": 181,
+  "examples": [
+   "monster:aboleth",
+   "monster:adult-black-dragon",
+   "monster:adult-blue-dragon"
+  ]
+ },
+ {
+  "key": "sense:tremorsense",
+  "name": "Tremorsense",
+  "list": "monster-sense",
+  "verdict": "by-hand-silent",
+  "says": "The creature detects creatures touching the same ground within range, with no sight.",
+  "does": "Read from the stat block and dropped: the engine's senses have no tremorsense, so it sees nothing extra; the master judges who it detects.",
+  "seen": "The Sentidos line on the stat block",
+  "code": "backend/internal/characters/partyvision.go sensesOf:80 (darkvision, blindsight, truesight, devils-sight only)",
+  "fix": "Add tremorsense to the sight check for creatures on the ground.",
+  "checked": "",
+  "count": 6,
+  "examples": [
+   "monster:ankheg",
+   "monster:bulette",
+   "monster:earth-elemental"
+  ]
+ },
+ {
+  "key": "sense:truesight",
+  "name": "Truesight",
+  "list": "monster-sense",
+  "verdict": "wrong",
+  "says": "The creature sees in darkness, invisible creatures, illusions and the Ethereal Plane within range.",
+  "does": "As for blindsight: the sense is carried to the fog sight, but eyesCannotSee makes an invisible actor unseen by every reactor, so a truesight creature gets no opportunity attack or reaction window against an invisible creature.",
+  "seen": "The Sentidos line on the stat block",
+  "code": "backend/internal/play/combat_reaction_counterspell.go eyesCannotSee:82; backend/internal/play/combat_fog.go reactorSees:294-306",
+  "fix": "Let truesight within range override the invisible actor in eyesCannotSee.",
+  "checked": "",
+  "count": 13,
+  "examples": [
+   "monster:androsphinx",
+   "monster:balor",
+   "monster:couatl"
+  ]
+ },
+ {
+  "key": "speed:burrow",
+  "name": "Burrow speed",
+  "list": "monster-speed",
+  "verdict": "by-hand-silent",
+  "says": "The creature can burrow through earth at the stated speed.",
+  "does": "Not carried to the NPC combatant (walking speed only; the burrow field stays 0), so the master moves the token by hand.",
+  "seen": "The Velocidade line on the stat block",
+  "code": "backend/internal/characters/npcfromcreature.go npcSheetFromCreature:146; backend/internal/characters/combatants.go combatCharacter:178-185; backend/internal/play/combat_join.go joinRow:255; backend/internal/play/combat_speed.go speedsOf",
+  "fix": "Add a burrow movement mode, or a card note.",
+  "checked": "",
+  "count": 21,
+  "examples": [
+   "monster:adult-blue-dragon",
+   "monster:adult-brass-dragon",
+   "monster:adult-white-dragon"
+  ]
+ },
+ {
+  "key": "speed:climb",
+  "name": "Climb speed",
+  "list": "monster-speed",
+  "verdict": "wrong",
+  "says": "The creature climbs at the stated speed with no extra cost.",
+  "does": "The combatant is built from the stat block's walking speed only (the best other speed when it has none, npcfromcreature.go:146) and the swim, climb, burrow and fly fields stay 0 for a basic sheet; movement is a climb costs extra metres from its walking speed. The master can force the move with 'Mover mesmo assim' (free, no limit).",
+  "seen": "The Velocidade line on the stat block; the screen warns when a move is refused",
+  "code": "backend/internal/characters/npcfromcreature.go npcSheetFromCreature:146; backend/internal/characters/combatants.go combatCharacter:178-185; backend/internal/play/combat_join.go joinRow:255; backend/internal/play/combat_speed.go speedsOf",
+  "fix": "Copy the climb speed to the NPC combatant, as for a character.",
+  "checked": "",
+  "count": 36,
+  "examples": [
+   "monster:adult-copper-dragon",
+   "monster:adult-red-dragon",
+   "monster:ancient-copper-dragon"
+  ]
+ },
+ {
+  "key": "speed:fly",
+  "name": "Fly speed",
+  "list": "monster-speed",
+  "verdict": "wrong",
+  "says": "The creature flies at the stated speed, ignoring difficult terrain and ground obstacles (hover: keeps aloft when knocked prone).",
+  "does": "The combatant is built from the stat block's walking speed only (the best other speed when it has none, npcfromcreature.go:146) and the swim, climb, burrow and fly fields stay 0 for a basic sheet; movement is a flier pays difficult terrain and is stopped by blocking creatures. The master can force the move with 'Mover mesmo assim' (free, no limit).",
+  "seen": "The Velocidade line on the stat block; the screen warns when a move is refused",
+  "code": "backend/internal/characters/npcfromcreature.go npcSheetFromCreature:146; backend/internal/characters/combatants.go combatCharacter:178-185; backend/internal/play/combat_join.go joinRow:255; backend/internal/play/combat_speed.go speedsOf",
+  "fix": "Copy the fly speed to the NPC combatant, as for a character.",
+  "checked": "",
+  "count": 104,
+  "examples": [
+   "monster:adult-black-dragon",
+   "monster:adult-blue-dragon",
+   "monster:adult-brass-dragon"
+  ]
+ },
+ {
+  "key": "speed:hover",
+  "name": "Hover",
+  "list": "monster-speed",
+  "verdict": "by-hand-silent",
+  "says": "The speed line says the creature can hover, staying aloft.",
+  "does": "Not applied: the hover mark is only text on the stat block's Velocidade line, and the combatant gets no fly speed.",
+  "seen": "The Velocidade line on the stat block",
+  "code": "backend/internal/rules/creatures.go creature(); backend/internal/play/combat_move.go flies",
+  "fix": "Mark hover on the NPC card.",
+  "checked": "",
+  "count": 7,
+  "examples": [
+   "monster:air-elemental",
+   "monster:flying-sword",
+   "monster:ghost"
+  ]
+ },
+ {
+  "key": "speed:swim",
+  "name": "Swim speed",
+  "list": "monster-speed",
+  "verdict": "wrong",
+  "says": "The creature swims at the stated speed with no extra cost in water.",
+  "does": "The combatant is built from the stat block's walking speed only (the best other speed when it has none, npcfromcreature.go:146) and the swim, climb, burrow and fly fields stay 0 for a basic sheet; movement is each metre of painted water costs extra from its walking speed. The master can force the move with 'Mover mesmo assim' (free, no limit).",
+  "seen": "The Velocidade line on the stat block; the screen says 'Inclui ... nadando'",
+  "code": "backend/internal/characters/npcfromcreature.go npcSheetFromCreature:146; backend/internal/characters/combatants.go combatCharacter:178-185; backend/internal/play/combat_join.go joinRow:255; backend/internal/play/combat_speed.go speedsOf",
+  "fix": "Copy the swim speed to the NPC combatant, as for a character.",
+  "checked": "",
+  "count": 60,
+  "examples": [
+   "monster:aboleth",
+   "monster:adult-black-dragon",
+   "monster:adult-bronze-dragon"
+  ]
+ },
+ {
+  "key": "usage:per-day",
+  "name": "Trait usable N times a day (Legendary Resistance)",
+  "list": "monster-usage",
+  "verdict": "wrong",
+  "says": "Legendary Resistance (3/Day): if the creature fails a saving throw, it can choose to succeed instead.",
+  "does": "The master is offered the trait on a spell save, a hit rider save, a concentration check and a held effect, and uses are counted in creature_spent until a long rest (RN-29), but a trap's save for a caught NPC is rolled by the server with no offer, so a failure stands. The master can undo the firing and set the result by hand.",
+  "seen": "The Resistência Lendária card with uses left on the master's NPC card; no offer at a trap save",
+  "code": "backend/internal/play/combat_legendary_resist.go legendaryResistOpen (callers lasting_effects_save.go:333, combat_concentration.go:321, combat_legendary_hold.go:359; none in traps_effect.go trapSaveRoll:93)",
+  "fix": "Offer Legendary Resistance on a trap save of an NPC with a use left.",
+  "checked": "",
+  "count": 25,
+  "examples": [
+   "monster:adult-black-dragon",
+   "monster:adult-blue-dragon",
+   "monster:adult-brass-dragon"
+  ]
+ },
+ {
+  "key": "usage:recharge-after-rest",
+  "name": "Trait recharged by a rest (Relentless)",
+  "list": "monster-usage",
+  "verdict": "by-hand-silent",
+  "says": "Relentless (Recharges after a Short or Long Rest): when the creature takes damage that would drop it to 0, it drops to 1 hit point instead, once.",
+  "does": "The trait is text only: its name has no engine reader (the keys read are the suffixes pack-tactics, magic-resistance and sunlight), so nothing drops the damage and nothing counts the use; the master tracks it.",
+  "seen": "The trait text on the bestiary stat block; nothing on the combat card",
+  "code": "backend/internal/characters/combattraits.go traitsOf (suffix list); backend/internal/rules/creatures.go Features from SpecialAbilities:735",
+  "fix": "Count the use in creature_spent and stop the drop to 0 once per rest.",
+  "checked": "",
+  "count": 5,
+  "examples": [
+   "monster:boar",
+   "monster:giant-boar",
+   "monster:wereboar-boar"
+  ]
+ }
+]

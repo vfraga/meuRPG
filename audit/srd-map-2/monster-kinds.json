@@ -1,0 +1,3967 @@
+[
+ {
+  "key": "trait:aberrant ground",
+  "name": "Aberrant Ground",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "10-ft radius around the mouther is difficult terrain; a creature starting its turn there makes a DC 10 Str save or its speed is 0 until its next turn",
+  "does": "No terrain zone and no save are made for the trait",
+  "seen": "The trait text only, in the stat block 'Caracteristicas' group of the master's creature sheet / NPC card; no reminder",
+  "code": "backend/internal/rules/creatures.go monsterDerived (SpecialAbilities become a text-only Feature) and creatureAbilities; web/src/app/shared/creatures/stat-block-view.ts groupsOf",
+  "fix": "Show the trait text as a reminder in the combat's creature card, or read it where the rule applies",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:gibbering-mouther"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:acid absorption",
+  "name": "Acid Absorption",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "Acid damage heals the golem by that amount instead of hurting it",
+  "does": "The stat block's acid immunity makes acid damage 0, but the equal healing is never applied or mentioned",
+  "seen": "The trait text only, in the stat block 'Caracteristicas' group of the master's creature sheet / NPC card; no reminder",
+  "code": "backend/internal/rules/combat/steps.go (immunity); no heal anywhere",
+  "fix": "Add a reminder 'also regains HP equal to the acid damage' on the golem's card",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:clay-golem"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:adhesive",
+  "name": "Adhesive",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "A Huge or smaller creature that touches the mimic is grappled (escape DC 13) with disadvantage on escape checks",
+  "does": "No grapple is started when something touches the mimic",
+  "seen": "The trait text only, in the stat block 'Caracteristicas' group of the master's creature sheet / NPC card; no reminder",
+  "code": "backend/internal/rules/creatures.go monsterDerived (SpecialAbilities become a text-only Feature) and creatureAbilities; web/src/app/shared/creatures/stat-block-view.ts groupsOf",
+  "fix": "Show the trait text as a reminder in the combat's creature card, or read it where the rule applies",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:mimic"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:aggressive",
+  "name": "Aggressive",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "Bonus action: move up to its speed toward a hostile creature it can see",
+  "does": "No bonus-action move exists for a creature; the master moves it by hand",
+  "seen": "The trait text only, in the stat block 'Caracteristicas' group of the master's creature sheet / NPC card; no reminder",
+  "code": "backend/internal/rules/creatures.go monsterDerived (SpecialAbilities become a text-only Feature) and creatureAbilities; web/src/app/shared/creatures/stat-block-view.ts groupsOf",
+  "fix": "Show the trait text as a reminder in the combat's creature card, or read it where the rule applies",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:orc"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:air form",
+  "name": "Air Form",
+  "list": "monster-trait",
+  "verdict": "wrong",
+  "says": "Can enter a hostile creature's space and stop there; moves through a 1-inch space without squeezing",
+  "does": "The app moves an NPC by the player's walking rules: a move may not end on another creature's square and a hostile one can be passed only with a two-size gap (rules/grid/move.go:214-225, play/combat_move.go:209-213), so the elemental cannot enter a hostile creature's space and stop there. The master can place it with a forced move (free, no movement spent)",
+  "seen": "The trait text only, in the stat block 'Caracteristicas' group of the master's creature sheet / NPC card; no reminder",
+  "code": "backend/internal/rules/creatures.go monsterDerived (SpecialAbilities become a text-only Feature) and creatureAbilities; web/src/app/shared/creatures/stat-block-view.ts groupsOf",
+  "fix": "Let the movement rules skip the occupancy refusal for a mover with the trait Air Form",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:air-elemental"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:ambusher",
+  "name": "Ambusher",
+  "list": "monster-trait",
+  "verdict": "wrong",
+  "says": "In the first round, advantage on attack rolls against any creature it has surprised",
+  "does": "The app rolls the NPC's attack and shows its advantage sources, with surprise marks and the 'not yet acted' check for a character's table feature (play/combat_advantage.go:255-258), but monsterDerived maps no trait to them, so the doppelganger's attack on a surprised creature in round 1 is shown and rolled flat. The master can roll the d20 himself with advantage (physical dice, RN-18)",
+  "seen": "The trait text only, in the stat block 'Caracteristicas' group of the master's creature sheet / NPC card; no reminder",
+  "code": "backend/internal/play/combat_advantage.go:253 ambush; backend/internal/characters/combattraits.go:174",
+  "fix": "Map the trait '#ambusher' to the surprised-target advantage in round 1",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:doppelganger"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:amorphous",
+  "name": "Amorphous",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "Moves through a space 1 inch wide without squeezing",
+  "does": "Squeezing is not modelled for creatures",
+  "seen": "The trait text only, in the stat block 'Caracteristicas' group of the master's creature sheet / NPC card; no reminder",
+  "code": "backend/internal/rules/creatures.go monsterDerived (SpecialAbilities become a text-only Feature) and creatureAbilities; web/src/app/shared/creatures/stat-block-view.ts groupsOf",
+  "fix": "Show the trait text as a reminder in the combat's creature card, or read it where the rule applies",
+  "checked": "",
+  "count": 4,
+  "examples": [
+   "monster:black-pudding",
+   "monster:gray-ooze",
+   "monster:ochre-jelly"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:amphibious",
+  "name": "Amphibious",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "Can breathe air and water",
+  "does": "The app has no breathing or drowning rule, so nothing to apply or contradict; text on the stat block only",
+  "seen": "The trait text only, in the stat block 'Caracteristicas' group of the master's creature sheet / NPC card; no reminder",
+  "code": "backend/internal/rules/creatures.go monsterDerived (SpecialAbilities become a text-only Feature) and creatureAbilities; web/src/app/shared/creatures/stat-block-view.ts groupsOf",
+  "fix": "The master rules drowning by hand",
+  "checked": "",
+  "count": 30,
+  "examples": [
+   "monster:aboleth",
+   "monster:adult-black-dragon",
+   "monster:adult-bronze-dragon"
+  ],
+  "party": true
+ },
+ {
+  "key": "trait:angelic weapons",
+  "name": "Angelic Weapons",
+  "list": "monster-trait",
+  "verdict": "wrong",
+  "says": "The creature's weapon attacks are magical; each hit deals the extra radiant damage (already in the attack)",
+  "does": "The extra radiant dice are in the attack, but the attack is not marked magical: monsterAttack sets Magical only for the trait named 'Magic Weapons', so deva, planetar and solar weapon hits are halved or nulled by a target's resistance or immunity to nonmagical weapons. The table can correct it only by hand (the master's damage adjustment before applying, or the undo)",
+  "seen": "The attack card shows the SRD text; nothing says the attack is magical",
+  "code": "backend/internal/rules/creatures.go:872 monsterAttack and :855 hasMagicWeapons (name == 'Magic Weapons' only); backend/internal/play/combat_damage.go:540; backend/internal/rules/combat/steps.go:92",
+  "fix": "Make hasMagicWeapons also true for the trait 'Angelic Weapons'",
+  "checked": "test",
+  "count": 3,
+  "examples": [
+   "monster:deva",
+   "monster:planetar",
+   "monster:solar"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:antimagic susceptibility",
+  "name": "Antimagic Susceptibility",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "Incapacitated in an antimagic field; dispel magic needs a Con save or it falls unconscious for 1 minute",
+  "does": "Neither the antimagic field nor dispel magic read the trait",
+  "seen": "The trait text only, in the stat block 'Caracteristicas' group of the master's creature sheet / NPC card; no reminder",
+  "code": "backend/internal/rules/creatures.go monsterDerived (SpecialAbilities become a text-only Feature) and creatureAbilities; web/src/app/shared/creatures/stat-block-view.ts groupsOf",
+  "fix": "Show the trait text as a reminder in the combat's creature card, or read it where the rule applies",
+  "checked": "",
+  "count": 3,
+  "examples": [
+   "monster:animated-armor",
+   "monster:flying-sword",
+   "monster:rug-of-smothering"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:assassinate",
+  "name": "Assassinate",
+  "list": "monster-trait",
+  "verdict": "wrong",
+  "says": "During its first turn, advantage on attacks against creatures that have not taken a turn; any hit on a surprised creature is a critical hit",
+  "does": "The app rolls the NPC's attack and shows its advantage sources and the critical on hit (play/combat_advantage.go:255-258, rules/combat/advantage.go:442-447) from a character's table feature, but monsterDerived maps no trait to them, so the assassin's attack on a creature that has not acted is flat and a hit on a surprised creature is not a critical. The master can roll the d20 himself with advantage and double the dice by hand",
+  "seen": "The trait text only, in the stat block 'Caracteristicas' group of the master's creature sheet / NPC card; no reminder",
+  "code": "backend/internal/play/combat_advantage.go:253 ambush; backend/internal/characters/combattraits.go:174",
+  "fix": "Map the trait '#assassinate' to UnactedAdvantage and SurprisedCritical",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:assassin"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:aversion of fire",
+  "name": "Aversion Of Fire",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "After taking fire damage, disadvantage on attack rolls and ability checks until the end of its next turn",
+  "does": "No effect is put on the creature when it takes fire damage",
+  "seen": "The trait text only, in the stat block 'Caracteristicas' group of the master's creature sheet / NPC card; no reminder",
+  "code": "backend/internal/rules/creatures.go monsterDerived (SpecialAbilities become a text-only Feature) and creatureAbilities; web/src/app/shared/creatures/stat-block-view.ts groupsOf",
+  "fix": "Show the trait text as a reminder in the combat's creature card, or read it where the rule applies",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:flesh-golem"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:barbed hide",
+  "name": "Barbed Hide",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "At the start of each of its turns, 5 (1d10) piercing damage to any creature grappling it",
+  "does": "No start-of-turn damage is rolled",
+  "seen": "The trait text only, in the stat block 'Caracteristicas' group of the master's creature sheet / NPC card; no reminder",
+  "code": "backend/internal/rules/creatures.go monsterDerived (SpecialAbilities become a text-only Feature) and creatureAbilities; web/src/app/shared/creatures/stat-block-view.ts groupsOf",
+  "fix": "Show the trait text as a reminder in the combat's creature card, or read it where the rule applies",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:barbed-devil"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:beast of burden",
+  "name": "Beast Of Burden",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "Counts as a Large animal for carrying capacity",
+  "does": "Carrying capacity of creatures is not computed; text only",
+  "seen": "The trait text only, in the stat block 'Caracteristicas' group of the master's creature sheet / NPC card; no reminder",
+  "code": "backend/internal/rules/creatures.go monsterDerived (SpecialAbilities become a text-only Feature) and creatureAbilities; web/src/app/shared/creatures/stat-block-view.ts groupsOf",
+  "fix": "Show the trait text as a reminder in the combat's creature card, or read it where the rule applies",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:mule"
+  ],
+  "party": true
+ },
+ {
+  "key": "trait:berserk",
+  "name": "Berserk",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "At 60 hp or fewer at turn start, roll d6: on a 6 the golem goes berserk and attacks the nearest creature until destroyed or fully healed",
+  "does": "No d6 is rolled and no behaviour is imposed; the master plays it",
+  "seen": "The trait text only, in the stat block 'Caracteristicas' group of the master's creature sheet / NPC card; no reminder",
+  "code": "backend/internal/rules/creatures.go monsterDerived (SpecialAbilities become a text-only Feature) and creatureAbilities; web/src/app/shared/creatures/stat-block-view.ts groupsOf",
+  "fix": "Show the trait text as a reminder in the combat's creature card, or read it where the rule applies",
+  "checked": "",
+  "count": 2,
+  "examples": [
+   "monster:clay-golem",
+   "monster:flesh-golem"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:blind senses",
+  "name": "Blind Senses",
+  "list": "monster-trait",
+  "verdict": "wrong",
+  "says": "Cannot use blindsight while deafened and unable to smell",
+  "does": "On a fog map the reactor's sight counts the stat block's blindsight whatever its conditions (play/combat_fog.go:302-307, rules/vision/vision.go:319) and a deafened creature keeps it, so a deafened grimlock (a Silence zone deafens, zones_catalog.go) is still offered the opportunity attack on a mover it could not sense. The master declines or skips the offer by hand",
+  "seen": "The trait text only, in the stat block 'Caracteristicas' group of the master's creature sheet / NPC card; no reminder",
+  "code": "backend/internal/rules/creatures.go:679 monsterSenses; backend/internal/play/combat_fog.go:302",
+  "fix": "Drop blindsight from the senses passed to the sight while the creature is deafened",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:grimlock"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:blood frenzy",
+  "name": "Blood Frenzy",
+  "list": "monster-trait",
+  "verdict": "wrong",
+  "says": "Advantage on melee attack rolls against any creature that doesn't have all its hit points",
+  "does": "The app rolls the NPC's attack and shows its advantage sources (rules/combat/advantage.go:437 AttackMode, play/combat_advantage.go:218-232), and knows the target's hit points, but no source reads the trait, so the shark's melee attack on a wounded creature is shown and rolled flat. The master can roll the d20 himself with advantage (physical dice, RN-18)",
+  "seen": "The trait text only, in the stat block 'Caracteristicas' group of the master's creature sheet / NPC card; no reminder",
+  "code": "backend/internal/play/combat_advantage.go; backend/internal/rules/combat/advantage.go",
+  "fix": "Add an attack advantage source 'target below max hit points' keyed on #blood-frenzy",
+  "checked": "",
+  "count": 5,
+  "examples": [
+   "monster:giant-shark",
+   "monster:hunter-shark",
+   "monster:quipper"
+  ],
+  "party": true
+ },
+ {
+  "key": "trait:bound",
+  "name": "Bound",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "Magically bound to an amulet; half of the wearer's damage (rounded up) is transferred to the guardian within 60 ft",
+  "does": "No amulet, no wearer link and no damage transfer exists",
+  "seen": "The trait text only, in the stat block 'Caracteristicas' group of the master's creature sheet / NPC card; no reminder",
+  "code": "backend/internal/rules/creatures.go monsterDerived (SpecialAbilities become a text-only Feature) and creatureAbilities; web/src/app/shared/creatures/stat-block-view.ts groupsOf",
+  "fix": "Show the trait text as a reminder in the combat's creature card, or read it where the rule applies",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:shield-guardian"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:brave",
+  "name": "Brave",
+  "list": "monster-trait",
+  "verdict": "wrong",
+  "says": "Advantage on saving throws against being frightened",
+  "does": "A save the app rolls for a monster (a spell, a rider, a zone: play/combat_spells.go:602 spellSave with spellAgainst, play/combat_against.go:90) never gets the advantage against being frightened: Monster stat blocks carry no hints (rules/creatures.go:735 monsterDerived), so the tagged save advantage (rules/combat/advantage.go:633) never fires for a monster target. The master can only fix the result by hand (undo the cast or remove the condition)",
+  "seen": "The trait text only, in the stat block 'Caracteristicas' group of the master's creature sheet / NPC card; no reminder",
+  "code": "backend/internal/play/combat_against.go:13; backend/internal/characters/combattraits.go taggedSavesOf; backend/internal/rules/creatures.go monsterDerived",
+  "fix": "Give the monster a tagged save for the trait (against frightened)",
+  "checked": "",
+  "count": 2,
+  "examples": [
+   "monster:gladiator",
+   "monster:knight"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:brute",
+  "name": "Brute",
+  "list": "monster-trait",
+  "verdict": "runs",
+  "says": "One extra die of weapon damage on a melee hit (included in the attack)",
+  "does": "The extra die is already in the stat block's attack damage, which the app rolls as written; nothing else to compute",
+  "seen": "The attack card shows the damage dice with the extra die",
+  "code": "backend/internal/rules/creatures.go monsterAttack",
+  "fix": "",
+  "checked": "",
+  "count": 2,
+  "examples": [
+   "monster:bugbear",
+   "monster:gladiator"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:charge",
+  "name": "Charge",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "After moving at least 20 ft straight toward a target and hitting, extra damage and a Str save or prone (numbers vary by creature)",
+  "does": "No straight-line movement count and no extra damage or save are applied from the trait; the riders of the attack come from the action text only",
+  "seen": "The trait text only, in the stat block 'Caracteristicas' group of the master's creature sheet / NPC card; no reminder",
+  "code": "backend/internal/rules/creatures.go monsterDerived (SpecialAbilities become a text-only Feature) and creatureAbilities; web/src/app/shared/creatures/stat-block-view.ts groupsOf",
+  "fix": "Show the trait text as a reminder in the combat's creature card, or read it where the rule applies",
+  "checked": "",
+  "count": 14,
+  "examples": [
+   "monster:boar",
+   "monster:centaur",
+   "monster:elk"
+  ],
+  "party": true
+ },
+ {
+  "key": "trait:confer fire resistance",
+  "name": "Confer Fire Resistance",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "The nightmare can grant fire resistance to anyone riding it",
+  "does": "Nothing grants fire resistance when mounted on a nightmare",
+  "seen": "The trait text only, in the stat block 'Caracteristicas' group of the master's creature sheet / NPC card; no reminder",
+  "code": "backend/internal/rules/creatures.go monsterDerived (SpecialAbilities become a text-only Feature) and creatureAbilities; web/src/app/shared/creatures/stat-block-view.ts groupsOf",
+  "fix": "Show the trait text as a reminder in the combat's creature card, or read it where the rule applies",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:nightmare"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:consume life",
+  "name": "Consume Life",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "Bonus action: a living creature at 0 hp must pass a DC 10 Con save or die; the wisp regains 10 (3d6) hp",
+  "does": "No bonus action and no save is offered for it",
+  "seen": "The trait text only, in the stat block 'Caracteristicas' group of the master's creature sheet / NPC card; no reminder",
+  "code": "backend/internal/rules/creatures.go monsterDerived (SpecialAbilities become a text-only Feature) and creatureAbilities; web/src/app/shared/creatures/stat-block-view.ts groupsOf",
+  "fix": "Show the trait text as a reminder in the combat's creature card, or read it where the rule applies",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:will-o-wisp"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:corrode metal",
+  "name": "Corrode Metal",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "A nonmagical metal weapon that hits corrodes (-1 cumulative damage, destroyed at -5); metal ammunition is destroyed",
+  "does": "Weapon wear is not tracked",
+  "seen": "The trait text only, in the stat block 'Caracteristicas' group of the master's creature sheet / NPC card; no reminder",
+  "code": "backend/internal/rules/creatures.go monsterDerived (SpecialAbilities become a text-only Feature) and creatureAbilities; web/src/app/shared/creatures/stat-block-view.ts groupsOf",
+  "fix": "Show the trait text as a reminder in the combat's creature card, or read it where the rule applies",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:gray-ooze"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:corrosive form",
+  "name": "Corrosive Form",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "Touching it or hitting it in melee within 5 ft deals 4 (1d8) acid; nonmagical metal or wood weapons corrode",
+  "does": "No reflected damage and no weapon wear",
+  "seen": "The trait text only, in the stat block 'Caracteristicas' group of the master's creature sheet / NPC card; no reminder",
+  "code": "backend/internal/rules/creatures.go monsterDerived (SpecialAbilities become a text-only Feature) and creatureAbilities; web/src/app/shared/creatures/stat-block-view.ts groupsOf",
+  "fix": "Show the trait text as a reminder in the combat's creature card, or read it where the rule applies",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:black-pudding"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:cunning action",
+  "name": "Cunning Action",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "Bonus action: Dash, Disengage or Hide",
+  "does": "The options are listed from 'feature:cunning-action' of a character; the spy's key (monster:spy#cunning-action) is not read",
+  "seen": "The trait text only, in the stat block 'Caracteristicas' group of the master's creature sheet / NPC card; no reminder",
+  "code": "backend/internal/play/combat_contests_options.go:259 featureHideActions; backend/internal/play/combat_take_action.go:428",
+  "fix": "Treat the monster trait as the same bonus-action source",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:spy"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:damage transfer",
+  "name": "Damage Transfer",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "While attached, the creature takes half the damage and the attached creature takes the other half",
+  "does": "No split of damage between the two",
+  "seen": "The trait text only, in the stat block 'Caracteristicas' group of the master's creature sheet / NPC card; no reminder",
+  "code": "backend/internal/rules/creatures.go monsterDerived (SpecialAbilities become a text-only Feature) and creatureAbilities; web/src/app/shared/creatures/stat-block-view.ts groupsOf",
+  "fix": "Show the trait text as a reminder in the combat's creature card, or read it where the rule applies",
+  "checked": "",
+  "count": 2,
+  "examples": [
+   "monster:cloaker",
+   "monster:rug-of-smothering"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:dark devotion",
+  "name": "Dark Devotion",
+  "list": "monster-trait",
+  "verdict": "wrong",
+  "says": "Advantage on saving throws against being charmed or frightened",
+  "does": "A save the app rolls for a monster (play/combat_spells.go:602 spellSave with spellAgainst, play/combat_against.go:90) never gets the advantage against being charmed or frightened: Monster stat blocks carry no hints (rules/creatures.go:735 monsterDerived), so the tagged save advantage (rules/combat/advantage.go:633) never fires for a monster target. The master can only fix the result by hand (undo the cast or remove the condition)",
+  "seen": "The trait text only, in the stat block 'Caracteristicas' group of the master's creature sheet / NPC card; no reminder",
+  "code": "backend/internal/play/combat_against.go:13; backend/internal/rules/creatures.go monsterDerived",
+  "fix": "Give the monster tagged saves for the trait (against charmed and frightened)",
+  "checked": "",
+  "count": 2,
+  "examples": [
+   "monster:cult-fanatic",
+   "monster:cultist"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:death burst",
+  "name": "Death Burst",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "On death, each creature within 5 ft makes a save or takes the effect",
+  "does": "No burst is rolled when the creature dies",
+  "seen": "The trait text only, in the stat block 'Caracteristicas' group of the master's creature sheet / NPC card; no reminder",
+  "code": "backend/internal/rules/creatures.go monsterDerived (SpecialAbilities become a text-only Feature) and creatureAbilities; web/src/app/shared/creatures/stat-block-view.ts groupsOf",
+  "fix": "Show the trait text as a reminder in the combat's creature card, or read it where the rule applies",
+  "checked": "",
+  "count": 5,
+  "examples": [
+   "monster:dust-mephit",
+   "monster:ice-mephit",
+   "monster:magma-mephit"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:death throes",
+  "name": "Death Throes",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "On death, 30-ft explosion: DC 20 Dex save, 70 (20d6) fire (half on success); ignites objects",
+  "does": "No explosion is rolled when the creature dies",
+  "seen": "The trait text only, in the stat block 'Caracteristicas' group of the master's creature sheet / NPC card; no reminder",
+  "code": "backend/internal/rules/creatures.go monsterDerived (SpecialAbilities become a text-only Feature) and creatureAbilities; web/src/app/shared/creatures/stat-block-view.ts groupsOf",
+  "fix": "Show the trait text as a reminder in the combat's creature card, or read it where the rule applies",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:balor"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:devil's sight",
+  "name": "Devil's Sight",
+  "list": "monster-trait",
+  "verdict": "wrong",
+  "says": "Magical darkness doesn't impede the devil's darkvision",
+  "does": "Monster senses list darkvision only (monsterSenses never emits devils-sight; only a warlock invocation sets DevilsSightFt), so in magical darkness (a Darkness spell zone on a fog map) the devil's darkvision is blocked (vision.go:322): it does not see a mover or attacker there, and its opportunity attacks and Parry are not offered. The master can play the reaction by hand",
+  "seen": "The trait text in the stat block; nothing explains the missing offer",
+  "code": "backend/internal/rules/creatures.go:679 monsterSenses; backend/internal/rules/vision/vision.go:322; backend/internal/play/combat_fog.go:302 reactorSees; backend/internal/characters/partyvision.go:90",
+  "fix": "Make monsterSenses add devils-sight with the darkvision range for a creature with the trait Devil's Sight",
+  "checked": "",
+  "count": 8,
+  "examples": [
+   "monster:barbed-devil",
+   "monster:bearded-devil",
+   "monster:bone-devil"
+  ],
+  "party": true
+ },
+ {
+  "key": "trait:divine awareness",
+  "name": "Divine Awareness",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "Knows if it hears a lie",
+  "does": "Nothing; text only",
+  "seen": "The trait text only, in the stat block 'Caracteristicas' group of the master's creature sheet / NPC card; no reminder",
+  "code": "backend/internal/rules/creatures.go monsterDerived (SpecialAbilities become a text-only Feature) and creatureAbilities; web/src/app/shared/creatures/stat-block-view.ts groupsOf",
+  "fix": "Show the trait text as a reminder in the combat's creature card, or read it where the rule applies",
+  "checked": "",
+  "count": 2,
+  "examples": [
+   "monster:planetar",
+   "monster:solar"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:divine eminence",
+  "name": "Divine Eminence",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "Bonus action: spend a spell slot to add 3d6 radiant (+1d6 per slot level above 1st) to melee weapon hits until the end of the turn",
+  "does": "No bonus action, slot spend or extra damage",
+  "seen": "The trait text only, in the stat block 'Caracteristicas' group of the master's creature sheet / NPC card; no reminder",
+  "code": "backend/internal/rules/creatures.go monsterDerived (SpecialAbilities become a text-only Feature) and creatureAbilities; web/src/app/shared/creatures/stat-block-view.ts groupsOf",
+  "fix": "Show the trait text as a reminder in the combat's creature card, or read it where the rule applies",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:priest"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:duergar resilience",
+  "name": "Duergar Resilience",
+  "list": "monster-trait",
+  "verdict": "wrong",
+  "says": "Advantage on saves against poison, spells and illusions, and against being charmed or paralyzed",
+  "does": "A save the app rolls for a monster (play/combat_spells.go:602 spellSave with spellAgainst, play/combat_against.go:90) never gets the advantage against poison, spells, charm or paralysis: Monster stat blocks carry no hints (rules/creatures.go:735 monsterDerived), so the tagged save advantage (rules/combat/advantage.go:633) never fires for a monster target. The master can only fix the result by hand (undo the cast or the condition)",
+  "seen": "The trait text only, in the stat block 'Caracteristicas' group of the master's creature sheet / NPC card; no reminder",
+  "code": "backend/internal/play/combat_against.go:13; backend/internal/rules/creatures.go monsterDerived",
+  "fix": "Give the monster tagged saves for the trait (magic, poison, charmed, paralyzed)",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:duergar"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:earth glide",
+  "name": "Earth Glide",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "Burrows through nonmagical, unworked earth and stone without disturbing it",
+  "does": "The burrow speed of the stat block is shown but the earth and stone limit is not modelled",
+  "seen": "The trait text only, in the stat block 'Caracteristicas' group of the master's creature sheet / NPC card; no reminder",
+  "code": "backend/internal/rules/creatures.go monsterDerived (SpecialAbilities become a text-only Feature) and creatureAbilities; web/src/app/shared/creatures/stat-block-view.ts groupsOf",
+  "fix": "Show the trait text as a reminder in the combat's creature card, or read it where the rule applies",
+  "checked": "",
+  "count": 2,
+  "examples": [
+   "monster:earth-elemental",
+   "monster:xorn"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:echolocation",
+  "name": "Echolocation",
+  "list": "monster-trait",
+  "verdict": "wrong",
+  "says": "Cannot use blindsight while deafened",
+  "does": "On a fog map the reactor's sight counts the stat block's blindsight whatever its conditions (play/combat_fog.go:302-307, rules/vision/vision.go:319) and a deafened creature keeps it, so a deafened bat (a Silence zone deafens, zones_catalog.go) is still offered the opportunity attack on a mover it could not sense. The master declines or skips the offer by hand",
+  "seen": "The trait text only, in the stat block 'Caracteristicas' group of the master's creature sheet / NPC card; no reminder",
+  "code": "backend/internal/rules/creatures.go:679 monsterSenses",
+  "fix": "Drop blindsight from the senses passed to the sight while the creature is deafened",
+  "checked": "",
+  "count": 5,
+  "examples": [
+   "monster:bat",
+   "monster:darkmantle",
+   "monster:giant-bat"
+  ],
+  "party": true
+ },
+ {
+  "key": "trait:elemental demise",
+  "name": "Elemental Demise",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "On death the body disintegrates into a breeze, leaving only its equipment",
+  "does": "No such effect; the creature stays as any defeated combatant",
+  "seen": "The trait text only, in the stat block 'Caracteristicas' group of the master's creature sheet / NPC card; no reminder",
+  "code": "backend/internal/rules/creatures.go monsterDerived (SpecialAbilities become a text-only Feature) and creatureAbilities; web/src/app/shared/creatures/stat-block-view.ts groupsOf",
+  "fix": "Show the trait text as a reminder in the combat's creature card, or read it where the rule applies",
+  "checked": "",
+  "count": 2,
+  "examples": [
+   "monster:djinni",
+   "monster:efreeti"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:ephemeral",
+  "name": "Ephemeral",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "Cannot wear or carry anything",
+  "does": "No equipment rule for creatures",
+  "seen": "The trait text only, in the stat block 'Caracteristicas' group of the master's creature sheet / NPC card; no reminder",
+  "code": "backend/internal/rules/creatures.go monsterDerived (SpecialAbilities become a text-only Feature) and creatureAbilities; web/src/app/shared/creatures/stat-block-view.ts groupsOf",
+  "fix": "Show the trait text as a reminder in the combat's creature card, or read it where the rule applies",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:will-o-wisp"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:ethereal jaunt",
+  "name": "Ethereal Jaunt",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "Bonus action: shift between the Material and Ethereal Planes",
+  "does": "No planes in the app; the master rules it",
+  "seen": "The trait text only, in the stat block 'Caracteristicas' group of the master's creature sheet / NPC card; no reminder",
+  "code": "backend/internal/rules/creatures.go monsterDerived (SpecialAbilities become a text-only Feature) and creatureAbilities; web/src/app/shared/creatures/stat-block-view.ts groupsOf",
+  "fix": "Show the trait text as a reminder in the combat's creature card, or read it where the rule applies",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:phase-spider"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:ethereal sight",
+  "name": "Ethereal Sight",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "Sees 60 ft into the Ethereal Plane and vice versa",
+  "does": "No planes in the app",
+  "seen": "The trait text only, in the stat block 'Caracteristicas' group of the master's creature sheet / NPC card; no reminder",
+  "code": "backend/internal/rules/creatures.go monsterDerived (SpecialAbilities become a text-only Feature) and creatureAbilities; web/src/app/shared/creatures/stat-block-view.ts groupsOf",
+  "fix": "Show the trait text as a reminder in the combat's creature card, or read it where the rule applies",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:ghost"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:evasion",
+  "name": "Evasion",
+  "list": "monster-trait",
+  "verdict": "runs",
+  "says": "On a Dexterity save for half damage, no damage on a success and half on a failure",
+  "does": "The trait key '<creature>#evasion' sets Traits.Evasion; spell and creature save actions, traps and Hellish Rebuke use HalfSaveShare. It is also switched off while the creature is incapacitated, which the assassin's own text does not say (the monk's does)",
+  "seen": "The save result shows the zero or half damage; the trait text is on the stat block",
+  "code": "backend/internal/characters/combattraits.go:153 evasionSuffix; backend/internal/rules/combat/rolls.go:158 HalfSaveShare; backend/internal/play/combat_spells.go:633",
+  "fix": "",
+  "checked": "test",
+  "count": 1,
+  "examples": [
+   "monster:assassin"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:false appearance",
+  "name": "False Appearance",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "While motionless it is indistinguishable from a normal object",
+  "does": "No disguised object state; the master hides or reveals by hand",
+  "seen": "The trait text only, in the stat block 'Caracteristicas' group of the master's creature sheet / NPC card; no reminder",
+  "code": "backend/internal/rules/creatures.go monsterDerived (SpecialAbilities become a text-only Feature) and creatureAbilities; web/src/app/shared/creatures/stat-block-view.ts groupsOf",
+  "fix": "Show the trait text as a reminder in the combat's creature card, or read it where the rule applies",
+  "checked": "",
+  "count": 16,
+  "examples": [
+   "monster:animated-armor",
+   "monster:awakened-shrub",
+   "monster:awakened-tree"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:faultless tracker",
+  "name": "Faultless Tracker",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "Knows the direction and distance to its quarry and its summoner on the same plane",
+  "does": "No quarry link; text only",
+  "seen": "The trait text only, in the stat block 'Caracteristicas' group of the master's creature sheet / NPC card; no reminder",
+  "code": "backend/internal/rules/creatures.go monsterDerived (SpecialAbilities become a text-only Feature) and creatureAbilities; web/src/app/shared/creatures/stat-block-view.ts groupsOf",
+  "fix": "Show the trait text as a reminder in the combat's creature card, or read it where the rule applies",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:invisible-stalker"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:fear aura",
+  "name": "Fear Aura",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "Hostile creatures starting their turn within 20 ft make a DC 21 Wis save or are frightened until the start of its next turn; success gives 24-hour immunity",
+  "does": "No start-of-turn aura save, no frightened condition and no immunity record",
+  "seen": "The trait text only, in the stat block 'Caracteristicas' group of the master's creature sheet / NPC card; no reminder",
+  "code": "backend/internal/rules/creatures.go monsterDerived (SpecialAbilities become a text-only Feature) and creatureAbilities; web/src/app/shared/creatures/stat-block-view.ts groupsOf",
+  "fix": "Show the trait text as a reminder in the combat's creature card, or read it where the rule applies",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:pit-fiend"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:fey ancestry",
+  "name": "Fey Ancestry",
+  "list": "monster-trait",
+  "verdict": "wrong",
+  "says": "Advantage on saves against being charmed; magic can't put it to sleep",
+  "does": "A charm save the app rolls for a monster (play/combat_spells.go:602 spellSave) gets no advantage (Monster stat blocks carry no hints (rules/creatures.go:735 monsterDerived), so the tagged save advantage (rules/combat/advantage.go:633) never fires for a monster target.) and Sleep (effects/spells.json:3, hp_pool to unconscious) still puts the drow or drider to sleep. The master can only fix the result by hand (undo the cast or remove the condition)",
+  "seen": "The trait text only, in the stat block 'Caracteristicas' group of the master's creature sheet / NPC card; no reminder",
+  "code": "backend/internal/rules/srd51/effects/races.json:25; backend/internal/rules/creatures.go monsterDerived",
+  "fix": "Give the monster a tagged save against charmed and make the Sleep pool skip a creature with the trait",
+  "checked": "",
+  "count": 2,
+  "examples": [
+   "monster:drider",
+   "monster:drow"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:fire absorption",
+  "name": "Fire Absorption",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "Fire damage heals the golem by that amount instead of hurting it",
+  "does": "The stat block's fire immunity makes fire damage 0, but the equal healing is never applied or mentioned",
+  "seen": "The trait text only, in the stat block 'Caracteristicas' group of the master's creature sheet / NPC card; no reminder",
+  "code": "backend/internal/rules/combat/steps.go (immunity); no heal anywhere",
+  "fix": "Add a reminder 'also regains HP equal to the fire damage' on the golem's card",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:iron-golem"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:fire aura",
+  "name": "Fire Aura",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "At the start of each of its turns, 10 (3d6) fire to creatures within 5 ft; touching or melee-hitting it within 5 ft does the same",
+  "does": "No aura damage at turn start and no reflected damage",
+  "seen": "The trait text only, in the stat block 'Caracteristicas' group of the master's creature sheet / NPC card; no reminder",
+  "code": "backend/internal/rules/creatures.go monsterDerived (SpecialAbilities become a text-only Feature) and creatureAbilities; web/src/app/shared/creatures/stat-block-view.ts groupsOf",
+  "fix": "Show the trait text as a reminder in the combat's creature card, or read it where the rule applies",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:balor"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:fire form",
+  "name": "Fire Form",
+  "list": "monster-trait",
+  "verdict": "wrong",
+  "says": "Moves through 1-inch spaces; touching or melee-hitting it deals 5 (1d10) fire; entering a creature's space deals fire and ignites",
+  "does": "The app moves an NPC by the player's walking rules: a move may not end on another creature's square and a hostile one can be passed only with a two-size gap (rules/grid/move.go:214-225, play/combat_move.go:209-213), so the elemental cannot enter a hostile creature's space and stop there; the reflected and entering fire damage are not applied either. The master can place it with a forced move (free, no movement spent)",
+  "seen": "The trait text only, in the stat block 'Caracteristicas' group of the master's creature sheet / NPC card; no reminder",
+  "code": "backend/internal/rules/creatures.go monsterDerived (SpecialAbilities become a text-only Feature) and creatureAbilities; web/src/app/shared/creatures/stat-block-view.ts groupsOf",
+  "fix": "Let the movement rules skip the occupancy refusal for a mover with the trait Fire Form",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:fire-elemental"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:flyby",
+  "name": "Flyby",
+  "list": "monster-trait",
+  "verdict": "wrong",
+  "says": "Doesn't provoke opportunity attacks when it flies out of an enemy's reach",
+  "does": "The app offers an opportunity attack to every enemy whose reach the mover leaves (play/combat_opportunity.go:102 offerOpportunities) and never reads the trait, so an owl or flying snake that flies out of reach is offered attacks it does not provoke. The master declines or skips the offers by hand",
+  "seen": "The trait text only, in the stat block 'Caracteristicas' group of the master's creature sheet / NPC card; no reminder",
+  "code": "backend/internal/play/combat_move.go:888 offerAttacks; backend/internal/play/combat_opportunity.go:109",
+  "fix": "Skip the offers when the mover has a #flyby trait and is flying",
+  "checked": "",
+  "count": 3,
+  "examples": [
+   "monster:flying-snake",
+   "monster:giant-owl",
+   "monster:owl"
+  ],
+  "party": true
+ },
+ {
+  "key": "trait:freedom of movement",
+  "name": "Freedom Of Movement",
+  "list": "monster-trait",
+  "verdict": "wrong",
+  "says": "Ignores difficult terrain; magic cannot reduce its speed or restrain it; spends 5 ft to escape nonmagical restraints or grapples",
+  "does": "An NPC drag on its turn pays difficult terrain because only a character's flag lifts it (play/combat_move.go:159), and the Web and Entangle zones restrain it (play/zones_trigger.go:331 restrainInZone, no trait read), though the trait says it ignores difficult terrain and cannot be restrained by magic. The master can use a forced move and remove the restrained effect by hand",
+  "seen": "The trait text only, in the stat block 'Caracteristicas' group of the master's creature sheet / NPC card; no reminder",
+  "code": "backend/internal/rules/creatures.go monsterDerived (SpecialAbilities become a text-only Feature) and creatureAbilities; web/src/app/shared/creatures/stat-block-view.ts groupsOf",
+  "fix": "Read the trait where the flag is read and let the restraint of a magical zone skip the creature",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:kraken"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:freeze",
+  "name": "Freeze",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "After taking cold damage the elemental's speed drops by 20 ft until the end of its next turn.",
+  "does": "Cold damage lands as plain damage and the speed never changes; the master can put a speed-penalty effect on it by hand.",
+  "seen": "The stat block page (opened from the NPC card menu) prints the trait text; nothing on the combat card reminds the master.",
+  "code": "rules/creatures.go monsterDerived (trait kept only as a Feature with its text); no reader of the key in backend/ or web/src",
+  "fix": "On cold damage to a creature with the trait, put a 20 ft speed penalty until the end of its next turn, or print a reminder on the damage line.",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:water-elemental"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:gibbering",
+  "name": "Gibbering",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "While it sees a creature and is not incapacitated, creatures starting a turn within 20 ft that can hear it make a DC 10 Wisdom save or lose reactions and act at random on a d8.",
+  "does": "Nothing: no start-of-turn aura, no save, no d8 roll.",
+  "seen": "The stat block page (opened from the NPC card menu) prints the trait text; nothing on the combat card reminds the master.",
+  "code": "rules/creatures.go monsterDerived (trait kept only as a Feature with its text); no reader of the key in backend/ or web/src",
+  "fix": "Show the trait text on the master's card at each creature turn within 20 ft, or resolve the save and d8.",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:gibbering-mouther"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:gnome cunning",
+  "name": "Gnome Cunning",
+  "list": "monster-trait",
+  "verdict": "wrong",
+  "says": "Advantage on Intelligence, Wisdom and Charisma saving throws against magic.",
+  "does": "The app rolls the svirfneblin's saves against spells with no advantage: a character's Gnome Cunning works through sheet hints (tagged saves), but a stat block derives no hints (MonsterDerived has 0 hints, tested). The master cannot change the roll; he can only rule the outcome by hand.",
+  "seen": "The save line of the creature shows no Gnome Cunning source; only the stat block page text mentions it.",
+  "code": "characters/combattraits.go:139 traitsOf reads TaggedSaves from d.Hints only; rules/creatures.go:762 keeps the trait as a Feature",
+  "fix": "In traitsOf read the suffix #gnome-cunning and give advantage on int/wis/cha saves whose Against holds magic (like #magic-resistance at combattraits.go:158).",
+  "checked": "test",
+  "count": 1,
+  "examples": [
+   "monster:deep-gnome-svirfneblin"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:grappler",
+  "name": "Grappler",
+  "list": "monster-trait",
+  "verdict": "wrong",
+  "says": "Advantage on attack rolls against any creature grappled by it.",
+  "does": "The app records who holds whom (combat_holds) but the attack roll mode gives the mimic no advantage against its grappled target; the master can only rule it by hand.",
+  "seen": "The attack roll line lists no Grappler source.",
+  "code": "rules/combat/advantage.go:517 sceneRules (no grappler source); play/combat_contests.go:103 applyGrapple stores the hold",
+  "fix": "Add an AttackScene fact 'target grappled by attacker' from the hold and a Grappler advantage source when the attacker has the trait.",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:mimic"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:grasping tendrils",
+  "name": "Grasping Tendrils",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "Up to six tendrils, each attackable (AC 20, 10 hit points, immune to poison and psychic), destroyed with no damage to the roper, or broken by a DC 15 Strength check.",
+  "does": "Nothing: the tendrils are not combatants and have no hit points in the app.",
+  "seen": "The stat block page (opened from the NPC card menu) prints the trait text; nothing on the combat card reminds the master.",
+  "code": "rules/creatures.go monsterDerived (trait kept only as a Feature with its text); no reader of the key in backend/ or web/src",
+  "fix": "Master note only: a reminder on the roper's card.",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:roper"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:heated body",
+  "name": "Heated Body",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "A creature that touches it or hits it with a melee attack within 5 ft takes fire damage (azer 1d10, remorhaz 3d6, salamander 2d6).",
+  "does": "Nothing: a melee hit on the creature deals no damage back.",
+  "seen": "The stat block page (opened from the NPC card menu) prints the trait text; nothing on the combat card reminds the master.",
+  "code": "rules/creatures.go monsterDerived (trait kept only as a Feature with its text); no reader of the key in backend/ or web/src",
+  "fix": "Offer the master the reflected fire damage after a melee hit on a creature with the trait.",
+  "checked": "",
+  "count": 3,
+  "examples": [
+   "monster:azer",
+   "monster:remorhaz",
+   "monster:salamander"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:heated weapons",
+  "name": "Heated Weapons",
+  "list": "monster-trait",
+  "verdict": "runs",
+  "says": "A metal melee weapon of the azer or salamander deals an extra 1d6 fire damage on a hit (included in the attack).",
+  "does": "The extra fire is a damage part of the stat block attack and lands with the hit, resisted by its own type (RN-42).",
+  "seen": "The damage line lists the fire part.",
+  "code": "rules/creatures.go creatureAction damage parts; docs RN-42",
+  "fix": "",
+  "checked": "test",
+  "count": 2,
+  "examples": [
+   "monster:azer",
+   "monster:salamander"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:hellish rejuvenation",
+  "name": "Hellish Rejuvenation",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "A lemure that dies in the Nine Hells returns to life with all hit points in 1d10 days unless killed by a good creature with bless or sprinkled with holy water.",
+  "does": "Nothing; out of combat, a defeated lemure is defeated like any NPC.",
+  "seen": "The stat block page (opened from the NPC card menu) prints the trait text; nothing on the combat card reminds the master.",
+  "code": "rules/creatures.go monsterDerived (trait kept only as a Feature with its text); no reader of the key in backend/ or web/src",
+  "fix": "",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:lemure"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:hellish weapons",
+  "name": "Hellish Weapons",
+  "list": "monster-trait",
+  "verdict": "wrong",
+  "says": "The erinyes's weapon attacks are magical and deal an extra 3d8 poison damage (included).",
+  "does": "The poison part is applied, but the attacks are not magical: only the trait named Magic Weapons sets Attack.Magical (tested: erinyes Longsword and Longbow magical=false), so a target with resistance or immunity to nonmagical attacks takes the reduced damage, against RN-02 'an attack of a creature whose weapon attacks are magical' (docs/product/rules.md:105). The master can undo the damage and set hit points by hand.",
+  "seen": "The damage line shows the reduced amount with no reason about magic.",
+  "code": "rules/creatures.go:856 hasMagicWeapons (name == Magic Weapons) and :872 at.Magical; play/combat_damage.go originOf",
+  "fix": "Make hasMagicWeapons also true for Hellish Weapons (and Angelic Weapons of the deva, planetar and solar).",
+  "checked": "test",
+  "count": 1,
+  "examples": [
+   "monster:erinyes"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:hold breath",
+  "name": "Hold Breath",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "It can hold its breath for 15 or 30 minutes (varies by creature).",
+  "does": "Nothing: the game counts no breath or drowning.",
+  "seen": "The stat block page (opened from the NPC card menu) prints the trait text; nothing on the combat card reminds the master.",
+  "code": "rules/creatures.go monsterDerived (trait kept only as a Feature with its text); no reader of the key in backend/ or web/src",
+  "fix": "",
+  "checked": "",
+  "count": 8,
+  "examples": [
+   "monster:crocodile",
+   "monster:giant-crocodile",
+   "monster:giant-octopus"
+  ],
+  "party": true
+ },
+ {
+  "key": "trait:horrific appearance",
+  "name": "Horrific Appearance",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "A humanoid starting its turn within 30 ft that can see the hag's true form makes a DC 11 Wisdom save or is frightened for 1 minute, with immunity for 24 hours on a success.",
+  "does": "Nothing: no start-of-turn aura or save.",
+  "seen": "The stat block page (opened from the NPC card menu) prints the trait text; nothing on the combat card reminds the master.",
+  "code": "rules/creatures.go monsterDerived (trait kept only as a Feature with its text); no reader of the key in backend/ or web/src",
+  "fix": "",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:sea-hag"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:ice walk",
+  "name": "Ice Walk",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "It moves across and climbs icy surfaces without a check and ignores difficult terrain of ice or snow.",
+  "does": "Nothing: the map's difficult terrain is generic, so its cost is never waived for the dragon.",
+  "seen": "The stat block page (opened from the NPC card menu) prints the trait text; nothing on the combat card reminds the master.",
+  "code": "rules/creatures.go monsterDerived (trait kept only as a Feature with its text); no reader of the key in backend/ or web/src",
+  "fix": "",
+  "checked": "",
+  "count": 3,
+  "examples": [
+   "monster:adult-white-dragon",
+   "monster:ancient-white-dragon",
+   "monster:young-white-dragon"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:ignited illumination",
+  "name": "Ignited Illumination",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "As a bonus action the magmin sets itself ablaze, shedding bright light in 10 ft and dim light for 10 ft more, or extinguishes.",
+  "does": "Nothing: no bonus action and no light; the master paints light on the map by hand.",
+  "seen": "The stat block page (opened from the NPC card menu) prints the trait text; nothing on the combat card reminds the master.",
+  "code": "rules/creatures.go monsterDerived (trait kept only as a Feature with its text); no reader of the key in backend/ or web/src",
+  "fix": "",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:magmin"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:illumination",
+  "name": "Illumination",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "The creature sheds bright light and dim light in a radius (azer 10+10 ft, fire elemental 30+30 ft).",
+  "does": "Nothing: monsters give no light on a fog map; a carried light is set by hand on a character token.",
+  "seen": "The stat block page (opened from the NPC card menu) prints the trait text; nothing on the combat card reminds the master.",
+  "code": "rules/creatures.go monsterDerived (trait kept only as a Feature with its text); no reader of the key in backend/ or web/src; maps/carriedlight.go",
+  "fix": "",
+  "checked": "",
+  "count": 4,
+  "examples": [
+   "monster:azer",
+   "monster:fire-elemental",
+   "monster:giant-fire-beetle"
+  ],
+  "party": true
+ },
+ {
+  "key": "trait:immutable form",
+  "name": "Immutable Form",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "The golem is immune to any spell or effect that would alter its form.",
+  "does": "Nothing reads it; no form-altering effect is checked against the creature.",
+  "seen": "The stat block page (opened from the NPC card menu) prints the trait text; nothing on the combat card reminds the master.",
+  "code": "rules/creatures.go monsterDerived (trait kept only as a Feature with its text); no reader of the key in backend/ or web/src",
+  "fix": "",
+  "checked": "",
+  "count": 4,
+  "examples": [
+   "monster:clay-golem",
+   "monster:flesh-golem",
+   "monster:iron-golem"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:incorporeal movement",
+  "name": "Incorporeal Movement",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "It moves through creatures and objects as difficult terrain and takes 1d10 force damage if it ends its turn inside an object.",
+  "does": "Nothing: movement and walls are the ordinary ones.",
+  "seen": "The stat block page (opened from the NPC card menu) prints the trait text; nothing on the combat card reminds the master.",
+  "code": "rules/creatures.go monsterDerived (trait kept only as a Feature with its text); no reader of the key in backend/ or web/src",
+  "fix": "",
+  "checked": "",
+  "count": 4,
+  "examples": [
+   "monster:ghost",
+   "monster:specter",
+   "monster:will-o-wisp"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:innate spellcasting",
+  "name": "Innate Spellcasting",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "The creature casts the listed spells innately at will or N/day, with the stated ability and save DC or attack bonus.",
+  "does": "20 of 24 stat blocks: NPC casts through the cast flow with the listed DC and attack bonus, at-will spells free, N/day spells spending a per-combat use (tested on all 24). The four mephits list no frequency and stay text; parenthetical limits ('self only', 'fire elemental only') are dropped, so those spells are cast unrestricted. No screen names the part left out.",
+  "seen": "The master reads the spells and uses left in the cast options; the mephit trait text is only on the stat block page.",
+  "code": "rules/creaturecaster.go MonsterCaster / addInnateCasting; characters/combatturn.go; docs/architecture/play/creatures.md",
+  "fix": "Show the restriction notes with the spell, and the mephit spell as a cast option.",
+  "checked": "test",
+  "count": 24,
+  "examples": [
+   "monster:cloud-giant",
+   "monster:couatl",
+   "monster:deep-gnome-svirfneblin"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:inscrutable",
+  "name": "Inscrutable",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "Immune to effects that sense emotions or read thoughts and to divinations it refuses; Insight checks about its intent have disadvantage.",
+  "does": "Nothing: neither the immunity nor the disadvantage is checked.",
+  "seen": "The stat block page (opened from the NPC card menu) prints the trait text; nothing on the combat card reminds the master.",
+  "code": "rules/creatures.go monsterDerived (trait kept only as a Feature with its text); no reader of the key in backend/ or web/src",
+  "fix": "",
+  "checked": "",
+  "count": 2,
+  "examples": [
+   "monster:androsphinx",
+   "monster:gynosphinx"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:invisibility",
+  "name": "Invisibility",
+  "list": "monster-trait",
+  "verdict": "wrong",
+  "says": "The stalker is invisible.",
+  "does": "The creature joins and fights with no Invisible condition, so attacks against it get no disadvantage and its own attacks no advantage; the master can apply the Invisible condition by hand.",
+  "seen": "The stat block page text only; the combat card shows no Invisible condition.",
+  "code": "play/combat_join.go (no starting conditions from traits); rules/combat/advantage.go conditionInvisible rules never fire for it",
+  "fix": "Give a creature with the trait the Invisible condition on joining a combat.",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:invisible-stalker"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:iron scent",
+  "name": "Iron Scent",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "It pinpoints ferrous metal within 30 ft by scent.",
+  "does": "Nothing.",
+  "seen": "The stat block page (opened from the NPC card menu) prints the trait text; nothing on the combat card reminds the master.",
+  "code": "rules/creatures.go monsterDerived (trait kept only as a Feature with its text); no reader of the key in backend/ or web/src",
+  "fix": "",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:rust-monster"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:keen hearing",
+  "name": "Keen Hearing",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "Advantage on Wisdom (Perception) checks that rely on hearing.",
+  "does": "Nothing: no per-sense check exists, so a hearing check gets no advantage; a hide contest is sight-based and unaffected.",
+  "seen": "The stat block page (opened from the NPC card menu) prints the trait text; nothing on the combat card reminds the master.",
+  "code": "play/combat_contests_core.go:425 passivePerceptionOf (stat block passive plus sunlight/condition shift only); rules/combat/advantage.go SaveMode has no keen-sense source",
+  "fix": "",
+  "checked": "",
+  "count": 4,
+  "examples": [
+   "monster:bat",
+   "monster:giant-bat",
+   "monster:killer-whale"
+  ],
+  "party": true
+ },
+ {
+  "key": "trait:keen hearing and sight",
+  "name": "Keen Hearing and Sight",
+  "list": "monster-trait",
+  "verdict": "wrong",
+  "says": "Advantage on Wisdom (Perception) checks that rely on hearing or sight.",
+  "does": "The app applies the stat block's passive Wisdom (Perception) in the hide contest and ignores the trait's +5 (advantage), and an NPC's Perception check gets no advantage; the app has no per-sense checks, so it treats a hide as sight. The master can overrule the contest at the table.",
+  "seen": "The hide result shows the passive number without the trait.",
+  "code": "play/combat_contests_core.go:425 passivePerceptionOf (stat block passive plus sunlight/condition shift only); rules/combat/advantage.go SaveMode has no keen-sense source",
+  "fix": "Add the trait as a Perception-advantage source for a sight check (passive +5).",
+  "checked": "",
+  "count": 3,
+  "examples": [
+   "monster:giant-owl",
+   "monster:owl",
+   "monster:scout"
+  ],
+  "party": true
+ },
+ {
+  "key": "trait:keen hearing and smell",
+  "name": "Keen Hearing and Smell",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "Advantage on Wisdom (Perception) checks that rely on hearing or smell.",
+  "does": "Nothing: no per-sense check exists, and a hide contest is sight-based.",
+  "seen": "The stat block page (opened from the NPC card menu) prints the trait text; nothing on the combat card reminds the master.",
+  "code": "play/combat_contests_core.go:425 passivePerceptionOf (stat block passive plus sunlight/condition shift only); rules/combat/advantage.go SaveMode has no keen-sense source",
+  "fix": "",
+  "checked": "",
+  "count": 17,
+  "examples": [
+   "monster:blink-dog",
+   "monster:dire-wolf",
+   "monster:giant-weasel"
+  ],
+  "party": true
+ },
+ {
+  "key": "trait:keen senses",
+  "name": "Keen Senses",
+  "list": "monster-trait",
+  "verdict": "wrong",
+  "says": "Advantage on Wisdom (Perception) checks that rely on sight, hearing, or smell.",
+  "does": "The app applies the stat block's passive Wisdom (Perception) in the hide contest and ignores the trait's +5 (advantage), and an NPC's Perception check gets no advantage; the app has no per-sense checks, so it treats a hide as sight. The master can overrule the contest at the table.",
+  "seen": "The hide result shows the passive number without the trait.",
+  "code": "play/combat_contests_core.go:425 passivePerceptionOf (stat block passive plus sunlight/condition shift only); rules/combat/advantage.go SaveMode has no keen-sense source",
+  "fix": "Add the trait as a Perception-advantage source (passive +5).",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:pseudodragon"
+  ],
+  "party": true
+ },
+ {
+  "key": "trait:keen sight",
+  "name": "Keen Sight",
+  "list": "monster-trait",
+  "verdict": "wrong",
+  "says": "Advantage on Wisdom (Perception) checks that rely on sight.",
+  "does": "The app applies the stat block's passive Wisdom (Perception) in the hide contest and ignores the trait's +5 (advantage), and an NPC's Perception check gets no advantage; the app has no per-sense checks, so it treats a hide as sight. The master can overrule the contest at the table.",
+  "seen": "The hide result shows the passive number without the trait.",
+  "code": "play/combat_contests_core.go:425 passivePerceptionOf (stat block passive plus sunlight/condition shift only); rules/combat/advantage.go SaveMode has no keen-sense source",
+  "fix": "Add the trait as a Perception-advantage source for a sight check (passive +5).",
+  "checked": "",
+  "count": 7,
+  "examples": [
+   "monster:blood-hawk",
+   "monster:eagle",
+   "monster:giant-eagle"
+  ],
+  "party": true
+ },
+ {
+  "key": "trait:keen sight and smell",
+  "name": "Keen Sight and Smell",
+  "list": "monster-trait",
+  "verdict": "wrong",
+  "says": "Advantage on Wisdom (Perception) checks that rely on sight or smell.",
+  "does": "The app applies the stat block's passive Wisdom (Perception) in the hide contest and ignores the trait's +5 (advantage), and an NPC's Perception check gets no advantage; the app has no per-sense checks, so it treats a hide as sight. The master can overrule the contest at the table.",
+  "seen": "The hide result shows the passive number without the trait.",
+  "code": "play/combat_contests_core.go:425 passivePerceptionOf (stat block passive plus sunlight/condition shift only); rules/combat/advantage.go SaveMode has no keen-sense source",
+  "fix": "Add the trait as a Perception-advantage source for a sight check (passive +5).",
+  "checked": "",
+  "count": 3,
+  "examples": [
+   "monster:giant-vulture",
+   "monster:owlbear",
+   "monster:vulture"
+  ],
+  "party": true
+ },
+ {
+  "key": "trait:keen smell",
+  "name": "Keen Smell",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "Advantage on Wisdom (Perception) checks that rely on smell.",
+  "does": "Nothing: no per-sense check exists, and a hide contest is sight-based.",
+  "seen": "The stat block page (opened from the NPC card menu) prints the trait text; nothing on the combat card reminds the master.",
+  "code": "play/combat_contests_core.go:425 passivePerceptionOf (stat block passive plus sunlight/condition shift only); rules/combat/advantage.go SaveMode has no keen-sense source",
+  "fix": "",
+  "checked": "",
+  "count": 22,
+  "examples": [
+   "monster:badger",
+   "monster:black-bear",
+   "monster:brown-bear"
+  ],
+  "party": true
+ },
+ {
+  "key": "trait:labyrinthine recall",
+  "name": "Labyrinthine Recall",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "The minotaur perfectly recalls any path it has traveled.",
+  "does": "Nothing.",
+  "seen": "The stat block page (opened from the NPC card menu) prints the trait text; nothing on the combat card reminds the master.",
+  "code": "rules/creatures.go monsterDerived (trait kept only as a Feature with its text); no reader of the key in backend/ or web/src",
+  "fix": "",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:minotaur"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:legendary resistance",
+  "name": "Legendary Resistance",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "3/day: if the creature fails a saving throw it can choose to succeed instead.",
+  "does": "The master spends a use on a failed effect, concentration, spell-area and hit-rider save (his offer with the roll, uses counted per combat, players read only pass or fail); not offered on a trap, Turn Undead, Hellish Rebuke or goading maneuver save, where the roll stands (RN-29 says so). No reminder on those saves. No screen names the part left out.",
+  "seen": "'Usar Resistencia Lendaria (restam K)' on the offered saves; nothing on the others.",
+  "code": "rules/legendary.go ReadLegendaryProfile; play/combat_legendary_resist.go, combat_legendary_hold.go, combat_legendary_rider.go, zones_save.go",
+  "fix": "Offer the trait on the remaining saves or print a reminder on them.",
+  "checked": "",
+  "count": 25,
+  "examples": [
+   "monster:adult-black-dragon",
+   "monster:adult-blue-dragon",
+   "monster:adult-brass-dragon"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:light sensitivity",
+  "name": "Light Sensitivity",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "In bright light the cloaker has disadvantage on attack rolls and on sight-based Perception checks.",
+  "does": "Nothing: the sun switch reads only the Sunlight Sensitivity and Sunlight Weakness traits (keys ending #sunlight-*), and the app does not derive bright light at a creature from lights.",
+  "seen": "The stat block page (opened from the NPC card menu) prints the trait text; nothing on the combat card reminds the master.",
+  "code": "characters/combattraits.go:29 sunlight suffixes; play/sunlight.go sunTraitOf",
+  "fix": "",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:cloaker"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:lightning absorption",
+  "name": "Lightning Absorption",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "Lightning damage does no damage and instead heals the creature by that amount.",
+  "does": "Part only: the stat block's lightning immunity makes the damage 0, but nothing heals the creature; the master can adjust hit points by hand.",
+  "seen": "The stat block page (opened from the NPC card menu) prints the trait text; nothing on the combat card reminds the master.",
+  "code": "rules/creatures.go monsterDerived (trait kept only as a Feature with its text); no reader of the key in backend/ or web/src",
+  "fix": "Heal the amount of lightning damage that an immunity zeroed, for creatures with the trait.",
+  "checked": "",
+  "count": 2,
+  "examples": [
+   "monster:flesh-golem",
+   "monster:shambling-mound"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:limited amphibiousness",
+  "name": "Limited Amphibiousness",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "It breathes air and water but must be submerged once every 4 hours to avoid suffocating.",
+  "does": "Nothing: the game counts no breath.",
+  "seen": "The stat block page (opened from the NPC card menu) prints the trait text; nothing on the combat card reminds the master.",
+  "code": "rules/creatures.go monsterDerived (trait kept only as a Feature with its text); no reader of the key in backend/ or web/src",
+  "fix": "",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:sahuagin"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:limited magic immunity",
+  "name": "Limited Magic Immunity",
+  "list": "monster-trait",
+  "verdict": "wrong",
+  "says": "Spells of 6th level or lower cannot affect or detect the rakshasa unless it wishes; advantage on saves against all other spells and magical effects.",
+  "does": "The rakshasa has no Magic Resistance trait key, so its saves against spells are rolled with no advantage and spells of any level affect it; the master can rule it by hand.",
+  "seen": "No source on the save line; text only on the stat block page.",
+  "code": "characters/combattraits.go:158 reads only #magic-resistance; rules/creatures.go:762 keeps the trait as a Feature",
+  "fix": "Read #limited-magic-immunity: advantage on saves against magic from spells above 6th level, and refuse spells of 6th level or lower unless the master allows.",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:rakshasa"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:limited telepathy",
+  "name": "Limited Telepathy",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "It magically transmits simple messages or ideas to creatures within 100 or 120 ft.",
+  "does": "Nothing.",
+  "seen": "The stat block page (opened from the NPC card menu) prints the trait text; nothing on the combat card reminds the master.",
+  "code": "rules/creatures.go monsterDerived (trait kept only as a Feature with its text); no reader of the key in backend/ or web/src",
+  "fix": "",
+  "checked": "",
+  "count": 2,
+  "examples": [
+   "monster:otyugh",
+   "monster:pseudodragon"
+  ],
+  "party": true
+ },
+ {
+  "key": "trait:magic resistance",
+  "name": "Magic Resistance",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "Advantage on saving throws against spells and other magical effects.",
+  "does": "Advantage on a save whose source is a spell or a lasting spell effect (the creature's own non-spell actions are not magic); a magic trap's save (kind magic) and other non-spell magical effects get no advantage, with no reminder. No screen names the part left out.",
+  "seen": "The master and the controlling player read 'Resistencia a Magia: vantagem...' on the save; other players read only the outcome.",
+  "code": "characters/combattraits.go:158; rules/combat/advantage.go SaveMode; play/combat_against.go spellAgainst, trapAgainst",
+  "fix": "Mark a trap of kind magic as against magic in trapAgainst.",
+  "checked": "",
+  "count": 31,
+  "examples": [
+   "monster:archmage",
+   "monster:balor",
+   "monster:barbed-devil"
+  ],
+  "party": true
+ },
+ {
+  "key": "trait:magic weapons",
+  "name": "Magic Weapons",
+  "list": "monster-trait",
+  "verdict": "wrong",
+  "says": "The creature's weapon attacks are magical.",
+  "does": "hasMagicWeapons marks the stat block's attacks magical (rules/creatures.go:872), but a bestiary NPC fights with a basic sheet whose attacks basicDerived rebuilds without the mark (characters/combatturn.go:141-151; BasicAttack has no such field), so its hits count as nonmagical against a resistance or immunity to nonmagical attacks. The master can adjust the damage by hand.",
+  "seen": "The damage line reflects it.",
+  "code": "rules/creatures.go:856 hasMagicWeapons and :872; play/combat_damage.go originOf",
+  "fix": "Carry the magical mark of the creature's attack into the basic sheet's attack (as Melee and LongRangeFt already are, combatturn.go:149).",
+  "checked": "",
+  "count": 12,
+  "examples": [
+   "monster:androsphinx",
+   "monster:balor",
+   "monster:clay-golem"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:martial advantage",
+  "name": "Martial Advantage",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "Once per turn, an extra 2d6 damage on a weapon hit against a target within 5 ft of an ally that is not incapacitated.",
+  "does": "Nothing: no extra damage is offered.",
+  "seen": "The stat block page (opened from the NPC card menu) prints the trait text; nothing on the combat card reminds the master.",
+  "code": "rules/creatures.go monsterDerived (trait kept only as a Feature with its text); no reader of the key in backend/ or web/src",
+  "fix": "",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:hobgoblin"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:mimicry",
+  "name": "Mimicry",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "It mimics sounds or voices; hearers see through it with a DC 10 or 14 Wisdom (Insight) check.",
+  "does": "Nothing.",
+  "seen": "The stat block page (opened from the NPC card menu) prints the trait text; nothing on the combat card reminds the master.",
+  "code": "rules/creatures.go monsterDerived (trait kept only as a Feature with its text); no reader of the key in backend/ or web/src",
+  "fix": "",
+  "checked": "",
+  "count": 2,
+  "examples": [
+   "monster:green-hag",
+   "monster:raven"
+  ],
+  "party": true
+ },
+ {
+  "key": "trait:misty escape",
+  "name": "Misty Escape",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "At 0 hit points outside its resting place the vampire turns to mist instead of falling, if not in sunlight or running water.",
+  "does": "Nothing: at 0 hit points the generic NPC defeat rule applies.",
+  "seen": "The stat block page (opened from the NPC card menu) prints the trait text; nothing on the combat card reminds the master.",
+  "code": "rules/creatures.go monsterDerived (trait kept only as a Feature with its text); no reader of the key in backend/ or web/src",
+  "fix": "",
+  "checked": "",
+  "count": 3,
+  "examples": [
+   "monster:vampire-bat",
+   "monster:vampire-mist",
+   "monster:vampire-vampire"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:mucous cloud",
+  "name": "Mucous Cloud",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "While underwater, a creature touching or meleeing the aboleth within 5 ft makes a DC 14 Constitution save or is diseased for 1d4 hours.",
+  "does": "Nothing.",
+  "seen": "The stat block page (opened from the NPC card menu) prints the trait text; nothing on the combat card reminds the master.",
+  "code": "rules/creatures.go monsterDerived (trait kept only as a Feature with its text); no reader of the key in backend/ or web/src",
+  "fix": "",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:aboleth"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:multiple heads",
+  "name": "Multiple Heads",
+  "list": "monster-trait",
+  "verdict": "wrong",
+  "says": "With more than one head the hydra has advantage on saves against being blinded, charmed, deafened, frightened, stunned and knocked unconscious; heads die and regrow.",
+  "does": "The save roll modes support advantage against a condition (tagged saves from sheet hints), but a stat block derives none: the hydra's saves against those conditions are rolled with no advantage; head count and regrowth are not tracked. The master can rule it by hand.",
+  "seen": "No source on the save line.",
+  "code": "characters/combattraits.go:139 taggedSavesOf(d.Hints); rules/creatures.go:762",
+  "fix": "Read #multiple-heads as tagged saves against those six conditions.",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:hydra"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:night hag items",
+  "name": "Night Hag Items",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "The hag carries a heartstone and a soul bag that she crafted.",
+  "does": "Nothing; items are out of combat.",
+  "seen": "The stat block page (opened from the NPC card menu) prints the trait text; nothing on the combat card reminds the master.",
+  "code": "rules/creatures.go monsterDerived (trait kept only as a Feature with its text); no reader of the key in backend/ or web/src",
+  "fix": "",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:night-hag"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:nimble escape",
+  "name": "Nimble Escape",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "The goblin can Disengage or Hide as a bonus action on each of its turns.",
+  "does": "Nothing: the stat block creature has only the ordinary Disengage and Hide as actions (the bonus-action form exists only for a table race trait).",
+  "seen": "The stat block page (opened from the NPC card menu) prints the trait text; nothing on the combat card reminds the master.",
+  "code": "rules/creatures.go monsterDerived (trait kept only as a Feature with its text); no reader of the key in backend/ or web/src; rules/srd51/effects/standard_actions.json",
+  "fix": "",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:goblin"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:ooze cube",
+  "name": "Ooze Cube",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "The cube fills its space; creatures entering it are engulfed with disadvantage on the save; creatures inside have total cover and can be pulled out with a DC 12 Strength check.",
+  "does": "Nothing.",
+  "seen": "The stat block page (opened from the NPC card menu) prints the trait text; nothing on the combat card reminds the master.",
+  "code": "rules/creatures.go monsterDerived (trait kept only as a Feature with its text); no reader of the key in backend/ or web/src",
+  "fix": "",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:gelatinous-cube"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:pack tactics",
+  "name": "Pack Tactics",
+  "list": "monster-trait",
+  "verdict": "runs",
+  "says": "Advantage on an attack roll against a creature if an ally of the attacker is within 5 ft of it and the ally is not incapacitated.",
+  "does": "On a map the attack gets advantage when a non-incapacitated ally stands within 5 ft of the target; in combat without a map the master judges distance (RN-25).",
+  "seen": "The roll line says 'Taticas de Matilha: um aliado esta a 1,5 m do alvo e nao esta incapacitado'.",
+  "code": "characters/combattraits.go:157; play/combat_advantage.go:240 scene, allyOf; rules/combat/advantage.go:523",
+  "fix": "",
+  "checked": "",
+  "count": 17,
+  "examples": [
+   "monster:baboon",
+   "monster:blood-hawk",
+   "monster:dire-wolf"
+  ],
+  "party": true
+ },
+ {
+  "key": "trait:petrifying gaze",
+  "name": "Petrifying Gaze",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "A creature starting its turn within 30 ft that sees the basilisk or medusa's eyes makes a Constitution save (DC 12 or 14) or begins turning to stone.",
+  "does": "Nothing: no start-of-turn gaze or save.",
+  "seen": "The stat block page (opened from the NPC card menu) prints the trait text; nothing on the combat card reminds the master.",
+  "code": "rules/creatures.go monsterDerived (trait kept only as a Feature with its text); no reader of the key in backend/ or web/src",
+  "fix": "",
+  "checked": "",
+  "count": 2,
+  "examples": [
+   "monster:basilisk",
+   "monster:medusa"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:pounce",
+  "name": "Pounce",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "After moving 20 ft straight and hitting with a claw, the target makes a Strength save or falls prone; the creature then bites as a bonus action.",
+  "does": "Nothing: no straight-line check, no save and no bonus bite.",
+  "seen": "The stat block page (opened from the NPC card menu) prints the trait text; nothing on the combat card reminds the master.",
+  "code": "rules/creatures.go monsterDerived (trait kept only as a Feature with its text); no reader of the key in backend/ or web/src",
+  "fix": "",
+  "checked": "",
+  "count": 6,
+  "examples": [
+   "monster:lion",
+   "monster:panther",
+   "monster:saber-toothed-tiger"
+  ],
+  "party": true
+ },
+ {
+  "key": "trait:probing telepathy",
+  "name": "Probing Telepathy",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "If a creature communicates telepathically with the aboleth, it learns the creature's greatest desires.",
+  "does": "Nothing.",
+  "seen": "The stat block page (opened from the NPC card menu) prints the trait text; nothing on the combat card reminds the master.",
+  "code": "rules/creatures.go monsterDerived (trait kept only as a Feature with its text); no reader of the key in backend/ or web/src",
+  "fix": "",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:aboleth"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:rampage",
+  "name": "Rampage",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "On reducing a creature to 0 hit points with a melee attack on its turn, a bonus action to move half its speed and bite.",
+  "does": "Nothing: no bonus action is offered after a kill.",
+  "seen": "The stat block page (opened from the NPC card menu) prints the trait text; nothing on the combat card reminds the master.",
+  "code": "rules/creatures.go monsterDerived (trait kept only as a Feature with its text); no reader of the key in backend/ or web/src",
+  "fix": "",
+  "checked": "",
+  "count": 2,
+  "examples": [
+   "monster:giant-hyena",
+   "monster:gnoll"
+  ],
+  "party": true
+ },
+ {
+  "key": "trait:reactive",
+  "name": "Reactive",
+  "list": "monster-trait",
+  "verdict": "wrong",
+  "says": "The marilith can take one reaction on every turn in combat.",
+  "does": "The reaction is spent once and returns only at the marilith's own turn, so its Parry works once a round (a second Parry is closed as 'reaction spent'); RN-31 states a Parry is one a round with no Reactive exception. The master cannot restore the reaction except by undo.",
+  "seen": "The master's log shows the Parry; nothing mentions Reactive.",
+  "code": "play/combat_parry_auto.go:25 (reaction comes back at the creature's turn); rules/reaction/reaction.go:187 ReasonReactionSpent; docs/product/rules.md:1179",
+  "fix": "Let a creature with Reactive keep its reaction on every creature's turn (reset reaction_used at each turn start).",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:marilith"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:reactive heads",
+  "name": "Reactive Heads",
+  "list": "monster-trait",
+  "verdict": "wrong",
+  "says": "For each head beyond one the hydra has an extra reaction, only for opportunity attacks.",
+  "does": "The opportunity attack offer skips a creature whose single reaction chip is used (play/combat_opportunity_reactors.go:73), so after the first opportunity attack the hydra's other heads are offered none; the extra reactions for each head are not given. The master can only play the extra attack by hand (the reaction is spent)",
+  "seen": "The trait text under 'Características' on the bestiary stat block (npc-card-menu 'Ficha da criatura'); the combat card shows nothing",
+  "code": "backend/internal/rules/creatures.go monsterDerived; web npc-card.html (reaction chip)",
+  "fix": "Count the extra reactions for opportunity attacks from the hydra's heads",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:hydra"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:reckless",
+  "name": "Reckless",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "At the start of its turn the creature may gain advantage on melee weapon attacks this turn, but attacks against it have advantage until its next turn.",
+  "does": "Applies nothing: the Reckless state begins only from the barbarian action feature:reckless-attack, not from the monster trait key #reckless.",
+  "seen": "The trait text under 'Características' on the bestiary stat block (npc-card-menu 'Ficha da criatura'); the combat card shows nothing",
+  "code": "backend/internal/play/combat_states.go beginFeatureState (only recklessAttackAction = feature:reckless-attack); backend/internal/play/combat_advantage.go:35,61",
+  "fix": "Offer a Reckless action on an NPC whose stat block has the trait, reusing stateReckless.",
+  "checked": "",
+  "count": 2,
+  "examples": [
+   "monster:berserker",
+   "monster:minotaur"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:reflective carapace",
+  "name": "Reflective Carapace",
+  "list": "monster-trait",
+  "verdict": "wrong",
+  "says": "When targeted by magic missile, a line spell or a ranged spell attack, roll a d6: 1-5 unaffected, 6 unaffected and reflected at the caster.",
+  "does": "A spell the app resolves against the tarrasque applies in full: Magic Missile darts and ranged spell attacks deal damage (play/combat_spells.go:709 openDarts and the spell attack path) and a line spell rolls its save, though the trait makes it unaffected (a 6 reflects it). The master can adjust the damage or the condition away by hand",
+  "seen": "The trait text under 'Características' on the bestiary stat block (npc-card-menu 'Ficha da criatura'); the combat card shows nothing",
+  "code": "backend/internal/rules/creatures.go monsterDerived (trait becomes a Feature keyed monster:x#slug; no reader of this key); web/src/app/shared/creatures/stat-block-view.ts groupsOf",
+  "fix": "Skip magic missile, line spells and ranged spell attacks aimed at a creature with the trait (and ask the d6)",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:tarrasque"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:regeneration",
+  "name": "Regeneration",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "The creature regains N hit points at the start of its turn while it has at least 1 hit point (some text bars it after acid, fire, radiant or necrotic damage).",
+  "does": "Applies nothing: no start-of-turn healing runs for an NPC; the master heals by hand with Dano/Cura.",
+  "seen": "The trait text under 'Características' on the bestiary stat block (npc-card-menu 'Ficha da criatura'); the combat card shows nothing",
+  "code": "backend/internal/play/combat_turn.go (no monster heal at turn start; grep 'regenerat' finds none in play/ or rules/)",
+  "fix": "At the start of a creature's turn with the trait, offer a heal of N (or show a reminder) and the damage-type exception.",
+  "checked": "",
+  "count": 7,
+  "examples": [
+   "monster:oni",
+   "monster:shield-guardian",
+   "monster:troll"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:rejuvenation",
+  "name": "Rejuvenation",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "If it dies it returns to life in 1d6 days with all its hit points, unless the phylactery or a wish stops it.",
+  "does": "Applies nothing: the app has no phylactery or return-to-life logic for a monster; a defeated NPC stays defeated.",
+  "seen": "The trait text under 'Características' on the bestiary stat block (npc-card-menu 'Ficha da criatura'); the combat card shows nothing",
+  "code": "backend/internal/rules/creatures.go monsterDerived (trait becomes a Feature keyed monster:x#slug; no reader of this key); web/src/app/shared/creatures/stat-block-view.ts groupsOf",
+  "fix": "A reminder when the creature with the trait is defeated.",
+  "checked": "",
+  "count": 4,
+  "examples": [
+   "monster:guardian-naga",
+   "monster:lich",
+   "monster:mummy-lord"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:relentless",
+  "name": "Relentless",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "Once per short or long rest, damage of N or less that would take it to 0 leaves it at 1 hit point.",
+  "does": "Applies nothing to a monster: relentlessEndurance reads only a character's resource relentless_endurance (the half-orc's feature), so an NPC boar drops to 0 normally.",
+  "seen": "The trait text under 'Características' on the bestiary stat block (npc-card-menu 'Ficha da criatura'); the combat card shows nothing",
+  "code": "backend/internal/play/combat_relentless.go relentlessEndurance; combat_apply_damage.go landNormal (characters only)",
+  "fix": "At the point an NPC falls to 0, offer the trait when the damage is within its limit (one use per combat).",
+  "checked": "",
+  "count": 5,
+  "examples": [
+   "monster:boar",
+   "monster:giant-boar",
+   "monster:wereboar-boar"
+  ],
+  "party": true
+ },
+ {
+  "key": "trait:running leap",
+  "name": "Running Leap",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "With a 10-foot running start the creature long jumps up to 25 ft.",
+  "does": "Applies nothing: the master moves an NPC anywhere and no jump limit is checked for him; the running-start jump limits (planLongJump) are a player's.",
+  "seen": "The trait text under 'Características' on the bestiary stat block (npc-card-menu 'Ficha da criatura'); the combat card shows nothing",
+  "code": "backend/internal/play/combat_move.go planLongJump (player plan only), longJumpDFt",
+  "fix": "A reminder on the card or a jump limit copied from the stat block.",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:lion"
+  ],
+  "party": true
+ },
+ {
+  "key": "trait:rust metal",
+  "name": "Rust Metal",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "A nonmagical metal weapon that hits the creature corrodes (-1 cumulative damage, destroyed at -5); metal ammunition is destroyed.",
+  "does": "Applies nothing: weapon damage penalty and destruction are not tracked.",
+  "seen": "The trait text under 'Características' on the bestiary stat block (npc-card-menu 'Ficha da criatura'); the combat card shows nothing",
+  "code": "backend/internal/rules/creatures.go monsterDerived (trait becomes a Feature keyed monster:x#slug; no reader of this key); web/src/app/shared/creatures/stat-block-view.ts groupsOf",
+  "fix": "A reminder on a hit against a creature with the trait.",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:rust-monster"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:sense magic",
+  "name": "Sense Magic",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "The creature senses magic within 120 ft at will, as detect magic but not itself magical.",
+  "does": "Applies nothing: it is a narrative sense, the app has no magic detection.",
+  "seen": "The trait text under 'Características' on the bestiary stat block (npc-card-menu 'Ficha da criatura'); the combat card shows nothing",
+  "code": "backend/internal/rules/creatures.go monsterDerived (trait becomes a Feature keyed monster:x#slug; no reader of this key); web/src/app/shared/creatures/stat-block-view.ts groupsOf",
+  "fix": "",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:chuul"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:shadow stealth",
+  "name": "Shadow Stealth",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "In dim light or darkness the creature can Hide as a bonus action, and its Stealth bonus is +6.",
+  "does": "Applies nothing: the Stealth bonus stays the stat block's +4 (monsters.json lists skill:stealth 4 only) and Hide is an action, not a bonus action.",
+  "seen": "The trait text under 'Características' on the bestiary stat block (npc-card-menu 'Ficha da criatura'); the combat card shows nothing",
+  "code": "backend/internal/rules/creatures.go monsterSkills (skills from the stat block); monsters.json shadow",
+  "fix": "Offer Hide as a bonus action and a +6 Stealth in dim light for the shadow, or a reminder.",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:shadow"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:shapechanger",
+  "name": "Shapechanger",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "The creature uses its action to turn into another form (a humanoid, beast or mist) and back, keeping its statistics unless the text says otherwise.",
+  "does": "Applies nothing: only a druid's Wild Shape changes a combatant's form; an NPC keeps one stat block, and the master narrates and edits by hand.",
+  "seen": "The trait text under 'Características' on the bestiary stat block (npc-card-menu 'Ficha da criatura'); the combat card shows nothing",
+  "code": "backend/internal/play/wildshape.go (characters only); no reader of #shapechanger",
+  "fix": "A reminder on the card; changing an NPC's form needs a second stat block.",
+  "checked": "",
+  "count": 23,
+  "examples": [
+   "monster:doppelganger",
+   "monster:imp",
+   "monster:mimic"
+  ],
+  "party": true
+ },
+ {
+  "key": "trait:shark telepathy",
+  "name": "Shark Telepathy",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "The sahuagin commands any shark within 120 ft with a limited telepathy.",
+  "does": "Applies nothing: pure narrative, no command mechanic exists.",
+  "seen": "The trait text under 'Características' on the bestiary stat block (npc-card-menu 'Ficha da criatura'); the combat card shows nothing",
+  "code": "backend/internal/rules/creatures.go monsterDerived (trait becomes a Feature keyed monster:x#slug; no reader of this key); web/src/app/shared/creatures/stat-block-view.ts groupsOf",
+  "fix": "",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:sahuagin"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:shielded mind",
+  "name": "Shielded Mind",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "The creature is immune to scrying and to effects that sense its emotions, read its thoughts or detect its location.",
+  "does": "Applies nothing: scrying and mind-reading spells are recorded and narrated, so the master applies the immunity.",
+  "seen": "The trait text under 'Características' on the bestiary stat block (npc-card-menu 'Ficha da criatura'); the combat card shows nothing",
+  "code": "backend/internal/rules/creatures.go monsterDerived (trait becomes a Feature keyed monster:x#slug; no reader of this key); web/src/app/shared/creatures/stat-block-view.ts groupsOf",
+  "fix": "",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:couatl"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:siege monster",
+  "name": "Siege Monster",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "The creature deals double damage to objects and structures.",
+  "does": "Applies nothing: the app has no object or structure hit points, so there is no damage to double.",
+  "seen": "The trait text under 'Características' on the bestiary stat block (npc-card-menu 'Ficha da criatura'); the combat card shows nothing",
+  "code": "backend/internal/rules/creatures.go monsterDerived (trait becomes a Feature keyed monster:x#slug; no reader of this key); web/src/app/shared/creatures/stat-block-view.ts groupsOf",
+  "fix": "",
+  "checked": "",
+  "count": 4,
+  "examples": [
+   "monster:earth-elemental",
+   "monster:kraken",
+   "monster:tarrasque"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:sneak attack",
+  "name": "Sneak Attack (1/Turn)",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "Once per turn, extra 4d6 (assassin) or 2d6 (spy) damage with a weapon hit on advantage or when an ally of the creature is within 5 ft of the target.",
+  "does": "Applies nothing to a monster: the extra-damage offer reads only feature:sneak-attack of a rogue character, not the stat block's #sneak-attack; the master adds the dice by hand.",
+  "seen": "The trait text under 'Características' on the bestiary stat block (npc-card-menu 'Ficha da criatura'); the combat card shows nothing",
+  "code": "backend/internal/characters/combattraits.go traitsOf (feature:sneak-attack, RogueLevel); backend/internal/play/combat_parts.go:421",
+  "fix": "Offer the extra dice on a creature's hit when the trait's condition holds.",
+  "checked": "",
+  "count": 2,
+  "examples": [
+   "monster:assassin",
+   "monster:spy"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:snow camouflage",
+  "name": "Snow Camouflage",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "Advantage on Dexterity (Stealth) checks to hide in snowy terrain.",
+  "does": "Applies nothing: the map has no terrain type 'snow' and the Hide roll reads no monster trait.",
+  "seen": "The trait text under 'Características' on the bestiary stat block (npc-card-menu 'Ficha da criatura'); the combat card shows nothing",
+  "code": "backend/internal/rules/creatures.go monsterDerived (trait becomes a Feature keyed monster:x#slug; no reader of this key); web/src/app/shared/creatures/stat-block-view.ts groupsOf",
+  "fix": "",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:winter-wolf"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:speak with beasts and plants",
+  "name": "Speak with Beasts and Plants",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "The creature communicates with beasts and plants as if they shared a language.",
+  "does": "Applies nothing: pure narrative.",
+  "seen": "The trait text under 'Características' on the bestiary stat block (npc-card-menu 'Ficha da criatura'); the combat card shows nothing",
+  "code": "backend/internal/rules/creatures.go monsterDerived (trait becomes a Feature keyed monster:x#slug; no reader of this key); web/src/app/shared/creatures/stat-block-view.ts groupsOf",
+  "fix": "",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:dryad"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:spell storing",
+  "name": "Spell Storing",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "A spellcaster wearing the shield guardian's amulet can have it store one spell of 4th level or lower and cast it on command.",
+  "does": "Applies nothing: the guardian stores nothing and the amulet is not modeled.",
+  "seen": "The trait text under 'Características' on the bestiary stat block (npc-card-menu 'Ficha da criatura'); the combat card shows nothing",
+  "code": "backend/internal/rules/creatures.go monsterDerived (trait becomes a Feature keyed monster:x#slug; no reader of this key); web/src/app/shared/creatures/stat-block-view.ts groupsOf",
+  "fix": "",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:shield-guardian"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:spellcasting",
+  "name": "Spellcasting",
+  "list": "monster-trait",
+  "verdict": "runs",
+  "says": "A slot caster: levels, slots by level, prepared spells, save DC and attack bonus as the stat block writes them.",
+  "does": "Runs: MonsterCaster reads the slots, the prepared spells (cantrips too), the DC and the attack bonus from the trait text, the NPC casts through the ordinary cast flow and starts each fight with all its slots (RN-29). Checked with a test: all 12 stat blocks parse, slots, DC and spell counts match the text.",
+  "seen": "The NPC card's cast flow and 'Magias de área' list; the stat block text",
+  "code": "backend/internal/rules/creaturecaster.go MonsterCaster, addSlotCasting, castingTrait; backend/internal/characters/combatturn.go basicDerived",
+  "fix": "",
+  "checked": "test",
+  "count": 12,
+  "examples": [
+   "monster:acolyte",
+   "monster:androsphinx",
+   "monster:archmage"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:spider climb",
+  "name": "Spider Climb",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "The creature climbs difficult surfaces, including upside down on ceilings, without an ability check.",
+  "does": "Applies nothing from the trait: but 12 of the 14 stat blocks list a climb speed, and a climb speed makes a climbable surface cost no extra (the app has no climbing check); the 2 vampires have none, so climbing costs extra, as the SRD speed implies.",
+  "seen": "The trait text under 'Características' on the bestiary stat block (npc-card-menu 'Ficha da criatura'); the combat card shows nothing",
+  "code": "backend/internal/play/combat_move.go:137-143 (Climbs: c.SpeedClimbFt > 0); no reader of #spider-climb",
+  "fix": "A reminder that ceilings need no check; nothing else.",
+  "checked": "",
+  "count": 14,
+  "examples": [
+   "monster:black-pudding",
+   "monster:drider",
+   "monster:ettercap"
+  ],
+  "party": true
+ },
+ {
+  "key": "trait:standing leap",
+  "name": "Standing Leap",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "The long jump is up to N ft and the high jump up to N/2 ft with or without a running start.",
+  "does": "Applies nothing: the master moves an NPC freely and no jump limit applies to him.",
+  "seen": "The trait text under 'Características' on the bestiary stat block (npc-card-menu 'Ficha da criatura'); the combat card shows nothing",
+  "code": "backend/internal/play/combat_move.go planLongJump (player plan only)",
+  "fix": "",
+  "checked": "",
+  "count": 4,
+  "examples": [
+   "monster:bulette",
+   "monster:frog",
+   "monster:giant-frog"
+  ],
+  "party": true
+ },
+ {
+  "key": "trait:steadfast",
+  "name": "Steadfast",
+  "list": "monster-trait",
+  "verdict": "wrong",
+  "says": "The creature cannot be frightened while it can see an allied creature within 30 ft.",
+  "does": "The app puts frightened on any creature that fails the save (spell, rider, zone), and the only immunity it reads is the static stat block's condition immunity (play/condition_immunity.go:26), so a bearded devil with an ally within 30 ft is frightened though the trait forbids it. The master can remove the condition by hand",
+  "seen": "The trait text under 'Características' on the bestiary stat block (npc-card-menu 'Ficha da criatura'); the combat card shows nothing",
+  "code": "backend/internal/rules/creatures.go monsterDerived (StatBlockConditionImmunities only)",
+  "fix": "Read the trait where a condition is put on a creature, with an ally within 30 ft on its side as the test",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:bearded-devil"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:stench",
+  "name": "Stench",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "A creature that starts its turn within 5 ft must pass a DC 10 (ghast) or DC 14 (hezrou) Constitution save or be poisoned until the start of its next turn; a success gives 24 hours of immunity.",
+  "does": "Applies nothing: no aura or start-of-turn save is built from a monster trait (auras come from a character's feature effects), so the master calls the save by hand.",
+  "seen": "The trait text under 'Características' on the bestiary stat block (npc-card-menu 'Ficha da criatura'); the combat card shows nothing",
+  "code": "backend/internal/characters/combattraits.go featureAurasOf (character features only)",
+  "fix": "A monster aura of 5 ft with the save and the 24-hour immunity, using the existing featureAurasOf path.",
+  "checked": "",
+  "count": 2,
+  "examples": [
+   "monster:ghast",
+   "monster:hezrou"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:stone camouflage",
+  "name": "Stone Camouflage",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "Advantage on Dexterity (Stealth) checks to hide in rocky terrain.",
+  "does": "Applies nothing: no terrain type on the map and no trait read by the Hide roll.",
+  "seen": "The trait text under 'Características' on the bestiary stat block (npc-card-menu 'Ficha da criatura'); the combat card shows nothing",
+  "code": "backend/internal/rules/creatures.go monsterDerived (trait becomes a Feature keyed monster:x#slug; no reader of this key); web/src/app/shared/creatures/stat-block-view.ts groupsOf",
+  "fix": "",
+  "checked": "",
+  "count": 5,
+  "examples": [
+   "monster:deep-gnome-svirfneblin",
+   "monster:grick",
+   "monster:grimlock"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:sunlight sensitivity",
+  "name": "Sunlight Sensitivity",
+  "list": "monster-trait",
+  "verdict": "runs-part",
+  "says": "In sunlight the creature has disadvantage on attack rolls and on Wisdom (Perception) checks that rely on sight.",
+  "does": "Runs for the rolls once the master turns the sun on (whole map or painted squares; darkness beats the sun): disadvantage on the creature's attacks and on every Perception check, and the master removes it by hand for a check that relies on hearing or smell (RN-29). The sun is the master's switch, so the app never decides what is sunlit.",
+  "seen": "The master's sunlight notice on the NPC card (sunlight-notice.ts: 'Desvantagem nos ataques e nos testes de Percepção que dependem da visão') and the 'Outra fonte' roll line for players",
+  "code": "backend/internal/play/sunlight.go sunTraitOf; backend/internal/rules/combat/advantage.go:527 (attack), :671 (Perception); characters/combattraits.go:159",
+  "fix": "",
+  "checked": "",
+  "count": 7,
+  "examples": [
+   "monster:drider",
+   "monster:drow",
+   "monster:duergar"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:sunlight weakness",
+  "name": "Sunlight Weakness",
+  "list": "monster-trait",
+  "verdict": "runs",
+  "says": "In sunlight the creature has disadvantage on attack rolls, ability checks and saving throws.",
+  "does": "Runs once the master turns the sun on and the shadow stands in it: disadvantage on attacks (advantage.go:527), on every check (:671) and on every save (:627); darkness beats the sun (RN-29).",
+  "seen": "The master's sunlight notice on the NPC card ('Desvantagem nos ataques, nas salvaguardas e nos testes de atributo')",
+  "code": "backend/internal/rules/combat/advantage.go:527,627,671; backend/internal/play/sunlight.go sunTraitOf",
+  "fix": "",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:shadow"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:sure-footed",
+  "name": "Sure-Footed",
+  "list": "monster-trait",
+  "verdict": "wrong",
+  "says": "Advantage on Strength and Dexterity saves against effects that would knock it prone.",
+  "does": "A Strength or Dexterity save the app rolls for a monster against an effect that gives prone (Grease zone play/zones_trigger.go:331, riders, spells; play/combat_spells.go:602) gets no advantage: Monster stat blocks carry no hints (rules/creatures.go:735 monsterDerived), so the tagged save advantage (rules/combat/advantage.go:633) never fires for a monster target. The master can only fix the result by hand (undo it or stand the creature up)",
+  "seen": "The trait text under 'Características' on the bestiary stat block (npc-card-menu 'Ficha da criatura'); the combat card shows nothing",
+  "code": "backend/internal/rules/combat/advantage.go taggedSaveSources (Hints of characters only); play/zones_catalog.go spell:grease",
+  "fix": "Give the monster a tagged save against the prone condition for the trait",
+  "checked": "",
+  "count": 3,
+  "examples": [
+   "monster:giant-goat",
+   "monster:goat",
+   "monster:mule"
+  ],
+  "party": true
+ },
+ {
+  "key": "trait:surprise attack",
+  "name": "Surprise Attack",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "If the creature surprises a target and hits it in the first round of combat, the target takes extra 2d6 damage.",
+  "does": "Applies nothing: the surprise marks are kept (RN-34) but no monster trait reads them; the master adds the 2d6 by hand.",
+  "seen": "The trait text under 'Características' on the bestiary stat block (npc-card-menu 'Ficha da criatura'); the combat card shows nothing",
+  "code": "backend/internal/play/combat_advantage.go:253-258 (SurprisedCritical, a character feature)",
+  "fix": "Offer the extra dice on a first-round hit against a surprised target.",
+  "checked": "",
+  "count": 2,
+  "examples": [
+   "monster:bugbear",
+   "monster:doppelganger"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:swarm",
+  "name": "Swarm",
+  "list": "monster-trait",
+  "verdict": "wrong",
+  "says": "The swarm can occupy another creature's space and vice versa, can move through any opening a Tiny creature fits, and cannot regain or gain temporary hit points.",
+  "does": "The app moves an NPC by the player's walking rules, so the swarm cannot end its move on another creature's square or pass a hostile one (rules/grid/move.go:214-225, play/combat_move.go:209-213), and healing spells and temporary hit points land on it (play/combat_spells_hp.go:307 hpFlatHeal, :423 giveTempHP) though the trait forbids both. The master can use a forced move and undo the healing by hand",
+  "seen": "The trait text under 'Características' on the bestiary stat block (npc-card-menu 'Ficha da criatura'); the combat card shows nothing",
+  "code": "backend/internal/play/combat_move.go occupantsFor; no reader of #swarm",
+  "fix": "Skip the occupancy refusal for a swarm mover and refuse healing and temporary hit points on a swarm",
+  "checked": "",
+  "count": 10,
+  "examples": [
+   "monster:swarm-of-bats",
+   "monster:swarm-of-beetles",
+   "monster:swarm-of-centipedes"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:tail spike regrowth",
+  "name": "Tail Spike Regrowth",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "The manticore has 24 tail spikes; used spikes regrow after a long rest.",
+  "does": "Applies nothing: the Tail Spike attack is unlimited, and the 24 spikes are not counted.",
+  "seen": "The trait text under 'Características' on the bestiary stat block (npc-card-menu 'Ficha da criatura'); the combat card shows nothing",
+  "code": "backend/internal/rules/creatures.go monsterActions (the Tail Spike action has no usage)",
+  "fix": "A counter of 24 uses on the Tail Spike action.",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:manticore"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:telepathic bond",
+  "name": "Telepathic Bond",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "On the same plane as its master the creature conveys what it senses and they communicate telepathically.",
+  "does": "Applies nothing: narrative.",
+  "seen": "The trait text under 'Características' on the bestiary stat block (npc-card-menu 'Ficha da criatura'); the combat card shows nothing",
+  "code": "backend/internal/rules/creatures.go monsterDerived (trait becomes a Feature keyed monster:x#slug; no reader of this key); web/src/app/shared/creatures/stat-block-view.ts groupsOf",
+  "fix": "",
+  "checked": "",
+  "count": 2,
+  "examples": [
+   "monster:homunculus",
+   "monster:succubus-incubus"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:trampling charge",
+  "name": "Trampling Charge",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "After moving 20 ft straight at a creature and hitting it with a gore on the same turn, the target makes a DC 12 Strength save or is knocked prone, and the creature gets a bonus-action stomp.",
+  "does": "Applies nothing: the straight-line move is not tracked and the gore carries no save rider (the rider offer reads the attack text only); the master asks the save by hand.",
+  "seen": "The trait text under 'Características' on the bestiary stat block (npc-card-menu 'Ficha da criatura'); the combat card shows nothing",
+  "code": "backend/internal/play/combat_creature_rider.go (reads an attack's own text)",
+  "fix": "A rider on the gore attack gated by the distance moved this turn.",
+  "checked": "",
+  "count": 5,
+  "examples": [
+   "monster:elephant",
+   "monster:gorgon",
+   "monster:mammoth"
+  ],
+  "party": true
+ },
+ {
+  "key": "trait:transparent",
+  "name": "Transparent",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "A DC 15 Perception check is needed to spot the cube if it has neither moved nor attacked; an unaware creature entering its space is surprised.",
+  "does": "Applies nothing: the hidden-NPC mechanism is the master's own switch, not this trait.",
+  "seen": "The trait text under 'Características' on the bestiary stat block (npc-card-menu 'Ficha da criatura'); the combat card shows nothing",
+  "code": "backend/internal/rules/creatures.go monsterDerived (trait becomes a Feature keyed monster:x#slug; no reader of this key); web/src/app/shared/creatures/stat-block-view.ts groupsOf",
+  "fix": "",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:gelatinous-cube"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:treasure sense",
+  "name": "Treasure Sense",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "The xorn pinpoints precious metals and stones by scent within 60 ft.",
+  "does": "Applies nothing: narrative.",
+  "seen": "The trait text under 'Características' on the bestiary stat block (npc-card-menu 'Ficha da criatura'); the combat card shows nothing",
+  "code": "backend/internal/rules/creatures.go monsterDerived (trait becomes a Feature keyed monster:x#slug; no reader of this key); web/src/app/shared/creatures/stat-block-view.ts groupsOf",
+  "fix": "",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:xorn"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:tree stride",
+  "name": "Tree Stride",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "Once per turn the dryad spends 10 ft of movement to step into one living tree and emerge from another within 60 ft.",
+  "does": "Applies nothing: no tree objects on the map; the master places the token by hand (he moves anyone anywhere).",
+  "seen": "The trait text under 'Características' on the bestiary stat block (npc-card-menu 'Ficha da criatura'); the combat card shows nothing",
+  "code": "backend/internal/rules/creatures.go monsterDerived (trait becomes a Feature keyed monster:x#slug; no reader of this key); web/src/app/shared/creatures/stat-block-view.ts groupsOf",
+  "fix": "",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:dryad"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:tunneler",
+  "name": "Tunneler",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "The worm burrows through solid rock at half its burrow speed and leaves a 10-foot tunnel.",
+  "does": "Applies nothing: the burrow speed is on the sheet but no map layer is dug, so the master draws the tunnel by hand.",
+  "seen": "The trait text under 'Características' on the bestiary stat block (npc-card-menu 'Ficha da criatura'); the combat card shows nothing",
+  "code": "backend/internal/rules/creatures.go monsterDerived (trait becomes a Feature keyed monster:x#slug; no reader of this key); web/src/app/shared/creatures/stat-block-view.ts groupsOf",
+  "fix": "",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:purple-worm"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:turn defiance",
+  "name": "Turn Defiance",
+  "list": "monster-trait",
+  "verdict": "wrong",
+  "says": "The ghast and any ghouls within 30 ft have advantage on saves against effects that turn undead.",
+  "does": "Turn Undead rolls each undead's Wisdom save with no source for the advantage (play/combat_channel.go:285-307 creatureSave, SaveScene without a turn source), so a ghoul or ghast near a ghast is turned on a plain roll. The master removes the 'turned' effect or undoes the action by hand",
+  "seen": "The trait text under 'Características' on the bestiary stat block (npc-card-menu 'Ficha da criatura'); the combat card shows nothing",
+  "code": "backend/internal/play/combat_channel.go creatureSave (SaveScene has no turn-undead source); rules/combat/advantage.go SaveMode",
+  "fix": "Add an advantage source in creatureSave for an undead with the trait or within 30 ft of a ghast",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:ghast"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:turn resistance",
+  "name": "Turn Resistance",
+  "list": "monster-trait",
+  "verdict": "wrong",
+  "says": "The creature has advantage on saves against any effect that turns undead.",
+  "does": "Turn Undead rolls the lich's Wisdom save plain (play/combat_channel.go:285-307 creatureSave builds a SaveScene with no turn source), so it is turned more often than the text allows. The master removes the 'turned' effect or undoes the action by hand",
+  "seen": "The trait text under 'Características' on the bestiary stat block (npc-card-menu 'Ficha da criatura'); the combat card shows nothing",
+  "code": "backend/internal/play/combat_channel.go creatureSave; rules/combat/advantage.go SaveMode",
+  "fix": "Add an advantage source in creatureSave for a creature with the trait #turn-resistance",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:lich"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:two heads",
+  "name": "Two Heads",
+  "list": "monster-trait",
+  "verdict": "wrong",
+  "says": "Advantage on Perception checks and on saves against being blinded, charmed, deafened, frightened, stunned and knocked unconscious.",
+  "does": "A save the app rolls for a monster against being blinded, charmed, deafened, frightened, stunned or knocked unconscious (play/combat_spells.go:602, rules/combat/advantage.go:633) and its passive Perception for a Hide contest (play/combat_hide.go:49 observerOf, checkRules advantage.go:659) get no advantage: Monster stat blocks carry no hints (rules/creatures.go:735 monsterDerived), so the tagged save advantage (rules/combat/advantage.go:633) never fires for a monster target. The master can only fix the result by hand (undo it, or say the ettin sees the hider)",
+  "seen": "The trait text under 'Características' on the bestiary stat block (npc-card-menu 'Ficha da criatura'); the combat card shows nothing",
+  "code": "backend/internal/rules/combat/advantage.go taggedSaveSources (character hints only)",
+  "fix": "Give the monster tagged saves against those conditions and a Perception advantage source for the trait",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:ettin"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:two-headed",
+  "name": "Two-Headed",
+  "list": "monster-trait",
+  "verdict": "wrong",
+  "says": "Advantage on Perception checks and on saves against being blinded, charmed, deafened, frightened, stunned and knocked unconscious.",
+  "does": "A save the app rolls for a monster against being blinded, charmed, deafened, frightened, stunned or knocked unconscious (play/combat_spells.go:602, rules/combat/advantage.go:633) and its passive Perception for a Hide contest (play/combat_hide.go:49 observerOf, checkRules advantage.go:659) get no advantage: Monster stat blocks carry no hints (rules/creatures.go:735 monsterDerived), so the tagged save advantage (rules/combat/advantage.go:633) never fires for a monster target. The master can only fix the result by hand (undo it, or say the death dog sees the hider)",
+  "seen": "The trait text under 'Características' on the bestiary stat block (npc-card-menu 'Ficha da criatura'); the combat card shows nothing",
+  "code": "backend/internal/rules/combat/advantage.go taggedSaveSources (character hints only)",
+  "fix": "Give the monster tagged saves against those conditions and a Perception advantage source for the trait",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:death-dog"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:undead fortitude",
+  "name": "Undead Fortitude",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "At 0 hit points, a Constitution save at DC 5 + the damage (not for radiant or a critical hit) leaves it at 1 hit point.",
+  "does": "Applies nothing: a zombie at 0 is defeated; the master rolls the save and edits the hit points by hand.",
+  "seen": "The trait text under 'Características' on the bestiary stat block (npc-card-menu 'Ficha da criatura'); the combat card shows nothing",
+  "code": "backend/internal/play/combat_apply_damage.go (no monster 0-HP hook)",
+  "fix": "At the point an NPC falls to 0, offer the Constitution save with DC 5 + damage unless radiant or critical.",
+  "checked": "",
+  "count": 2,
+  "examples": [
+   "monster:ogre-zombie",
+   "monster:zombie"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:underwater camouflage",
+  "name": "Underwater Camouflage",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "Advantage on Dexterity (Stealth) checks made underwater.",
+  "does": "Applies nothing: water is painted on the map, but the Hide roll reads no trait.",
+  "seen": "The trait text under 'Características' on the bestiary stat block (npc-card-menu 'Ficha da criatura'); the combat card shows nothing",
+  "code": "backend/internal/rules/creatures.go monsterDerived (trait becomes a Feature keyed monster:x#slug; no reader of this key); web/src/app/shared/creatures/stat-block-view.ts groupsOf",
+  "fix": "",
+  "checked": "",
+  "count": 2,
+  "examples": [
+   "monster:giant-octopus",
+   "monster:octopus"
+  ],
+  "party": true
+ },
+ {
+  "key": "trait:vampire weaknesses",
+  "name": "Vampire Weaknesses",
+  "list": "monster-trait",
+  "verdict": "wrong",
+  "says": "Forbiddance (cannot enter a residence uninvited), 20 acid damage if it ends its turn in running water, a wooden stake paralyzes it, and in sunlight 20 radiant damage at the start of its turn and disadvantage on attacks and ability checks.",
+  "does": "The sunlight machinery the master switches on reads only the keys #sunlight-sensitivity and #sunlight-weakness (play/sunlight.go:108-110), so a vampire in the sun rolls its attacks and ability checks flat (rules/combat/advantage.go:527, :671) though the trait gives it disadvantage on both; the 20 radiant damage and the other flaws are not applied. The master can roll with disadvantage himself (physical dice, RN-18) and apply the damage by hand",
+  "seen": "The trait text under 'Características' on the bestiary stat block (npc-card-menu 'Ficha da criatura'); the combat card shows nothing",
+  "code": "backend/internal/characters/combattraits.go:159-160; backend/internal/play/sunlight.go:108-110 (suffixes)",
+  "fix": "Map the trait '#vampire-weaknesses' to the sunlight disadvantage on attacks and ability checks",
+  "checked": "",
+  "count": 4,
+  "examples": [
+   "monster:vampire-bat",
+   "monster:vampire-mist",
+   "monster:vampire-spawn"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:variable illumination",
+  "name": "Variable Illumination",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "The will-o'-wisp sheds bright light in a 5 to 20-foot radius and dim light for the same radius more; it changes the radius as a bonus action.",
+  "does": "Applies nothing: light sources come from items and spells, not from a monster trait.",
+  "seen": "The trait text under 'Características' on the bestiary stat block (npc-card-menu 'Ficha da criatura'); the combat card shows nothing",
+  "code": "backend/internal/rules/creatures.go monsterDerived (trait becomes a Feature keyed monster:x#slug; no reader of this key); web/src/app/shared/creatures/stat-block-view.ts groupsOf",
+  "fix": "",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:will-o-wisp"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:wakeful",
+  "name": "Wakeful",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "When one of the ettin's or hydra's heads sleeps, its other heads stay awake.",
+  "does": "Applies nothing: sleep effects are not matched to heads; the master rules a Sleep spell by hand.",
+  "seen": "The trait text under 'Características' on the bestiary stat block (npc-card-menu 'Ficha da criatura'); the combat card shows nothing",
+  "code": "backend/internal/rules/creatures.go monsterDerived (trait becomes a Feature keyed monster:x#slug; no reader of this key); web/src/app/shared/creatures/stat-block-view.ts groupsOf",
+  "fix": "",
+  "checked": "",
+  "count": 2,
+  "examples": [
+   "monster:ettin",
+   "monster:hydra"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:water breathing",
+  "name": "Water Breathing",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "The creature can breathe only underwater.",
+  "does": "Applies nothing: the app has no suffocation or breath rule, so the master applies it by hand.",
+  "seen": "The trait text under 'Características' on the bestiary stat block (npc-card-menu 'Ficha da criatura'); the combat card shows nothing",
+  "code": "backend/internal/rules/creatures.go monsterDerived (trait becomes a Feature keyed monster:x#slug; no reader of this key); web/src/app/shared/creatures/stat-block-view.ts groupsOf",
+  "fix": "",
+  "checked": "",
+  "count": 9,
+  "examples": [
+   "monster:giant-octopus",
+   "monster:giant-sea-horse",
+   "monster:giant-shark"
+  ],
+  "party": true
+ },
+ {
+  "key": "trait:water form",
+  "name": "Water Form",
+  "list": "monster-trait",
+  "verdict": "wrong",
+  "says": "The elemental can enter a hostile creature's space and stop there, and move through a space 1 inch wide without squeezing.",
+  "does": "The app moves an NPC by the player's walking rules: a move may not end on another creature's square and a hostile one can be passed only with a two-size gap (rules/grid/move.go:214-225, play/combat_move.go:209-213), so the elemental cannot enter a hostile creature's space and stop there. The master can place it with a forced move (free, no movement spent)",
+  "seen": "The trait text under 'Características' on the bestiary stat block (npc-card-menu 'Ficha da criatura'); the combat card shows nothing",
+  "code": "backend/internal/rules/creatures.go monsterDerived (trait becomes a Feature keyed monster:x#slug; no reader of this key); web/src/app/shared/creatures/stat-block-view.ts groupsOf",
+  "fix": "Let the movement rules skip the occupancy refusal for a mover with the trait Water Form",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:water-elemental"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:water susceptibility",
+  "name": "Water Susceptibility",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "For every 5 ft moved in water or gallon of water splashed on it, the elemental takes 1 cold damage.",
+  "does": "Applies nothing: water squares exist but cost no damage to a fire elemental.",
+  "seen": "The trait text under 'Características' on the bestiary stat block (npc-card-menu 'Ficha da criatura'); the combat card shows nothing",
+  "code": "backend/internal/rules/creatures.go monsterDerived (trait becomes a Feature keyed monster:x#slug; no reader of this key); web/src/app/shared/creatures/stat-block-view.ts groupsOf",
+  "fix": "A per-5-ft damage from the move on water squares.",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:fire-elemental"
+  ],
+  "party": false
+ },
+ {
+  "key": "trait:web sense",
+  "name": "Web Sense",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "While in contact with a web the creature knows the exact location of any other creature in contact with the same web.",
+  "does": "Applies nothing: narrative.",
+  "seen": "The trait text under 'Características' on the bestiary stat block (npc-card-menu 'Ficha da criatura'); the combat card shows nothing",
+  "code": "backend/internal/rules/creatures.go monsterDerived (trait becomes a Feature keyed monster:x#slug; no reader of this key); web/src/app/shared/creatures/stat-block-view.ts groupsOf",
+  "fix": "",
+  "checked": "",
+  "count": 5,
+  "examples": [
+   "monster:ettercap",
+   "monster:giant-spider",
+   "monster:giant-wolf-spider"
+  ],
+  "party": true
+ },
+ {
+  "key": "trait:web walker",
+  "name": "Web Walker",
+  "list": "monster-trait",
+  "verdict": "wrong",
+  "says": "The creature ignores movement restrictions caused by webbing.",
+  "does": "The Web zone catches every creature (play/zones_trigger.go:331 restrainInZone puts the restrained effect, the zone asks its save), so a spider or drider in a Web is saved against, restrained and slowed though the trait ignores movement restrictions from webbing. The master removes the effect and moves the token by hand (forced move)",
+  "seen": "The trait text under 'Características' on the bestiary stat block (npc-card-menu 'Ficha da criatura'); the combat card shows nothing",
+  "code": "backend/internal/play/zones_catalog.go:202 (spell:web zoneRestrain, difficult); docs/product/rules.md:1429",
+  "fix": "Let the Web zone skip a creature with the trait #web-walker",
+  "checked": "",
+  "count": 7,
+  "examples": [
+   "monster:drider",
+   "monster:ettercap",
+   "monster:giant-spider"
+  ],
+  "party": true
+ },
+ {
+  "key": "ac:alternate",
+  "name": "Alternate armor class",
+  "list": "monster-ac",
+  "verdict": "by-hand-silent",
+  "says": "The printed AC can change with armor or a spell (archmage 12, 15 with mage armor; ankheg 14, 11 while prone).",
+  "does": "The combatant uses the single printed AC number; the alternate is only a note on the stat block, and Mage Armor cast on a basic sheet takes no hold, so the master edits the AC by hand.",
+  "seen": "The AC line and its note on the bestiary stat block; the combat card shows the one number",
+  "code": "backend/internal/rules/creatures.go armorClassNote:647; backend/internal/characters/castingoutside.go MageArmorAC:188-207; backend/internal/play/lasting_effects_armor.go modifiersFor",
+  "fix": "Show the alternate AC and its condition on the NPC card, or let the master toggle it.",
+  "checked": "",
+  "count": 5,
+  "examples": [
+   "monster:ankheg",
+   "monster:archmage",
+   "monster:druid"
+  ],
+  "party": false
+ },
+ {
+  "key": "action-usage:per-day",
+  "name": "Action usable N times a day",
+  "list": "monster-usage",
+  "verdict": "runs",
+  "says": "An action with a daily limit (1/day, 3/day, 4/day) can be used only that many times until the creature finishes a long rest.",
+  "does": "The plan reads the limit; each use writes use:<key> in combatants.creature_spent, the action is refused when the count is spent, and a persistent NPC keeps the count until the table's long rest (RN-29).",
+  "seen": "A '3/dia' style tag with uses left on the Outras ações card; the log has one line per use",
+  "code": "backend/internal/rules/monsterplan.go parseUsage:276; backend/internal/play/combat_action_limit.go limitKeyOf:22; combat_spent.go keptUntilLongRest; backend/internal/characters/resources.go:413-421",
+  "fix": "",
+  "checked": "",
+  "count": 14,
+  "examples": [
+   "monster:aboleth",
+   "monster:androsphinx",
+   "monster:darkmantle"
+  ],
+  "party": true
+ },
+ {
+  "key": "action-usage:recharge 4-6",
+  "name": "Recharge 4-6",
+  "list": "monster-usage",
+  "verdict": "runs",
+  "says": "After the action is used it recharges when a d6 rolled at the start of the creature's turn shows 4 or more.",
+  "does": "The plan reads the minimum face; the use writes recharge:<key>; the server rolls a d6 at the start of the creature's own turn, in stat block order, and clears the key on the face (master-only log line); a new combat starts with every Recharge action ready.",
+  "seen": "A recharge tag on the Outras ações card and a recharge notice on the master's NPC card at the roll",
+  "code": "backend/internal/rules/monsterplan.go parseUsage:276; backend/internal/play/combat_recharge.go rechargeAtTurnStart/rollRecharge; backend/internal/play/combat_recharge_test.go:42-100",
+  "fix": "",
+  "checked": "",
+  "count": 3,
+  "examples": [
+   "monster:air-elemental",
+   "monster:blink-dog",
+   "monster:water-elemental"
+  ],
+  "party": false
+ },
+ {
+  "key": "action-usage:recharge 5-6",
+  "name": "Recharge 5-6",
+  "list": "monster-usage",
+  "verdict": "runs",
+  "says": "After the action is used it recharges when a d6 rolled at the start of the creature's turn shows 5 or more.",
+  "does": "The plan reads the minimum face; the use writes recharge:<key>; the server rolls a d6 at the start of the creature's own turn, in stat block order, and clears the key on the face (master-only log line); a new combat starts with every Recharge action ready.",
+  "seen": "A recharge tag on the Outras ações card and a recharge notice on the master's NPC card at the roll",
+  "code": "backend/internal/rules/monsterplan.go parseUsage:276; backend/internal/play/combat_recharge.go rechargeAtTurnStart/rollRecharge; backend/internal/play/combat_recharge_test.go:42-100",
+  "fix": "",
+  "checked": "",
+  "count": 55,
+  "examples": [
+   "monster:adult-black-dragon",
+   "monster:adult-blue-dragon",
+   "monster:adult-brass-dragon"
+  ],
+  "party": true
+ },
+ {
+  "key": "action-usage:recharge 6",
+  "name": "Recharge 6",
+  "list": "monster-usage",
+  "verdict": "runs",
+  "says": "After the action is used it recharges when a d6 rolled at the start of the creature's turn shows 6.",
+  "does": "The plan reads the minimum face; the use writes recharge:<key>; the server rolls a d6 at the start of the creature's own turn, in stat block order, and clears the key on the face (master-only log line); a new combat starts with every Recharge action ready.",
+  "seen": "A recharge tag on the Outras ações card and a recharge notice on the master's NPC card at the roll",
+  "code": "backend/internal/rules/monsterplan.go parseUsage:276; backend/internal/play/combat_recharge.go rechargeAtTurnStart/rollRecharge; backend/internal/play/combat_recharge_test.go:42-100",
+  "fix": "",
+  "checked": "",
+  "count": 7,
+  "examples": [
+   "monster:ankheg",
+   "monster:dust-mephit",
+   "monster:ghost"
+  ],
+  "party": false
+ },
+ {
+  "key": "action-usage:recharge-after-rest",
+  "name": "Recharges after a short or long rest",
+  "list": "monster-usage",
+  "verdict": "runs",
+  "says": "A limited action that is ready again after the creature finishes a short or long rest.",
+  "does": "The plan reads the usage as rest; the use writes rest:<key> in creature_spent, the action is refused while it stands, and the rests clear it (RN-29).",
+  "seen": "A limit tag on the Outras ações card",
+  "code": "backend/internal/rules/monsterplan.go parseUsage:276; backend/internal/play/combat_spent.go keptUntilLongRest; backend/internal/characters/resources.go:413-421",
+  "fix": "",
+  "checked": "",
+  "count": 6,
+  "examples": [
+   "monster:chain-devil",
+   "monster:cloaker",
+   "monster:duergar"
+  ],
+  "party": true
+ },
+ {
+  "key": "action:melee-attack",
+  "name": "Melee weapon attack",
+  "list": "monster-action",
+  "verdict": "wrong",
+  "says": "A monster's melee weapon attack rolls the stated bonus and damage; some say the damage changes (a swarm at half its hit points, a thrown weapon at range).",
+  "does": "The attack is rolled and its damage applied, but only the first damage clause is read: a swarm always rolls its full dice (swarm of insects 4d4, not 2d4 at half HP) and a melee-or-ranged weapon rolls the melee dice for the throw (bugbear Javelin 2d6+2, not 1d6+2). The master can correct the figure by hand before applying the damage. Also only the first three valid attacks of a stat block reach the NPC sheet.",
+  "seen": "The master's NPC card lists the action under 'Outras ações' with the SRD text; the bestiary stat block ('Ficha da criatura') shows the same text; the damage clause text is in the attack's notes",
+  "code": "backend/internal/rules/creatures.go monsterAttack:862-900 (Damage[0] only); backend/internal/characters/npcfromcreature.go maxNpcAttacks:132,169",
+  "fix": "Read the half-HP and ranged damage clauses as alternates the master picks, or note them on the card.",
+  "checked": "",
+  "count": 277,
+  "examples": [
+   "monster:aboleth",
+   "monster:acolyte",
+   "monster:adult-black-dragon"
+  ],
+  "party": true
+ },
+ {
+  "key": "action:melee-attack+grapple",
+  "name": "Melee attack that grapples",
+  "list": "monster-action",
+  "verdict": "runs-part",
+  "says": "A hit grapples the target with an escape DC, often only for a limited size, and may restrain or bar another use of the attack.",
+  "does": "The attack is rolled; on a hit the master gets Aplicar or Dispensar (RN-40) and Aplicar gives grappled with the escape DC noted. The size limit, the restrained clause and 'cannot use it on another' are not checked: the master reads them.",
+  "seen": "The rider offer with the escape DC; the action text on the card",
+  "code": "backend/internal/rules/monsterplan.go planHitCondition:482; backend/internal/play/combat_creature_rider.go grapplingRider:93 (MaxSize read in the plan, never checked)",
+  "fix": "Check MaxSize when the rider is offered, and give restrained where the text says it.",
+  "checked": "",
+  "count": 29,
+  "examples": [
+   "monster:ankheg",
+   "monster:behir",
+   "monster:chain-devil"
+  ],
+  "party": true
+ },
+ {
+  "key": "action:melee-attack+save",
+  "name": "Melee attack with a saving throw",
+  "list": "monster-action",
+  "verdict": "wrong",
+  "says": "A hit forces a saving throw against poison damage, a condition or a disease, as the sentence says.",
+  "does": "The hit offers the rider (RN-40) and the save and damage are read, but the condition is the first condition word after 'saving throw': cockatrice Bite petrifies at once instead of restrained first and petrified after the second failed save. The master can Dispensar the rider and set the conditions by hand.",
+  "seen": "The rider offer names the wrong condition; the action text on the card",
+  "code": "backend/internal/rules/monsterplan.go failedSaveCondition:377 (cockatrice Bite plan: condition:petrified)",
+  "fix": "Read staged conditions (restrained then petrified) from the text, or leave a staged petrification as a reminder.",
+  "checked": "test",
+  "count": 51,
+  "examples": [
+   "monster:aboleth",
+   "monster:assassin",
+   "monster:balor"
+  ],
+  "party": true
+ },
+ {
+  "key": "action:melee-attack+save+grapple+prone",
+  "name": "Melee attack that grapples and may knock prone",
+  "list": "monster-action",
+  "verdict": "runs-part",
+  "says": "Giant crocodile: the bite grapples and restrains; the tail knocks a creature prone on a failed Strength save.",
+  "does": "Each attack is rolled, grapple and prone riders are offered (RN-40) with their DC; the restrained clause and the 'cannot bite another' limit are left to the master.",
+  "seen": "The rider offers; the action text on the card",
+  "code": "backend/internal/play/combat_creature_rider.go grapplingRider/savingRider; backend/internal/rules/monsterplan.go planSave",
+  "fix": "",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:giant-crocodile"
+  ],
+  "party": false
+ },
+ {
+  "key": "action:melee-attack+save+grapple+swallow",
+  "name": "Melee attack that grapples and swallows",
+  "list": "monster-action",
+  "verdict": "wrong",
+  "says": "SRD (kraken Bite): a Large or smaller creature grappled by the kraken is swallowed and the grapple ends; while swallowed it is blinded and restrained.",
+  "does": "The bite is rolled, but the planner takes prone from the regurgitation sentence as the failed-save condition, so the rider offers prone and nothing says swallowed. The master can Dispensar it and track the swallow by hand.",
+  "seen": "A rider offer for prone on the bite; the action text on the card",
+  "code": "backend/internal/rules/monsterplan.go failedSaveCondition:377 (kraken Bite plan: condition:prone)",
+  "fix": "Read the swallow sentence as text only (no save rider).",
+  "checked": "test",
+  "count": 1,
+  "examples": [
+   "monster:kraken"
+  ],
+  "party": false
+ },
+ {
+  "key": "action:melee-attack+save+prone",
+  "name": "Melee attack that knocks prone on a failed save",
+  "list": "monster-action",
+  "verdict": "runs",
+  "says": "A hit forces a Strength saving throw or the target is knocked prone.",
+  "does": "The hit offers the rider (RN-40); Aplicar rolls the target's save against the DC and gives prone on a failure.",
+  "seen": "The rider offer with the DC; the action text on the card",
+  "code": "backend/internal/play/combat_creature_rider.go riderOffered:29/savingRider; backend/internal/rules/monsterplan.go planSave",
+  "fix": "",
+  "checked": "",
+  "count": 9,
+  "examples": [
+   "monster:dire-wolf",
+   "monster:dragon-turtle",
+   "monster:gibbering-mouther"
+  ],
+  "party": true
+ },
+ {
+  "key": "action:melee-attack+save+swallow",
+  "name": "Melee attack that swallows",
+  "list": "monster-action",
+  "verdict": "wrong",
+  "says": "SRD (purple worm Bite): a Large or smaller grappled target is swallowed; while swallowed it is blinded and restrained and takes acid damage each turn.",
+  "does": "The bite is rolled but the regurgitation sentence's prone becomes the rider's condition; swallowed and the acid damage each turn are not applied. The master can Dispensar the rider and apply them by hand.",
+  "seen": "A rider offer for prone on the bite; the action text on the card",
+  "code": "backend/internal/rules/monsterplan.go failedSaveCondition:377 (purple worm Bite plan: condition:prone)",
+  "fix": "Read the swallow sentence as text only.",
+  "checked": "test",
+  "count": 1,
+  "examples": [
+   "monster:purple-worm"
+  ],
+  "party": false
+ },
+ {
+  "key": "action:multiattack",
+  "name": "Multiattack",
+  "list": "monster-action",
+  "verdict": "runs-part",
+  "says": "The creature makes the listed attacks as one Attack action, sometimes replacing one with another action.",
+  "does": "The routine is read into attacks per Attack action and the NPC card counts them down (routineLeft); a replacement by a non-attack action (Fling), an alternative ('or') or a spell step is left to the master.",
+  "seen": "Multiattack routines with the attacks left on the master's NPC card; the full text on the stat block",
+  "code": "backend/internal/rules/monsterplan.go planRoutines; backend/internal/rules/creatures.go routineWeaponAttacks:828, multiattackProblem:225; backend/internal/rules/content.go correctAttacksPerAction:1385; backend/internal/play/combat_attack.go routineLeft:459; web npc-card/multiattack.ts",
+  "fix": "",
+  "checked": "",
+  "count": 148,
+  "examples": [
+   "monster:aboleth",
+   "monster:adult-black-dragon",
+   "monster:adult-blue-dragon"
+  ],
+  "party": true
+ },
+ {
+  "key": "action:other:breath weapons",
+  "name": "Breath weapons",
+  "list": "monster-action",
+  "verdict": "wrong",
+  "says": "SRD (adult-brass-dragon): Breath Weapons (Recharge 5-6): the dragon uses one of the following breath weapons (fire or sleep), so one use spends the one recharge.",
+  "does": "The data lists Breath Weapons plus each sub-breath as its own action, each with its own Recharge key: a dragon can breathe one kind, then the other the same round, and each rolls its own recharge. The master can refuse the second use by hand; the app does not.",
+  "seen": "The master's NPC card lists the action under 'Outras ações' with the SRD text; the bestiary stat block ('Ficha da criatura') shows the same text; each breath shows its own recharge tag",
+  "code": "backend/internal/play/combat_action_limit.go limitKeyOf:22 (per plan key); backend/internal/play/combat_recharge_test.go:90-100 (breath-weapons, lightning-breath, repulsion-breath keys roll separately)",
+  "fix": "Share one recharge key among the sub-breaths of a Breath Weapons action.",
+  "checked": "test",
+  "count": 20,
+  "examples": [
+   "monster:adult-brass-dragon",
+   "monster:adult-bronze-dragon",
+   "monster:adult-copper-dragon"
+  ],
+  "party": false
+ },
+ {
+  "key": "action:other:animate chains",
+  "name": "Animate chains",
+  "list": "monster-action",
+  "verdict": "by-design",
+  "says": "SRD (chain-devil): Up to four chains the devil can see within 60 feet of it magically sprout razor-edged barbs and animate under the devil's control, provided that the...",
+  "does": "RN-41: an action that rolls nothing spends the action and writes a log line; the master reads the SRD text and applies the effect.",
+  "seen": "The master's NPC card lists the action under 'Outras ações' with the SRD text; the bestiary stat block ('Ficha da criatura') shows the same text (limit tag when it has one)",
+  "code": "backend/internal/rules/monsterplan.go planClass:540 (class text); backend/internal/play/combat_creature_action.go UseCreatureAction",
+  "fix": "",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:chain-devil"
+  ],
+  "party": false
+ },
+ {
+  "key": "action:other:animate trees",
+  "name": "Animate trees",
+  "list": "monster-action",
+  "verdict": "by-design",
+  "says": "SRD (treant): The treant magically animates one or two trees it can see within 60 feet of it. These trees have the same statistics as a treant, except they have...",
+  "does": "RN-41: an action that rolls nothing spends the action and writes a log line; the master reads the SRD text and applies the effect.",
+  "seen": "The master's NPC card lists the action under 'Outras ações' with the SRD text; the bestiary stat block ('Ficha da criatura') shows the same text (limit tag when it has one)",
+  "code": "backend/internal/rules/monsterplan.go planClass:540 (class text); backend/internal/play/combat_creature_action.go UseCreatureAction",
+  "fix": "",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:treant"
+  ],
+  "party": false
+ },
+ {
+  "key": "action:other:change shape",
+  "name": "Change shape",
+  "list": "monster-action",
+  "verdict": "by-design",
+  "says": "SRD (ancient-brass-dragon): The dragon magically polymorphs into a humanoid or beast that has a challenge rating no higher than its own, or back into its true form. It reverts...",
+  "does": "RN-41: an action that rolls nothing spends the action and writes a log line; the master reads the SRD text and applies the effect.",
+  "seen": "The master's NPC card lists the action under 'Outras ações' with the SRD text; the bestiary stat block ('Ficha da criatura') shows the same text (limit tag when it has one)",
+  "code": "backend/internal/rules/monsterplan.go planClass:540 (class text); backend/internal/play/combat_creature_action.go UseCreatureAction",
+  "fix": "",
+  "checked": "",
+  "count": 9,
+  "examples": [
+   "monster:ancient-brass-dragon",
+   "monster:ancient-bronze-dragon",
+   "monster:ancient-copper-dragon"
+  ],
+  "party": false
+ },
+ {
+  "key": "action:other:children of the night",
+  "name": "Children of the night",
+  "list": "monster-action",
+  "verdict": "by-design",
+  "says": "SRD (vampire-bat): The vampire magically calls 2d4 swarms of bats or rats, provided that the sun isn't up. While outdoors, the vampire can call 3d6 wolves instead. The...",
+  "does": "RN-41: an action that rolls nothing spends the action and writes a log line; the master reads the SRD text and applies the effect.",
+  "seen": "The master's NPC card lists the action under 'Outras ações' with the SRD text; the bestiary stat block ('Ficha da criatura') shows the same text (limit tag when it has one)",
+  "code": "backend/internal/rules/monsterplan.go planClass:540 (class text); backend/internal/play/combat_creature_action.go UseCreatureAction",
+  "fix": "",
+  "checked": "",
+  "count": 2,
+  "examples": [
+   "monster:vampire-bat",
+   "monster:vampire-vampire"
+  ],
+  "party": false
+ },
+ {
+  "key": "action:other:create specter",
+  "name": "Create specter",
+  "list": "monster-action",
+  "verdict": "by-design",
+  "says": "SRD (wraith): The wraith targets a humanoid within 10 feet of it that has been dead for no longer than 1 minute and died violently. The target's spirit rises as a...",
+  "does": "RN-41: an action that rolls nothing spends the action and writes a log line; the master reads the SRD text and applies the effect.",
+  "seen": "The master's NPC card lists the action under 'Outras ações' with the SRD text; the bestiary stat block ('Ficha da criatura') shows the same text (limit tag when it has one)",
+  "code": "backend/internal/rules/monsterplan.go planClass:540 (class text); backend/internal/play/combat_creature_action.go UseCreatureAction",
+  "fix": "",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:wraith"
+  ],
+  "party": false
+ },
+ {
+  "key": "action:other:darkness aura",
+  "name": "Darkness aura",
+  "list": "monster-action",
+  "verdict": "by-design",
+  "says": "SRD (darkmantle): A 15-foot radius of magical darkness extends out from the darkmantle, moves with it, and spreads around corners. The darkness lasts as long as the...",
+  "does": "RN-41: an action that rolls nothing spends the action and writes a log line; the master reads the SRD text and applies the effect.",
+  "seen": "The master's NPC card lists the action under 'Outras ações' with the SRD text; the bestiary stat block ('Ficha da criatura') shows the same text (limit tag when it has one)",
+  "code": "backend/internal/rules/monsterplan.go planClass:540 (class text); backend/internal/play/combat_creature_action.go UseCreatureAction",
+  "fix": "",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:darkmantle"
+  ],
+  "party": false
+ },
+ {
+  "key": "action:other:enlarge",
+  "name": "Enlarge",
+  "list": "monster-action",
+  "verdict": "by-design",
+  "says": "SRD (duergar): For 1 minute, the duergar magically increases in size, along with anything it is wearing or carrying. While enlarged, the duergar is Large, doubles...",
+  "does": "RN-41: an action that rolls nothing spends the action and writes a log line; the master reads the SRD text and applies the effect.",
+  "seen": "The master's NPC card lists the action under 'Outras ações' with the SRD text; the bestiary stat block ('Ficha da criatura') shows the same text (limit tag when it has one)",
+  "code": "backend/internal/rules/monsterplan.go planClass:540 (class text); backend/internal/play/combat_creature_action.go UseCreatureAction",
+  "fix": "",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:duergar"
+  ],
+  "party": false
+ },
+ {
+  "key": "action:other:ethereal stride",
+  "name": "Ethereal stride",
+  "list": "monster-action",
+  "verdict": "by-design",
+  "says": "SRD (nightmare): The nightmare and up to three willing creatures within 5 feet of it magically enter the Ethereal Plane from the Material Plane, or vice versa.",
+  "does": "RN-41: an action that rolls nothing spends the action and writes a log line; the master reads the SRD text and applies the effect.",
+  "seen": "The master's NPC card lists the action under 'Outras ações' with the SRD text; the bestiary stat block ('Ficha da criatura') shows the same text (limit tag when it has one)",
+  "code": "backend/internal/rules/monsterplan.go planClass:540 (class text); backend/internal/play/combat_creature_action.go UseCreatureAction",
+  "fix": "",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:nightmare"
+  ],
+  "party": false
+ },
+ {
+  "key": "action:other:etherealness",
+  "name": "Etherealness",
+  "list": "monster-action",
+  "verdict": "by-design",
+  "says": "SRD (ghost): The ghost enters the Ethereal Plane from the Material Plane, or vice versa. It is visible on the Material Plane while it is in the Border Ethereal,...",
+  "does": "RN-41: an action that rolls nothing spends the action and writes a log line; the master reads the SRD text and applies the effect.",
+  "seen": "The master's NPC card lists the action under 'Outras ações' with the SRD text; the bestiary stat block ('Ficha da criatura') shows the same text (limit tag when it has one)",
+  "code": "backend/internal/rules/monsterplan.go planClass:540 (class text); backend/internal/play/combat_creature_action.go UseCreatureAction",
+  "fix": "",
+  "checked": "",
+  "count": 3,
+  "examples": [
+   "monster:ghost",
+   "monster:night-hag",
+   "monster:succubus-incubus"
+  ],
+  "party": false
+ },
+ {
+  "key": "action:other:flying sword",
+  "name": "Flying sword",
+  "list": "monster-action",
+  "verdict": "by-design",
+  "says": "SRD (solar): The solar releases its greatsword to hover magically in an unoccupied space within 5 ft. of it. If the solar can see the sword, the solar can...",
+  "does": "RN-41: an action that rolls nothing spends the action and writes a log line; the master reads the SRD text and applies the effect.",
+  "seen": "The master's NPC card lists the action under 'Outras ações' with the SRD text; the bestiary stat block ('Ficha da criatura') shows the same text (limit tag when it has one)",
+  "code": "backend/internal/rules/monsterplan.go planClass:540 (class text); backend/internal/play/combat_creature_action.go UseCreatureAction",
+  "fix": "",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:solar"
+  ],
+  "party": false
+ },
+ {
+  "key": "action:other:haste",
+  "name": "Haste",
+  "list": "monster-action",
+  "verdict": "by-design",
+  "says": "SRD (clay-golem): Until the end of its next turn, the golem magically gains a +2 bonus to its AC, has advantage on Dexterity saving throws, and can use its slam attack...",
+  "does": "RN-41: an action that rolls nothing spends the action and writes a log line; the master reads the SRD text and applies the effect.",
+  "seen": "The master's NPC card lists the action under 'Outras ações' with the SRD text; the bestiary stat block ('Ficha da criatura') shows the same text (limit tag when it has one)",
+  "code": "backend/internal/rules/monsterplan.go planClass:540 (class text); backend/internal/play/combat_creature_action.go UseCreatureAction",
+  "fix": "",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:clay-golem"
+  ],
+  "party": false
+ },
+ {
+  "key": "action:other:healing touch",
+  "name": "Healing touch",
+  "list": "monster-action",
+  "verdict": "by-design",
+  "says": "SRD (deva): The deva touches another creature. The target magically regains 20 (4d8 + 2) hit points and is freed from any curse, disease, poison, blindness, or...",
+  "does": "RN-41: an action that rolls nothing spends the action and writes a log line; the master reads the SRD text and applies the effect.",
+  "seen": "The master's NPC card lists the action under 'Outras ações' with the SRD text; the bestiary stat block ('Ficha da criatura') shows the same text (limit tag when it has one)",
+  "code": "backend/internal/rules/monsterplan.go planClass:540 (class text); backend/internal/play/combat_creature_action.go UseCreatureAction",
+  "fix": "",
+  "checked": "",
+  "count": 4,
+  "examples": [
+   "monster:deva",
+   "monster:planetar",
+   "monster:solar"
+  ],
+  "party": false
+ },
+ {
+  "key": "action:other:illusory appearance",
+  "name": "Illusory appearance",
+  "list": "monster-action",
+  "verdict": "by-design",
+  "says": "SRD (green-hag): The hag covers herself and anything she is wearing or carrying with a magical illusion that makes her look like another creature of her general size...",
+  "does": "RN-41: an action that rolls nothing spends the action and writes a log line; the master reads the SRD text and applies the effect.",
+  "seen": "The master's NPC card lists the action under 'Outras ações' with the SRD text; the bestiary stat block ('Ficha da criatura') shows the same text (limit tag when it has one)",
+  "code": "backend/internal/rules/monsterplan.go planClass:540 (class text); backend/internal/play/combat_creature_action.go UseCreatureAction",
+  "fix": "",
+  "checked": "",
+  "count": 2,
+  "examples": [
+   "monster:green-hag",
+   "monster:sea-hag"
+  ],
+  "party": false
+ },
+ {
+  "key": "action:other:ink cloud",
+  "name": "Ink cloud",
+  "list": "monster-action",
+  "verdict": "by-design",
+  "says": "SRD (giant-octopus): A 20-foot-radius cloud of ink extends all around the octopus if it is underwater. The area is heavily obscured for 1 minute, although a significant...",
+  "does": "RN-41: an action that rolls nothing spends the action and writes a log line; the master reads the SRD text and applies the effect.",
+  "seen": "The master's NPC card lists the action under 'Outras ações' with the SRD text; the bestiary stat block ('Ficha da criatura') shows the same text (limit tag when it has one)",
+  "code": "backend/internal/rules/monsterplan.go planClass:540 (class text); backend/internal/play/combat_creature_action.go UseCreatureAction",
+  "fix": "",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:giant-octopus"
+  ],
+  "party": true
+ },
+ {
+  "key": "action:other:invisibility",
+  "name": "Invisibility",
+  "list": "monster-action",
+  "verdict": "by-design",
+  "says": "SRD (duergar): The duergar magically turns invisible until it attacks, casts a spell, or uses its Enlarge, or until its concentration is broken, up to 1 hour (as if...",
+  "does": "RN-41: an action that rolls nothing spends the action and writes a log line; the master reads the SRD text and applies the effect.",
+  "seen": "The master's NPC card lists the action under 'Outras ações' with the SRD text; the bestiary stat block ('Ficha da criatura') shows the same text (limit tag when it has one)",
+  "code": "backend/internal/rules/monsterplan.go planClass:540 (class text); backend/internal/play/combat_creature_action.go UseCreatureAction",
+  "fix": "",
+  "checked": "",
+  "count": 5,
+  "examples": [
+   "monster:duergar",
+   "monster:imp",
+   "monster:quasit"
+  ],
+  "party": true
+ },
+ {
+  "key": "action:other:invisible passage",
+  "name": "Invisible passage",
+  "list": "monster-action",
+  "verdict": "by-design",
+  "says": "SRD (green-hag): The hag magically turns invisible until she attacks or casts a spell, or until her concentration ends (as if concentrating on a spell). While...",
+  "does": "RN-41: an action that rolls nothing spends the action and writes a log line; the master reads the SRD text and applies the effect.",
+  "seen": "The master's NPC card lists the action under 'Outras ações' with the SRD text; the bestiary stat block ('Ficha da criatura') shows the same text (limit tag when it has one)",
+  "code": "backend/internal/rules/monsterplan.go planClass:540 (class text); backend/internal/play/combat_creature_action.go UseCreatureAction",
+  "fix": "",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:green-hag"
+  ],
+  "party": false
+ },
+ {
+  "key": "action:other:leadership",
+  "name": "Leadership",
+  "list": "monster-action",
+  "verdict": "by-design",
+  "says": "SRD (knight): For 1 minute, the knight can utter a special command or warning whenever a nonhostile creature that it can see within 30 ft. of it makes an attack...",
+  "does": "RN-41: an action that rolls nothing spends the action and writes a log line; the master reads the SRD text and applies the effect.",
+  "seen": "The master's NPC card lists the action under 'Outras ações' with the SRD text; the bestiary stat block ('Ficha da criatura') shows the same text (limit tag when it has one)",
+  "code": "backend/internal/rules/monsterplan.go planClass:540 (class text); backend/internal/play/combat_creature_action.go UseCreatureAction",
+  "fix": "",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:knight"
+  ],
+  "party": false
+ },
+ {
+  "key": "action:other:nightmare haunting",
+  "name": "Nightmare haunting",
+  "list": "monster-action",
+  "verdict": "by-design",
+  "says": "SRD (night-hag): While on the Ethereal Plane, the hag magically touches a sleeping humanoid on the Material Plane. A protection from evil and good spell cast on the...",
+  "does": "RN-41: an action that rolls nothing spends the action and writes a log line; the master reads the SRD text and applies the effect.",
+  "seen": "The master's NPC card lists the action under 'Outras ações' with the SRD text; the bestiary stat block ('Ficha da criatura') shows the same text (limit tag when it has one)",
+  "code": "backend/internal/rules/monsterplan.go planClass:540 (class text); backend/internal/play/combat_creature_action.go UseCreatureAction",
+  "fix": "",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:night-hag"
+  ],
+  "party": false
+ },
+ {
+  "key": "action:other:phantasms",
+  "name": "Phantasms",
+  "list": "monster-action",
+  "verdict": "by-design",
+  "says": "SRD (cloaker): The cloaker magically creates three illusory duplicates of itself if it isn't in bright light. The duplicates move with it and mimic its actions,...",
+  "does": "RN-41: an action that rolls nothing spends the action and writes a log line; the master reads the SRD text and applies the effect.",
+  "seen": "The master's NPC card lists the action under 'Outras ações' with the SRD text; the bestiary stat block ('Ficha da criatura') shows the same text (limit tag when it has one)",
+  "code": "backend/internal/rules/monsterplan.go planClass:540 (class text); backend/internal/play/combat_creature_action.go UseCreatureAction",
+  "fix": "",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:cloaker"
+  ],
+  "party": false
+ },
+ {
+  "key": "action:other:read thoughts",
+  "name": "Read thoughts",
+  "list": "monster-action",
+  "verdict": "by-design",
+  "says": "SRD (doppelganger): The doppelganger magically reads the surface thoughts of one creature within 60 ft. of it. The effect can penetrate barriers, but 3 ft. of wood or...",
+  "does": "RN-41: an action that rolls nothing spends the action and writes a log line; the master reads the SRD text and applies the effect.",
+  "seen": "The master's NPC card lists the action under 'Outras ações' with the SRD text; the bestiary stat block ('Ficha da criatura') shows the same text (limit tag when it has one)",
+  "code": "backend/internal/rules/monsterplan.go planClass:540 (class text); backend/internal/play/combat_creature_action.go UseCreatureAction",
+  "fix": "",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:doppelganger"
+  ],
+  "party": false
+ },
+ {
+  "key": "action:other:reel",
+  "name": "Reel",
+  "list": "monster-action",
+  "verdict": "by-design",
+  "says": "SRD (roper): The roper pulls each creature grappled by it up to 25 ft. straight toward it.",
+  "does": "RN-41: an action that rolls nothing spends the action and writes a log line; the master reads the SRD text and applies the effect.",
+  "seen": "The master's NPC card lists the action under 'Outras ações' with the SRD text; the bestiary stat block ('Ficha da criatura') shows the same text (limit tag when it has one)",
+  "code": "backend/internal/rules/monsterplan.go planClass:540 (class text); backend/internal/play/combat_creature_action.go UseCreatureAction",
+  "fix": "",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:roper"
+  ],
+  "party": false
+ },
+ {
+  "key": "action:other:roar",
+  "name": "Roar",
+  "list": "monster-action",
+  "verdict": "by-design",
+  "says": "SRD (androsphinx): The sphinx emits a magical roar. Each time it roars before finishing a long rest, the roar is louder and the effect is different, as detailed below....",
+  "does": "RN-41: an action that rolls nothing spends the action and writes a log line; the master reads the SRD text and applies the effect.",
+  "seen": "The master's NPC card lists the action under 'Outras ações' with the SRD text; the bestiary stat block ('Ficha da criatura') shows the same text (limit tag when it has one)",
+  "code": "backend/internal/rules/monsterplan.go planClass:540 (class text); backend/internal/play/combat_creature_action.go UseCreatureAction",
+  "fix": "",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:androsphinx"
+  ],
+  "party": false
+ },
+ {
+  "key": "action:other:swallow",
+  "name": "Swallow",
+  "list": "monster-action",
+  "verdict": "by-design",
+  "says": "SRD (giant-frog): The frog makes one bite attack against a Small or smaller target it is grappling. If the attack hits, the target is swallowed, and the grapple ends....",
+  "does": "RN-41: an action that rolls nothing spends the action and writes a log line; the master reads the SRD text and applies the effect.",
+  "seen": "The master's NPC card lists the action under 'Outras ações' with the SRD text; the bestiary stat block ('Ficha da criatura') shows the same text (limit tag when it has one)",
+  "code": "backend/internal/rules/monsterplan.go planClass:540 (class text); backend/internal/play/combat_creature_action.go UseCreatureAction",
+  "fix": "",
+  "checked": "",
+  "count": 2,
+  "examples": [
+   "monster:giant-frog",
+   "monster:giant-toad"
+  ],
+  "party": true
+ },
+ {
+  "key": "action:other:teleport",
+  "name": "Teleport",
+  "list": "monster-action",
+  "verdict": "by-design",
+  "says": "SRD (balor): The balor magically teleports, along with any equipment it is wearing or carrying, up to 120 feet to an unoccupied space it can see.",
+  "does": "RN-41: an action that rolls nothing spends the action and writes a log line; the master reads the SRD text and applies the effect.",
+  "seen": "The master's NPC card lists the action under 'Outras ações' with the SRD text; the bestiary stat block ('Ficha da criatura') shows the same text (limit tag when it has one)",
+  "code": "backend/internal/rules/monsterplan.go planClass:540 (class text); backend/internal/play/combat_creature_action.go UseCreatureAction",
+  "fix": "",
+  "checked": "",
+  "count": 5,
+  "examples": [
+   "monster:balor",
+   "monster:blink-dog",
+   "monster:marilith"
+  ],
+  "party": false
+ },
+ {
+  "key": "action:ranged-attack",
+  "name": "Ranged weapon attack",
+  "list": "monster-action",
+  "verdict": "runs",
+  "says": "A monster's ranged weapon attack rolls the stated bonus and damage within its range.",
+  "does": "The attack is rolled with the bonus, range and damage read from the text and the damage applied; only the first three valid attacks of a stat block reach the NPC sheet.",
+  "seen": "The master's NPC card lists the action under 'Outras ações' with the SRD text; the bestiary stat block ('Ficha da criatura') shows the same text",
+  "code": "backend/internal/rules/creatures.go monsterAttack:862; backend/internal/characters/npcfromcreature.go basicAttackOf:225",
+  "fix": "",
+  "checked": "",
+  "count": 36,
+  "examples": [
+   "monster:ape",
+   "monster:bandit",
+   "monster:barbed-devil"
+  ],
+  "party": true
+ },
+ {
+  "key": "action:ranged-attack+save",
+  "name": "Ranged attack with a saving throw",
+  "list": "monster-action",
+  "verdict": "runs",
+  "says": "A hit forces a saving throw: poison damage on a failure, half on a success.",
+  "does": "The hit offers the rider (RN-40) and the extra damage is part of the hit (RN-42); the save is rolled by the app, or asked of the master for a Legendary Resistance creature.",
+  "seen": "The rider offer with the DC and damage; the action text on the card",
+  "code": "backend/internal/play/combat_creature_rider.go savingRider; backend/internal/rules/monsterplan.go planSave",
+  "fix": "",
+  "checked": "",
+  "count": 7,
+  "examples": [
+   "monster:assassin",
+   "monster:deep-gnome-svirfneblin",
+   "monster:drow"
+  ],
+  "party": true
+ },
+ {
+  "key": "action:ranged-attack+save+prone",
+  "name": "Ranged attack that knocks prone on a failed save",
+  "list": "monster-action",
+  "verdict": "runs",
+  "says": "Stone giant Rock: a hit with a failed Strength save knocks the target prone.",
+  "does": "The hit offers the rider (RN-40); Aplicar rolls the save and gives prone on a failure.",
+  "seen": "The rider offer with the DC; the action text on the card",
+  "code": "backend/internal/play/combat_creature_rider.go savingRider; backend/internal/rules/monsterplan.go planSave",
+  "fix": "",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:stone-giant"
+  ],
+  "party": false
+ },
+ {
+  "key": "action:save-effect",
+  "name": "Save effect (no damage)",
+  "list": "monster-action",
+  "verdict": "wrong",
+  "says": "An action that forces a saving throw with a condition on a failure (a gaze, a roar, a swallow).",
+  "does": "The save is rolled and the condition given by the planner, but it takes the first condition word after 'saving throw': remorhaz and tarrasque Swallow give prone from the regurgitation line, and bulette Deadly Leap asks Strength only where the SRD lets the target pick Strength or Dexterity. The master can Dispensar and set the conditions or the save by hand.",
+  "seen": "The master's NPC card lists the action under 'Outras ações' with the SRD text; the bestiary stat block ('Ficha da criatura') shows the same text",
+  "code": "backend/internal/rules/monsterplan.go failedSaveCondition:377, planSave; plan dump: remorhaz/tarrasque Swallow = condition:prone; bulette plan save = str only (monsters.json save ability str, SRD text Strength or Dexterity)",
+  "fix": "Read swallow text as a reminder; offer both abilities where the text says Strength or Dexterity.",
+  "checked": "test",
+  "count": 62,
+  "examples": [
+   "monster:aboleth",
+   "monster:adult-black-dragon",
+   "monster:adult-blue-dragon"
+  ],
+  "party": true
+ },
+ {
+  "key": "action:save-effect+damage",
+  "name": "Save effect with damage",
+  "list": "monster-action",
+  "verdict": "wrong",
+  "says": "A breath, stomp or gaze: a saving throw, damage on a failure and often half on a success, in the stated area.",
+  "does": "Damage, save DC, half on success and the area (line, cone, radius) are read and applied for most; the behir Swallow gets a prone rider from the regurgitation sentence, and the metallic dragons' breaths do not share one recharge. The master can correct the damage or conditions by hand.",
+  "seen": "The master's NPC card lists the action under 'Outras ações' with the SRD text; the bestiary stat block ('Ficha da criatura') shows the same text",
+  "code": "backend/internal/rules/monsterplan.go planSave, areaOf, failedSaveCondition:377",
+  "fix": "Read swallow text as a reminder; share one recharge among the sub-breaths.",
+  "checked": "test",
+  "count": 57,
+  "examples": [
+   "monster:adult-black-dragon",
+   "monster:adult-blue-dragon",
+   "monster:adult-brass-dragon"
+  ],
+  "party": false
+ },
+ {
+  "key": "condition_immunities",
+  "name": "Condition immunities",
+  "list": "monster-defense",
+  "verdict": "runs",
+  "says": "The creature cannot gain the listed conditions.",
+  "does": "The stat block's immunities are on the NPC's derived data; a spell, a hit rider, a trap, a zone and a forced prone refuse to give an immune creature the condition.",
+  "seen": "A refusal with the reason when a condition is refused; the Imunidades line on the stat block",
+  "code": "backend/internal/characters/combatturn.go basicDerived (StatBlockConditionImmunities); backend/internal/play/condition_immunity.go immuneToCondition; backend/internal/play/combat_spells_hp.go giveCondition:348",
+  "fix": "",
+  "checked": "",
+  "count": 92,
+  "examples": [
+   "monster:adult-green-dragon",
+   "monster:air-elemental",
+   "monster:ancient-green-dragon"
+  ],
+  "party": true
+ },
+ {
+  "key": "immunities:nonmagical-clause",
+  "name": "Damage immunity to nonmagical attacks",
+  "list": "monster-defense",
+  "verdict": "runs",
+  "says": "Immune to bludgeoning, piercing and slashing from nonmagical attacks (some: unless silvered or adamantine).",
+  "does": "The clause is applied by the attack's origin: a sheet attack counts as magical, silvered or adamantine by its marks, a spell is magical, and the damage is zeroed otherwise.",
+  "seen": "The damage line of the hit shows the zero; the Imunidades line on the stat block",
+  "code": "backend/internal/rules/combat/steps.go Adjust, Modifier.Covers; backend/internal/play/combat_damage.go originOf:505-540; backend/internal/characters/charactercreatures_roster.go typeModifiersOf:768",
+  "fix": "",
+  "checked": "",
+  "count": 26,
+  "examples": [
+   "monster:androsphinx",
+   "monster:clay-golem",
+   "monster:couatl"
+  ],
+  "party": false
+ },
+ {
+  "key": "immunities:plain",
+  "name": "Damage immunity",
+  "list": "monster-defense",
+  "verdict": "runs",
+  "says": "Takes no damage of the listed types.",
+  "does": "Immunity is applied before resistance and vulnerability in the damage steps.",
+  "seen": "The damage line shows the immunity applied; the Imunidades line on the stat block",
+  "code": "backend/internal/rules/combat/steps.go Adjust; backend/internal/characters/charactercreatures_roster.go DamageModifiers, damageTypesOf:780",
+  "fix": "",
+  "checked": "",
+  "count": 120,
+  "examples": [
+   "monster:adult-black-dragon",
+   "monster:adult-blue-dragon",
+   "monster:adult-brass-dragon"
+  ],
+  "party": true
+ },
+ {
+  "key": "resistances:nonmagical-clause",
+  "name": "Resistance to nonmagical attacks",
+  "list": "monster-defense",
+  "verdict": "runs",
+  "says": "Resistance to bludgeoning, piercing and slashing from nonmagical attacks (some: unless silvered or adamantine).",
+  "does": "Halved (rounded down) by the attack's origin, as for the immunity; a creature's weapon with the Magic Weapons trait is judged under that trait's row.",
+  "seen": "The damage line shows the resistance applied; the Resistências line on the stat block",
+  "code": "backend/internal/rules/combat/steps.go Adjust, Modifier.Covers; backend/internal/play/combat_damage.go originOf:505-540",
+  "fix": "",
+  "checked": "",
+  "count": 44,
+  "examples": [
+   "monster:air-elemental",
+   "monster:archmage",
+   "monster:balor"
+  ],
+  "party": true
+ },
+ {
+  "key": "resistances:plain",
+  "name": "Damage resistance",
+  "list": "monster-defense",
+  "verdict": "wrong",
+  "says": "Takes half damage (rounded down) of the listed types, or of the listed source (damage from spells).",
+  "does": "Plain type resistances are halved, but a plain entry that carries a note instead of a type is skipped: the archmage's resistance to damage from spells is not applied to spell damage the app applies. The master can correct the damage by hand.",
+  "seen": "The Resistências line on the stat block; no mark on the damage line",
+  "code": "backend/internal/characters/charactercreatures_roster.go damageTypesOf:783 (qualifier \"\" with a Note is skipped)",
+  "fix": "Apply 'damage from spells' by the spell origin.",
+  "checked": "",
+  "count": 59,
+  "examples": [
+   "monster:air-elemental",
+   "monster:archmage",
+   "monster:assassin"
+  ],
+  "party": true
+ },
+ {
+  "key": "vulnerabilities:plain",
+  "name": "Damage vulnerability",
+  "list": "monster-defense",
+  "verdict": "wrong",
+  "says": "Takes double damage of the listed types or from the listed source.",
+  "does": "Type vulnerabilities are doubled after resistance, but an entry with a note instead of a type is skipped: the rakshasa's vulnerability to piercing from magic weapons wielded by good creatures never applies. The master can correct the damage by hand.",
+  "seen": "The Vulnerabilidades line on the stat block; no mark on the damage line",
+  "code": "backend/internal/characters/charactercreatures_roster.go damageTypesOf:783; backend/internal/rules/combat/steps.go Adjust",
+  "fix": "Apply sourced vulnerabilities by origin (magic weapon, good wielder), or note them on the card.",
+  "checked": "",
+  "count": 15,
+  "examples": [
+   "monster:awakened-shrub",
+   "monster:awakened-tree",
+   "monster:dust-mephit"
+  ],
+  "party": false
+ },
+ {
+  "key": "legendary:actions",
+  "name": "Legendary actions",
+  "list": "monster-legendary",
+  "verdict": "runs",
+  "says": "The creature can take 3 legendary actions at the end of another creature's turn, and regains them at the start of its own turn.",
+  "does": "The pool is 3 a round (RN-29), spent at the end of another combatant's turn, restored at its own turn start, and not kept between combats; the options are read from the stat block.",
+  "seen": "The legendary card on the master's NPC card with the pool and the options",
+  "code": "backend/internal/rules/legendary.go LegendaryActionsPerRound, ReadLegendaryProfile; backend/internal/play/combat_legendary.go, combat_legendary_spend.go legendaryNow/legendaryCheck",
+  "fix": "",
+  "checked": "",
+  "count": 32,
+  "examples": [
+   "monster:aboleth",
+   "monster:adult-black-dragon",
+   "monster:adult-blue-dragon"
+  ],
+  "party": false
+ },
+ {
+  "key": "legendary:cost-1",
+  "name": "Legendary option costing 1",
+  "list": "monster-legendary",
+  "verdict": "runs-part",
+  "says": "A legendary option that costs 1 action of the pool.",
+  "does": "The option is taken at the end of another creature's turn and its cost comes off the pool of 3; an attack, a save or a move option is run by the app and an option that rolls nothing is a log reminder (RN-41). (the cost is checked against what is left)",
+  "seen": "The option and its cost on the legendary card; the pool left",
+  "code": "backend/internal/rules/legendary.go legendaryOption, attackActionOf; backend/internal/play/combat_legendary_spend.go legendaryCheck",
+  "fix": "",
+  "checked": "",
+  "count": 32,
+  "examples": [
+   "monster:aboleth",
+   "monster:adult-black-dragon",
+   "monster:adult-blue-dragon"
+  ],
+  "party": false
+ },
+ {
+  "key": "legendary:cost-2",
+  "name": "Legendary option costing 2",
+  "list": "monster-legendary",
+  "verdict": "runs-part",
+  "says": "A legendary option that costs 2 actions of the pool.",
+  "does": "The option is taken at the end of another creature's turn and its cost comes off the pool of 3; an attack, a save or a move option is run by the app and an option that rolls nothing is a log reminder (RN-41). (the cost is checked against what is left)",
+  "seen": "The option and its cost on the legendary card; the pool left",
+  "code": "backend/internal/rules/legendary.go legendaryOption, attackActionOf; backend/internal/play/combat_legendary_spend.go legendaryCheck",
+  "fix": "",
+  "checked": "",
+  "count": 32,
+  "examples": [
+   "monster:aboleth",
+   "monster:adult-black-dragon",
+   "monster:adult-blue-dragon"
+  ],
+  "party": false
+ },
+ {
+  "key": "legendary:cost-3",
+  "name": "Legendary option costing 3",
+  "list": "monster-legendary",
+  "verdict": "runs-part",
+  "says": "A legendary option that costs 3 actions of the pool.",
+  "does": "The option is taken at the end of another creature's turn and its cost comes off the pool of 3; an attack, a save or a move option is run by the app and an option that rolls nothing is a log reminder (RN-41). (the cost is checked against what is left)",
+  "seen": "The option and its cost on the legendary card; the pool left",
+  "code": "backend/internal/rules/legendary.go legendaryOption, attackActionOf; backend/internal/play/combat_legendary_spend.go legendaryCheck",
+  "fix": "",
+  "checked": "",
+  "count": 6,
+  "examples": [
+   "monster:androsphinx",
+   "monster:gynosphinx",
+   "monster:kraken"
+  ],
+  "party": false
+ },
+ {
+  "key": "reaction:parry",
+  "name": "Parry",
+  "list": "monster-reaction",
+  "verdict": "runs",
+  "says": "Adds 2 to 5 to AC against one melee weapon attack that would hit, if the creature sees the attacker and wields a melee weapon.",
+  "does": "The server decides the Parry by itself with no window (RN-29, RN-31): it adds the bonus against a melee weapon hit that would land, spends the reaction, and needs the NPC to see the attacker.",
+  "seen": "The log line for the master; the player sees only the miss",
+  "code": "backend/internal/play/combat_parry_auto.go autoParry, parryApplies, parryCanAnswer; backend/internal/characters/combatreactions.go creatureReactionStats:46-66",
+  "fix": "",
+  "checked": "",
+  "count": 6,
+  "examples": [
+   "monster:bandit-captain",
+   "monster:erinyes",
+   "monster:gladiator"
+  ],
+  "party": false
+ },
+ {
+  "key": "reaction:rock catching",
+  "name": "Rock catching",
+  "list": "monster-reaction",
+  "verdict": "by-design",
+  "says": "SRD (stone-giant): If a rock or similar object is hurled at the giant, the giant can, with a successful DC 10 Dexterity saving throw, catch the missile and take no...",
+  "does": "RN-29: the other reactions (Split, Shriek, Rock Catching, Unnerving Mask, Shield) are text on the creature sheet that the app does not resolve; the NPC has a reaction chip the master marks.",
+  "seen": "The reaction text on the bestiary stat block; the Reação disponível/usada chip on the NPC card",
+  "code": "backend/internal/rules/legendary.go monsterReaction (Parry only); docs/product/rules.md RN-29 line 1101",
+  "fix": "",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:stone-giant"
+  ],
+  "party": false
+ },
+ {
+  "key": "reaction:shield",
+  "name": "Shield",
+  "list": "monster-reaction",
+  "verdict": "by-design",
+  "says": "SRD (shield-guardian): When a creature makes an attack against the wearer of the guardian's amulet, the guardian grants a +2 bonus to the wearer's AC if the guardian is...",
+  "does": "RN-29: the other reactions (Split, Shriek, Rock Catching, Unnerving Mask, Shield) are text on the creature sheet that the app does not resolve; the NPC has a reaction chip the master marks.",
+  "seen": "The reaction text on the bestiary stat block; the Reação disponível/usada chip on the NPC card",
+  "code": "backend/internal/rules/legendary.go monsterReaction (Parry only); docs/product/rules.md RN-29 line 1101",
+  "fix": "",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:shield-guardian"
+  ],
+  "party": false
+ },
+ {
+  "key": "reaction:shriek",
+  "name": "Shriek",
+  "list": "monster-reaction",
+  "verdict": "by-design",
+  "says": "SRD (shrieker): When bright light or a creature is within 30 feet of the shrieker, it emits a shriek audible within 300 feet of it. The shrieker continues to shriek...",
+  "does": "RN-29: the other reactions (Split, Shriek, Rock Catching, Unnerving Mask, Shield) are text on the creature sheet that the app does not resolve; the NPC has a reaction chip the master marks.",
+  "seen": "The reaction text on the bestiary stat block; the Reação disponível/usada chip on the NPC card",
+  "code": "backend/internal/rules/legendary.go monsterReaction (Parry only); docs/product/rules.md RN-29 line 1101",
+  "fix": "",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:shrieker"
+  ],
+  "party": false
+ },
+ {
+  "key": "reaction:split",
+  "name": "Split",
+  "list": "monster-reaction",
+  "verdict": "by-design",
+  "says": "SRD (black-pudding): When a pudding that is Medium or larger is subjected to lightning or slashing damage, it splits into two new puddings if it has at least 10 hit...",
+  "does": "RN-29: the other reactions (Split, Shriek, Rock Catching, Unnerving Mask, Shield) are text on the creature sheet that the app does not resolve; the NPC has a reaction chip the master marks.",
+  "seen": "The reaction text on the bestiary stat block; the Reação disponível/usada chip on the NPC card",
+  "code": "backend/internal/rules/legendary.go monsterReaction (Parry only); docs/product/rules.md RN-29 line 1101",
+  "fix": "",
+  "checked": "",
+  "count": 2,
+  "examples": [
+   "monster:black-pudding",
+   "monster:ochre-jelly"
+  ],
+  "party": false
+ },
+ {
+  "key": "reaction:unnerving mask",
+  "name": "Unnerving mask",
+  "list": "monster-reaction",
+  "verdict": "by-design",
+  "says": "SRD (chain-devil): When a creature the devil can see starts its turn within 30 feet of the devil, the devil can create the illusion that it looks like one of the...",
+  "does": "RN-29: the other reactions (Split, Shriek, Rock Catching, Unnerving Mask, Shield) are text on the creature sheet that the app does not resolve; the NPC has a reaction chip the master marks.",
+  "seen": "The reaction text on the bestiary stat block; the Reação disponível/usada chip on the NPC card",
+  "code": "backend/internal/rules/legendary.go monsterReaction (Parry only); docs/product/rules.md RN-29 line 1101",
+  "fix": "",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:chain-devil"
+  ],
+  "party": false
+ },
+ {
+  "key": "sense:blindsight",
+  "name": "Blindsight",
+  "list": "monster-sense",
+  "verdict": "wrong",
+  "says": "The creature perceives its surroundings within range without sight, even blinded, and sees what hides or is invisible there.",
+  "does": "The sense feeds the sight of the NPC in the fog, but the reaction-sight check ignores it: a blinded NPC sees nothing and an invisible actor is unseen, even for a creature with blindsight, so opportunity attacks and reaction windows are wrongly refused. No override of the sight check was found.",
+  "seen": "Nothing on the card; the Sentidos line on the stat block",
+  "code": "backend/internal/play/combat_reaction_counterspell.go eyesCannotSee:82; backend/internal/characters/partyvision.go sensesOf:80",
+  "fix": "Let blindsight or truesight within range override blinded and invisible in eyesCannotSee.",
+  "checked": "",
+  "count": 83,
+  "examples": [
+   "monster:adult-black-dragon",
+   "monster:adult-blue-dragon",
+   "monster:adult-brass-dragon"
+  ],
+  "party": true
+ },
+ {
+  "key": "sense:darkvision",
+  "name": "Darkvision",
+  "list": "monster-sense",
+  "verdict": "runs-part",
+  "says": "The creature sees in darkness within range as in dim light, and in dim light as in bright light.",
+  "does": "The range feeds the NPC's sight in dark squares for reactions, opportunity attacks, fog and trap noticing; it adds no mark on attack rolls and no card text.",
+  "seen": "The Sentidos line on the stat block; nothing on the combat card",
+  "code": "backend/internal/rules/creatures.go monsterSenses:679; backend/internal/characters/partyvision.go sensesOf:80, senseRanges:99; backend/internal/rules/vision/vision.go lightSeen",
+  "fix": "",
+  "checked": "",
+  "count": 181,
+  "examples": [
+   "monster:aboleth",
+   "monster:adult-black-dragon",
+   "monster:adult-blue-dragon"
+  ],
+  "party": true
+ },
+ {
+  "key": "sense:tremorsense",
+  "name": "Tremorsense",
+  "list": "monster-sense",
+  "verdict": "by-hand-silent",
+  "says": "The creature detects creatures touching the same ground within range, with no sight.",
+  "does": "Read from the stat block and dropped: the engine's senses have no tremorsense, so it sees nothing extra; the master judges who it detects.",
+  "seen": "The Sentidos line on the stat block",
+  "code": "backend/internal/characters/partyvision.go sensesOf:80 (darkvision, blindsight, truesight, devils-sight only)",
+  "fix": "Add tremorsense to the sight check for creatures on the ground.",
+  "checked": "",
+  "count": 6,
+  "examples": [
+   "monster:ankheg",
+   "monster:bulette",
+   "monster:earth-elemental"
+  ],
+  "party": false
+ },
+ {
+  "key": "sense:truesight",
+  "name": "Truesight",
+  "list": "monster-sense",
+  "verdict": "wrong",
+  "says": "The creature sees in darkness, invisible creatures, illusions and the Ethereal Plane within range.",
+  "does": "As for blindsight: the sense is carried to the fog sight, but eyesCannotSee makes an invisible actor unseen by every reactor, so a truesight creature gets no opportunity attack or reaction window against an invisible creature.",
+  "seen": "The Sentidos line on the stat block",
+  "code": "backend/internal/play/combat_reaction_counterspell.go eyesCannotSee:82; backend/internal/play/combat_fog.go reactorSees:294-306",
+  "fix": "Let truesight within range override the invisible actor in eyesCannotSee.",
+  "checked": "",
+  "count": 13,
+  "examples": [
+   "monster:androsphinx",
+   "monster:balor",
+   "monster:couatl"
+  ],
+  "party": false
+ },
+ {
+  "key": "speed:burrow",
+  "name": "Burrow speed",
+  "list": "monster-speed",
+  "verdict": "by-hand-silent",
+  "says": "The creature can burrow through earth at the stated speed.",
+  "does": "Not carried to the NPC combatant (walking speed only; the burrow field stays 0), so the master moves the token by hand.",
+  "seen": "The Velocidade line on the stat block",
+  "code": "backend/internal/characters/npcfromcreature.go npcSheetFromCreature:146; backend/internal/characters/combatants.go combatCharacter:178-185; backend/internal/play/combat_join.go joinRow:255; backend/internal/play/combat_speed.go speedsOf",
+  "fix": "Add a burrow movement mode, or a card note.",
+  "checked": "",
+  "count": 21,
+  "examples": [
+   "monster:adult-blue-dragon",
+   "monster:adult-brass-dragon",
+   "monster:adult-white-dragon"
+  ],
+  "party": true
+ },
+ {
+  "key": "speed:climb",
+  "name": "Climb speed",
+  "list": "monster-speed",
+  "verdict": "wrong",
+  "says": "The creature climbs at the stated speed with no extra cost.",
+  "does": "The combatant is built from the stat block's walking speed only (the best other speed when it has none, npcfromcreature.go:146) and the swim, climb, burrow and fly fields stay 0 for a basic sheet; movement is a climb costs extra metres from its walking speed. The master can force the move with 'Mover mesmo assim' (free, no limit).",
+  "seen": "The Velocidade line on the stat block; the screen warns when a move is refused",
+  "code": "backend/internal/characters/npcfromcreature.go npcSheetFromCreature:146; backend/internal/characters/combatants.go combatCharacter:178-185; backend/internal/play/combat_join.go joinRow:255; backend/internal/play/combat_speed.go speedsOf",
+  "fix": "Copy the climb speed to the NPC combatant, as for a character.",
+  "checked": "",
+  "count": 36,
+  "examples": [
+   "monster:adult-copper-dragon",
+   "monster:adult-red-dragon",
+   "monster:ancient-copper-dragon"
+  ],
+  "party": true
+ },
+ {
+  "key": "speed:fly",
+  "name": "Fly speed",
+  "list": "monster-speed",
+  "verdict": "wrong",
+  "says": "The creature flies at the stated speed, ignoring difficult terrain and ground obstacles (hover: keeps aloft when knocked prone).",
+  "does": "The combatant is built from the stat block's walking speed only (the best other speed when it has none, npcfromcreature.go:146) and the swim, climb, burrow and fly fields stay 0 for a basic sheet; movement is a flier pays difficult terrain and is stopped by blocking creatures. The master can force the move with 'Mover mesmo assim' (free, no limit).",
+  "seen": "The Velocidade line on the stat block; the screen warns when a move is refused",
+  "code": "backend/internal/characters/npcfromcreature.go npcSheetFromCreature:146; backend/internal/characters/combatants.go combatCharacter:178-185; backend/internal/play/combat_join.go joinRow:255; backend/internal/play/combat_speed.go speedsOf",
+  "fix": "Copy the fly speed to the NPC combatant, as for a character.",
+  "checked": "",
+  "count": 104,
+  "examples": [
+   "monster:adult-black-dragon",
+   "monster:adult-blue-dragon",
+   "monster:adult-brass-dragon"
+  ],
+  "party": true
+ },
+ {
+  "key": "speed:hover",
+  "name": "Hover",
+  "list": "monster-speed",
+  "verdict": "by-hand-silent",
+  "says": "The speed line says the creature can hover, staying aloft.",
+  "does": "Not applied: the hover mark is only text on the stat block's Velocidade line, and the combatant gets no fly speed.",
+  "seen": "The Velocidade line on the stat block",
+  "code": "backend/internal/rules/creatures.go creature(); backend/internal/play/combat_move.go flies",
+  "fix": "Mark hover on the NPC card.",
+  "checked": "",
+  "count": 7,
+  "examples": [
+   "monster:air-elemental",
+   "monster:flying-sword",
+   "monster:ghost"
+  ],
+  "party": false
+ },
+ {
+  "key": "speed:swim",
+  "name": "Swim speed",
+  "list": "monster-speed",
+  "verdict": "wrong",
+  "says": "The creature swims at the stated speed with no extra cost in water.",
+  "does": "The combatant is built from the stat block's walking speed only (the best other speed when it has none, npcfromcreature.go:146) and the swim, climb, burrow and fly fields stay 0 for a basic sheet; movement is each metre of painted water costs extra from its walking speed. The master can force the move with 'Mover mesmo assim' (free, no limit).",
+  "seen": "The Velocidade line on the stat block; the screen says 'Inclui ... nadando'",
+  "code": "backend/internal/characters/npcfromcreature.go npcSheetFromCreature:146; backend/internal/characters/combatants.go combatCharacter:178-185; backend/internal/play/combat_join.go joinRow:255; backend/internal/play/combat_speed.go speedsOf",
+  "fix": "Copy the swim speed to the NPC combatant, as for a character.",
+  "checked": "",
+  "count": 60,
+  "examples": [
+   "monster:aboleth",
+   "monster:adult-black-dragon",
+   "monster:adult-bronze-dragon"
+  ],
+  "party": true
+ },
+ {
+  "key": "usage:per-day",
+  "name": "Trait usable N times a day (Legendary Resistance)",
+  "list": "monster-usage",
+  "verdict": "wrong",
+  "says": "Legendary Resistance (3/Day): if the creature fails a saving throw, it can choose to succeed instead.",
+  "does": "The master is offered the trait on a spell save, a hit rider save, a concentration check and a held effect, and uses are counted in creature_spent until a long rest (RN-29), but a trap's save for a caught NPC is rolled by the server with no offer, so a failure stands. The master can undo the firing and set the result by hand.",
+  "seen": "The Resistência Lendária card with uses left on the master's NPC card; no offer at a trap save",
+  "code": "backend/internal/play/combat_legendary_resist.go legendaryResistOpen (callers lasting_effects_save.go:333, combat_concentration.go:321, combat_legendary_hold.go:359; none in traps_effect.go trapSaveRoll:93)",
+  "fix": "Offer Legendary Resistance on a trap save of an NPC with a use left.",
+  "checked": "",
+  "count": 25,
+  "examples": [
+   "monster:adult-black-dragon",
+   "monster:adult-blue-dragon",
+   "monster:adult-brass-dragon"
+  ],
+  "party": false
+ },
+ {
+  "key": "usage:recharge-after-rest",
+  "name": "Trait recharged by a rest (Relentless)",
+  "list": "monster-usage",
+  "verdict": "by-hand-silent",
+  "says": "Relentless (Recharges after a Short or Long Rest): when the creature takes damage that would drop it to 0, it drops to 1 hit point instead, once.",
+  "does": "The trait is text only: its name has no engine reader (the keys read are the suffixes pack-tactics, magic-resistance and sunlight), so nothing drops the damage and nothing counts the use; the master tracks it.",
+  "seen": "The trait text on the bestiary stat block; nothing on the combat card",
+  "code": "backend/internal/characters/combattraits.go traitsOf (suffix list); backend/internal/rules/creatures.go Features from SpecialAbilities:735",
+  "fix": "Count the use in creature_spent and stop the drop to 0 once per rest.",
+  "checked": "",
+  "count": 5,
+  "examples": [
+   "monster:boar",
+   "monster:giant-boar",
+   "monster:wereboar-boar"
+  ],
+  "party": true
+ }
+]

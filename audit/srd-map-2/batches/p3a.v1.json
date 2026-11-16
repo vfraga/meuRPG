@@ -1,0 +1,833 @@
+[
+ {
+  "key": "trait:aberrant ground",
+  "name": "Aberrant Ground",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "10-ft radius around the mouther is difficult terrain; a creature starting its turn there makes a DC 10 Str save or its speed is 0 until its next turn",
+  "does": "No terrain zone and no save are made for the trait",
+  "seen": "The trait text only, in the stat block 'Caracteristicas' group of the master's creature sheet / NPC card; no reminder",
+  "code": "backend/internal/rules/creatures.go monsterDerived (SpecialAbilities become a text-only Feature) and creatureAbilities; web/src/app/shared/creatures/stat-block-view.ts groupsOf",
+  "fix": "Show the trait text as a reminder in the combat's creature card, or read it where the rule applies",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:gibbering-mouther"
+  ]
+ },
+ {
+  "key": "trait:acid absorption",
+  "name": "Acid Absorption",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "Acid damage heals the golem by that amount instead of hurting it",
+  "does": "The stat block's acid immunity makes acid damage 0, but the equal healing is never applied or mentioned",
+  "seen": "The trait text only, in the stat block 'Caracteristicas' group of the master's creature sheet / NPC card; no reminder",
+  "code": "backend/internal/rules/combat/steps.go (immunity); no heal anywhere",
+  "fix": "Add a reminder 'also regains HP equal to the acid damage' on the golem's card",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:clay-golem"
+  ]
+ },
+ {
+  "key": "trait:adhesive",
+  "name": "Adhesive",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "A Huge or smaller creature that touches the mimic is grappled (escape DC 13) with disadvantage on escape checks",
+  "does": "No grapple is started when something touches the mimic",
+  "seen": "The trait text only, in the stat block 'Caracteristicas' group of the master's creature sheet / NPC card; no reminder",
+  "code": "backend/internal/rules/creatures.go monsterDerived (SpecialAbilities become a text-only Feature) and creatureAbilities; web/src/app/shared/creatures/stat-block-view.ts groupsOf",
+  "fix": "Show the trait text as a reminder in the combat's creature card, or read it where the rule applies",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:mimic"
+  ]
+ },
+ {
+  "key": "trait:aggressive",
+  "name": "Aggressive",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "Bonus action: move up to its speed toward a hostile creature it can see",
+  "does": "No bonus-action move exists for a creature; the master moves it by hand",
+  "seen": "The trait text only, in the stat block 'Caracteristicas' group of the master's creature sheet / NPC card; no reminder",
+  "code": "backend/internal/rules/creatures.go monsterDerived (SpecialAbilities become a text-only Feature) and creatureAbilities; web/src/app/shared/creatures/stat-block-view.ts groupsOf",
+  "fix": "Show the trait text as a reminder in the combat's creature card, or read it where the rule applies",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:orc"
+  ]
+ },
+ {
+  "key": "trait:air form",
+  "name": "Air Form",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "Can enter a hostile creature's space and stop there; moves through a 1-inch space without squeezing",
+  "does": "Space entering and squeezing are not modelled for creatures",
+  "seen": "The trait text only, in the stat block 'Caracteristicas' group of the master's creature sheet / NPC card; no reminder",
+  "code": "backend/internal/rules/creatures.go monsterDerived (SpecialAbilities become a text-only Feature) and creatureAbilities; web/src/app/shared/creatures/stat-block-view.ts groupsOf",
+  "fix": "Show the trait text as a reminder in the combat's creature card, or read it where the rule applies",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:air-elemental"
+  ]
+ },
+ {
+  "key": "trait:ambusher",
+  "name": "Ambusher",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "In the first round, advantage on attack rolls against any creature it has surprised",
+  "does": "Surprise marks and an attacker ambush effect exist (UnactedAdvantage/SurprisedCritical) but only from table features; the monster trait is not mapped to it",
+  "seen": "The trait text only, in the stat block 'Caracteristicas' group of the master's creature sheet / NPC card; no reminder",
+  "code": "backend/internal/play/combat_advantage.go:253 ambush; backend/internal/characters/combattraits.go:174",
+  "fix": "Map the trait to the ambush effect keyed on #ambusher",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:doppelganger"
+  ]
+ },
+ {
+  "key": "trait:amorphous",
+  "name": "Amorphous",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "Moves through a space 1 inch wide without squeezing",
+  "does": "Squeezing is not modelled for creatures",
+  "seen": "The trait text only, in the stat block 'Caracteristicas' group of the master's creature sheet / NPC card; no reminder",
+  "code": "backend/internal/rules/creatures.go monsterDerived (SpecialAbilities become a text-only Feature) and creatureAbilities; web/src/app/shared/creatures/stat-block-view.ts groupsOf",
+  "fix": "Show the trait text as a reminder in the combat's creature card, or read it where the rule applies",
+  "checked": "",
+  "count": 4,
+  "examples": [
+   "monster:black-pudding",
+   "monster:gray-ooze",
+   "monster:ochre-jelly"
+  ]
+ },
+ {
+  "key": "trait:amphibious",
+  "name": "Amphibious",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "Can breathe air and water",
+  "does": "The app has no breathing or drowning rule, so nothing to apply or contradict; text on the stat block only",
+  "seen": "The trait text only, in the stat block 'Caracteristicas' group of the master's creature sheet / NPC card; no reminder",
+  "code": "backend/internal/rules/creatures.go monsterDerived (SpecialAbilities become a text-only Feature) and creatureAbilities; web/src/app/shared/creatures/stat-block-view.ts groupsOf",
+  "fix": "The master rules drowning by hand",
+  "checked": "",
+  "count": 30,
+  "examples": [
+   "monster:aboleth",
+   "monster:adult-black-dragon",
+   "monster:adult-bronze-dragon"
+  ]
+ },
+ {
+  "key": "trait:angelic weapons",
+  "name": "Angelic Weapons",
+  "list": "monster-trait",
+  "verdict": "wrong",
+  "says": "The creature's weapon attacks are magical; each hit deals the extra radiant damage (already in the attack)",
+  "does": "The extra radiant dice are in the attack, but the attack is not marked magical: monsterAttack sets Magical only for the trait named 'Magic Weapons', so deva, planetar and solar weapon hits are halved or nulled by a target's resistance or immunity to nonmagical weapons. The table can correct it only by hand (the master's damage adjustment before applying, or the undo)",
+  "seen": "The attack card shows the SRD text; nothing says the attack is magical",
+  "code": "backend/internal/rules/creatures.go:872 monsterAttack and :855 hasMagicWeapons (name == 'Magic Weapons' only); backend/internal/play/combat_damage.go:540; backend/internal/rules/combat/steps.go:92",
+  "fix": "Make hasMagicWeapons also true for the trait 'Angelic Weapons'",
+  "checked": "test",
+  "count": 3,
+  "examples": [
+   "monster:deva",
+   "monster:planetar",
+   "monster:solar"
+  ]
+ },
+ {
+  "key": "trait:antimagic susceptibility",
+  "name": "Antimagic Susceptibility",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "Incapacitated in an antimagic field; dispel magic needs a Con save or it falls unconscious for 1 minute",
+  "does": "Neither the antimagic field nor dispel magic read the trait",
+  "seen": "The trait text only, in the stat block 'Caracteristicas' group of the master's creature sheet / NPC card; no reminder",
+  "code": "backend/internal/rules/creatures.go monsterDerived (SpecialAbilities become a text-only Feature) and creatureAbilities; web/src/app/shared/creatures/stat-block-view.ts groupsOf",
+  "fix": "Show the trait text as a reminder in the combat's creature card, or read it where the rule applies",
+  "checked": "",
+  "count": 3,
+  "examples": [
+   "monster:animated-armor",
+   "monster:flying-sword",
+   "monster:rug-of-smothering"
+  ]
+ },
+ {
+  "key": "trait:assassinate",
+  "name": "Assassinate",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "During its first turn, advantage on attacks against creatures that have not taken a turn; any hit on a surprised creature is a critical hit",
+  "does": "Ambush effects exist only for table features; the assassin's trait is text only",
+  "seen": "The trait text only, in the stat block 'Caracteristicas' group of the master's creature sheet / NPC card; no reminder",
+  "code": "backend/internal/play/combat_advantage.go:253 ambush; backend/internal/characters/combattraits.go:174",
+  "fix": "Map the trait to UnactedAdvantage and SurprisedCritical keyed on #assassinate",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:assassin"
+  ]
+ },
+ {
+  "key": "trait:aversion of fire",
+  "name": "Aversion Of Fire",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "After taking fire damage, disadvantage on attack rolls and ability checks until the end of its next turn",
+  "does": "No effect is put on the creature when it takes fire damage",
+  "seen": "The trait text only, in the stat block 'Caracteristicas' group of the master's creature sheet / NPC card; no reminder",
+  "code": "backend/internal/rules/creatures.go monsterDerived (SpecialAbilities become a text-only Feature) and creatureAbilities; web/src/app/shared/creatures/stat-block-view.ts groupsOf",
+  "fix": "Show the trait text as a reminder in the combat's creature card, or read it where the rule applies",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:flesh-golem"
+  ]
+ },
+ {
+  "key": "trait:barbed hide",
+  "name": "Barbed Hide",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "At the start of each of its turns, 5 (1d10) piercing damage to any creature grappling it",
+  "does": "No start-of-turn damage is rolled",
+  "seen": "The trait text only, in the stat block 'Caracteristicas' group of the master's creature sheet / NPC card; no reminder",
+  "code": "backend/internal/rules/creatures.go monsterDerived (SpecialAbilities become a text-only Feature) and creatureAbilities; web/src/app/shared/creatures/stat-block-view.ts groupsOf",
+  "fix": "Show the trait text as a reminder in the combat's creature card, or read it where the rule applies",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:barbed-devil"
+  ]
+ },
+ {
+  "key": "trait:beast of burden",
+  "name": "Beast Of Burden",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "Counts as a Large animal for carrying capacity",
+  "does": "Carrying capacity of creatures is not computed; text only",
+  "seen": "The trait text only, in the stat block 'Caracteristicas' group of the master's creature sheet / NPC card; no reminder",
+  "code": "backend/internal/rules/creatures.go monsterDerived (SpecialAbilities become a text-only Feature) and creatureAbilities; web/src/app/shared/creatures/stat-block-view.ts groupsOf",
+  "fix": "Show the trait text as a reminder in the combat's creature card, or read it where the rule applies",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:mule"
+  ]
+ },
+ {
+  "key": "trait:berserk",
+  "name": "Berserk",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "At 60 hp or fewer at turn start, roll d6: on a 6 the golem goes berserk and attacks the nearest creature until destroyed or fully healed",
+  "does": "No d6 is rolled and no behaviour is imposed; the master plays it",
+  "seen": "The trait text only, in the stat block 'Caracteristicas' group of the master's creature sheet / NPC card; no reminder",
+  "code": "backend/internal/rules/creatures.go monsterDerived (SpecialAbilities become a text-only Feature) and creatureAbilities; web/src/app/shared/creatures/stat-block-view.ts groupsOf",
+  "fix": "Show the trait text as a reminder in the combat's creature card, or read it where the rule applies",
+  "checked": "",
+  "count": 2,
+  "examples": [
+   "monster:clay-golem",
+   "monster:flesh-golem"
+  ]
+ },
+ {
+  "key": "trait:blind senses",
+  "name": "Blind Senses",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "Cannot use blindsight while deafened and unable to smell",
+  "does": "Blindsight is always counted from the stat block's sense, deafened is never checked, so a deafened grimlock still sees by blindsight on a fog map (affects its reactions only)",
+  "seen": "The trait text only, in the stat block 'Caracteristicas' group of the master's creature sheet / NPC card; no reminder",
+  "code": "backend/internal/rules/creatures.go:679 monsterSenses; backend/internal/play/combat_fog.go:302",
+  "fix": "Drop blindsight from the creature's senses while deafened",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:grimlock"
+  ]
+ },
+ {
+  "key": "trait:blood frenzy",
+  "name": "Blood Frenzy",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "Advantage on melee attack rolls against any creature that doesn't have all its hit points",
+  "does": "The attack advantage code reads neither the trait nor the target's hit points",
+  "seen": "The trait text only, in the stat block 'Caracteristicas' group of the master's creature sheet / NPC card; no reminder",
+  "code": "backend/internal/play/combat_advantage.go; backend/internal/rules/combat/advantage.go",
+  "fix": "Add an advantage source 'target below max hp' keyed on #blood-frenzy",
+  "checked": "",
+  "count": 5,
+  "examples": [
+   "monster:giant-shark",
+   "monster:hunter-shark",
+   "monster:quipper"
+  ]
+ },
+ {
+  "key": "trait:bound",
+  "name": "Bound",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "Magically bound to an amulet; half of the wearer's damage (rounded up) is transferred to the guardian within 60 ft",
+  "does": "No amulet, no wearer link and no damage transfer exists",
+  "seen": "The trait text only, in the stat block 'Caracteristicas' group of the master's creature sheet / NPC card; no reminder",
+  "code": "backend/internal/rules/creatures.go monsterDerived (SpecialAbilities become a text-only Feature) and creatureAbilities; web/src/app/shared/creatures/stat-block-view.ts groupsOf",
+  "fix": "Show the trait text as a reminder in the combat's creature card, or read it where the rule applies",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:shield-guardian"
+  ]
+ },
+ {
+  "key": "trait:brave",
+  "name": "Brave",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "Advantage on saving throws against being frightened",
+  "does": "Tagged save advantage is read from a character sheet's hints; a creature's Derived has no hints, so the gladiator's and knight's saves against frightened roll flat",
+  "seen": "The trait text only, in the stat block 'Caracteristicas' group of the master's creature sheet / NPC card; no reminder",
+  "code": "backend/internal/play/combat_against.go:13; backend/internal/characters/combattraits.go taggedSavesOf; backend/internal/rules/creatures.go monsterDerived",
+  "fix": "Give the creature a hint for the trait",
+  "checked": "",
+  "count": 2,
+  "examples": [
+   "monster:gladiator",
+   "monster:knight"
+  ]
+ },
+ {
+  "key": "trait:brute",
+  "name": "Brute",
+  "list": "monster-trait",
+  "verdict": "runs",
+  "says": "One extra die of weapon damage on a melee hit (included in the attack)",
+  "does": "The extra die is already in the stat block's attack damage, which the app rolls as written; nothing else to compute",
+  "seen": "The attack card shows the damage dice with the extra die",
+  "code": "backend/internal/rules/creatures.go monsterAttack",
+  "fix": "",
+  "checked": "",
+  "count": 2,
+  "examples": [
+   "monster:bugbear",
+   "monster:gladiator"
+  ]
+ },
+ {
+  "key": "trait:charge",
+  "name": "Charge",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "After moving at least 20 ft straight toward a target and hitting, extra damage and a Str save or prone (numbers vary by creature)",
+  "does": "No straight-line movement count and no extra damage or save are applied from the trait; the riders of the attack come from the action text only",
+  "seen": "The trait text only, in the stat block 'Caracteristicas' group of the master's creature sheet / NPC card; no reminder",
+  "code": "backend/internal/rules/creatures.go monsterDerived (SpecialAbilities become a text-only Feature) and creatureAbilities; web/src/app/shared/creatures/stat-block-view.ts groupsOf",
+  "fix": "Show the trait text as a reminder in the combat's creature card, or read it where the rule applies",
+  "checked": "",
+  "count": 14,
+  "examples": [
+   "monster:boar",
+   "monster:centaur",
+   "monster:elk"
+  ]
+ },
+ {
+  "key": "trait:confer fire resistance",
+  "name": "Confer Fire Resistance",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "The nightmare can grant fire resistance to anyone riding it",
+  "does": "Nothing grants fire resistance when mounted on a nightmare",
+  "seen": "The trait text only, in the stat block 'Caracteristicas' group of the master's creature sheet / NPC card; no reminder",
+  "code": "backend/internal/rules/creatures.go monsterDerived (SpecialAbilities become a text-only Feature) and creatureAbilities; web/src/app/shared/creatures/stat-block-view.ts groupsOf",
+  "fix": "Show the trait text as a reminder in the combat's creature card, or read it where the rule applies",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:nightmare"
+  ]
+ },
+ {
+  "key": "trait:consume life",
+  "name": "Consume Life",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "Bonus action: a living creature at 0 hp must pass a DC 10 Con save or die; the wisp regains 10 (3d6) hp",
+  "does": "No bonus action and no save is offered for it",
+  "seen": "The trait text only, in the stat block 'Caracteristicas' group of the master's creature sheet / NPC card; no reminder",
+  "code": "backend/internal/rules/creatures.go monsterDerived (SpecialAbilities become a text-only Feature) and creatureAbilities; web/src/app/shared/creatures/stat-block-view.ts groupsOf",
+  "fix": "Show the trait text as a reminder in the combat's creature card, or read it where the rule applies",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:will-o-wisp"
+  ]
+ },
+ {
+  "key": "trait:corrode metal",
+  "name": "Corrode Metal",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "A nonmagical metal weapon that hits corrodes (-1 cumulative damage, destroyed at -5); metal ammunition is destroyed",
+  "does": "Weapon wear is not tracked",
+  "seen": "The trait text only, in the stat block 'Caracteristicas' group of the master's creature sheet / NPC card; no reminder",
+  "code": "backend/internal/rules/creatures.go monsterDerived (SpecialAbilities become a text-only Feature) and creatureAbilities; web/src/app/shared/creatures/stat-block-view.ts groupsOf",
+  "fix": "Show the trait text as a reminder in the combat's creature card, or read it where the rule applies",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:gray-ooze"
+  ]
+ },
+ {
+  "key": "trait:corrosive form",
+  "name": "Corrosive Form",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "Touching it or hitting it in melee within 5 ft deals 4 (1d8) acid; nonmagical metal or wood weapons corrode",
+  "does": "No reflected damage and no weapon wear",
+  "seen": "The trait text only, in the stat block 'Caracteristicas' group of the master's creature sheet / NPC card; no reminder",
+  "code": "backend/internal/rules/creatures.go monsterDerived (SpecialAbilities become a text-only Feature) and creatureAbilities; web/src/app/shared/creatures/stat-block-view.ts groupsOf",
+  "fix": "Show the trait text as a reminder in the combat's creature card, or read it where the rule applies",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:black-pudding"
+  ]
+ },
+ {
+  "key": "trait:cunning action",
+  "name": "Cunning Action",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "Bonus action: Dash, Disengage or Hide",
+  "does": "The options are listed from 'feature:cunning-action' of a character; the spy's key (monster:spy#cunning-action) is not read",
+  "seen": "The trait text only, in the stat block 'Caracteristicas' group of the master's creature sheet / NPC card; no reminder",
+  "code": "backend/internal/play/combat_contests_options.go:259 featureHideActions; backend/internal/play/combat_take_action.go:428",
+  "fix": "Treat the monster trait as the same bonus-action source",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:spy"
+  ]
+ },
+ {
+  "key": "trait:damage transfer",
+  "name": "Damage Transfer",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "While attached, the creature takes half the damage and the attached creature takes the other half",
+  "does": "No split of damage between the two",
+  "seen": "The trait text only, in the stat block 'Caracteristicas' group of the master's creature sheet / NPC card; no reminder",
+  "code": "backend/internal/rules/creatures.go monsterDerived (SpecialAbilities become a text-only Feature) and creatureAbilities; web/src/app/shared/creatures/stat-block-view.ts groupsOf",
+  "fix": "Show the trait text as a reminder in the combat's creature card, or read it where the rule applies",
+  "checked": "",
+  "count": 2,
+  "examples": [
+   "monster:cloaker",
+   "monster:rug-of-smothering"
+  ]
+ },
+ {
+  "key": "trait:dark devotion",
+  "name": "Dark Devotion",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "Advantage on saving throws against being charmed or frightened",
+  "does": "A creature's Derived has no hints, so the tagged save advantage is not applied",
+  "seen": "The trait text only, in the stat block 'Caracteristicas' group of the master's creature sheet / NPC card; no reminder",
+  "code": "backend/internal/play/combat_against.go:13; backend/internal/rules/creatures.go monsterDerived",
+  "fix": "Give the creature a hint for the trait",
+  "checked": "",
+  "count": 2,
+  "examples": [
+   "monster:cult-fanatic",
+   "monster:cultist"
+  ]
+ },
+ {
+  "key": "trait:death burst",
+  "name": "Death Burst",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "On death, each creature within 5 ft makes a save or takes the effect",
+  "does": "No burst is rolled when the creature dies",
+  "seen": "The trait text only, in the stat block 'Caracteristicas' group of the master's creature sheet / NPC card; no reminder",
+  "code": "backend/internal/rules/creatures.go monsterDerived (SpecialAbilities become a text-only Feature) and creatureAbilities; web/src/app/shared/creatures/stat-block-view.ts groupsOf",
+  "fix": "Show the trait text as a reminder in the combat's creature card, or read it where the rule applies",
+  "checked": "",
+  "count": 5,
+  "examples": [
+   "monster:dust-mephit",
+   "monster:ice-mephit",
+   "monster:magma-mephit"
+  ]
+ },
+ {
+  "key": "trait:death throes",
+  "name": "Death Throes",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "On death, 30-ft explosion: DC 20 Dex save, 70 (20d6) fire (half on success); ignites objects",
+  "does": "No explosion is rolled when the creature dies",
+  "seen": "The trait text only, in the stat block 'Caracteristicas' group of the master's creature sheet / NPC card; no reminder",
+  "code": "backend/internal/rules/creatures.go monsterDerived (SpecialAbilities become a text-only Feature) and creatureAbilities; web/src/app/shared/creatures/stat-block-view.ts groupsOf",
+  "fix": "Show the trait text as a reminder in the combat's creature card, or read it where the rule applies",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:balor"
+  ]
+ },
+ {
+  "key": "trait:devil's sight",
+  "name": "Devil's Sight",
+  "list": "monster-trait",
+  "verdict": "wrong",
+  "says": "Magical darkness doesn't impede the devil's darkvision",
+  "does": "Monster senses list darkvision only (monsterSenses never emits devils-sight; only a warlock invocation sets DevilsSightFt), so in magical darkness (a Darkness spell zone on a fog map) the devil's darkvision is blocked (vision.go:322): it does not see a mover or attacker there, and its opportunity attacks and Parry are not offered. The master can play the reaction by hand",
+  "seen": "The trait text in the stat block; nothing explains the missing offer",
+  "code": "backend/internal/rules/creatures.go:679 monsterSenses; backend/internal/rules/vision/vision.go:322; backend/internal/play/combat_fog.go:302 reactorSees; backend/internal/characters/partyvision.go:90",
+  "fix": "Make monsterSenses add devils-sight with the darkvision range for a creature with the trait Devil's Sight",
+  "checked": "",
+  "count": 8,
+  "examples": [
+   "monster:barbed-devil",
+   "monster:bearded-devil",
+   "monster:bone-devil"
+  ]
+ },
+ {
+  "key": "trait:divine awareness",
+  "name": "Divine Awareness",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "Knows if it hears a lie",
+  "does": "Nothing; text only",
+  "seen": "The trait text only, in the stat block 'Caracteristicas' group of the master's creature sheet / NPC card; no reminder",
+  "code": "backend/internal/rules/creatures.go monsterDerived (SpecialAbilities become a text-only Feature) and creatureAbilities; web/src/app/shared/creatures/stat-block-view.ts groupsOf",
+  "fix": "Show the trait text as a reminder in the combat's creature card, or read it where the rule applies",
+  "checked": "",
+  "count": 2,
+  "examples": [
+   "monster:planetar",
+   "monster:solar"
+  ]
+ },
+ {
+  "key": "trait:divine eminence",
+  "name": "Divine Eminence",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "Bonus action: spend a spell slot to add 3d6 radiant (+1d6 per slot level above 1st) to melee weapon hits until the end of the turn",
+  "does": "No bonus action, slot spend or extra damage",
+  "seen": "The trait text only, in the stat block 'Caracteristicas' group of the master's creature sheet / NPC card; no reminder",
+  "code": "backend/internal/rules/creatures.go monsterDerived (SpecialAbilities become a text-only Feature) and creatureAbilities; web/src/app/shared/creatures/stat-block-view.ts groupsOf",
+  "fix": "Show the trait text as a reminder in the combat's creature card, or read it where the rule applies",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:priest"
+  ]
+ },
+ {
+  "key": "trait:duergar resilience",
+  "name": "Duergar Resilience",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "Advantage on saves against poison, spells and illusions, and against being charmed or paralyzed",
+  "does": "A creature's Derived has no hints, so no advantage is given to its saves",
+  "seen": "The trait text only, in the stat block 'Caracteristicas' group of the master's creature sheet / NPC card; no reminder",
+  "code": "backend/internal/play/combat_against.go:13; backend/internal/rules/creatures.go monsterDerived",
+  "fix": "Give the creature hints for the trait",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:duergar"
+  ]
+ },
+ {
+  "key": "trait:earth glide",
+  "name": "Earth Glide",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "Burrows through nonmagical, unworked earth and stone without disturbing it",
+  "does": "The burrow speed of the stat block is shown but the earth and stone limit is not modelled",
+  "seen": "The trait text only, in the stat block 'Caracteristicas' group of the master's creature sheet / NPC card; no reminder",
+  "code": "backend/internal/rules/creatures.go monsterDerived (SpecialAbilities become a text-only Feature) and creatureAbilities; web/src/app/shared/creatures/stat-block-view.ts groupsOf",
+  "fix": "Show the trait text as a reminder in the combat's creature card, or read it where the rule applies",
+  "checked": "",
+  "count": 2,
+  "examples": [
+   "monster:earth-elemental",
+   "monster:xorn"
+  ]
+ },
+ {
+  "key": "trait:echolocation",
+  "name": "Echolocation",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "Cannot use blindsight while deafened",
+  "does": "Blindsight is always counted from the stat block's sense; deafened is not checked",
+  "seen": "The trait text only, in the stat block 'Caracteristicas' group of the master's creature sheet / NPC card; no reminder",
+  "code": "backend/internal/rules/creatures.go:679 monsterSenses",
+  "fix": "Drop blindsight from the senses while deafened",
+  "checked": "",
+  "count": 5,
+  "examples": [
+   "monster:bat",
+   "monster:darkmantle",
+   "monster:giant-bat"
+  ]
+ },
+ {
+  "key": "trait:elemental demise",
+  "name": "Elemental Demise",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "On death the body disintegrates into a breeze, leaving only its equipment",
+  "does": "No such effect; the creature stays as any defeated combatant",
+  "seen": "The trait text only, in the stat block 'Caracteristicas' group of the master's creature sheet / NPC card; no reminder",
+  "code": "backend/internal/rules/creatures.go monsterDerived (SpecialAbilities become a text-only Feature) and creatureAbilities; web/src/app/shared/creatures/stat-block-view.ts groupsOf",
+  "fix": "Show the trait text as a reminder in the combat's creature card, or read it where the rule applies",
+  "checked": "",
+  "count": 2,
+  "examples": [
+   "monster:djinni",
+   "monster:efreeti"
+  ]
+ },
+ {
+  "key": "trait:ephemeral",
+  "name": "Ephemeral",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "Cannot wear or carry anything",
+  "does": "No equipment rule for creatures",
+  "seen": "The trait text only, in the stat block 'Caracteristicas' group of the master's creature sheet / NPC card; no reminder",
+  "code": "backend/internal/rules/creatures.go monsterDerived (SpecialAbilities become a text-only Feature) and creatureAbilities; web/src/app/shared/creatures/stat-block-view.ts groupsOf",
+  "fix": "Show the trait text as a reminder in the combat's creature card, or read it where the rule applies",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:will-o-wisp"
+  ]
+ },
+ {
+  "key": "trait:ethereal jaunt",
+  "name": "Ethereal Jaunt",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "Bonus action: shift between the Material and Ethereal Planes",
+  "does": "No planes in the app; the master rules it",
+  "seen": "The trait text only, in the stat block 'Caracteristicas' group of the master's creature sheet / NPC card; no reminder",
+  "code": "backend/internal/rules/creatures.go monsterDerived (SpecialAbilities become a text-only Feature) and creatureAbilities; web/src/app/shared/creatures/stat-block-view.ts groupsOf",
+  "fix": "Show the trait text as a reminder in the combat's creature card, or read it where the rule applies",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:phase-spider"
+  ]
+ },
+ {
+  "key": "trait:ethereal sight",
+  "name": "Ethereal Sight",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "Sees 60 ft into the Ethereal Plane and vice versa",
+  "does": "No planes in the app",
+  "seen": "The trait text only, in the stat block 'Caracteristicas' group of the master's creature sheet / NPC card; no reminder",
+  "code": "backend/internal/rules/creatures.go monsterDerived (SpecialAbilities become a text-only Feature) and creatureAbilities; web/src/app/shared/creatures/stat-block-view.ts groupsOf",
+  "fix": "Show the trait text as a reminder in the combat's creature card, or read it where the rule applies",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:ghost"
+  ]
+ },
+ {
+  "key": "trait:evasion",
+  "name": "Evasion",
+  "list": "monster-trait",
+  "verdict": "runs",
+  "says": "On a Dexterity save for half damage, no damage on a success and half on a failure",
+  "does": "The trait key '<creature>#evasion' sets Traits.Evasion; spell and creature save actions, traps and Hellish Rebuke use HalfSaveShare. It is also switched off while the creature is incapacitated, which the assassin's own text does not say (the monk's does)",
+  "seen": "The save result shows the zero or half damage; the trait text is on the stat block",
+  "code": "backend/internal/characters/combattraits.go:153 evasionSuffix; backend/internal/rules/combat/rolls.go:158 HalfSaveShare; backend/internal/play/combat_spells.go:633",
+  "fix": "",
+  "checked": "test",
+  "count": 1,
+  "examples": [
+   "monster:assassin"
+  ]
+ },
+ {
+  "key": "trait:false appearance",
+  "name": "False Appearance",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "While motionless it is indistinguishable from a normal object",
+  "does": "No disguised object state; the master hides or reveals by hand",
+  "seen": "The trait text only, in the stat block 'Caracteristicas' group of the master's creature sheet / NPC card; no reminder",
+  "code": "backend/internal/rules/creatures.go monsterDerived (SpecialAbilities become a text-only Feature) and creatureAbilities; web/src/app/shared/creatures/stat-block-view.ts groupsOf",
+  "fix": "Show the trait text as a reminder in the combat's creature card, or read it where the rule applies",
+  "checked": "",
+  "count": 16,
+  "examples": [
+   "monster:animated-armor",
+   "monster:awakened-shrub",
+   "monster:awakened-tree"
+  ]
+ },
+ {
+  "key": "trait:faultless tracker",
+  "name": "Faultless Tracker",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "Knows the direction and distance to its quarry and its summoner on the same plane",
+  "does": "No quarry link; text only",
+  "seen": "The trait text only, in the stat block 'Caracteristicas' group of the master's creature sheet / NPC card; no reminder",
+  "code": "backend/internal/rules/creatures.go monsterDerived (SpecialAbilities become a text-only Feature) and creatureAbilities; web/src/app/shared/creatures/stat-block-view.ts groupsOf",
+  "fix": "Show the trait text as a reminder in the combat's creature card, or read it where the rule applies",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:invisible-stalker"
+  ]
+ },
+ {
+  "key": "trait:fear aura",
+  "name": "Fear Aura",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "Hostile creatures starting their turn within 20 ft make a DC 21 Wis save or are frightened until the start of its next turn; success gives 24-hour immunity",
+  "does": "No start-of-turn aura save, no frightened condition and no immunity record",
+  "seen": "The trait text only, in the stat block 'Caracteristicas' group of the master's creature sheet / NPC card; no reminder",
+  "code": "backend/internal/rules/creatures.go monsterDerived (SpecialAbilities become a text-only Feature) and creatureAbilities; web/src/app/shared/creatures/stat-block-view.ts groupsOf",
+  "fix": "Show the trait text as a reminder in the combat's creature card, or read it where the rule applies",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:pit-fiend"
+  ]
+ },
+ {
+  "key": "trait:fey ancestry",
+  "name": "Fey Ancestry",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "Advantage on saves against being charmed; magic can't put it to sleep",
+  "does": "The advantage is read from a race trait (races.json trait:fey-ancestry) of a character; a creature's trait has no hints so none is applied",
+  "seen": "The trait text only, in the stat block 'Caracteristicas' group of the master's creature sheet / NPC card; no reminder",
+  "code": "backend/internal/rules/srd51/effects/races.json:25; backend/internal/rules/creatures.go monsterDerived",
+  "fix": "Give the creature a hint for the trait",
+  "checked": "",
+  "count": 2,
+  "examples": [
+   "monster:drider",
+   "monster:drow"
+  ]
+ },
+ {
+  "key": "trait:fire absorption",
+  "name": "Fire Absorption",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "Fire damage heals the golem by that amount instead of hurting it",
+  "does": "The stat block's fire immunity makes fire damage 0, but the equal healing is never applied or mentioned",
+  "seen": "The trait text only, in the stat block 'Caracteristicas' group of the master's creature sheet / NPC card; no reminder",
+  "code": "backend/internal/rules/combat/steps.go (immunity); no heal anywhere",
+  "fix": "Add a reminder 'also regains HP equal to the fire damage' on the golem's card",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:iron-golem"
+  ]
+ },
+ {
+  "key": "trait:fire aura",
+  "name": "Fire Aura",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "At the start of each of its turns, 10 (3d6) fire to creatures within 5 ft; touching or melee-hitting it within 5 ft does the same",
+  "does": "No aura damage at turn start and no reflected damage",
+  "seen": "The trait text only, in the stat block 'Caracteristicas' group of the master's creature sheet / NPC card; no reminder",
+  "code": "backend/internal/rules/creatures.go monsterDerived (SpecialAbilities become a text-only Feature) and creatureAbilities; web/src/app/shared/creatures/stat-block-view.ts groupsOf",
+  "fix": "Show the trait text as a reminder in the combat's creature card, or read it where the rule applies",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:balor"
+  ]
+ },
+ {
+  "key": "trait:fire form",
+  "name": "Fire Form",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "Moves through 1-inch spaces; touching or melee-hitting it deals 5 (1d10) fire; entering a creature's space deals fire and ignites",
+  "does": "No reflected or entering damage and no ignite effect",
+  "seen": "The trait text only, in the stat block 'Caracteristicas' group of the master's creature sheet / NPC card; no reminder",
+  "code": "backend/internal/rules/creatures.go monsterDerived (SpecialAbilities become a text-only Feature) and creatureAbilities; web/src/app/shared/creatures/stat-block-view.ts groupsOf",
+  "fix": "Show the trait text as a reminder in the combat's creature card, or read it where the rule applies",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:fire-elemental"
+  ]
+ },
+ {
+  "key": "trait:flyby",
+  "name": "Flyby",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "Doesn't provoke opportunity attacks when it flies out of an enemy's reach",
+  "does": "The move offers opportunity attacks as for any mover; the offer can be declined, but the trait is not read",
+  "seen": "The trait text only, in the stat block 'Caracteristicas' group of the master's creature sheet / NPC card; no reminder",
+  "code": "backend/internal/play/combat_move.go:888 offerAttacks; backend/internal/play/combat_opportunity.go:109",
+  "fix": "Skip the offers when the mover has a #flyby trait",
+  "checked": "",
+  "count": 3,
+  "examples": [
+   "monster:flying-snake",
+   "monster:giant-owl",
+   "monster:owl"
+  ]
+ },
+ {
+  "key": "trait:freedom of movement",
+  "name": "Freedom Of Movement",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "Ignores difficult terrain; magic cannot reduce its speed or restrain it; spends 5 ft to escape nonmagical restraints or grapples",
+  "does": "The flag that ignores difficult terrain is read from character effects only; the trait is not read",
+  "seen": "The trait text only, in the stat block 'Caracteristicas' group of the master's creature sheet / NPC card; no reminder",
+  "code": "backend/internal/rules/creatures.go monsterDerived (SpecialAbilities become a text-only Feature) and creatureAbilities; web/src/app/shared/creatures/stat-block-view.ts groupsOf",
+  "fix": "Show the trait text as a reminder in the combat's creature card, or read it where the rule applies",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:kraken"
+  ]
+ }
+]

@@ -1,0 +1,4247 @@
+[
+ {
+  "key": "monster:aboleth",
+  "challenge_rating": "10",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:melee-attack+save",
+   "action:multiattack",
+   "action:save-effect",
+   "legendary:cost-1",
+   "legendary:cost-2",
+   "sense:darkvision",
+   "speed:swim",
+   "trait:amphibious",
+   "trait:mucous cloud",
+   "trait:probing telepathy"
+  ]
+ },
+ {
+  "key": "monster:acolyte",
+  "challenge_rating": "1/4",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack"
+  ]
+ },
+ {
+  "key": "monster:adult-black-dragon",
+  "challenge_rating": "14",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:multiattack",
+   "action:save-effect",
+   "action:save-effect+damage",
+   "legendary:cost-1",
+   "legendary:cost-2",
+   "sense:blindsight",
+   "sense:darkvision",
+   "speed:fly",
+   "speed:swim",
+   "trait:amphibious",
+   "trait:legendary resistance",
+   "usage:per-day"
+  ]
+ },
+ {
+  "key": "monster:adult-blue-dragon",
+  "challenge_rating": "16",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:multiattack",
+   "action:save-effect",
+   "action:save-effect+damage",
+   "legendary:cost-1",
+   "legendary:cost-2",
+   "sense:blindsight",
+   "sense:darkvision",
+   "speed:burrow",
+   "speed:fly",
+   "trait:legendary resistance",
+   "usage:per-day"
+  ]
+ },
+ {
+  "key": "monster:adult-brass-dragon",
+  "challenge_rating": "13",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:multiattack",
+   "action:other:breath weapons",
+   "action:save-effect",
+   "action:save-effect+damage",
+   "legendary:cost-1",
+   "legendary:cost-2",
+   "sense:blindsight",
+   "sense:darkvision",
+   "speed:burrow",
+   "speed:fly",
+   "trait:legendary resistance",
+   "usage:per-day"
+  ]
+ },
+ {
+  "key": "monster:adult-bronze-dragon",
+  "challenge_rating": "15",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:multiattack",
+   "action:other:breath weapons",
+   "action:save-effect",
+   "action:save-effect+damage",
+   "legendary:cost-1",
+   "legendary:cost-2",
+   "sense:blindsight",
+   "sense:darkvision",
+   "speed:fly",
+   "speed:swim",
+   "trait:amphibious",
+   "trait:legendary resistance",
+   "usage:per-day"
+  ]
+ },
+ {
+  "key": "monster:adult-copper-dragon",
+  "challenge_rating": "14",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:multiattack",
+   "action:other:breath weapons",
+   "action:save-effect",
+   "action:save-effect+damage",
+   "legendary:cost-1",
+   "legendary:cost-2",
+   "sense:blindsight",
+   "sense:darkvision",
+   "speed:climb",
+   "speed:fly",
+   "trait:legendary resistance",
+   "usage:per-day"
+  ]
+ },
+ {
+  "key": "monster:adult-gold-dragon",
+  "challenge_rating": "17",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:multiattack",
+   "action:other:breath weapons",
+   "action:save-effect",
+   "action:save-effect+damage",
+   "legendary:cost-1",
+   "legendary:cost-2",
+   "sense:blindsight",
+   "sense:darkvision",
+   "speed:fly",
+   "speed:swim",
+   "trait:amphibious",
+   "trait:legendary resistance",
+   "usage:per-day"
+  ]
+ },
+ {
+  "key": "monster:adult-green-dragon",
+  "challenge_rating": "15",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:multiattack",
+   "action:save-effect",
+   "action:save-effect+damage",
+   "legendary:cost-1",
+   "legendary:cost-2",
+   "sense:blindsight",
+   "sense:darkvision",
+   "speed:fly",
+   "speed:swim",
+   "trait:amphibious",
+   "trait:legendary resistance",
+   "usage:per-day"
+  ]
+ },
+ {
+  "key": "monster:adult-red-dragon",
+  "challenge_rating": "17",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:multiattack",
+   "action:save-effect",
+   "action:save-effect+damage",
+   "legendary:cost-1",
+   "legendary:cost-2",
+   "sense:blindsight",
+   "sense:darkvision",
+   "speed:climb",
+   "speed:fly",
+   "trait:legendary resistance",
+   "usage:per-day"
+  ]
+ },
+ {
+  "key": "monster:adult-silver-dragon",
+  "challenge_rating": "16",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:multiattack",
+   "action:other:breath weapons",
+   "action:save-effect",
+   "action:save-effect+damage",
+   "legendary:cost-1",
+   "legendary:cost-2",
+   "sense:blindsight",
+   "sense:darkvision",
+   "speed:fly",
+   "trait:legendary resistance",
+   "usage:per-day"
+  ]
+ },
+ {
+  "key": "monster:adult-white-dragon",
+  "challenge_rating": "13",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:multiattack",
+   "action:save-effect",
+   "action:save-effect+damage",
+   "legendary:cost-1",
+   "legendary:cost-2",
+   "sense:blindsight",
+   "sense:darkvision",
+   "speed:burrow",
+   "speed:fly",
+   "speed:swim",
+   "trait:ice walk",
+   "trait:legendary resistance",
+   "usage:per-day"
+  ]
+ },
+ {
+  "key": "monster:air-elemental",
+  "challenge_rating": "5",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:multiattack",
+   "action:save-effect",
+   "resistances:plain",
+   "sense:darkvision",
+   "speed:fly",
+   "speed:hover",
+   "trait:air form"
+  ]
+ },
+ {
+  "key": "monster:ancient-black-dragon",
+  "challenge_rating": "21",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:multiattack",
+   "action:save-effect",
+   "action:save-effect+damage",
+   "legendary:cost-1",
+   "legendary:cost-2",
+   "sense:blindsight",
+   "sense:darkvision",
+   "speed:fly",
+   "speed:swim",
+   "trait:amphibious",
+   "trait:legendary resistance",
+   "usage:per-day"
+  ]
+ },
+ {
+  "key": "monster:ancient-blue-dragon",
+  "challenge_rating": "23",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:multiattack",
+   "action:save-effect",
+   "action:save-effect+damage",
+   "legendary:cost-1",
+   "legendary:cost-2",
+   "sense:blindsight",
+   "sense:darkvision",
+   "speed:burrow",
+   "speed:fly",
+   "trait:legendary resistance",
+   "usage:per-day"
+  ]
+ },
+ {
+  "key": "monster:ancient-brass-dragon",
+  "challenge_rating": "20",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:multiattack",
+   "action:other:breath weapons",
+   "action:other:change shape",
+   "action:save-effect",
+   "action:save-effect+damage",
+   "legendary:cost-1",
+   "legendary:cost-2",
+   "sense:blindsight",
+   "sense:darkvision",
+   "speed:burrow",
+   "speed:fly",
+   "trait:legendary resistance",
+   "usage:per-day"
+  ]
+ },
+ {
+  "key": "monster:ancient-bronze-dragon",
+  "challenge_rating": "22",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:multiattack",
+   "action:other:breath weapons",
+   "action:other:change shape",
+   "action:save-effect",
+   "action:save-effect+damage",
+   "legendary:cost-1",
+   "legendary:cost-2",
+   "sense:blindsight",
+   "sense:darkvision",
+   "speed:fly",
+   "speed:swim",
+   "trait:amphibious",
+   "trait:legendary resistance",
+   "usage:per-day"
+  ]
+ },
+ {
+  "key": "monster:ancient-copper-dragon",
+  "challenge_rating": "21",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:multiattack",
+   "action:other:breath weapons",
+   "action:other:change shape",
+   "action:save-effect",
+   "action:save-effect+damage",
+   "legendary:cost-1",
+   "legendary:cost-2",
+   "sense:blindsight",
+   "sense:darkvision",
+   "speed:climb",
+   "speed:fly",
+   "trait:legendary resistance",
+   "usage:per-day"
+  ]
+ },
+ {
+  "key": "monster:ancient-gold-dragon",
+  "challenge_rating": "24",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:multiattack",
+   "action:other:breath weapons",
+   "action:other:change shape",
+   "action:save-effect",
+   "action:save-effect+damage",
+   "legendary:cost-1",
+   "legendary:cost-2",
+   "sense:blindsight",
+   "sense:darkvision",
+   "speed:fly",
+   "speed:swim",
+   "trait:amphibious",
+   "trait:legendary resistance",
+   "usage:per-day"
+  ]
+ },
+ {
+  "key": "monster:ancient-green-dragon",
+  "challenge_rating": "22",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:multiattack",
+   "action:save-effect",
+   "action:save-effect+damage",
+   "legendary:cost-1",
+   "legendary:cost-2",
+   "sense:blindsight",
+   "sense:darkvision",
+   "speed:fly",
+   "speed:swim",
+   "trait:amphibious",
+   "trait:legendary resistance",
+   "usage:per-day"
+  ]
+ },
+ {
+  "key": "monster:ancient-red-dragon",
+  "challenge_rating": "24",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:multiattack",
+   "action:save-effect",
+   "action:save-effect+damage",
+   "legendary:cost-1",
+   "legendary:cost-2",
+   "sense:blindsight",
+   "sense:darkvision",
+   "speed:climb",
+   "speed:fly",
+   "trait:legendary resistance",
+   "usage:per-day"
+  ]
+ },
+ {
+  "key": "monster:ancient-silver-dragon",
+  "challenge_rating": "23",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:multiattack",
+   "action:other:breath weapons",
+   "action:other:change shape",
+   "action:save-effect",
+   "action:save-effect+damage",
+   "legendary:cost-1",
+   "legendary:cost-2",
+   "sense:blindsight",
+   "sense:darkvision",
+   "speed:fly",
+   "trait:legendary resistance",
+   "usage:per-day"
+  ]
+ },
+ {
+  "key": "monster:ancient-white-dragon",
+  "challenge_rating": "20",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:multiattack",
+   "action:save-effect",
+   "action:save-effect+damage",
+   "legendary:cost-1",
+   "legendary:cost-2",
+   "sense:blindsight",
+   "sense:darkvision",
+   "speed:burrow",
+   "speed:fly",
+   "speed:swim",
+   "trait:ice walk",
+   "trait:legendary resistance",
+   "usage:per-day"
+  ]
+ },
+ {
+  "key": "monster:androsphinx",
+  "challenge_rating": "17",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:multiattack",
+   "action:other:roar",
+   "action:save-effect",
+   "action:save-effect+damage",
+   "legendary:cost-1",
+   "legendary:cost-2",
+   "legendary:cost-3",
+   "sense:truesight",
+   "speed:fly",
+   "trait:inscrutable",
+   "trait:magic weapons"
+  ]
+ },
+ {
+  "key": "monster:animated-armor",
+  "challenge_rating": "1",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:multiattack",
+   "sense:blindsight",
+   "trait:antimagic susceptibility",
+   "trait:false appearance"
+  ]
+ },
+ {
+  "key": "monster:ankheg",
+  "challenge_rating": "2",
+  "party": false,
+  "not_runs": [
+   "ac:alternate",
+   "action:melee-attack+grapple",
+   "action:save-effect+damage",
+   "sense:darkvision",
+   "sense:tremorsense",
+   "speed:burrow"
+  ]
+ },
+ {
+  "key": "monster:ape",
+  "challenge_rating": "1/2",
+  "party": true,
+  "not_runs": [
+   "action:melee-attack",
+   "action:multiattack",
+   "speed:climb"
+  ]
+ },
+ {
+  "key": "monster:archmage",
+  "challenge_rating": "12",
+  "party": false,
+  "not_runs": [
+   "ac:alternate",
+   "action:melee-attack",
+   "resistances:plain",
+   "trait:magic resistance"
+  ]
+ },
+ {
+  "key": "monster:assassin",
+  "challenge_rating": "8",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack+save",
+   "action:multiattack",
+   "resistances:plain",
+   "trait:assassinate",
+   "trait:sneak attack"
+  ]
+ },
+ {
+  "key": "monster:awakened-shrub",
+  "challenge_rating": "0",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "resistances:plain",
+   "trait:false appearance",
+   "vulnerabilities:plain"
+  ]
+ },
+ {
+  "key": "monster:awakened-tree",
+  "challenge_rating": "2",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "resistances:plain",
+   "trait:false appearance",
+   "vulnerabilities:plain"
+  ]
+ },
+ {
+  "key": "monster:axe-beak",
+  "challenge_rating": "1/4",
+  "party": true,
+  "not_runs": [
+   "action:melee-attack"
+  ]
+ },
+ {
+  "key": "monster:azer",
+  "challenge_rating": "2",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "trait:heated body",
+   "trait:illumination"
+  ]
+ },
+ {
+  "key": "monster:baboon",
+  "challenge_rating": "0",
+  "party": true,
+  "not_runs": [
+   "action:melee-attack",
+   "speed:climb"
+  ]
+ },
+ {
+  "key": "monster:badger",
+  "challenge_rating": "0",
+  "party": true,
+  "not_runs": [
+   "action:melee-attack",
+   "sense:darkvision",
+   "speed:burrow",
+   "trait:keen smell"
+  ]
+ },
+ {
+  "key": "monster:balor",
+  "challenge_rating": "19",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:melee-attack+save",
+   "action:multiattack",
+   "action:other:teleport",
+   "resistances:plain",
+   "sense:truesight",
+   "speed:fly",
+   "trait:death throes",
+   "trait:fire aura",
+   "trait:magic resistance",
+   "trait:magic weapons"
+  ]
+ },
+ {
+  "key": "monster:bandit",
+  "challenge_rating": "1/8",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack"
+  ]
+ },
+ {
+  "key": "monster:bandit-captain",
+  "challenge_rating": "2",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:multiattack"
+  ]
+ },
+ {
+  "key": "monster:barbed-devil",
+  "challenge_rating": "5",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:multiattack",
+   "resistances:plain",
+   "sense:darkvision",
+   "trait:barbed hide",
+   "trait:devil's sight",
+   "trait:magic resistance"
+  ]
+ },
+ {
+  "key": "monster:basilisk",
+  "challenge_rating": "3",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "sense:darkvision",
+   "trait:petrifying gaze"
+  ]
+ },
+ {
+  "key": "monster:bat",
+  "challenge_rating": "0",
+  "party": true,
+  "not_runs": [
+   "action:melee-attack",
+   "sense:blindsight",
+   "speed:fly",
+   "trait:echolocation",
+   "trait:keen hearing"
+  ]
+ },
+ {
+  "key": "monster:bearded-devil",
+  "challenge_rating": "3",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack+save",
+   "action:multiattack",
+   "resistances:plain",
+   "sense:darkvision",
+   "trait:devil's sight",
+   "trait:magic resistance",
+   "trait:steadfast"
+  ]
+ },
+ {
+  "key": "monster:behir",
+  "challenge_rating": "11",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:melee-attack+grapple",
+   "action:multiattack",
+   "action:save-effect+damage",
+   "sense:darkvision",
+   "speed:climb"
+  ]
+ },
+ {
+  "key": "monster:berserker",
+  "challenge_rating": "2",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "trait:reckless"
+  ]
+ },
+ {
+  "key": "monster:black-bear",
+  "challenge_rating": "1/2",
+  "party": true,
+  "not_runs": [
+   "action:melee-attack",
+   "action:multiattack",
+   "speed:climb",
+   "trait:keen smell"
+  ]
+ },
+ {
+  "key": "monster:black-dragon-wyrmling",
+  "challenge_rating": "2",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:save-effect+damage",
+   "sense:blindsight",
+   "sense:darkvision",
+   "speed:fly",
+   "speed:swim",
+   "trait:amphibious"
+  ]
+ },
+ {
+  "key": "monster:black-pudding",
+  "challenge_rating": "4",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "reaction:split",
+   "sense:blindsight",
+   "speed:climb",
+   "trait:amorphous",
+   "trait:corrosive form",
+   "trait:spider climb"
+  ]
+ },
+ {
+  "key": "monster:blink-dog",
+  "challenge_rating": "1/4",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:other:teleport",
+   "trait:keen hearing and smell"
+  ]
+ },
+ {
+  "key": "monster:blood-hawk",
+  "challenge_rating": "1/8",
+  "party": true,
+  "not_runs": [
+   "action:melee-attack",
+   "speed:fly",
+   "trait:keen sight"
+  ]
+ },
+ {
+  "key": "monster:blue-dragon-wyrmling",
+  "challenge_rating": "3",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:save-effect+damage",
+   "sense:blindsight",
+   "sense:darkvision",
+   "speed:burrow",
+   "speed:fly"
+  ]
+ },
+ {
+  "key": "monster:boar",
+  "challenge_rating": "1/4",
+  "party": true,
+  "not_runs": [
+   "action:melee-attack",
+   "trait:charge",
+   "trait:relentless",
+   "usage:recharge-after-rest"
+  ]
+ },
+ {
+  "key": "monster:bone-devil",
+  "challenge_rating": "9",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:melee-attack+save",
+   "action:multiattack",
+   "resistances:plain",
+   "sense:darkvision",
+   "speed:fly",
+   "trait:devil's sight",
+   "trait:magic resistance"
+  ]
+ },
+ {
+  "key": "monster:brass-dragon-wyrmling",
+  "challenge_rating": "1",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:other:breath weapons",
+   "action:save-effect",
+   "action:save-effect+damage",
+   "sense:blindsight",
+   "sense:darkvision",
+   "speed:burrow",
+   "speed:fly"
+  ]
+ },
+ {
+  "key": "monster:bronze-dragon-wyrmling",
+  "challenge_rating": "2",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:other:breath weapons",
+   "action:save-effect",
+   "action:save-effect+damage",
+   "sense:blindsight",
+   "sense:darkvision",
+   "speed:fly",
+   "speed:swim",
+   "trait:amphibious"
+  ]
+ },
+ {
+  "key": "monster:brown-bear",
+  "challenge_rating": "1",
+  "party": true,
+  "not_runs": [
+   "action:melee-attack",
+   "action:multiattack",
+   "speed:climb",
+   "trait:keen smell"
+  ]
+ },
+ {
+  "key": "monster:bugbear",
+  "challenge_rating": "1",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "sense:darkvision",
+   "trait:surprise attack"
+  ]
+ },
+ {
+  "key": "monster:bulette",
+  "challenge_rating": "5",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:save-effect",
+   "sense:darkvision",
+   "sense:tremorsense",
+   "speed:burrow",
+   "trait:standing leap"
+  ]
+ },
+ {
+  "key": "monster:camel",
+  "challenge_rating": "1/8",
+  "party": true,
+  "not_runs": [
+   "action:melee-attack"
+  ]
+ },
+ {
+  "key": "monster:cat",
+  "challenge_rating": "0",
+  "party": true,
+  "not_runs": [
+   "action:melee-attack",
+   "speed:climb",
+   "trait:keen smell"
+  ]
+ },
+ {
+  "key": "monster:centaur",
+  "challenge_rating": "2",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:multiattack",
+   "trait:charge"
+  ]
+ },
+ {
+  "key": "monster:chain-devil",
+  "challenge_rating": "8",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack+grapple",
+   "action:multiattack",
+   "action:other:animate chains",
+   "reaction:unnerving mask",
+   "resistances:plain",
+   "sense:darkvision",
+   "trait:devil's sight",
+   "trait:magic resistance"
+  ]
+ },
+ {
+  "key": "monster:chimera",
+  "challenge_rating": "6",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:multiattack",
+   "action:save-effect+damage",
+   "sense:darkvision",
+   "speed:fly"
+  ]
+ },
+ {
+  "key": "monster:chuul",
+  "challenge_rating": "4",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack+grapple",
+   "action:multiattack",
+   "action:save-effect",
+   "sense:darkvision",
+   "speed:swim",
+   "trait:amphibious",
+   "trait:sense magic"
+  ]
+ },
+ {
+  "key": "monster:clay-golem",
+  "challenge_rating": "9",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack+save",
+   "action:multiattack",
+   "action:other:haste",
+   "sense:darkvision",
+   "trait:acid absorption",
+   "trait:berserk",
+   "trait:immutable form",
+   "trait:magic resistance",
+   "trait:magic weapons"
+  ]
+ },
+ {
+  "key": "monster:cloaker",
+  "challenge_rating": "8",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:multiattack",
+   "action:other:phantasms",
+   "action:save-effect",
+   "sense:darkvision",
+   "speed:fly",
+   "trait:damage transfer",
+   "trait:false appearance",
+   "trait:light sensitivity"
+  ]
+ },
+ {
+  "key": "monster:cloud-giant",
+  "challenge_rating": "9",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:multiattack",
+   "trait:innate spellcasting",
+   "trait:keen smell"
+  ]
+ },
+ {
+  "key": "monster:cockatrice",
+  "challenge_rating": "1/2",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack+save",
+   "sense:darkvision",
+   "speed:fly"
+  ]
+ },
+ {
+  "key": "monster:commoner",
+  "challenge_rating": "0",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack"
+  ]
+ },
+ {
+  "key": "monster:constrictor-snake",
+  "challenge_rating": "1/4",
+  "party": true,
+  "not_runs": [
+   "action:melee-attack",
+   "action:melee-attack+grapple",
+   "sense:blindsight",
+   "speed:swim"
+  ]
+ },
+ {
+  "key": "monster:copper-dragon-wyrmling",
+  "challenge_rating": "1",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:other:breath weapons",
+   "action:save-effect",
+   "action:save-effect+damage",
+   "sense:blindsight",
+   "sense:darkvision",
+   "speed:climb",
+   "speed:fly"
+  ]
+ },
+ {
+  "key": "monster:couatl",
+  "challenge_rating": "4",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack+grapple",
+   "action:melee-attack+save",
+   "action:other:change shape",
+   "resistances:plain",
+   "sense:truesight",
+   "speed:fly",
+   "trait:innate spellcasting",
+   "trait:magic weapons",
+   "trait:shielded mind"
+  ]
+ },
+ {
+  "key": "monster:crab",
+  "challenge_rating": "0",
+  "party": true,
+  "not_runs": [
+   "action:melee-attack",
+   "sense:blindsight",
+   "speed:swim",
+   "trait:amphibious"
+  ]
+ },
+ {
+  "key": "monster:crocodile",
+  "challenge_rating": "1/2",
+  "party": true,
+  "not_runs": [
+   "action:melee-attack+grapple",
+   "speed:swim",
+   "trait:hold breath"
+  ]
+ },
+ {
+  "key": "monster:cult-fanatic",
+  "challenge_rating": "2",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:multiattack",
+   "trait:dark devotion"
+  ]
+ },
+ {
+  "key": "monster:cultist",
+  "challenge_rating": "1/8",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "trait:dark devotion"
+  ]
+ },
+ {
+  "key": "monster:darkmantle",
+  "challenge_rating": "1/2",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:other:darkness aura",
+   "sense:blindsight",
+   "speed:fly",
+   "trait:echolocation",
+   "trait:false appearance"
+  ]
+ },
+ {
+  "key": "monster:death-dog",
+  "challenge_rating": "1",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack+save",
+   "action:multiattack",
+   "sense:darkvision",
+   "trait:two-headed"
+  ]
+ },
+ {
+  "key": "monster:deep-gnome-svirfneblin",
+  "challenge_rating": "1/2",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "sense:darkvision",
+   "trait:gnome cunning",
+   "trait:innate spellcasting",
+   "trait:stone camouflage"
+  ]
+ },
+ {
+  "key": "monster:deer",
+  "challenge_rating": "0",
+  "party": true,
+  "not_runs": [
+   "action:melee-attack"
+  ]
+ },
+ {
+  "key": "monster:deva",
+  "challenge_rating": "10",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:multiattack",
+   "action:other:change shape",
+   "action:other:healing touch",
+   "resistances:plain",
+   "sense:darkvision",
+   "speed:fly",
+   "trait:angelic weapons",
+   "trait:innate spellcasting",
+   "trait:magic resistance"
+  ]
+ },
+ {
+  "key": "monster:dire-wolf",
+  "challenge_rating": "1",
+  "party": true,
+  "not_runs": [
+   "trait:keen hearing and smell"
+  ]
+ },
+ {
+  "key": "monster:djinni",
+  "challenge_rating": "11",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:multiattack",
+   "action:save-effect",
+   "sense:darkvision",
+   "speed:fly",
+   "trait:elemental demise",
+   "trait:innate spellcasting"
+  ]
+ },
+ {
+  "key": "monster:doppelganger",
+  "challenge_rating": "3",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:multiattack",
+   "action:other:read thoughts",
+   "sense:darkvision",
+   "trait:ambusher",
+   "trait:shapechanger",
+   "trait:surprise attack"
+  ]
+ },
+ {
+  "key": "monster:draft-horse",
+  "challenge_rating": "1/4",
+  "party": true,
+  "not_runs": [
+   "action:melee-attack"
+  ]
+ },
+ {
+  "key": "monster:dragon-turtle",
+  "challenge_rating": "17",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:multiattack",
+   "action:save-effect+damage",
+   "resistances:plain",
+   "sense:darkvision",
+   "speed:swim",
+   "trait:amphibious"
+  ]
+ },
+ {
+  "key": "monster:dretch",
+  "challenge_rating": "1/4",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:multiattack",
+   "action:save-effect",
+   "resistances:plain",
+   "sense:darkvision"
+  ]
+ },
+ {
+  "key": "monster:drider",
+  "challenge_rating": "6",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:multiattack",
+   "sense:darkvision",
+   "speed:climb",
+   "trait:fey ancestry",
+   "trait:innate spellcasting",
+   "trait:spider climb",
+   "trait:sunlight sensitivity",
+   "trait:web walker"
+  ]
+ },
+ {
+  "key": "monster:drow",
+  "challenge_rating": "1/4",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "sense:darkvision",
+   "trait:fey ancestry",
+   "trait:innate spellcasting",
+   "trait:sunlight sensitivity"
+  ]
+ },
+ {
+  "key": "monster:druid",
+  "challenge_rating": "2",
+  "party": false,
+  "not_runs": [
+   "ac:alternate",
+   "action:melee-attack"
+  ]
+ },
+ {
+  "key": "monster:dryad",
+  "challenge_rating": "1",
+  "party": false,
+  "not_runs": [
+   "ac:alternate",
+   "action:melee-attack",
+   "action:save-effect",
+   "sense:darkvision",
+   "trait:innate spellcasting",
+   "trait:magic resistance",
+   "trait:speak with beasts and plants",
+   "trait:tree stride"
+  ]
+ },
+ {
+  "key": "monster:duergar",
+  "challenge_rating": "1",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:other:enlarge",
+   "action:other:invisibility",
+   "resistances:plain",
+   "sense:darkvision",
+   "trait:duergar resilience",
+   "trait:sunlight sensitivity"
+  ]
+ },
+ {
+  "key": "monster:dust-mephit",
+  "challenge_rating": "1/2",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:save-effect",
+   "sense:darkvision",
+   "speed:fly",
+   "trait:death burst",
+   "trait:innate spellcasting",
+   "vulnerabilities:plain"
+  ]
+ },
+ {
+  "key": "monster:eagle",
+  "challenge_rating": "0",
+  "party": true,
+  "not_runs": [
+   "action:melee-attack",
+   "speed:fly",
+   "trait:keen sight"
+  ]
+ },
+ {
+  "key": "monster:earth-elemental",
+  "challenge_rating": "5",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:multiattack",
+   "sense:darkvision",
+   "sense:tremorsense",
+   "speed:burrow",
+   "trait:earth glide",
+   "trait:siege monster",
+   "vulnerabilities:plain"
+  ]
+ },
+ {
+  "key": "monster:efreeti",
+  "challenge_rating": "11",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:multiattack",
+   "sense:darkvision",
+   "speed:fly",
+   "trait:elemental demise",
+   "trait:innate spellcasting"
+  ]
+ },
+ {
+  "key": "monster:elephant",
+  "challenge_rating": "4",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "trait:trampling charge"
+  ]
+ },
+ {
+  "key": "monster:elk",
+  "challenge_rating": "1/4",
+  "party": true,
+  "not_runs": [
+   "action:melee-attack",
+   "trait:charge"
+  ]
+ },
+ {
+  "key": "monster:erinyes",
+  "challenge_rating": "12",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:multiattack",
+   "resistances:plain",
+   "sense:truesight",
+   "speed:fly",
+   "trait:hellish weapons",
+   "trait:magic resistance"
+  ]
+ },
+ {
+  "key": "monster:ettercap",
+  "challenge_rating": "2",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:melee-attack+save",
+   "action:multiattack",
+   "sense:darkvision",
+   "speed:climb",
+   "trait:spider climb",
+   "trait:web sense",
+   "trait:web walker"
+  ]
+ },
+ {
+  "key": "monster:ettin",
+  "challenge_rating": "4",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:multiattack",
+   "sense:darkvision",
+   "trait:two heads",
+   "trait:wakeful"
+  ]
+ },
+ {
+  "key": "monster:fire-elemental",
+  "challenge_rating": "5",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:multiattack",
+   "sense:darkvision",
+   "trait:fire form",
+   "trait:illumination",
+   "trait:water susceptibility"
+  ]
+ },
+ {
+  "key": "monster:fire-giant",
+  "challenge_rating": "9",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:multiattack"
+  ]
+ },
+ {
+  "key": "monster:flesh-golem",
+  "challenge_rating": "5",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:multiattack",
+   "sense:darkvision",
+   "trait:aversion of fire",
+   "trait:berserk",
+   "trait:immutable form",
+   "trait:lightning absorption",
+   "trait:magic resistance",
+   "trait:magic weapons"
+  ]
+ },
+ {
+  "key": "monster:flying-snake",
+  "challenge_rating": "1/8",
+  "party": true,
+  "not_runs": [
+   "action:melee-attack",
+   "sense:blindsight",
+   "speed:fly",
+   "speed:swim",
+   "trait:flyby"
+  ]
+ },
+ {
+  "key": "monster:flying-sword",
+  "challenge_rating": "1/4",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "sense:blindsight",
+   "speed:fly",
+   "speed:hover",
+   "trait:antimagic susceptibility",
+   "trait:false appearance"
+  ]
+ },
+ {
+  "key": "monster:frog",
+  "challenge_rating": "0",
+  "party": true,
+  "not_runs": [
+   "sense:darkvision",
+   "speed:swim",
+   "trait:amphibious",
+   "trait:standing leap"
+  ]
+ },
+ {
+  "key": "monster:frost-giant",
+  "challenge_rating": "8",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:multiattack"
+  ]
+ },
+ {
+  "key": "monster:gargoyle",
+  "challenge_rating": "2",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:multiattack",
+   "sense:darkvision",
+   "speed:fly",
+   "trait:false appearance"
+  ]
+ },
+ {
+  "key": "monster:gelatinous-cube",
+  "challenge_rating": "2",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:save-effect+damage",
+   "sense:blindsight",
+   "trait:ooze cube",
+   "trait:transparent"
+  ]
+ },
+ {
+  "key": "monster:ghast",
+  "challenge_rating": "2",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:melee-attack+save",
+   "resistances:plain",
+   "sense:darkvision",
+   "trait:stench",
+   "trait:turn defiance"
+  ]
+ },
+ {
+  "key": "monster:ghost",
+  "challenge_rating": "4",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:other:etherealness",
+   "action:save-effect",
+   "resistances:plain",
+   "sense:darkvision",
+   "speed:fly",
+   "speed:hover",
+   "trait:ethereal sight",
+   "trait:incorporeal movement"
+  ]
+ },
+ {
+  "key": "monster:ghoul",
+  "challenge_rating": "1",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:melee-attack+save",
+   "sense:darkvision"
+  ]
+ },
+ {
+  "key": "monster:giant-ape",
+  "challenge_rating": "7",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:multiattack",
+   "speed:climb"
+  ]
+ },
+ {
+  "key": "monster:giant-badger",
+  "challenge_rating": "1/4",
+  "party": true,
+  "not_runs": [
+   "action:melee-attack",
+   "action:multiattack",
+   "sense:darkvision",
+   "speed:burrow",
+   "trait:keen smell"
+  ]
+ },
+ {
+  "key": "monster:giant-bat",
+  "challenge_rating": "1/4",
+  "party": true,
+  "not_runs": [
+   "action:melee-attack",
+   "sense:blindsight",
+   "speed:fly",
+   "trait:echolocation",
+   "trait:keen hearing"
+  ]
+ },
+ {
+  "key": "monster:giant-boar",
+  "challenge_rating": "2",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "trait:charge",
+   "trait:relentless",
+   "usage:recharge-after-rest"
+  ]
+ },
+ {
+  "key": "monster:giant-centipede",
+  "challenge_rating": "1/4",
+  "party": true,
+  "not_runs": [
+   "action:melee-attack+save",
+   "sense:blindsight",
+   "speed:climb"
+  ]
+ },
+ {
+  "key": "monster:giant-constrictor-snake",
+  "challenge_rating": "2",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:melee-attack+grapple",
+   "sense:blindsight",
+   "speed:swim"
+  ]
+ },
+ {
+  "key": "monster:giant-crab",
+  "challenge_rating": "1/8",
+  "party": true,
+  "not_runs": [
+   "action:melee-attack+grapple",
+   "sense:blindsight",
+   "speed:swim",
+   "trait:amphibious"
+  ]
+ },
+ {
+  "key": "monster:giant-crocodile",
+  "challenge_rating": "5",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack+grapple",
+   "action:melee-attack+save+grapple+prone",
+   "action:multiattack",
+   "speed:swim",
+   "trait:hold breath"
+  ]
+ },
+ {
+  "key": "monster:giant-eagle",
+  "challenge_rating": "1",
+  "party": true,
+  "not_runs": [
+   "action:melee-attack",
+   "action:multiattack",
+   "speed:fly",
+   "trait:keen sight"
+  ]
+ },
+ {
+  "key": "monster:giant-elk",
+  "challenge_rating": "2",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "trait:charge"
+  ]
+ },
+ {
+  "key": "monster:giant-fire-beetle",
+  "challenge_rating": "0",
+  "party": true,
+  "not_runs": [
+   "action:melee-attack",
+   "sense:blindsight",
+   "trait:illumination"
+  ]
+ },
+ {
+  "key": "monster:giant-frog",
+  "challenge_rating": "1/4",
+  "party": true,
+  "not_runs": [
+   "action:melee-attack+grapple",
+   "action:other:swallow",
+   "sense:darkvision",
+   "speed:swim",
+   "trait:amphibious",
+   "trait:standing leap"
+  ]
+ },
+ {
+  "key": "monster:giant-goat",
+  "challenge_rating": "1/2",
+  "party": true,
+  "not_runs": [
+   "action:melee-attack",
+   "trait:charge",
+   "trait:sure-footed"
+  ]
+ },
+ {
+  "key": "monster:giant-hyena",
+  "challenge_rating": "1",
+  "party": true,
+  "not_runs": [
+   "action:melee-attack",
+   "trait:rampage"
+  ]
+ },
+ {
+  "key": "monster:giant-lizard",
+  "challenge_rating": "1/4",
+  "party": true,
+  "not_runs": [
+   "action:melee-attack",
+   "sense:darkvision",
+   "speed:climb"
+  ]
+ },
+ {
+  "key": "monster:giant-octopus",
+  "challenge_rating": "1",
+  "party": true,
+  "not_runs": [
+   "action:melee-attack+grapple",
+   "action:other:ink cloud",
+   "sense:darkvision",
+   "speed:swim",
+   "trait:hold breath",
+   "trait:underwater camouflage",
+   "trait:water breathing"
+  ]
+ },
+ {
+  "key": "monster:giant-owl",
+  "challenge_rating": "1/4",
+  "party": true,
+  "not_runs": [
+   "action:melee-attack",
+   "sense:darkvision",
+   "speed:fly",
+   "trait:flyby",
+   "trait:keen hearing and sight"
+  ]
+ },
+ {
+  "key": "monster:giant-poisonous-snake",
+  "challenge_rating": "1/4",
+  "party": true,
+  "not_runs": [
+   "action:melee-attack+save",
+   "sense:blindsight",
+   "speed:swim"
+  ]
+ },
+ {
+  "key": "monster:giant-rat",
+  "challenge_rating": "1/8",
+  "party": true,
+  "not_runs": [
+   "action:melee-attack",
+   "sense:darkvision",
+   "trait:keen smell"
+  ]
+ },
+ {
+  "key": "monster:giant-rat-diseased",
+  "challenge_rating": "1/8",
+  "party": true,
+  "not_runs": [
+   "action:melee-attack+save",
+   "sense:darkvision",
+   "trait:keen smell"
+  ]
+ },
+ {
+  "key": "monster:giant-scorpion",
+  "challenge_rating": "3",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack+grapple",
+   "action:melee-attack+save",
+   "action:multiattack",
+   "sense:blindsight"
+  ]
+ },
+ {
+  "key": "monster:giant-sea-horse",
+  "challenge_rating": "1/2",
+  "party": true,
+  "not_runs": [
+   "action:melee-attack",
+   "speed:swim",
+   "trait:charge",
+   "trait:water breathing"
+  ]
+ },
+ {
+  "key": "monster:giant-shark",
+  "challenge_rating": "5",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "sense:blindsight",
+   "speed:swim",
+   "trait:blood frenzy",
+   "trait:water breathing"
+  ]
+ },
+ {
+  "key": "monster:giant-spider",
+  "challenge_rating": "1",
+  "party": true,
+  "not_runs": [
+   "action:melee-attack+save",
+   "sense:blindsight",
+   "sense:darkvision",
+   "speed:climb",
+   "trait:spider climb",
+   "trait:web sense",
+   "trait:web walker"
+  ]
+ },
+ {
+  "key": "monster:giant-toad",
+  "challenge_rating": "1",
+  "party": true,
+  "not_runs": [
+   "action:melee-attack+grapple",
+   "action:other:swallow",
+   "sense:darkvision",
+   "speed:swim",
+   "trait:amphibious",
+   "trait:standing leap"
+  ]
+ },
+ {
+  "key": "monster:giant-vulture",
+  "challenge_rating": "1",
+  "party": true,
+  "not_runs": [
+   "action:melee-attack",
+   "action:multiattack",
+   "speed:fly",
+   "trait:keen sight and smell"
+  ]
+ },
+ {
+  "key": "monster:giant-wasp",
+  "challenge_rating": "1/2",
+  "party": true,
+  "not_runs": [
+   "action:melee-attack+save",
+   "speed:fly",
+   "speed:swim"
+  ]
+ },
+ {
+  "key": "monster:giant-weasel",
+  "challenge_rating": "1/8",
+  "party": true,
+  "not_runs": [
+   "action:melee-attack",
+   "sense:darkvision",
+   "trait:keen hearing and smell"
+  ]
+ },
+ {
+  "key": "monster:giant-wolf-spider",
+  "challenge_rating": "1/4",
+  "party": true,
+  "not_runs": [
+   "action:melee-attack+save",
+   "sense:blindsight",
+   "sense:darkvision",
+   "speed:climb",
+   "trait:spider climb",
+   "trait:web sense",
+   "trait:web walker"
+  ]
+ },
+ {
+  "key": "monster:gibbering-mouther",
+  "challenge_rating": "2",
+  "party": false,
+  "not_runs": [
+   "action:multiattack",
+   "action:save-effect",
+   "sense:darkvision",
+   "speed:swim",
+   "trait:aberrant ground",
+   "trait:gibbering"
+  ]
+ },
+ {
+  "key": "monster:glabrezu",
+  "challenge_rating": "9",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:melee-attack+grapple",
+   "action:multiattack",
+   "resistances:plain",
+   "sense:truesight",
+   "trait:innate spellcasting",
+   "trait:magic resistance"
+  ]
+ },
+ {
+  "key": "monster:gladiator",
+  "challenge_rating": "5",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:multiattack",
+   "trait:brave"
+  ]
+ },
+ {
+  "key": "monster:gnoll",
+  "challenge_rating": "1/2",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "sense:darkvision",
+   "trait:rampage"
+  ]
+ },
+ {
+  "key": "monster:goat",
+  "challenge_rating": "0",
+  "party": true,
+  "not_runs": [
+   "action:melee-attack",
+   "trait:charge",
+   "trait:sure-footed"
+  ]
+ },
+ {
+  "key": "monster:goblin",
+  "challenge_rating": "1/4",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "sense:darkvision",
+   "trait:nimble escape"
+  ]
+ },
+ {
+  "key": "monster:gold-dragon-wyrmling",
+  "challenge_rating": "3",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:other:breath weapons",
+   "action:save-effect",
+   "action:save-effect+damage",
+   "sense:blindsight",
+   "sense:darkvision",
+   "speed:fly",
+   "speed:swim",
+   "trait:amphibious"
+  ]
+ },
+ {
+  "key": "monster:gorgon",
+  "challenge_rating": "5",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:save-effect",
+   "sense:darkvision",
+   "trait:trampling charge"
+  ]
+ },
+ {
+  "key": "monster:gray-ooze",
+  "challenge_rating": "1/2",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "resistances:plain",
+   "sense:blindsight",
+   "speed:climb",
+   "trait:amorphous",
+   "trait:corrode metal",
+   "trait:false appearance"
+  ]
+ },
+ {
+  "key": "monster:green-dragon-wyrmling",
+  "challenge_rating": "2",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:save-effect+damage",
+   "sense:blindsight",
+   "sense:darkvision",
+   "speed:fly",
+   "speed:swim",
+   "trait:amphibious"
+  ]
+ },
+ {
+  "key": "monster:green-hag",
+  "challenge_rating": "3",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:other:illusory appearance",
+   "action:other:invisible passage",
+   "sense:darkvision",
+   "trait:amphibious",
+   "trait:innate spellcasting",
+   "trait:mimicry"
+  ]
+ },
+ {
+  "key": "monster:grick",
+  "challenge_rating": "2",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:multiattack",
+   "sense:darkvision",
+   "speed:climb",
+   "trait:stone camouflage"
+  ]
+ },
+ {
+  "key": "monster:griffon",
+  "challenge_rating": "2",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:multiattack",
+   "sense:darkvision",
+   "speed:fly",
+   "trait:keen sight"
+  ]
+ },
+ {
+  "key": "monster:grimlock",
+  "challenge_rating": "1/4",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "sense:blindsight",
+   "trait:blind senses",
+   "trait:keen hearing and smell",
+   "trait:stone camouflage"
+  ]
+ },
+ {
+  "key": "monster:guard",
+  "challenge_rating": "1/8",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack"
+  ]
+ },
+ {
+  "key": "monster:guardian-naga",
+  "challenge_rating": "10",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack+save",
+   "sense:darkvision",
+   "trait:rejuvenation"
+  ]
+ },
+ {
+  "key": "monster:gynosphinx",
+  "challenge_rating": "11",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:multiattack",
+   "legendary:cost-1",
+   "legendary:cost-2",
+   "legendary:cost-3",
+   "sense:truesight",
+   "speed:fly",
+   "trait:inscrutable",
+   "trait:magic weapons"
+  ]
+ },
+ {
+  "key": "monster:half-red-dragon-veteran",
+  "challenge_rating": "5",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:multiattack",
+   "action:save-effect+damage",
+   "resistances:plain",
+   "sense:blindsight",
+   "sense:darkvision"
+  ]
+ },
+ {
+  "key": "monster:harpy",
+  "challenge_rating": "1",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:multiattack",
+   "action:save-effect",
+   "speed:fly"
+  ]
+ },
+ {
+  "key": "monster:hawk",
+  "challenge_rating": "0",
+  "party": true,
+  "not_runs": [
+   "action:melee-attack",
+   "speed:fly",
+   "trait:keen sight"
+  ]
+ },
+ {
+  "key": "monster:hell-hound",
+  "challenge_rating": "3",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:save-effect+damage",
+   "sense:darkvision",
+   "trait:keen hearing and smell"
+  ]
+ },
+ {
+  "key": "monster:hezrou",
+  "challenge_rating": "8",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:multiattack",
+   "resistances:plain",
+   "sense:darkvision",
+   "trait:magic resistance",
+   "trait:stench"
+  ]
+ },
+ {
+  "key": "monster:hill-giant",
+  "challenge_rating": "5",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:multiattack"
+  ]
+ },
+ {
+  "key": "monster:hippogriff",
+  "challenge_rating": "1",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:multiattack",
+   "speed:fly",
+   "trait:keen sight"
+  ]
+ },
+ {
+  "key": "monster:hobgoblin",
+  "challenge_rating": "1/2",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "sense:darkvision",
+   "trait:martial advantage"
+  ]
+ },
+ {
+  "key": "monster:homunculus",
+  "challenge_rating": "0",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack+save",
+   "sense:darkvision",
+   "speed:fly",
+   "trait:telepathic bond"
+  ]
+ },
+ {
+  "key": "monster:horned-devil",
+  "challenge_rating": "11",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:melee-attack+save",
+   "action:multiattack",
+   "resistances:plain",
+   "sense:darkvision",
+   "speed:fly",
+   "trait:devil's sight",
+   "trait:magic resistance"
+  ]
+ },
+ {
+  "key": "monster:hunter-shark",
+  "challenge_rating": "2",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "sense:darkvision",
+   "speed:swim",
+   "trait:blood frenzy",
+   "trait:water breathing"
+  ]
+ },
+ {
+  "key": "monster:hydra",
+  "challenge_rating": "8",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:multiattack",
+   "sense:darkvision",
+   "speed:swim",
+   "trait:hold breath",
+   "trait:multiple heads",
+   "trait:reactive heads",
+   "trait:wakeful"
+  ]
+ },
+ {
+  "key": "monster:hyena",
+  "challenge_rating": "0",
+  "party": true,
+  "not_runs": [
+   "action:melee-attack"
+  ]
+ },
+ {
+  "key": "monster:ice-devil",
+  "challenge_rating": "14",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:multiattack",
+   "action:save-effect",
+   "sense:blindsight",
+   "sense:darkvision",
+   "trait:devil's sight",
+   "trait:magic resistance"
+  ]
+ },
+ {
+  "key": "monster:ice-mephit",
+  "challenge_rating": "1/2",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:save-effect+damage",
+   "sense:darkvision",
+   "speed:fly",
+   "trait:death burst",
+   "trait:false appearance",
+   "trait:innate spellcasting",
+   "vulnerabilities:plain"
+  ]
+ },
+ {
+  "key": "monster:imp",
+  "challenge_rating": "1",
+  "party": true,
+  "not_runs": [
+   "action:melee-attack+save",
+   "action:other:invisibility",
+   "resistances:plain",
+   "sense:darkvision",
+   "speed:fly",
+   "trait:devil's sight",
+   "trait:magic resistance",
+   "trait:shapechanger"
+  ]
+ },
+ {
+  "key": "monster:invisible-stalker",
+  "challenge_rating": "6",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:multiattack",
+   "sense:darkvision",
+   "speed:fly",
+   "speed:hover",
+   "trait:faultless tracker",
+   "trait:invisibility"
+  ]
+ },
+ {
+  "key": "monster:iron-golem",
+  "challenge_rating": "16",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:multiattack",
+   "action:save-effect+damage",
+   "sense:darkvision",
+   "trait:fire absorption",
+   "trait:immutable form",
+   "trait:magic resistance",
+   "trait:magic weapons"
+  ]
+ },
+ {
+  "key": "monster:jackal",
+  "challenge_rating": "0",
+  "party": true,
+  "not_runs": [
+   "action:melee-attack",
+   "trait:keen hearing and smell"
+  ]
+ },
+ {
+  "key": "monster:killer-whale",
+  "challenge_rating": "3",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "sense:blindsight",
+   "speed:swim",
+   "trait:echolocation",
+   "trait:hold breath",
+   "trait:keen hearing"
+  ]
+ },
+ {
+  "key": "monster:knight",
+  "challenge_rating": "3",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:multiattack",
+   "action:other:leadership",
+   "trait:brave"
+  ]
+ },
+ {
+  "key": "monster:kobold",
+  "challenge_rating": "1/8",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "sense:darkvision",
+   "trait:sunlight sensitivity"
+  ]
+ },
+ {
+  "key": "monster:kraken",
+  "challenge_rating": "23",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack+grapple",
+   "action:melee-attack+save+grapple+swallow",
+   "action:multiattack",
+   "action:save-effect",
+   "action:save-effect+damage",
+   "legendary:cost-1",
+   "legendary:cost-2",
+   "legendary:cost-3",
+   "sense:truesight",
+   "speed:swim",
+   "trait:amphibious",
+   "trait:freedom of movement",
+   "trait:siege monster"
+  ]
+ },
+ {
+  "key": "monster:lamia",
+  "challenge_rating": "4",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:multiattack",
+   "sense:darkvision",
+   "trait:innate spellcasting"
+  ]
+ },
+ {
+  "key": "monster:lemure",
+  "challenge_rating": "0",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "resistances:plain",
+   "sense:darkvision",
+   "trait:devil's sight",
+   "trait:hellish rejuvenation"
+  ]
+ },
+ {
+  "key": "monster:lich",
+  "challenge_rating": "21",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack+save",
+   "legendary:cost-1",
+   "legendary:cost-2",
+   "legendary:cost-3",
+   "resistances:plain",
+   "sense:truesight",
+   "trait:legendary resistance",
+   "trait:rejuvenation",
+   "trait:turn resistance",
+   "usage:per-day"
+  ]
+ },
+ {
+  "key": "monster:lion",
+  "challenge_rating": "1",
+  "party": true,
+  "not_runs": [
+   "action:melee-attack",
+   "trait:keen smell",
+   "trait:pounce",
+   "trait:running leap"
+  ]
+ },
+ {
+  "key": "monster:lizard",
+  "challenge_rating": "0",
+  "party": true,
+  "not_runs": [
+   "action:melee-attack",
+   "sense:darkvision",
+   "speed:climb"
+  ]
+ },
+ {
+  "key": "monster:lizardfolk",
+  "challenge_rating": "1/2",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:multiattack",
+   "speed:swim",
+   "trait:hold breath"
+  ]
+ },
+ {
+  "key": "monster:mage",
+  "challenge_rating": "6",
+  "party": false,
+  "not_runs": [
+   "ac:alternate",
+   "action:melee-attack"
+  ]
+ },
+ {
+  "key": "monster:magma-mephit",
+  "challenge_rating": "1/2",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:save-effect+damage",
+   "sense:darkvision",
+   "speed:fly",
+   "trait:death burst",
+   "trait:false appearance",
+   "trait:innate spellcasting",
+   "vulnerabilities:plain"
+  ]
+ },
+ {
+  "key": "monster:magmin",
+  "challenge_rating": "1/2",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "sense:darkvision",
+   "trait:death burst",
+   "trait:ignited illumination"
+  ]
+ },
+ {
+  "key": "monster:mammoth",
+  "challenge_rating": "6",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "trait:trampling charge"
+  ]
+ },
+ {
+  "key": "monster:manticore",
+  "challenge_rating": "3",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:multiattack",
+   "sense:darkvision",
+   "speed:fly",
+   "trait:tail spike regrowth"
+  ]
+ },
+ {
+  "key": "monster:marilith",
+  "challenge_rating": "16",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:melee-attack+grapple",
+   "action:multiattack",
+   "action:other:teleport",
+   "resistances:plain",
+   "sense:truesight",
+   "trait:magic resistance",
+   "trait:magic weapons",
+   "trait:reactive"
+  ]
+ },
+ {
+  "key": "monster:mastiff",
+  "challenge_rating": "1/8",
+  "party": true,
+  "not_runs": [
+   "trait:keen hearing and smell"
+  ]
+ },
+ {
+  "key": "monster:medusa",
+  "challenge_rating": "6",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:multiattack",
+   "sense:darkvision",
+   "trait:petrifying gaze"
+  ]
+ },
+ {
+  "key": "monster:merfolk",
+  "challenge_rating": "1/8",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "speed:swim",
+   "trait:amphibious"
+  ]
+ },
+ {
+  "key": "monster:merrow",
+  "challenge_rating": "2",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:multiattack",
+   "sense:darkvision",
+   "speed:swim",
+   "trait:amphibious"
+  ]
+ },
+ {
+  "key": "monster:mimic",
+  "challenge_rating": "2",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "sense:darkvision",
+   "trait:adhesive",
+   "trait:false appearance",
+   "trait:grappler",
+   "trait:shapechanger"
+  ]
+ },
+ {
+  "key": "monster:minotaur",
+  "challenge_rating": "3",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "sense:darkvision",
+   "trait:charge",
+   "trait:labyrinthine recall",
+   "trait:reckless"
+  ]
+ },
+ {
+  "key": "monster:minotaur-skeleton",
+  "challenge_rating": "2",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "sense:darkvision",
+   "trait:charge",
+   "vulnerabilities:plain"
+  ]
+ },
+ {
+  "key": "monster:mule",
+  "challenge_rating": "1/8",
+  "party": true,
+  "not_runs": [
+   "action:melee-attack",
+   "trait:beast of burden",
+   "trait:sure-footed"
+  ]
+ },
+ {
+  "key": "monster:mummy",
+  "challenge_rating": "3",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack+save",
+   "action:multiattack",
+   "action:save-effect",
+   "sense:darkvision",
+   "vulnerabilities:plain"
+  ]
+ },
+ {
+  "key": "monster:mummy-lord",
+  "challenge_rating": "15",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack+save",
+   "action:multiattack",
+   "action:save-effect",
+   "legendary:cost-1",
+   "legendary:cost-2",
+   "sense:darkvision",
+   "trait:magic resistance",
+   "trait:rejuvenation",
+   "vulnerabilities:plain"
+  ]
+ },
+ {
+  "key": "monster:nalfeshnee",
+  "challenge_rating": "13",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:multiattack",
+   "action:other:teleport",
+   "action:save-effect",
+   "resistances:plain",
+   "sense:truesight",
+   "speed:fly",
+   "trait:magic resistance"
+  ]
+ },
+ {
+  "key": "monster:night-hag",
+  "challenge_rating": "5",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:other:change shape",
+   "action:other:etherealness",
+   "action:other:nightmare haunting",
+   "resistances:plain",
+   "sense:darkvision",
+   "trait:innate spellcasting",
+   "trait:magic resistance",
+   "trait:night hag items"
+  ]
+ },
+ {
+  "key": "monster:nightmare",
+  "challenge_rating": "3",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:other:ethereal stride",
+   "speed:fly",
+   "trait:confer fire resistance",
+   "trait:illumination"
+  ]
+ },
+ {
+  "key": "monster:noble",
+  "challenge_rating": "1/8",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack"
+  ]
+ },
+ {
+  "key": "monster:ochre-jelly",
+  "challenge_rating": "2",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "reaction:split",
+   "resistances:plain",
+   "sense:blindsight",
+   "speed:climb",
+   "trait:amorphous",
+   "trait:spider climb"
+  ]
+ },
+ {
+  "key": "monster:octopus",
+  "challenge_rating": "0",
+  "party": true,
+  "not_runs": [
+   "action:melee-attack+grapple",
+   "sense:darkvision",
+   "speed:swim",
+   "trait:hold breath",
+   "trait:underwater camouflage",
+   "trait:water breathing"
+  ]
+ },
+ {
+  "key": "monster:ogre",
+  "challenge_rating": "2",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "sense:darkvision"
+  ]
+ },
+ {
+  "key": "monster:ogre-zombie",
+  "challenge_rating": "2",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "sense:darkvision",
+   "trait:undead fortitude"
+  ]
+ },
+ {
+  "key": "monster:oni",
+  "challenge_rating": "7",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:multiattack",
+   "action:other:change shape",
+   "sense:darkvision",
+   "speed:fly",
+   "trait:innate spellcasting",
+   "trait:magic weapons",
+   "trait:regeneration"
+  ]
+ },
+ {
+  "key": "monster:orc",
+  "challenge_rating": "1/2",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "sense:darkvision",
+   "trait:aggressive"
+  ]
+ },
+ {
+  "key": "monster:otyugh",
+  "challenge_rating": "5",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack+grapple",
+   "action:melee-attack+save",
+   "action:multiattack",
+   "action:save-effect",
+   "sense:darkvision",
+   "trait:limited telepathy"
+  ]
+ },
+ {
+  "key": "monster:owl",
+  "challenge_rating": "0",
+  "party": true,
+  "not_runs": [
+   "action:melee-attack",
+   "sense:darkvision",
+   "speed:fly",
+   "trait:flyby",
+   "trait:keen hearing and sight"
+  ]
+ },
+ {
+  "key": "monster:owlbear",
+  "challenge_rating": "3",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:multiattack",
+   "sense:darkvision",
+   "trait:keen sight and smell"
+  ]
+ },
+ {
+  "key": "monster:panther",
+  "challenge_rating": "1/4",
+  "party": true,
+  "not_runs": [
+   "action:melee-attack",
+   "speed:climb",
+   "trait:keen smell",
+   "trait:pounce"
+  ]
+ },
+ {
+  "key": "monster:pegasus",
+  "challenge_rating": "2",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "speed:fly"
+  ]
+ },
+ {
+  "key": "monster:phase-spider",
+  "challenge_rating": "3",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack+save",
+   "sense:darkvision",
+   "speed:climb",
+   "trait:ethereal jaunt",
+   "trait:spider climb",
+   "trait:web walker"
+  ]
+ },
+ {
+  "key": "monster:pit-fiend",
+  "challenge_rating": "20",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:melee-attack+save",
+   "action:multiattack",
+   "resistances:plain",
+   "sense:truesight",
+   "speed:fly",
+   "trait:fear aura",
+   "trait:innate spellcasting",
+   "trait:magic resistance",
+   "trait:magic weapons"
+  ]
+ },
+ {
+  "key": "monster:planetar",
+  "challenge_rating": "16",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:multiattack",
+   "action:other:healing touch",
+   "resistances:plain",
+   "sense:truesight",
+   "speed:fly",
+   "trait:angelic weapons",
+   "trait:divine awareness",
+   "trait:innate spellcasting",
+   "trait:magic resistance"
+  ]
+ },
+ {
+  "key": "monster:plesiosaurus",
+  "challenge_rating": "2",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "speed:swim",
+   "trait:hold breath"
+  ]
+ },
+ {
+  "key": "monster:poisonous-snake",
+  "challenge_rating": "1/8",
+  "party": true,
+  "not_runs": [
+   "action:melee-attack+save",
+   "sense:blindsight",
+   "speed:swim"
+  ]
+ },
+ {
+  "key": "monster:polar-bear",
+  "challenge_rating": "2",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:multiattack",
+   "speed:swim",
+   "trait:keen smell"
+  ]
+ },
+ {
+  "key": "monster:pony",
+  "challenge_rating": "1/8",
+  "party": true,
+  "not_runs": [
+   "action:melee-attack"
+  ]
+ },
+ {
+  "key": "monster:priest",
+  "challenge_rating": "2",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "trait:divine eminence"
+  ]
+ },
+ {
+  "key": "monster:pseudodragon",
+  "challenge_rating": "1/4",
+  "party": true,
+  "not_runs": [
+   "action:melee-attack",
+   "action:melee-attack+save",
+   "sense:blindsight",
+   "sense:darkvision",
+   "speed:fly",
+   "trait:keen senses",
+   "trait:limited telepathy",
+   "trait:magic resistance"
+  ]
+ },
+ {
+  "key": "monster:purple-worm",
+  "challenge_rating": "15",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack+save",
+   "action:melee-attack+save+swallow",
+   "action:multiattack",
+   "sense:blindsight",
+   "sense:tremorsense",
+   "speed:burrow",
+   "trait:tunneler"
+  ]
+ },
+ {
+  "key": "monster:quasit",
+  "challenge_rating": "1",
+  "party": true,
+  "not_runs": [
+   "action:melee-attack+save",
+   "action:other:invisibility",
+   "action:save-effect",
+   "resistances:plain",
+   "sense:darkvision",
+   "trait:magic resistance",
+   "trait:shapechanger"
+  ]
+ },
+ {
+  "key": "monster:quipper",
+  "challenge_rating": "0",
+  "party": true,
+  "not_runs": [
+   "action:melee-attack",
+   "sense:darkvision",
+   "speed:swim",
+   "trait:blood frenzy",
+   "trait:water breathing"
+  ]
+ },
+ {
+  "key": "monster:rakshasa",
+  "challenge_rating": "13",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:multiattack",
+   "sense:darkvision",
+   "trait:innate spellcasting",
+   "trait:limited magic immunity",
+   "vulnerabilities:plain"
+  ]
+ },
+ {
+  "key": "monster:rat",
+  "challenge_rating": "0",
+  "party": true,
+  "not_runs": [
+   "action:melee-attack",
+   "sense:darkvision",
+   "trait:keen smell"
+  ]
+ },
+ {
+  "key": "monster:raven",
+  "challenge_rating": "0",
+  "party": true,
+  "not_runs": [
+   "action:melee-attack",
+   "speed:fly",
+   "trait:mimicry"
+  ]
+ },
+ {
+  "key": "monster:red-dragon-wyrmling",
+  "challenge_rating": "4",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:save-effect+damage",
+   "sense:blindsight",
+   "sense:darkvision",
+   "speed:climb",
+   "speed:fly"
+  ]
+ },
+ {
+  "key": "monster:reef-shark",
+  "challenge_rating": "1/2",
+  "party": true,
+  "not_runs": [
+   "action:melee-attack",
+   "sense:blindsight",
+   "speed:swim",
+   "trait:water breathing"
+  ]
+ },
+ {
+  "key": "monster:remorhaz",
+  "challenge_rating": "11",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack+grapple",
+   "action:save-effect",
+   "sense:darkvision",
+   "sense:tremorsense",
+   "speed:burrow",
+   "trait:heated body"
+  ]
+ },
+ {
+  "key": "monster:rhinoceros",
+  "challenge_rating": "2",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "trait:charge"
+  ]
+ },
+ {
+  "key": "monster:riding-horse",
+  "challenge_rating": "1/4",
+  "party": true,
+  "not_runs": [
+   "action:melee-attack"
+  ]
+ },
+ {
+  "key": "monster:roc",
+  "challenge_rating": "11",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:melee-attack+grapple",
+   "action:multiattack",
+   "speed:fly",
+   "trait:keen sight"
+  ]
+ },
+ {
+  "key": "monster:roper",
+  "challenge_rating": "5",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:melee-attack+grapple",
+   "action:multiattack",
+   "action:other:reel",
+   "sense:darkvision",
+   "speed:climb",
+   "trait:false appearance",
+   "trait:grasping tendrils",
+   "trait:spider climb"
+  ]
+ },
+ {
+  "key": "monster:rug-of-smothering",
+  "challenge_rating": "2",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack+grapple",
+   "sense:blindsight",
+   "trait:antimagic susceptibility",
+   "trait:damage transfer",
+   "trait:false appearance"
+  ]
+ },
+ {
+  "key": "monster:rust-monster",
+  "challenge_rating": "1/2",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:save-effect",
+   "sense:darkvision",
+   "trait:iron scent",
+   "trait:rust metal"
+  ]
+ },
+ {
+  "key": "monster:saber-toothed-tiger",
+  "challenge_rating": "2",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "trait:keen smell",
+   "trait:pounce"
+  ]
+ },
+ {
+  "key": "monster:sahuagin",
+  "challenge_rating": "1/2",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:multiattack",
+   "sense:darkvision",
+   "speed:swim",
+   "trait:blood frenzy",
+   "trait:limited amphibiousness",
+   "trait:shark telepathy"
+  ]
+ },
+ {
+  "key": "monster:salamander",
+  "challenge_rating": "5",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:melee-attack+grapple",
+   "action:multiattack",
+   "sense:darkvision",
+   "trait:heated body",
+   "vulnerabilities:plain"
+  ]
+ },
+ {
+  "key": "monster:satyr",
+  "challenge_rating": "1/2",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "trait:magic resistance"
+  ]
+ },
+ {
+  "key": "monster:scorpion",
+  "challenge_rating": "0",
+  "party": true,
+  "not_runs": [
+   "action:melee-attack+save",
+   "sense:blindsight"
+  ]
+ },
+ {
+  "key": "monster:scout",
+  "challenge_rating": "1/2",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:multiattack",
+   "trait:keen hearing and sight"
+  ]
+ },
+ {
+  "key": "monster:sea-hag",
+  "challenge_rating": "2",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:other:illusory appearance",
+   "action:save-effect",
+   "sense:darkvision",
+   "speed:swim",
+   "trait:amphibious",
+   "trait:horrific appearance"
+  ]
+ },
+ {
+  "key": "monster:sea-horse",
+  "challenge_rating": "0",
+  "party": true,
+  "not_runs": [
+   "speed:swim",
+   "trait:water breathing"
+  ]
+ },
+ {
+  "key": "monster:shadow",
+  "challenge_rating": "1/2",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "resistances:plain",
+   "sense:darkvision",
+   "trait:amorphous",
+   "trait:shadow stealth",
+   "vulnerabilities:plain"
+  ]
+ },
+ {
+  "key": "monster:shambling-mound",
+  "challenge_rating": "5",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:multiattack",
+   "action:save-effect",
+   "resistances:plain",
+   "sense:blindsight",
+   "speed:swim",
+   "trait:lightning absorption"
+  ]
+ },
+ {
+  "key": "monster:shield-guardian",
+  "challenge_rating": "7",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:multiattack",
+   "reaction:shield",
+   "sense:blindsight",
+   "sense:darkvision",
+   "trait:bound",
+   "trait:regeneration",
+   "trait:spell storing"
+  ]
+ },
+ {
+  "key": "monster:shrieker",
+  "challenge_rating": "0",
+  "party": false,
+  "not_runs": [
+   "reaction:shriek",
+   "sense:blindsight",
+   "trait:false appearance"
+  ]
+ },
+ {
+  "key": "monster:silver-dragon-wyrmling",
+  "challenge_rating": "2",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:other:breath weapons",
+   "action:save-effect",
+   "action:save-effect+damage",
+   "sense:blindsight",
+   "sense:darkvision",
+   "speed:fly"
+  ]
+ },
+ {
+  "key": "monster:skeleton",
+  "challenge_rating": "1/4",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "sense:darkvision",
+   "vulnerabilities:plain"
+  ]
+ },
+ {
+  "key": "monster:solar",
+  "challenge_rating": "21",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:multiattack",
+   "action:other:flying sword",
+   "action:other:healing touch",
+   "legendary:cost-1",
+   "legendary:cost-2",
+   "legendary:cost-3",
+   "resistances:plain",
+   "sense:truesight",
+   "speed:fly",
+   "trait:angelic weapons",
+   "trait:divine awareness",
+   "trait:innate spellcasting",
+   "trait:magic resistance"
+  ]
+ },
+ {
+  "key": "monster:specter",
+  "challenge_rating": "1",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack+save",
+   "resistances:plain",
+   "sense:darkvision",
+   "speed:fly",
+   "speed:hover",
+   "trait:incorporeal movement",
+   "trait:sunlight sensitivity"
+  ]
+ },
+ {
+  "key": "monster:spider",
+  "challenge_rating": "0",
+  "party": true,
+  "not_runs": [
+   "action:melee-attack+save",
+   "sense:darkvision",
+   "speed:climb",
+   "trait:spider climb",
+   "trait:web sense",
+   "trait:web walker"
+  ]
+ },
+ {
+  "key": "monster:spirit-naga",
+  "challenge_rating": "8",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack+save",
+   "sense:darkvision",
+   "trait:rejuvenation"
+  ]
+ },
+ {
+  "key": "monster:sprite",
+  "challenge_rating": "1/4",
+  "party": true,
+  "not_runs": [
+   "action:melee-attack",
+   "action:other:invisibility",
+   "action:save-effect",
+   "speed:fly"
+  ]
+ },
+ {
+  "key": "monster:spy",
+  "challenge_rating": "1",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:multiattack",
+   "trait:cunning action",
+   "trait:sneak attack"
+  ]
+ },
+ {
+  "key": "monster:steam-mephit",
+  "challenge_rating": "1/4",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:save-effect+damage",
+   "sense:darkvision",
+   "speed:fly",
+   "trait:death burst",
+   "trait:innate spellcasting"
+  ]
+ },
+ {
+  "key": "monster:stirge",
+  "challenge_rating": "1/8",
+  "party": true,
+  "not_runs": [
+   "action:melee-attack",
+   "sense:darkvision",
+   "speed:fly"
+  ]
+ },
+ {
+  "key": "monster:stone-giant",
+  "challenge_rating": "7",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:multiattack",
+   "reaction:rock catching",
+   "sense:darkvision",
+   "trait:stone camouflage"
+  ]
+ },
+ {
+  "key": "monster:stone-golem",
+  "challenge_rating": "10",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:multiattack",
+   "action:save-effect",
+   "sense:darkvision",
+   "trait:immutable form",
+   "trait:magic resistance",
+   "trait:magic weapons"
+  ]
+ },
+ {
+  "key": "monster:storm-giant",
+  "challenge_rating": "13",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:multiattack",
+   "action:save-effect+damage",
+   "resistances:plain",
+   "speed:swim",
+   "trait:amphibious",
+   "trait:innate spellcasting"
+  ]
+ },
+ {
+  "key": "monster:succubus-incubus",
+  "challenge_rating": "4",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:other:etherealness",
+   "action:save-effect",
+   "action:save-effect+damage",
+   "resistances:plain",
+   "sense:darkvision",
+   "speed:fly",
+   "trait:shapechanger",
+   "trait:telepathic bond"
+  ]
+ },
+ {
+  "key": "monster:swarm-of-bats",
+  "challenge_rating": "1/4",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "resistances:plain",
+   "sense:blindsight",
+   "speed:fly",
+   "trait:echolocation",
+   "trait:keen hearing",
+   "trait:swarm"
+  ]
+ },
+ {
+  "key": "monster:swarm-of-beetles",
+  "challenge_rating": "1/2",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "resistances:plain",
+   "sense:blindsight",
+   "speed:burrow",
+   "speed:climb",
+   "trait:swarm"
+  ]
+ },
+ {
+  "key": "monster:swarm-of-centipedes",
+  "challenge_rating": "1/2",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "resistances:plain",
+   "sense:blindsight",
+   "speed:climb",
+   "trait:swarm"
+  ]
+ },
+ {
+  "key": "monster:swarm-of-insects",
+  "challenge_rating": "1/2",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "resistances:plain",
+   "sense:blindsight",
+   "speed:climb",
+   "trait:swarm"
+  ]
+ },
+ {
+  "key": "monster:swarm-of-poisonous-snakes",
+  "challenge_rating": "2",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack+save",
+   "resistances:plain",
+   "sense:blindsight",
+   "speed:swim",
+   "trait:swarm"
+  ]
+ },
+ {
+  "key": "monster:swarm-of-quippers",
+  "challenge_rating": "1",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "resistances:plain",
+   "sense:darkvision",
+   "speed:swim",
+   "trait:blood frenzy",
+   "trait:swarm",
+   "trait:water breathing"
+  ]
+ },
+ {
+  "key": "monster:swarm-of-rats",
+  "challenge_rating": "1/4",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "resistances:plain",
+   "sense:darkvision",
+   "trait:keen smell",
+   "trait:swarm"
+  ]
+ },
+ {
+  "key": "monster:swarm-of-ravens",
+  "challenge_rating": "1/4",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "resistances:plain",
+   "speed:fly",
+   "trait:swarm"
+  ]
+ },
+ {
+  "key": "monster:swarm-of-spiders",
+  "challenge_rating": "1/2",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "resistances:plain",
+   "sense:blindsight",
+   "speed:climb",
+   "trait:spider climb",
+   "trait:swarm",
+   "trait:web sense",
+   "trait:web walker"
+  ]
+ },
+ {
+  "key": "monster:swarm-of-wasps",
+  "challenge_rating": "1/2",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "resistances:plain",
+   "sense:blindsight",
+   "speed:fly",
+   "trait:swarm"
+  ]
+ },
+ {
+  "key": "monster:tarrasque",
+  "challenge_rating": "30",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:melee-attack+grapple",
+   "action:multiattack",
+   "action:save-effect",
+   "legendary:cost-1",
+   "legendary:cost-2",
+   "sense:blindsight",
+   "trait:legendary resistance",
+   "trait:magic resistance",
+   "trait:reflective carapace",
+   "trait:siege monster",
+   "usage:per-day"
+  ]
+ },
+ {
+  "key": "monster:thug",
+  "challenge_rating": "1/2",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:multiattack"
+  ]
+ },
+ {
+  "key": "monster:tiger",
+  "challenge_rating": "1",
+  "party": true,
+  "not_runs": [
+   "action:melee-attack",
+   "sense:darkvision",
+   "trait:keen smell",
+   "trait:pounce"
+  ]
+ },
+ {
+  "key": "monster:treant",
+  "challenge_rating": "9",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:multiattack",
+   "action:other:animate trees",
+   "resistances:plain",
+   "trait:false appearance",
+   "trait:siege monster",
+   "vulnerabilities:plain"
+  ]
+ },
+ {
+  "key": "monster:tribal-warrior",
+  "challenge_rating": "1/8",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack"
+  ]
+ },
+ {
+  "key": "monster:triceratops",
+  "challenge_rating": "5",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "trait:trampling charge"
+  ]
+ },
+ {
+  "key": "monster:troll",
+  "challenge_rating": "5",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:multiattack",
+   "sense:darkvision",
+   "trait:keen smell",
+   "trait:regeneration"
+  ]
+ },
+ {
+  "key": "monster:tyrannosaurus-rex",
+  "challenge_rating": "8",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:melee-attack+grapple",
+   "action:multiattack"
+  ]
+ },
+ {
+  "key": "monster:unicorn",
+  "challenge_rating": "5",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:multiattack",
+   "action:other:healing touch",
+   "action:other:teleport",
+   "legendary:cost-1",
+   "legendary:cost-2",
+   "legendary:cost-3",
+   "sense:darkvision",
+   "trait:charge",
+   "trait:innate spellcasting",
+   "trait:magic resistance",
+   "trait:magic weapons"
+  ]
+ },
+ {
+  "key": "monster:vampire-bat",
+  "challenge_rating": "13",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack+grapple",
+   "action:other:children of the night",
+   "action:save-effect",
+   "legendary:cost-1",
+   "legendary:cost-2",
+   "resistances:plain",
+   "sense:darkvision",
+   "speed:fly",
+   "trait:legendary resistance",
+   "trait:misty escape",
+   "trait:regeneration",
+   "trait:shapechanger",
+   "trait:spider climb",
+   "trait:vampire weaknesses",
+   "usage:per-day"
+  ]
+ },
+ {
+  "key": "monster:vampire-mist",
+  "challenge_rating": "13",
+  "party": false,
+  "not_runs": [
+   "legendary:cost-1",
+   "legendary:cost-2",
+   "resistances:plain",
+   "sense:darkvision",
+   "speed:fly",
+   "trait:legendary resistance",
+   "trait:misty escape",
+   "trait:regeneration",
+   "trait:shapechanger",
+   "trait:spider climb",
+   "trait:vampire weaknesses",
+   "usage:per-day"
+  ]
+ },
+ {
+  "key": "monster:vampire-spawn",
+  "challenge_rating": "5",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:melee-attack+grapple",
+   "action:multiattack",
+   "resistances:plain",
+   "sense:darkvision",
+   "trait:regeneration",
+   "trait:spider climb",
+   "trait:vampire weaknesses"
+  ]
+ },
+ {
+  "key": "monster:vampire-vampire",
+  "challenge_rating": "13",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:melee-attack+grapple",
+   "action:multiattack",
+   "action:other:children of the night",
+   "action:save-effect",
+   "legendary:cost-1",
+   "legendary:cost-2",
+   "resistances:plain",
+   "sense:darkvision",
+   "trait:legendary resistance",
+   "trait:misty escape",
+   "trait:regeneration",
+   "trait:shapechanger",
+   "trait:spider climb",
+   "trait:vampire weaknesses",
+   "usage:per-day"
+  ]
+ },
+ {
+  "key": "monster:veteran",
+  "challenge_rating": "3",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:multiattack"
+  ]
+ },
+ {
+  "key": "monster:violet-fungus",
+  "challenge_rating": "1/4",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:multiattack",
+   "sense:blindsight",
+   "trait:false appearance"
+  ]
+ },
+ {
+  "key": "monster:vrock",
+  "challenge_rating": "6",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:multiattack",
+   "action:save-effect",
+   "resistances:plain",
+   "sense:darkvision",
+   "speed:fly",
+   "trait:magic resistance"
+  ]
+ },
+ {
+  "key": "monster:vulture",
+  "challenge_rating": "0",
+  "party": true,
+  "not_runs": [
+   "action:melee-attack",
+   "speed:fly",
+   "trait:keen sight and smell"
+  ]
+ },
+ {
+  "key": "monster:warhorse",
+  "challenge_rating": "1/2",
+  "party": true,
+  "not_runs": [
+   "action:melee-attack",
+   "trait:trampling charge"
+  ]
+ },
+ {
+  "key": "monster:warhorse-skeleton",
+  "challenge_rating": "1/2",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "sense:darkvision",
+   "vulnerabilities:plain"
+  ]
+ },
+ {
+  "key": "monster:water-elemental",
+  "challenge_rating": "5",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:multiattack",
+   "action:save-effect+damage",
+   "resistances:plain",
+   "sense:darkvision",
+   "speed:swim",
+   "trait:freeze",
+   "trait:water form"
+  ]
+ },
+ {
+  "key": "monster:weasel",
+  "challenge_rating": "0",
+  "party": true,
+  "not_runs": [
+   "action:melee-attack",
+   "trait:keen hearing and smell"
+  ]
+ },
+ {
+  "key": "monster:werebear-bear",
+  "challenge_rating": "5",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:melee-attack+save",
+   "action:multiattack",
+   "speed:climb",
+   "trait:keen smell",
+   "trait:shapechanger"
+  ]
+ },
+ {
+  "key": "monster:werebear-human",
+  "challenge_rating": "5",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:multiattack",
+   "trait:keen smell",
+   "trait:shapechanger"
+  ]
+ },
+ {
+  "key": "monster:werebear-hybrid",
+  "challenge_rating": "5",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:melee-attack+save",
+   "action:multiattack",
+   "speed:climb",
+   "trait:keen smell",
+   "trait:shapechanger"
+  ]
+ },
+ {
+  "key": "monster:wereboar-boar",
+  "challenge_rating": "4",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack+save",
+   "trait:charge",
+   "trait:relentless",
+   "trait:shapechanger",
+   "usage:recharge-after-rest"
+  ]
+ },
+ {
+  "key": "monster:wereboar-human",
+  "challenge_rating": "4",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:multiattack",
+   "trait:relentless",
+   "trait:shapechanger",
+   "usage:recharge-after-rest"
+  ]
+ },
+ {
+  "key": "monster:wereboar-hybrid",
+  "challenge_rating": "4",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:melee-attack+save",
+   "action:multiattack",
+   "trait:charge",
+   "trait:relentless",
+   "trait:shapechanger",
+   "usage:recharge-after-rest"
+  ]
+ },
+ {
+  "key": "monster:wererat-human",
+  "challenge_rating": "2",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:multiattack",
+   "trait:keen smell",
+   "trait:shapechanger"
+  ]
+ },
+ {
+  "key": "monster:wererat-hybrid",
+  "challenge_rating": "2",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:melee-attack+save",
+   "action:multiattack",
+   "trait:keen smell",
+   "trait:shapechanger"
+  ]
+ },
+ {
+  "key": "monster:wererat-rat",
+  "challenge_rating": "2",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack+save",
+   "sense:darkvision",
+   "trait:keen smell",
+   "trait:shapechanger"
+  ]
+ },
+ {
+  "key": "monster:weretiger-human",
+  "challenge_rating": "4",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:multiattack",
+   "sense:darkvision",
+   "trait:keen hearing and smell",
+   "trait:shapechanger"
+  ]
+ },
+ {
+  "key": "monster:weretiger-hybrid",
+  "challenge_rating": "4",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:melee-attack+save",
+   "action:multiattack",
+   "sense:darkvision",
+   "trait:keen hearing and smell",
+   "trait:pounce",
+   "trait:shapechanger"
+  ]
+ },
+ {
+  "key": "monster:weretiger-tiger",
+  "challenge_rating": "4",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:melee-attack+save",
+   "sense:darkvision",
+   "trait:keen hearing and smell",
+   "trait:pounce",
+   "trait:shapechanger"
+  ]
+ },
+ {
+  "key": "monster:werewolf-human",
+  "challenge_rating": "3",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:multiattack",
+   "trait:keen hearing and smell",
+   "trait:shapechanger"
+  ]
+ },
+ {
+  "key": "monster:werewolf-hybrid",
+  "challenge_rating": "3",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:melee-attack+save",
+   "action:multiattack",
+   "trait:keen hearing and smell",
+   "trait:shapechanger"
+  ]
+ },
+ {
+  "key": "monster:werewolf-wolf",
+  "challenge_rating": "3",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack+save",
+   "trait:keen hearing and smell",
+   "trait:shapechanger"
+  ]
+ },
+ {
+  "key": "monster:white-dragon-wyrmling",
+  "challenge_rating": "2",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:save-effect+damage",
+   "sense:blindsight",
+   "sense:darkvision",
+   "speed:burrow",
+   "speed:fly",
+   "speed:swim"
+  ]
+ },
+ {
+  "key": "monster:wight",
+  "challenge_rating": "3",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:melee-attack+save",
+   "action:multiattack",
+   "resistances:plain",
+   "sense:darkvision",
+   "trait:sunlight sensitivity"
+  ]
+ },
+ {
+  "key": "monster:will-o-wisp",
+  "challenge_rating": "2",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:other:invisibility",
+   "resistances:plain",
+   "sense:darkvision",
+   "speed:fly",
+   "speed:hover",
+   "trait:consume life",
+   "trait:ephemeral",
+   "trait:incorporeal movement",
+   "trait:variable illumination"
+  ]
+ },
+ {
+  "key": "monster:winter-wolf",
+  "challenge_rating": "3",
+  "party": false,
+  "not_runs": [
+   "action:save-effect+damage",
+   "trait:keen hearing and smell",
+   "trait:snow camouflage"
+  ]
+ },
+ {
+  "key": "monster:wolf",
+  "challenge_rating": "1/4",
+  "party": true,
+  "not_runs": [
+   "trait:keen hearing and smell"
+  ]
+ },
+ {
+  "key": "monster:worg",
+  "challenge_rating": "1/2",
+  "party": false,
+  "not_runs": [
+   "sense:darkvision",
+   "trait:keen hearing and smell"
+  ]
+ },
+ {
+  "key": "monster:wraith",
+  "challenge_rating": "5",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack+save",
+   "action:other:create specter",
+   "resistances:plain",
+   "sense:darkvision",
+   "speed:fly",
+   "speed:hover",
+   "trait:incorporeal movement",
+   "trait:sunlight sensitivity"
+  ]
+ },
+ {
+  "key": "monster:wyvern",
+  "challenge_rating": "6",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:melee-attack+save",
+   "action:multiattack",
+   "sense:darkvision",
+   "speed:fly"
+  ]
+ },
+ {
+  "key": "monster:xorn",
+  "challenge_rating": "5",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:multiattack",
+   "sense:darkvision",
+   "sense:tremorsense",
+   "speed:burrow",
+   "trait:earth glide",
+   "trait:stone camouflage",
+   "trait:treasure sense"
+  ]
+ },
+ {
+  "key": "monster:young-black-dragon",
+  "challenge_rating": "7",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:multiattack",
+   "action:save-effect+damage",
+   "sense:blindsight",
+   "sense:darkvision",
+   "speed:fly",
+   "speed:swim",
+   "trait:amphibious"
+  ]
+ },
+ {
+  "key": "monster:young-blue-dragon",
+  "challenge_rating": "9",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:multiattack",
+   "action:save-effect+damage",
+   "sense:blindsight",
+   "sense:darkvision",
+   "speed:burrow",
+   "speed:fly"
+  ]
+ },
+ {
+  "key": "monster:young-brass-dragon",
+  "challenge_rating": "6",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:multiattack",
+   "action:other:breath weapons",
+   "action:save-effect",
+   "action:save-effect+damage",
+   "sense:blindsight",
+   "sense:darkvision",
+   "speed:burrow",
+   "speed:fly"
+  ]
+ },
+ {
+  "key": "monster:young-bronze-dragon",
+  "challenge_rating": "8",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:multiattack",
+   "action:other:breath weapons",
+   "action:save-effect",
+   "action:save-effect+damage",
+   "sense:blindsight",
+   "sense:darkvision",
+   "speed:fly",
+   "speed:swim",
+   "trait:amphibious"
+  ]
+ },
+ {
+  "key": "monster:young-copper-dragon",
+  "challenge_rating": "7",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:multiattack",
+   "action:other:breath weapons",
+   "action:save-effect",
+   "action:save-effect+damage",
+   "sense:blindsight",
+   "sense:darkvision",
+   "speed:climb",
+   "speed:fly"
+  ]
+ },
+ {
+  "key": "monster:young-gold-dragon",
+  "challenge_rating": "10",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:multiattack",
+   "action:other:breath weapons",
+   "action:save-effect",
+   "action:save-effect+damage",
+   "sense:blindsight",
+   "sense:darkvision",
+   "speed:fly",
+   "speed:swim",
+   "trait:amphibious"
+  ]
+ },
+ {
+  "key": "monster:young-green-dragon",
+  "challenge_rating": "8",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:multiattack",
+   "action:save-effect+damage",
+   "sense:blindsight",
+   "sense:darkvision",
+   "speed:fly",
+   "speed:swim",
+   "trait:amphibious"
+  ]
+ },
+ {
+  "key": "monster:young-red-dragon",
+  "challenge_rating": "10",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:multiattack",
+   "action:save-effect+damage",
+   "sense:blindsight",
+   "sense:darkvision",
+   "speed:climb",
+   "speed:fly"
+  ]
+ },
+ {
+  "key": "monster:young-silver-dragon",
+  "challenge_rating": "9",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:multiattack",
+   "action:other:breath weapons",
+   "action:save-effect",
+   "action:save-effect+damage",
+   "sense:blindsight",
+   "sense:darkvision",
+   "speed:fly"
+  ]
+ },
+ {
+  "key": "monster:young-white-dragon",
+  "challenge_rating": "6",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "action:multiattack",
+   "action:save-effect+damage",
+   "sense:blindsight",
+   "sense:darkvision",
+   "speed:burrow",
+   "speed:fly",
+   "speed:swim",
+   "trait:ice walk"
+  ]
+ },
+ {
+  "key": "monster:zombie",
+  "challenge_rating": "1/4",
+  "party": false,
+  "not_runs": [
+   "action:melee-attack",
+   "sense:darkvision",
+   "trait:undead fortitude"
+  ]
+ }
+]

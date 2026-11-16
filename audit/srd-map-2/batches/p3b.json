@@ -1,0 +1,847 @@
+[
+ {
+  "key": "trait:freeze",
+  "name": "Freeze",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "After taking cold damage the elemental's speed drops by 20 ft until the end of its next turn.",
+  "does": "Cold damage lands as plain damage and the speed never changes; the master can put a speed-penalty effect on it by hand.",
+  "seen": "The stat block page (opened from the NPC card menu) prints the trait text; nothing on the combat card reminds the master.",
+  "code": "rules/creatures.go monsterDerived (trait kept only as a Feature with its text); no reader of the key in backend/ or web/src",
+  "fix": "On cold damage to a creature with the trait, put a 20 ft speed penalty until the end of its next turn, or print a reminder on the damage line.",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:water-elemental"
+  ]
+ },
+ {
+  "key": "trait:gibbering",
+  "name": "Gibbering",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "While it sees a creature and is not incapacitated, creatures starting a turn within 20 ft that can hear it make a DC 10 Wisdom save or lose reactions and act at random on a d8.",
+  "does": "Nothing: no start-of-turn aura, no save, no d8 roll.",
+  "seen": "The stat block page (opened from the NPC card menu) prints the trait text; nothing on the combat card reminds the master.",
+  "code": "rules/creatures.go monsterDerived (trait kept only as a Feature with its text); no reader of the key in backend/ or web/src",
+  "fix": "Show the trait text on the master's card at each creature turn within 20 ft, or resolve the save and d8.",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:gibbering-mouther"
+  ]
+ },
+ {
+  "key": "trait:gnome cunning",
+  "name": "Gnome Cunning",
+  "list": "monster-trait",
+  "verdict": "wrong",
+  "says": "Advantage on Intelligence, Wisdom and Charisma saving throws against magic.",
+  "does": "The app rolls the svirfneblin's saves against spells with no advantage: a character's Gnome Cunning works through sheet hints (tagged saves), but a stat block derives no hints (MonsterDerived has 0 hints, tested). The master cannot change the roll; he can only rule the outcome by hand.",
+  "seen": "The save line of the creature shows no Gnome Cunning source; only the stat block page text mentions it.",
+  "code": "characters/combattraits.go:139 traitsOf reads TaggedSaves from d.Hints only; rules/creatures.go:762 keeps the trait as a Feature",
+  "fix": "In traitsOf read the suffix #gnome-cunning and give advantage on int/wis/cha saves whose Against holds magic (like #magic-resistance at combattraits.go:158).",
+  "checked": "test",
+  "count": 1,
+  "examples": [
+   "monster:deep-gnome-svirfneblin"
+  ]
+ },
+ {
+  "key": "trait:grappler",
+  "name": "Grappler",
+  "list": "monster-trait",
+  "verdict": "wrong",
+  "says": "Advantage on attack rolls against any creature grappled by it.",
+  "does": "The app records who holds whom (combat_holds) but the attack roll mode gives the mimic no advantage against its grappled target; the master can only rule it by hand.",
+  "seen": "The attack roll line lists no Grappler source.",
+  "code": "rules/combat/advantage.go:517 sceneRules (no grappler source); play/combat_contests.go:103 applyGrapple stores the hold",
+  "fix": "Add an AttackScene fact 'target grappled by attacker' from the hold and a Grappler advantage source when the attacker has the trait.",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:mimic"
+  ]
+ },
+ {
+  "key": "trait:grasping tendrils",
+  "name": "Grasping Tendrils",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "Up to six tendrils, each attackable (AC 20, 10 hit points, immune to poison and psychic), destroyed with no damage to the roper, or broken by a DC 15 Strength check.",
+  "does": "Nothing: the tendrils are not combatants and have no hit points in the app.",
+  "seen": "The stat block page (opened from the NPC card menu) prints the trait text; nothing on the combat card reminds the master.",
+  "code": "rules/creatures.go monsterDerived (trait kept only as a Feature with its text); no reader of the key in backend/ or web/src",
+  "fix": "Master note only: a reminder on the roper's card.",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:roper"
+  ]
+ },
+ {
+  "key": "trait:heated body",
+  "name": "Heated Body",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "A creature that touches it or hits it with a melee attack within 5 ft takes fire damage (azer 1d10, remorhaz 3d6, salamander 2d6).",
+  "does": "Nothing: a melee hit on the creature deals no damage back.",
+  "seen": "The stat block page (opened from the NPC card menu) prints the trait text; nothing on the combat card reminds the master.",
+  "code": "rules/creatures.go monsterDerived (trait kept only as a Feature with its text); no reader of the key in backend/ or web/src",
+  "fix": "Offer the master the reflected fire damage after a melee hit on a creature with the trait.",
+  "checked": "",
+  "count": 3,
+  "examples": [
+   "monster:azer",
+   "monster:remorhaz",
+   "monster:salamander"
+  ]
+ },
+ {
+  "key": "trait:heated weapons",
+  "name": "Heated Weapons",
+  "list": "monster-trait",
+  "verdict": "runs",
+  "says": "A metal melee weapon of the azer or salamander deals an extra 1d6 fire damage on a hit (included in the attack).",
+  "does": "The extra fire is a damage part of the stat block attack and lands with the hit, resisted by its own type (RN-42).",
+  "seen": "The damage line lists the fire part.",
+  "code": "rules/creatures.go creatureAction damage parts; docs RN-42",
+  "fix": "",
+  "checked": "test",
+  "count": 2,
+  "examples": [
+   "monster:azer",
+   "monster:salamander"
+  ]
+ },
+ {
+  "key": "trait:hellish rejuvenation",
+  "name": "Hellish Rejuvenation",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "A lemure that dies in the Nine Hells returns to life with all hit points in 1d10 days unless killed by a good creature with bless or sprinkled with holy water.",
+  "does": "Nothing; out of combat, a defeated lemure is defeated like any NPC.",
+  "seen": "The stat block page (opened from the NPC card menu) prints the trait text; nothing on the combat card reminds the master.",
+  "code": "rules/creatures.go monsterDerived (trait kept only as a Feature with its text); no reader of the key in backend/ or web/src",
+  "fix": "",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:lemure"
+  ]
+ },
+ {
+  "key": "trait:hellish weapons",
+  "name": "Hellish Weapons",
+  "list": "monster-trait",
+  "verdict": "wrong",
+  "says": "The erinyes's weapon attacks are magical and deal an extra 3d8 poison damage (included).",
+  "does": "The poison part is applied, but the attacks are not magical: only the trait named Magic Weapons sets Attack.Magical (tested: erinyes Longsword and Longbow magical=false), so a target with resistance or immunity to nonmagical attacks takes the reduced damage, against RN-02 'an attack of a creature whose weapon attacks are magical' (docs/product/rules.md:105). The master can undo the damage and set hit points by hand.",
+  "seen": "The damage line shows the reduced amount with no reason about magic.",
+  "code": "rules/creatures.go:856 hasMagicWeapons (name == Magic Weapons) and :872 at.Magical; play/combat_damage.go originOf",
+  "fix": "Make hasMagicWeapons also true for Hellish Weapons (and Angelic Weapons of the deva, planetar and solar).",
+  "checked": "test",
+  "count": 1,
+  "examples": [
+   "monster:erinyes"
+  ]
+ },
+ {
+  "key": "trait:hold breath",
+  "name": "Hold Breath",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "It can hold its breath for 15 or 30 minutes (varies by creature).",
+  "does": "Nothing: the game counts no breath or drowning.",
+  "seen": "The stat block page (opened from the NPC card menu) prints the trait text; nothing on the combat card reminds the master.",
+  "code": "rules/creatures.go monsterDerived (trait kept only as a Feature with its text); no reader of the key in backend/ or web/src",
+  "fix": "",
+  "checked": "",
+  "count": 8,
+  "examples": [
+   "monster:crocodile",
+   "monster:giant-crocodile",
+   "monster:giant-octopus"
+  ]
+ },
+ {
+  "key": "trait:horrific appearance",
+  "name": "Horrific Appearance",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "A humanoid starting its turn within 30 ft that can see the hag's true form makes a DC 11 Wisdom save or is frightened for 1 minute, with immunity for 24 hours on a success.",
+  "does": "Nothing: no start-of-turn aura or save.",
+  "seen": "The stat block page (opened from the NPC card menu) prints the trait text; nothing on the combat card reminds the master.",
+  "code": "rules/creatures.go monsterDerived (trait kept only as a Feature with its text); no reader of the key in backend/ or web/src",
+  "fix": "",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:sea-hag"
+  ]
+ },
+ {
+  "key": "trait:ice walk",
+  "name": "Ice Walk",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "It moves across and climbs icy surfaces without a check and ignores difficult terrain of ice or snow.",
+  "does": "Nothing: the map's difficult terrain is generic, so its cost is never waived for the dragon.",
+  "seen": "The stat block page (opened from the NPC card menu) prints the trait text; nothing on the combat card reminds the master.",
+  "code": "rules/creatures.go monsterDerived (trait kept only as a Feature with its text); no reader of the key in backend/ or web/src",
+  "fix": "",
+  "checked": "",
+  "count": 3,
+  "examples": [
+   "monster:adult-white-dragon",
+   "monster:ancient-white-dragon",
+   "monster:young-white-dragon"
+  ]
+ },
+ {
+  "key": "trait:ignited illumination",
+  "name": "Ignited Illumination",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "As a bonus action the magmin sets itself ablaze, shedding bright light in 10 ft and dim light for 10 ft more, or extinguishes.",
+  "does": "Nothing: no bonus action and no light; the master paints light on the map by hand.",
+  "seen": "The stat block page (opened from the NPC card menu) prints the trait text; nothing on the combat card reminds the master.",
+  "code": "rules/creatures.go monsterDerived (trait kept only as a Feature with its text); no reader of the key in backend/ or web/src",
+  "fix": "",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:magmin"
+  ]
+ },
+ {
+  "key": "trait:illumination",
+  "name": "Illumination",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "The creature sheds bright light and dim light in a radius (azer 10+10 ft, fire elemental 30+30 ft).",
+  "does": "Nothing: monsters give no light on a fog map; a carried light is set by hand on a character token.",
+  "seen": "The stat block page (opened from the NPC card menu) prints the trait text; nothing on the combat card reminds the master.",
+  "code": "rules/creatures.go monsterDerived (trait kept only as a Feature with its text); no reader of the key in backend/ or web/src; maps/carriedlight.go",
+  "fix": "",
+  "checked": "",
+  "count": 4,
+  "examples": [
+   "monster:azer",
+   "monster:fire-elemental",
+   "monster:giant-fire-beetle"
+  ]
+ },
+ {
+  "key": "trait:immutable form",
+  "name": "Immutable Form",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "The golem is immune to any spell or effect that would alter its form.",
+  "does": "Nothing reads it; no form-altering effect is checked against the creature.",
+  "seen": "The stat block page (opened from the NPC card menu) prints the trait text; nothing on the combat card reminds the master.",
+  "code": "rules/creatures.go monsterDerived (trait kept only as a Feature with its text); no reader of the key in backend/ or web/src",
+  "fix": "",
+  "checked": "",
+  "count": 4,
+  "examples": [
+   "monster:clay-golem",
+   "monster:flesh-golem",
+   "monster:iron-golem"
+  ]
+ },
+ {
+  "key": "trait:incorporeal movement",
+  "name": "Incorporeal Movement",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "It moves through creatures and objects as difficult terrain and takes 1d10 force damage if it ends its turn inside an object.",
+  "does": "Nothing: movement and walls are the ordinary ones.",
+  "seen": "The stat block page (opened from the NPC card menu) prints the trait text; nothing on the combat card reminds the master.",
+  "code": "rules/creatures.go monsterDerived (trait kept only as a Feature with its text); no reader of the key in backend/ or web/src",
+  "fix": "",
+  "checked": "",
+  "count": 4,
+  "examples": [
+   "monster:ghost",
+   "monster:specter",
+   "monster:will-o-wisp"
+  ]
+ },
+ {
+  "key": "trait:innate spellcasting",
+  "name": "Innate Spellcasting",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "The creature casts the listed spells innately at will or N/day, with the stated ability and save DC or attack bonus.",
+  "does": "20 of 24 stat blocks: NPC casts through the cast flow with the listed DC and attack bonus, at-will spells free, N/day spells spending a per-combat use (tested on all 24). The four mephits list no frequency and stay text; parenthetical limits ('self only', 'fire elemental only') are dropped, so those spells are cast unrestricted. No screen names the part left out.",
+  "seen": "The master reads the spells and uses left in the cast options; the mephit trait text is only on the stat block page.",
+  "code": "rules/creaturecaster.go MonsterCaster / addInnateCasting; characters/combatturn.go; docs/architecture/play/creatures.md",
+  "fix": "Show the restriction notes with the spell, and the mephit spell as a cast option.",
+  "checked": "test",
+  "count": 24,
+  "examples": [
+   "monster:cloud-giant",
+   "monster:couatl",
+   "monster:deep-gnome-svirfneblin"
+  ]
+ },
+ {
+  "key": "trait:inscrutable",
+  "name": "Inscrutable",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "Immune to effects that sense emotions or read thoughts and to divinations it refuses; Insight checks about its intent have disadvantage.",
+  "does": "Nothing: neither the immunity nor the disadvantage is checked.",
+  "seen": "The stat block page (opened from the NPC card menu) prints the trait text; nothing on the combat card reminds the master.",
+  "code": "rules/creatures.go monsterDerived (trait kept only as a Feature with its text); no reader of the key in backend/ or web/src",
+  "fix": "",
+  "checked": "",
+  "count": 2,
+  "examples": [
+   "monster:androsphinx",
+   "monster:gynosphinx"
+  ]
+ },
+ {
+  "key": "trait:invisibility",
+  "name": "Invisibility",
+  "list": "monster-trait",
+  "verdict": "wrong",
+  "says": "The stalker is invisible.",
+  "does": "The creature joins and fights with no Invisible condition, so attacks against it get no disadvantage and its own attacks no advantage; the master can apply the Invisible condition by hand.",
+  "seen": "The stat block page text only; the combat card shows no Invisible condition.",
+  "code": "play/combat_join.go (no starting conditions from traits); rules/combat/advantage.go conditionInvisible rules never fire for it",
+  "fix": "Give a creature with the trait the Invisible condition on joining a combat.",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:invisible-stalker"
+  ]
+ },
+ {
+  "key": "trait:iron scent",
+  "name": "Iron Scent",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "It pinpoints ferrous metal within 30 ft by scent.",
+  "does": "Nothing.",
+  "seen": "The stat block page (opened from the NPC card menu) prints the trait text; nothing on the combat card reminds the master.",
+  "code": "rules/creatures.go monsterDerived (trait kept only as a Feature with its text); no reader of the key in backend/ or web/src",
+  "fix": "",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:rust-monster"
+  ]
+ },
+ {
+  "key": "trait:keen hearing",
+  "name": "Keen Hearing",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "Advantage on Wisdom (Perception) checks that rely on hearing.",
+  "does": "Nothing: no per-sense check exists, so a hearing check gets no advantage; a hide contest is sight-based and unaffected.",
+  "seen": "The stat block page (opened from the NPC card menu) prints the trait text; nothing on the combat card reminds the master.",
+  "code": "play/combat_contests_core.go:425 passivePerceptionOf (stat block passive plus sunlight/condition shift only); rules/combat/advantage.go SaveMode has no keen-sense source",
+  "fix": "",
+  "checked": "",
+  "count": 4,
+  "examples": [
+   "monster:bat",
+   "monster:giant-bat",
+   "monster:killer-whale"
+  ]
+ },
+ {
+  "key": "trait:keen hearing and sight",
+  "name": "Keen Hearing and Sight",
+  "list": "monster-trait",
+  "verdict": "wrong",
+  "says": "Advantage on Wisdom (Perception) checks that rely on hearing or sight.",
+  "does": "The app applies the stat block's passive Wisdom (Perception) in the hide contest and ignores the trait's +5 (advantage), and an NPC's Perception check gets no advantage; the app has no per-sense checks, so it treats a hide as sight. The master can overrule the contest at the table.",
+  "seen": "The hide result shows the passive number without the trait.",
+  "code": "play/combat_contests_core.go:425 passivePerceptionOf (stat block passive plus sunlight/condition shift only); rules/combat/advantage.go SaveMode has no keen-sense source",
+  "fix": "Add the trait as a Perception-advantage source for a sight check (passive +5).",
+  "checked": "",
+  "count": 3,
+  "examples": [
+   "monster:giant-owl",
+   "monster:owl",
+   "monster:scout"
+  ]
+ },
+ {
+  "key": "trait:keen hearing and smell",
+  "name": "Keen Hearing and Smell",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "Advantage on Wisdom (Perception) checks that rely on hearing or smell.",
+  "does": "Nothing: no per-sense check exists, and a hide contest is sight-based.",
+  "seen": "The stat block page (opened from the NPC card menu) prints the trait text; nothing on the combat card reminds the master.",
+  "code": "play/combat_contests_core.go:425 passivePerceptionOf (stat block passive plus sunlight/condition shift only); rules/combat/advantage.go SaveMode has no keen-sense source",
+  "fix": "",
+  "checked": "",
+  "count": 17,
+  "examples": [
+   "monster:blink-dog",
+   "monster:dire-wolf",
+   "monster:giant-weasel"
+  ]
+ },
+ {
+  "key": "trait:keen senses",
+  "name": "Keen Senses",
+  "list": "monster-trait",
+  "verdict": "wrong",
+  "says": "Advantage on Wisdom (Perception) checks that rely on sight, hearing, or smell.",
+  "does": "The app applies the stat block's passive Wisdom (Perception) in the hide contest and ignores the trait's +5 (advantage), and an NPC's Perception check gets no advantage; the app has no per-sense checks, so it treats a hide as sight. The master can overrule the contest at the table.",
+  "seen": "The hide result shows the passive number without the trait.",
+  "code": "play/combat_contests_core.go:425 passivePerceptionOf (stat block passive plus sunlight/condition shift only); rules/combat/advantage.go SaveMode has no keen-sense source",
+  "fix": "Add the trait as a Perception-advantage source (passive +5).",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:pseudodragon"
+  ]
+ },
+ {
+  "key": "trait:keen sight",
+  "name": "Keen Sight",
+  "list": "monster-trait",
+  "verdict": "wrong",
+  "says": "Advantage on Wisdom (Perception) checks that rely on sight.",
+  "does": "The app applies the stat block's passive Wisdom (Perception) in the hide contest and ignores the trait's +5 (advantage), and an NPC's Perception check gets no advantage; the app has no per-sense checks, so it treats a hide as sight. The master can overrule the contest at the table.",
+  "seen": "The hide result shows the passive number without the trait.",
+  "code": "play/combat_contests_core.go:425 passivePerceptionOf (stat block passive plus sunlight/condition shift only); rules/combat/advantage.go SaveMode has no keen-sense source",
+  "fix": "Add the trait as a Perception-advantage source for a sight check (passive +5).",
+  "checked": "",
+  "count": 7,
+  "examples": [
+   "monster:blood-hawk",
+   "monster:eagle",
+   "monster:giant-eagle"
+  ]
+ },
+ {
+  "key": "trait:keen sight and smell",
+  "name": "Keen Sight and Smell",
+  "list": "monster-trait",
+  "verdict": "wrong",
+  "says": "Advantage on Wisdom (Perception) checks that rely on sight or smell.",
+  "does": "The app applies the stat block's passive Wisdom (Perception) in the hide contest and ignores the trait's +5 (advantage), and an NPC's Perception check gets no advantage; the app has no per-sense checks, so it treats a hide as sight. The master can overrule the contest at the table.",
+  "seen": "The hide result shows the passive number without the trait.",
+  "code": "play/combat_contests_core.go:425 passivePerceptionOf (stat block passive plus sunlight/condition shift only); rules/combat/advantage.go SaveMode has no keen-sense source",
+  "fix": "Add the trait as a Perception-advantage source for a sight check (passive +5).",
+  "checked": "",
+  "count": 3,
+  "examples": [
+   "monster:giant-vulture",
+   "monster:owlbear",
+   "monster:vulture"
+  ]
+ },
+ {
+  "key": "trait:keen smell",
+  "name": "Keen Smell",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "Advantage on Wisdom (Perception) checks that rely on smell.",
+  "does": "Nothing: no per-sense check exists, and a hide contest is sight-based.",
+  "seen": "The stat block page (opened from the NPC card menu) prints the trait text; nothing on the combat card reminds the master.",
+  "code": "play/combat_contests_core.go:425 passivePerceptionOf (stat block passive plus sunlight/condition shift only); rules/combat/advantage.go SaveMode has no keen-sense source",
+  "fix": "",
+  "checked": "",
+  "count": 22,
+  "examples": [
+   "monster:badger",
+   "monster:black-bear",
+   "monster:brown-bear"
+  ]
+ },
+ {
+  "key": "trait:labyrinthine recall",
+  "name": "Labyrinthine Recall",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "The minotaur perfectly recalls any path it has traveled.",
+  "does": "Nothing.",
+  "seen": "The stat block page (opened from the NPC card menu) prints the trait text; nothing on the combat card reminds the master.",
+  "code": "rules/creatures.go monsterDerived (trait kept only as a Feature with its text); no reader of the key in backend/ or web/src",
+  "fix": "",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:minotaur"
+  ]
+ },
+ {
+  "key": "trait:legendary resistance",
+  "name": "Legendary Resistance",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "3/day: if the creature fails a saving throw it can choose to succeed instead.",
+  "does": "The master spends a use on a failed effect, concentration, spell-area and hit-rider save (his offer with the roll, uses counted per combat, players read only pass or fail); not offered on a trap, Turn Undead, Hellish Rebuke or goading maneuver save, where the roll stands (RN-29 says so). No reminder on those saves. No screen names the part left out.",
+  "seen": "'Usar Resistencia Lendaria (restam K)' on the offered saves; nothing on the others.",
+  "code": "rules/legendary.go ReadLegendaryProfile; play/combat_legendary_resist.go, combat_legendary_hold.go, combat_legendary_rider.go, zones_save.go",
+  "fix": "Offer the trait on the remaining saves or print a reminder on them.",
+  "checked": "",
+  "count": 25,
+  "examples": [
+   "monster:adult-black-dragon",
+   "monster:adult-blue-dragon",
+   "monster:adult-brass-dragon"
+  ]
+ },
+ {
+  "key": "trait:light sensitivity",
+  "name": "Light Sensitivity",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "In bright light the cloaker has disadvantage on attack rolls and on sight-based Perception checks.",
+  "does": "Nothing: the sun switch reads only the Sunlight Sensitivity and Sunlight Weakness traits (keys ending #sunlight-*), and the app does not derive bright light at a creature from lights.",
+  "seen": "The stat block page (opened from the NPC card menu) prints the trait text; nothing on the combat card reminds the master.",
+  "code": "characters/combattraits.go:29 sunlight suffixes; play/sunlight.go sunTraitOf",
+  "fix": "",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:cloaker"
+  ]
+ },
+ {
+  "key": "trait:lightning absorption",
+  "name": "Lightning Absorption",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "Lightning damage does no damage and instead heals the creature by that amount.",
+  "does": "Part only: the stat block's lightning immunity makes the damage 0, but nothing heals the creature; the master can adjust hit points by hand.",
+  "seen": "The stat block page (opened from the NPC card menu) prints the trait text; nothing on the combat card reminds the master.",
+  "code": "rules/creatures.go monsterDerived (trait kept only as a Feature with its text); no reader of the key in backend/ or web/src",
+  "fix": "Heal the amount of lightning damage that an immunity zeroed, for creatures with the trait.",
+  "checked": "",
+  "count": 2,
+  "examples": [
+   "monster:flesh-golem",
+   "monster:shambling-mound"
+  ]
+ },
+ {
+  "key": "trait:limited amphibiousness",
+  "name": "Limited Amphibiousness",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "It breathes air and water but must be submerged once every 4 hours to avoid suffocating.",
+  "does": "Nothing: the game counts no breath.",
+  "seen": "The stat block page (opened from the NPC card menu) prints the trait text; nothing on the combat card reminds the master.",
+  "code": "rules/creatures.go monsterDerived (trait kept only as a Feature with its text); no reader of the key in backend/ or web/src",
+  "fix": "",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:sahuagin"
+  ]
+ },
+ {
+  "key": "trait:limited magic immunity",
+  "name": "Limited Magic Immunity",
+  "list": "monster-trait",
+  "verdict": "wrong",
+  "says": "Spells of 6th level or lower cannot affect or detect the rakshasa unless it wishes; advantage on saves against all other spells and magical effects.",
+  "does": "The rakshasa has no Magic Resistance trait key, so its saves against spells are rolled with no advantage and spells of any level affect it; the master can rule it by hand.",
+  "seen": "No source on the save line; text only on the stat block page.",
+  "code": "characters/combattraits.go:158 reads only #magic-resistance; rules/creatures.go:762 keeps the trait as a Feature",
+  "fix": "Read #limited-magic-immunity: advantage on saves against magic from spells above 6th level, and refuse spells of 6th level or lower unless the master allows.",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:rakshasa"
+  ]
+ },
+ {
+  "key": "trait:limited telepathy",
+  "name": "Limited Telepathy",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "It magically transmits simple messages or ideas to creatures within 100 or 120 ft.",
+  "does": "Nothing.",
+  "seen": "The stat block page (opened from the NPC card menu) prints the trait text; nothing on the combat card reminds the master.",
+  "code": "rules/creatures.go monsterDerived (trait kept only as a Feature with its text); no reader of the key in backend/ or web/src",
+  "fix": "",
+  "checked": "",
+  "count": 2,
+  "examples": [
+   "monster:otyugh",
+   "monster:pseudodragon"
+  ]
+ },
+ {
+  "key": "trait:magic resistance",
+  "name": "Magic Resistance",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "Advantage on saving throws against spells and other magical effects.",
+  "does": "Advantage on a save whose source is a spell or a lasting spell effect (the creature's own non-spell actions are not magic); a magic trap's save (kind magic) and other non-spell magical effects get no advantage, with no reminder. No screen names the part left out.",
+  "seen": "The master and the controlling player read 'Resistencia a Magia: vantagem...' on the save; other players read only the outcome.",
+  "code": "characters/combattraits.go:158; rules/combat/advantage.go SaveMode; play/combat_against.go spellAgainst, trapAgainst",
+  "fix": "Mark a trap of kind magic as against magic in trapAgainst.",
+  "checked": "",
+  "count": 31,
+  "examples": [
+   "monster:archmage",
+   "monster:balor",
+   "monster:barbed-devil"
+  ]
+ },
+ {
+  "key": "trait:magic weapons",
+  "name": "Magic Weapons",
+  "list": "monster-trait",
+  "verdict": "wrong",
+  "says": "The creature's weapon attacks are magical.",
+  "does": "hasMagicWeapons marks the stat block's attacks magical (rules/creatures.go:872), but a bestiary NPC fights with a basic sheet whose attacks basicDerived rebuilds without the mark (characters/combatturn.go:141-151; BasicAttack has no such field), so its hits count as nonmagical against a resistance or immunity to nonmagical attacks. The master can adjust the damage by hand.",
+  "seen": "The damage line reflects it.",
+  "code": "rules/creatures.go:856 hasMagicWeapons and :872; play/combat_damage.go originOf",
+  "fix": "Carry the magical mark of the creature's attack into the basic sheet's attack (as Melee and LongRangeFt already are, combatturn.go:149).",
+  "checked": "",
+  "count": 12,
+  "examples": [
+   "monster:androsphinx",
+   "monster:balor",
+   "monster:clay-golem"
+  ]
+ },
+ {
+  "key": "trait:martial advantage",
+  "name": "Martial Advantage",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "Once per turn, an extra 2d6 damage on a weapon hit against a target within 5 ft of an ally that is not incapacitated.",
+  "does": "Nothing: no extra damage is offered.",
+  "seen": "The stat block page (opened from the NPC card menu) prints the trait text; nothing on the combat card reminds the master.",
+  "code": "rules/creatures.go monsterDerived (trait kept only as a Feature with its text); no reader of the key in backend/ or web/src",
+  "fix": "",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:hobgoblin"
+  ]
+ },
+ {
+  "key": "trait:mimicry",
+  "name": "Mimicry",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "It mimics sounds or voices; hearers see through it with a DC 10 or 14 Wisdom (Insight) check.",
+  "does": "Nothing.",
+  "seen": "The stat block page (opened from the NPC card menu) prints the trait text; nothing on the combat card reminds the master.",
+  "code": "rules/creatures.go monsterDerived (trait kept only as a Feature with its text); no reader of the key in backend/ or web/src",
+  "fix": "",
+  "checked": "",
+  "count": 2,
+  "examples": [
+   "monster:green-hag",
+   "monster:raven"
+  ]
+ },
+ {
+  "key": "trait:misty escape",
+  "name": "Misty Escape",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "At 0 hit points outside its resting place the vampire turns to mist instead of falling, if not in sunlight or running water.",
+  "does": "Nothing: at 0 hit points the generic NPC defeat rule applies.",
+  "seen": "The stat block page (opened from the NPC card menu) prints the trait text; nothing on the combat card reminds the master.",
+  "code": "rules/creatures.go monsterDerived (trait kept only as a Feature with its text); no reader of the key in backend/ or web/src",
+  "fix": "",
+  "checked": "",
+  "count": 3,
+  "examples": [
+   "monster:vampire-bat",
+   "monster:vampire-mist",
+   "monster:vampire-vampire"
+  ]
+ },
+ {
+  "key": "trait:mucous cloud",
+  "name": "Mucous Cloud",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "While underwater, a creature touching or meleeing the aboleth within 5 ft makes a DC 14 Constitution save or is diseased for 1d4 hours.",
+  "does": "Nothing.",
+  "seen": "The stat block page (opened from the NPC card menu) prints the trait text; nothing on the combat card reminds the master.",
+  "code": "rules/creatures.go monsterDerived (trait kept only as a Feature with its text); no reader of the key in backend/ or web/src",
+  "fix": "",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:aboleth"
+  ]
+ },
+ {
+  "key": "trait:multiple heads",
+  "name": "Multiple Heads",
+  "list": "monster-trait",
+  "verdict": "wrong",
+  "says": "With more than one head the hydra has advantage on saves against being blinded, charmed, deafened, frightened, stunned and knocked unconscious; heads die and regrow.",
+  "does": "The save roll modes support advantage against a condition (tagged saves from sheet hints), but a stat block derives none: the hydra's saves against those conditions are rolled with no advantage; head count and regrowth are not tracked. The master can rule it by hand.",
+  "seen": "No source on the save line.",
+  "code": "characters/combattraits.go:139 taggedSavesOf(d.Hints); rules/creatures.go:762",
+  "fix": "Read #multiple-heads as tagged saves against those six conditions.",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:hydra"
+  ]
+ },
+ {
+  "key": "trait:night hag items",
+  "name": "Night Hag Items",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "The hag carries a heartstone and a soul bag that she crafted.",
+  "does": "Nothing; items are out of combat.",
+  "seen": "The stat block page (opened from the NPC card menu) prints the trait text; nothing on the combat card reminds the master.",
+  "code": "rules/creatures.go monsterDerived (trait kept only as a Feature with its text); no reader of the key in backend/ or web/src",
+  "fix": "",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:night-hag"
+  ]
+ },
+ {
+  "key": "trait:nimble escape",
+  "name": "Nimble Escape",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "The goblin can Disengage or Hide as a bonus action on each of its turns.",
+  "does": "Nothing: the stat block creature has only the ordinary Disengage and Hide as actions (the bonus-action form exists only for a table race trait).",
+  "seen": "The stat block page (opened from the NPC card menu) prints the trait text; nothing on the combat card reminds the master.",
+  "code": "rules/creatures.go monsterDerived (trait kept only as a Feature with its text); no reader of the key in backend/ or web/src; rules/srd51/effects/standard_actions.json",
+  "fix": "",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:goblin"
+  ]
+ },
+ {
+  "key": "trait:ooze cube",
+  "name": "Ooze Cube",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "The cube fills its space; creatures entering it are engulfed with disadvantage on the save; creatures inside have total cover and can be pulled out with a DC 12 Strength check.",
+  "does": "Nothing.",
+  "seen": "The stat block page (opened from the NPC card menu) prints the trait text; nothing on the combat card reminds the master.",
+  "code": "rules/creatures.go monsterDerived (trait kept only as a Feature with its text); no reader of the key in backend/ or web/src",
+  "fix": "",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:gelatinous-cube"
+  ]
+ },
+ {
+  "key": "trait:pack tactics",
+  "name": "Pack Tactics",
+  "list": "monster-trait",
+  "verdict": "runs",
+  "says": "Advantage on an attack roll against a creature if an ally of the attacker is within 5 ft of it and the ally is not incapacitated.",
+  "does": "On a map the attack gets advantage when a non-incapacitated ally stands within 5 ft of the target; in combat without a map the master judges distance (RN-25).",
+  "seen": "The roll line says 'Taticas de Matilha: um aliado esta a 1,5 m do alvo e nao esta incapacitado'.",
+  "code": "characters/combattraits.go:157; play/combat_advantage.go:240 scene, allyOf; rules/combat/advantage.go:523",
+  "fix": "",
+  "checked": "",
+  "count": 17,
+  "examples": [
+   "monster:baboon",
+   "monster:blood-hawk",
+   "monster:dire-wolf"
+  ]
+ },
+ {
+  "key": "trait:petrifying gaze",
+  "name": "Petrifying Gaze",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "A creature starting its turn within 30 ft that sees the basilisk or medusa's eyes makes a Constitution save (DC 12 or 14) or begins turning to stone.",
+  "does": "Nothing: no start-of-turn gaze or save.",
+  "seen": "The stat block page (opened from the NPC card menu) prints the trait text; nothing on the combat card reminds the master.",
+  "code": "rules/creatures.go monsterDerived (trait kept only as a Feature with its text); no reader of the key in backend/ or web/src",
+  "fix": "",
+  "checked": "",
+  "count": 2,
+  "examples": [
+   "monster:basilisk",
+   "monster:medusa"
+  ]
+ },
+ {
+  "key": "trait:pounce",
+  "name": "Pounce",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "After moving 20 ft straight and hitting with a claw, the target makes a Strength save or falls prone; the creature then bites as a bonus action.",
+  "does": "Nothing: no straight-line check, no save and no bonus bite.",
+  "seen": "The stat block page (opened from the NPC card menu) prints the trait text; nothing on the combat card reminds the master.",
+  "code": "rules/creatures.go monsterDerived (trait kept only as a Feature with its text); no reader of the key in backend/ or web/src",
+  "fix": "",
+  "checked": "",
+  "count": 6,
+  "examples": [
+   "monster:lion",
+   "monster:panther",
+   "monster:saber-toothed-tiger"
+  ]
+ },
+ {
+  "key": "trait:probing telepathy",
+  "name": "Probing Telepathy",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "If a creature communicates telepathically with the aboleth, it learns the creature's greatest desires.",
+  "does": "Nothing.",
+  "seen": "The stat block page (opened from the NPC card menu) prints the trait text; nothing on the combat card reminds the master.",
+  "code": "rules/creatures.go monsterDerived (trait kept only as a Feature with its text); no reader of the key in backend/ or web/src",
+  "fix": "",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:aboleth"
+  ]
+ },
+ {
+  "key": "trait:rampage",
+  "name": "Rampage",
+  "list": "monster-trait",
+  "verdict": "by-hand-silent",
+  "says": "On reducing a creature to 0 hit points with a melee attack on its turn, a bonus action to move half its speed and bite.",
+  "does": "Nothing: no bonus action is offered after a kill.",
+  "seen": "The stat block page (opened from the NPC card menu) prints the trait text; nothing on the combat card reminds the master.",
+  "code": "rules/creatures.go monsterDerived (trait kept only as a Feature with its text); no reader of the key in backend/ or web/src",
+  "fix": "",
+  "checked": "",
+  "count": 2,
+  "examples": [
+   "monster:giant-hyena",
+   "monster:gnoll"
+  ]
+ },
+ {
+  "key": "trait:reactive",
+  "name": "Reactive",
+  "list": "monster-trait",
+  "verdict": "wrong",
+  "says": "The marilith can take one reaction on every turn in combat.",
+  "does": "The reaction is spent once and returns only at the marilith's own turn, so its Parry works once a round (a second Parry is closed as 'reaction spent'); RN-31 states a Parry is one a round with no Reactive exception. The master cannot restore the reaction except by undo.",
+  "seen": "The master's log shows the Parry; nothing mentions Reactive.",
+  "code": "play/combat_parry_auto.go:25 (reaction comes back at the creature's turn); rules/reaction/reaction.go:187 ReasonReactionSpent; docs/product/rules.md:1179",
+  "fix": "Let a creature with Reactive keep its reaction on every creature's turn (reset reaction_used at each turn start).",
+  "checked": "",
+  "count": 1,
+  "examples": [
+   "monster:marilith"
+  ]
+ }
+]

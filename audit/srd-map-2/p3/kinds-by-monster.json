@@ -1,0 +1,3070 @@
+{
+ "monster:aboleth": [
+  "action-usage:per-day",
+  "action:melee-attack",
+  "action:melee-attack+save",
+  "action:multiattack",
+  "action:save-effect",
+  "legendary:actions",
+  "legendary:cost-1",
+  "legendary:cost-2",
+  "sense:darkvision",
+  "speed:swim",
+  "trait:amphibious",
+  "trait:mucous cloud",
+  "trait:probing telepathy"
+ ],
+ "monster:acolyte": [
+  "action:melee-attack",
+  "trait:spellcasting"
+ ],
+ "monster:adult-black-dragon": [
+  "action-usage:recharge 5-6",
+  "action:melee-attack",
+  "action:multiattack",
+  "action:save-effect",
+  "action:save-effect+damage",
+  "immunities:plain",
+  "legendary:actions",
+  "legendary:cost-1",
+  "legendary:cost-2",
+  "sense:blindsight",
+  "sense:darkvision",
+  "speed:fly",
+  "speed:swim",
+  "trait:amphibious",
+  "trait:legendary resistance",
+  "usage:per-day"
+ ],
+ "monster:adult-blue-dragon": [
+  "action-usage:recharge 5-6",
+  "action:melee-attack",
+  "action:multiattack",
+  "action:save-effect",
+  "action:save-effect+damage",
+  "immunities:plain",
+  "legendary:actions",
+  "legendary:cost-1",
+  "legendary:cost-2",
+  "sense:blindsight",
+  "sense:darkvision",
+  "speed:burrow",
+  "speed:fly",
+  "trait:legendary resistance",
+  "usage:per-day"
+ ],
+ "monster:adult-brass-dragon": [
+  "action-usage:recharge 5-6",
+  "action:melee-attack",
+  "action:multiattack",
+  "action:other:breath weapons",
+  "action:save-effect",
+  "action:save-effect+damage",
+  "immunities:plain",
+  "legendary:actions",
+  "legendary:cost-1",
+  "legendary:cost-2",
+  "sense:blindsight",
+  "sense:darkvision",
+  "speed:burrow",
+  "speed:fly",
+  "trait:legendary resistance",
+  "usage:per-day"
+ ],
+ "monster:adult-bronze-dragon": [
+  "action-usage:recharge 5-6",
+  "action:melee-attack",
+  "action:multiattack",
+  "action:other:breath weapons",
+  "action:save-effect",
+  "action:save-effect+damage",
+  "immunities:plain",
+  "legendary:actions",
+  "legendary:cost-1",
+  "legendary:cost-2",
+  "sense:blindsight",
+  "sense:darkvision",
+  "speed:fly",
+  "speed:swim",
+  "trait:amphibious",
+  "trait:legendary resistance",
+  "usage:per-day"
+ ],
+ "monster:adult-copper-dragon": [
+  "action-usage:recharge 5-6",
+  "action:melee-attack",
+  "action:multiattack",
+  "action:other:breath weapons",
+  "action:save-effect",
+  "action:save-effect+damage",
+  "immunities:plain",
+  "legendary:actions",
+  "legendary:cost-1",
+  "legendary:cost-2",
+  "sense:blindsight",
+  "sense:darkvision",
+  "speed:climb",
+  "speed:fly",
+  "trait:legendary resistance",
+  "usage:per-day"
+ ],
+ "monster:adult-gold-dragon": [
+  "action-usage:recharge 5-6",
+  "action:melee-attack",
+  "action:multiattack",
+  "action:other:breath weapons",
+  "action:save-effect",
+  "action:save-effect+damage",
+  "immunities:plain",
+  "legendary:actions",
+  "legendary:cost-1",
+  "legendary:cost-2",
+  "sense:blindsight",
+  "sense:darkvision",
+  "speed:fly",
+  "speed:swim",
+  "trait:amphibious",
+  "trait:legendary resistance",
+  "usage:per-day"
+ ],
+ "monster:adult-green-dragon": [
+  "action-usage:recharge 5-6",
+  "action:melee-attack",
+  "action:multiattack",
+  "action:save-effect",
+  "action:save-effect+damage",
+  "condition_immunities",
+  "immunities:plain",
+  "legendary:actions",
+  "legendary:cost-1",
+  "legendary:cost-2",
+  "sense:blindsight",
+  "sense:darkvision",
+  "speed:fly",
+  "speed:swim",
+  "trait:amphibious",
+  "trait:legendary resistance",
+  "usage:per-day"
+ ],
+ "monster:adult-red-dragon": [
+  "action-usage:recharge 5-6",
+  "action:melee-attack",
+  "action:multiattack",
+  "action:save-effect",
+  "action:save-effect+damage",
+  "immunities:plain",
+  "legendary:actions",
+  "legendary:cost-1",
+  "legendary:cost-2",
+  "sense:blindsight",
+  "sense:darkvision",
+  "speed:climb",
+  "speed:fly",
+  "trait:legendary resistance",
+  "usage:per-day"
+ ],
+ "monster:adult-silver-dragon": [
+  "action-usage:recharge 5-6",
+  "action:melee-attack",
+  "action:multiattack",
+  "action:other:breath weapons",
+  "action:save-effect",
+  "action:save-effect+damage",
+  "immunities:plain",
+  "legendary:actions",
+  "legendary:cost-1",
+  "legendary:cost-2",
+  "sense:blindsight",
+  "sense:darkvision",
+  "speed:fly",
+  "trait:legendary resistance",
+  "usage:per-day"
+ ],
+ "monster:adult-white-dragon": [
+  "action-usage:recharge 5-6",
+  "action:melee-attack",
+  "action:multiattack",
+  "action:save-effect",
+  "action:save-effect+damage",
+  "immunities:plain",
+  "legendary:actions",
+  "legendary:cost-1",
+  "legendary:cost-2",
+  "sense:blindsight",
+  "sense:darkvision",
+  "speed:burrow",
+  "speed:fly",
+  "speed:swim",
+  "trait:ice walk",
+  "trait:legendary resistance",
+  "usage:per-day"
+ ],
+ "monster:air-elemental": [
+  "action-usage:recharge 4-6",
+  "action:melee-attack",
+  "action:multiattack",
+  "action:save-effect",
+  "condition_immunities",
+  "immunities:plain",
+  "resistances:nonmagical-clause",
+  "resistances:plain",
+  "sense:darkvision",
+  "speed:fly",
+  "speed:hover",
+  "trait:air form"
+ ],
+ "monster:ancient-black-dragon": [
+  "action-usage:recharge 5-6",
+  "action:melee-attack",
+  "action:multiattack",
+  "action:save-effect",
+  "action:save-effect+damage",
+  "immunities:plain",
+  "legendary:actions",
+  "legendary:cost-1",
+  "legendary:cost-2",
+  "sense:blindsight",
+  "sense:darkvision",
+  "speed:fly",
+  "speed:swim",
+  "trait:amphibious",
+  "trait:legendary resistance",
+  "usage:per-day"
+ ],
+ "monster:ancient-blue-dragon": [
+  "action-usage:recharge 5-6",
+  "action:melee-attack",
+  "action:multiattack",
+  "action:save-effect",
+  "action:save-effect+damage",
+  "immunities:plain",
+  "legendary:actions",
+  "legendary:cost-1",
+  "legendary:cost-2",
+  "sense:blindsight",
+  "sense:darkvision",
+  "speed:burrow",
+  "speed:fly",
+  "trait:legendary resistance",
+  "usage:per-day"
+ ],
+ "monster:ancient-brass-dragon": [
+  "action-usage:recharge 5-6",
+  "action:melee-attack",
+  "action:multiattack",
+  "action:other:breath weapons",
+  "action:other:change shape",
+  "action:save-effect",
+  "action:save-effect+damage",
+  "immunities:plain",
+  "legendary:actions",
+  "legendary:cost-1",
+  "legendary:cost-2",
+  "sense:blindsight",
+  "sense:darkvision",
+  "speed:burrow",
+  "speed:fly",
+  "trait:legendary resistance",
+  "usage:per-day"
+ ],
+ "monster:ancient-bronze-dragon": [
+  "action-usage:recharge 5-6",
+  "action:melee-attack",
+  "action:multiattack",
+  "action:other:breath weapons",
+  "action:other:change shape",
+  "action:save-effect",
+  "action:save-effect+damage",
+  "immunities:plain",
+  "legendary:actions",
+  "legendary:cost-1",
+  "legendary:cost-2",
+  "sense:blindsight",
+  "sense:darkvision",
+  "speed:fly",
+  "speed:swim",
+  "trait:amphibious",
+  "trait:legendary resistance",
+  "usage:per-day"
+ ],
+ "monster:ancient-copper-dragon": [
+  "action-usage:recharge 5-6",
+  "action:melee-attack",
+  "action:multiattack",
+  "action:other:breath weapons",
+  "action:other:change shape",
+  "action:save-effect",
+  "action:save-effect+damage",
+  "immunities:plain",
+  "legendary:actions",
+  "legendary:cost-1",
+  "legendary:cost-2",
+  "sense:blindsight",
+  "sense:darkvision",
+  "speed:climb",
+  "speed:fly",
+  "trait:legendary resistance",
+  "usage:per-day"
+ ],
+ "monster:ancient-gold-dragon": [
+  "action-usage:recharge 5-6",
+  "action:melee-attack",
+  "action:multiattack",
+  "action:other:breath weapons",
+  "action:other:change shape",
+  "action:save-effect",
+  "action:save-effect+damage",
+  "immunities:plain",
+  "legendary:actions",
+  "legendary:cost-1",
+  "legendary:cost-2",
+  "sense:blindsight",
+  "sense:darkvision",
+  "speed:fly",
+  "speed:swim",
+  "trait:amphibious",
+  "trait:legendary resistance",
+  "usage:per-day"
+ ],
+ "monster:ancient-green-dragon": [
+  "action-usage:recharge 5-6",
+  "action:melee-attack",
+  "action:multiattack",
+  "action:save-effect",
+  "action:save-effect+damage",
+  "condition_immunities",
+  "immunities:plain",
+  "legendary:actions",
+  "legendary:cost-1",
+  "legendary:cost-2",
+  "sense:blindsight",
+  "sense:darkvision",
+  "speed:fly",
+  "speed:swim",
+  "trait:amphibious",
+  "trait:legendary resistance",
+  "usage:per-day"
+ ],
+ "monster:ancient-red-dragon": [
+  "action-usage:recharge 5-6",
+  "action:melee-attack",
+  "action:multiattack",
+  "action:save-effect",
+  "action:save-effect+damage",
+  "immunities:plain",
+  "legendary:actions",
+  "legendary:cost-1",
+  "legendary:cost-2",
+  "sense:blindsight",
+  "sense:darkvision",
+  "speed:climb",
+  "speed:fly",
+  "trait:legendary resistance",
+  "usage:per-day"
+ ],
+ "monster:ancient-silver-dragon": [
+  "action-usage:recharge 5-6",
+  "action:melee-attack",
+  "action:multiattack",
+  "action:other:breath weapons",
+  "action:other:change shape",
+  "action:save-effect",
+  "action:save-effect+damage",
+  "immunities:plain",
+  "legendary:actions",
+  "legendary:cost-1",
+  "legendary:cost-2",
+  "sense:blindsight",
+  "sense:darkvision",
+  "speed:fly",
+  "trait:legendary resistance",
+  "usage:per-day"
+ ],
+ "monster:ancient-white-dragon": [
+  "action-usage:recharge 5-6",
+  "action:melee-attack",
+  "action:multiattack",
+  "action:save-effect",
+  "action:save-effect+damage",
+  "immunities:plain",
+  "legendary:actions",
+  "legendary:cost-1",
+  "legendary:cost-2",
+  "sense:blindsight",
+  "sense:darkvision",
+  "speed:burrow",
+  "speed:fly",
+  "speed:swim",
+  "trait:ice walk",
+  "trait:legendary resistance",
+  "usage:per-day"
+ ],
+ "monster:androsphinx": [
+  "action-usage:per-day",
+  "action:melee-attack",
+  "action:multiattack",
+  "action:other:roar",
+  "action:save-effect",
+  "action:save-effect+damage",
+  "condition_immunities",
+  "immunities:nonmagical-clause",
+  "immunities:plain",
+  "legendary:actions",
+  "legendary:cost-1",
+  "legendary:cost-2",
+  "legendary:cost-3",
+  "sense:truesight",
+  "speed:fly",
+  "trait:inscrutable",
+  "trait:magic weapons",
+  "trait:spellcasting"
+ ],
+ "monster:animated-armor": [
+  "action:melee-attack",
+  "action:multiattack",
+  "condition_immunities",
+  "immunities:plain",
+  "sense:blindsight",
+  "trait:antimagic susceptibility",
+  "trait:false appearance"
+ ],
+ "monster:ankheg": [
+  "ac:alternate",
+  "action-usage:recharge 6",
+  "action:melee-attack+grapple",
+  "action:save-effect+damage",
+  "sense:darkvision",
+  "sense:tremorsense",
+  "speed:burrow"
+ ],
+ "monster:ape": [
+  "action:melee-attack",
+  "action:multiattack",
+  "action:ranged-attack",
+  "speed:climb"
+ ],
+ "monster:archmage": [
+  "ac:alternate",
+  "action:melee-attack",
+  "resistances:nonmagical-clause",
+  "resistances:plain",
+  "trait:magic resistance",
+  "trait:spellcasting"
+ ],
+ "monster:assassin": [
+  "action:melee-attack+save",
+  "action:multiattack",
+  "action:ranged-attack+save",
+  "resistances:plain",
+  "trait:assassinate",
+  "trait:evasion",
+  "trait:sneak attack"
+ ],
+ "monster:awakened-shrub": [
+  "action:melee-attack",
+  "resistances:plain",
+  "trait:false appearance",
+  "vulnerabilities:plain"
+ ],
+ "monster:awakened-tree": [
+  "action:melee-attack",
+  "resistances:plain",
+  "trait:false appearance",
+  "vulnerabilities:plain"
+ ],
+ "monster:axe-beak": [
+  "action:melee-attack"
+ ],
+ "monster:azer": [
+  "action:melee-attack",
+  "condition_immunities",
+  "immunities:plain",
+  "trait:heated body",
+  "trait:heated weapons",
+  "trait:illumination"
+ ],
+ "monster:baboon": [
+  "action:melee-attack",
+  "speed:climb",
+  "trait:pack tactics"
+ ],
+ "monster:badger": [
+  "action:melee-attack",
+  "sense:darkvision",
+  "speed:burrow",
+  "trait:keen smell"
+ ],
+ "monster:balor": [
+  "action:melee-attack",
+  "action:melee-attack+save",
+  "action:multiattack",
+  "action:other:teleport",
+  "condition_immunities",
+  "immunities:plain",
+  "resistances:nonmagical-clause",
+  "resistances:plain",
+  "sense:truesight",
+  "speed:fly",
+  "trait:death throes",
+  "trait:fire aura",
+  "trait:magic resistance",
+  "trait:magic weapons"
+ ],
+ "monster:bandit": [
+  "action:melee-attack",
+  "action:ranged-attack"
+ ],
+ "monster:bandit-captain": [
+  "action:melee-attack",
+  "action:multiattack",
+  "reaction:parry"
+ ],
+ "monster:barbed-devil": [
+  "action:melee-attack",
+  "action:multiattack",
+  "action:ranged-attack",
+  "condition_immunities",
+  "immunities:plain",
+  "resistances:nonmagical-clause",
+  "resistances:plain",
+  "sense:darkvision",
+  "trait:barbed hide",
+  "trait:devil's sight",
+  "trait:magic resistance"
+ ],
+ "monster:basilisk": [
+  "action:melee-attack",
+  "sense:darkvision",
+  "trait:petrifying gaze"
+ ],
+ "monster:bat": [
+  "action:melee-attack",
+  "sense:blindsight",
+  "speed:fly",
+  "trait:echolocation",
+  "trait:keen hearing"
+ ],
+ "monster:bearded-devil": [
+  "action:melee-attack+save",
+  "action:multiattack",
+  "condition_immunities",
+  "immunities:plain",
+  "resistances:nonmagical-clause",
+  "resistances:plain",
+  "sense:darkvision",
+  "trait:devil's sight",
+  "trait:magic resistance",
+  "trait:steadfast"
+ ],
+ "monster:behir": [
+  "action-usage:recharge 5-6",
+  "action:melee-attack",
+  "action:melee-attack+grapple",
+  "action:multiattack",
+  "action:save-effect+damage",
+  "immunities:plain",
+  "sense:darkvision",
+  "speed:climb"
+ ],
+ "monster:berserker": [
+  "action:melee-attack",
+  "trait:reckless"
+ ],
+ "monster:black-bear": [
+  "action:melee-attack",
+  "action:multiattack",
+  "speed:climb",
+  "trait:keen smell"
+ ],
+ "monster:black-dragon-wyrmling": [
+  "action-usage:recharge 5-6",
+  "action:melee-attack",
+  "action:save-effect+damage",
+  "immunities:plain",
+  "sense:blindsight",
+  "sense:darkvision",
+  "speed:fly",
+  "speed:swim",
+  "trait:amphibious"
+ ],
+ "monster:black-pudding": [
+  "action:melee-attack",
+  "condition_immunities",
+  "immunities:plain",
+  "reaction:split",
+  "sense:blindsight",
+  "speed:climb",
+  "trait:amorphous",
+  "trait:corrosive form",
+  "trait:spider climb"
+ ],
+ "monster:blink-dog": [
+  "action-usage:recharge 4-6",
+  "action:melee-attack",
+  "action:other:teleport",
+  "trait:keen hearing and smell"
+ ],
+ "monster:blood-hawk": [
+  "action:melee-attack",
+  "speed:fly",
+  "trait:keen sight",
+  "trait:pack tactics"
+ ],
+ "monster:blue-dragon-wyrmling": [
+  "action-usage:recharge 5-6",
+  "action:melee-attack",
+  "action:save-effect+damage",
+  "immunities:plain",
+  "sense:blindsight",
+  "sense:darkvision",
+  "speed:burrow",
+  "speed:fly"
+ ],
+ "monster:boar": [
+  "action:melee-attack",
+  "trait:charge",
+  "trait:relentless",
+  "usage:recharge-after-rest"
+ ],
+ "monster:bone-devil": [
+  "action:melee-attack",
+  "action:melee-attack+save",
+  "action:multiattack",
+  "condition_immunities",
+  "immunities:plain",
+  "resistances:nonmagical-clause",
+  "resistances:plain",
+  "sense:darkvision",
+  "speed:fly",
+  "trait:devil's sight",
+  "trait:magic resistance"
+ ],
+ "monster:brass-dragon-wyrmling": [
+  "action-usage:recharge 5-6",
+  "action:melee-attack",
+  "action:other:breath weapons",
+  "action:save-effect",
+  "action:save-effect+damage",
+  "immunities:plain",
+  "sense:blindsight",
+  "sense:darkvision",
+  "speed:burrow",
+  "speed:fly"
+ ],
+ "monster:bronze-dragon-wyrmling": [
+  "action-usage:recharge 5-6",
+  "action:melee-attack",
+  "action:other:breath weapons",
+  "action:save-effect",
+  "action:save-effect+damage",
+  "immunities:plain",
+  "sense:blindsight",
+  "sense:darkvision",
+  "speed:fly",
+  "speed:swim",
+  "trait:amphibious"
+ ],
+ "monster:brown-bear": [
+  "action:melee-attack",
+  "action:multiattack",
+  "speed:climb",
+  "trait:keen smell"
+ ],
+ "monster:bugbear": [
+  "action:melee-attack",
+  "sense:darkvision",
+  "trait:brute",
+  "trait:surprise attack"
+ ],
+ "monster:bulette": [
+  "action:melee-attack",
+  "action:save-effect",
+  "sense:darkvision",
+  "sense:tremorsense",
+  "speed:burrow",
+  "trait:standing leap"
+ ],
+ "monster:camel": [
+  "action:melee-attack"
+ ],
+ "monster:cat": [
+  "action:melee-attack",
+  "speed:climb",
+  "trait:keen smell"
+ ],
+ "monster:centaur": [
+  "action:melee-attack",
+  "action:multiattack",
+  "action:ranged-attack",
+  "trait:charge"
+ ],
+ "monster:chain-devil": [
+  "action-usage:recharge-after-rest",
+  "action:melee-attack+grapple",
+  "action:multiattack",
+  "action:other:animate chains",
+  "condition_immunities",
+  "immunities:plain",
+  "reaction:unnerving mask",
+  "resistances:nonmagical-clause",
+  "resistances:plain",
+  "sense:darkvision",
+  "trait:devil's sight",
+  "trait:magic resistance"
+ ],
+ "monster:chimera": [
+  "action-usage:recharge 5-6",
+  "action:melee-attack",
+  "action:multiattack",
+  "action:save-effect+damage",
+  "sense:darkvision",
+  "speed:fly"
+ ],
+ "monster:chuul": [
+  "action:melee-attack+grapple",
+  "action:multiattack",
+  "action:save-effect",
+  "condition_immunities",
+  "immunities:plain",
+  "sense:darkvision",
+  "speed:swim",
+  "trait:amphibious",
+  "trait:sense magic"
+ ],
+ "monster:clay-golem": [
+  "action-usage:recharge 5-6",
+  "action:melee-attack+save",
+  "action:multiattack",
+  "action:other:haste",
+  "condition_immunities",
+  "immunities:nonmagical-clause",
+  "immunities:plain",
+  "sense:darkvision",
+  "trait:acid absorption",
+  "trait:berserk",
+  "trait:immutable form",
+  "trait:magic resistance",
+  "trait:magic weapons"
+ ],
+ "monster:cloaker": [
+  "action-usage:recharge-after-rest",
+  "action:melee-attack",
+  "action:multiattack",
+  "action:other:phantasms",
+  "action:save-effect",
+  "sense:darkvision",
+  "speed:fly",
+  "trait:damage transfer",
+  "trait:false appearance",
+  "trait:light sensitivity"
+ ],
+ "monster:cloud-giant": [
+  "action:melee-attack",
+  "action:multiattack",
+  "action:ranged-attack",
+  "trait:innate spellcasting",
+  "trait:keen smell"
+ ],
+ "monster:cockatrice": [
+  "action:melee-attack+save",
+  "sense:darkvision",
+  "speed:fly"
+ ],
+ "monster:commoner": [
+  "action:melee-attack"
+ ],
+ "monster:constrictor-snake": [
+  "action:melee-attack",
+  "action:melee-attack+grapple",
+  "sense:blindsight",
+  "speed:swim"
+ ],
+ "monster:copper-dragon-wyrmling": [
+  "action-usage:recharge 5-6",
+  "action:melee-attack",
+  "action:other:breath weapons",
+  "action:save-effect",
+  "action:save-effect+damage",
+  "immunities:plain",
+  "sense:blindsight",
+  "sense:darkvision",
+  "speed:climb",
+  "speed:fly"
+ ],
+ "monster:couatl": [
+  "action:melee-attack+grapple",
+  "action:melee-attack+save",
+  "action:other:change shape",
+  "immunities:nonmagical-clause",
+  "immunities:plain",
+  "resistances:plain",
+  "sense:truesight",
+  "speed:fly",
+  "trait:innate spellcasting",
+  "trait:magic weapons",
+  "trait:shielded mind"
+ ],
+ "monster:crab": [
+  "action:melee-attack",
+  "sense:blindsight",
+  "speed:swim",
+  "trait:amphibious"
+ ],
+ "monster:crocodile": [
+  "action:melee-attack+grapple",
+  "speed:swim",
+  "trait:hold breath"
+ ],
+ "monster:cult-fanatic": [
+  "action:melee-attack",
+  "action:multiattack",
+  "trait:dark devotion",
+  "trait:spellcasting"
+ ],
+ "monster:cultist": [
+  "action:melee-attack",
+  "trait:dark devotion"
+ ],
+ "monster:darkmantle": [
+  "action-usage:per-day",
+  "action:melee-attack",
+  "action:other:darkness aura",
+  "sense:blindsight",
+  "speed:fly",
+  "trait:echolocation",
+  "trait:false appearance"
+ ],
+ "monster:death-dog": [
+  "action:melee-attack+save",
+  "action:multiattack",
+  "sense:darkvision",
+  "trait:two-headed"
+ ],
+ "monster:deep-gnome-svirfneblin": [
+  "action:melee-attack",
+  "action:ranged-attack+save",
+  "sense:darkvision",
+  "trait:gnome cunning",
+  "trait:innate spellcasting",
+  "trait:stone camouflage"
+ ],
+ "monster:deer": [
+  "action:melee-attack"
+ ],
+ "monster:deva": [
+  "action-usage:per-day",
+  "action:melee-attack",
+  "action:multiattack",
+  "action:other:change shape",
+  "action:other:healing touch",
+  "condition_immunities",
+  "resistances:nonmagical-clause",
+  "resistances:plain",
+  "sense:darkvision",
+  "speed:fly",
+  "trait:angelic weapons",
+  "trait:innate spellcasting",
+  "trait:magic resistance"
+ ],
+ "monster:dire-wolf": [
+  "action:melee-attack+save+prone",
+  "trait:keen hearing and smell",
+  "trait:pack tactics"
+ ],
+ "monster:djinni": [
+  "action:melee-attack",
+  "action:multiattack",
+  "action:save-effect",
+  "immunities:plain",
+  "sense:darkvision",
+  "speed:fly",
+  "trait:elemental demise",
+  "trait:innate spellcasting"
+ ],
+ "monster:doppelganger": [
+  "action:melee-attack",
+  "action:multiattack",
+  "action:other:read thoughts",
+  "condition_immunities",
+  "sense:darkvision",
+  "trait:ambusher",
+  "trait:shapechanger",
+  "trait:surprise attack"
+ ],
+ "monster:draft-horse": [
+  "action:melee-attack"
+ ],
+ "monster:dragon-turtle": [
+  "action-usage:recharge 5-6",
+  "action:melee-attack",
+  "action:melee-attack+save+prone",
+  "action:multiattack",
+  "action:save-effect+damage",
+  "resistances:plain",
+  "sense:darkvision",
+  "speed:swim",
+  "trait:amphibious"
+ ],
+ "monster:dretch": [
+  "action-usage:per-day",
+  "action:melee-attack",
+  "action:multiattack",
+  "action:save-effect",
+  "condition_immunities",
+  "immunities:plain",
+  "resistances:plain",
+  "sense:darkvision"
+ ],
+ "monster:drider": [
+  "action:melee-attack",
+  "action:multiattack",
+  "action:ranged-attack",
+  "sense:darkvision",
+  "speed:climb",
+  "trait:fey ancestry",
+  "trait:innate spellcasting",
+  "trait:spider climb",
+  "trait:sunlight sensitivity",
+  "trait:web walker"
+ ],
+ "monster:drow": [
+  "action:melee-attack",
+  "action:ranged-attack+save",
+  "sense:darkvision",
+  "trait:fey ancestry",
+  "trait:innate spellcasting",
+  "trait:sunlight sensitivity"
+ ],
+ "monster:druid": [
+  "ac:alternate",
+  "action:melee-attack",
+  "trait:spellcasting"
+ ],
+ "monster:dryad": [
+  "ac:alternate",
+  "action:melee-attack",
+  "action:save-effect",
+  "sense:darkvision",
+  "trait:innate spellcasting",
+  "trait:magic resistance",
+  "trait:speak with beasts and plants",
+  "trait:tree stride"
+ ],
+ "monster:duergar": [
+  "action-usage:recharge-after-rest",
+  "action:melee-attack",
+  "action:other:enlarge",
+  "action:other:invisibility",
+  "resistances:plain",
+  "sense:darkvision",
+  "trait:duergar resilience",
+  "trait:sunlight sensitivity"
+ ],
+ "monster:dust-mephit": [
+  "action-usage:recharge 6",
+  "action:melee-attack",
+  "action:save-effect",
+  "condition_immunities",
+  "immunities:plain",
+  "sense:darkvision",
+  "speed:fly",
+  "trait:death burst",
+  "trait:innate spellcasting",
+  "vulnerabilities:plain"
+ ],
+ "monster:eagle": [
+  "action:melee-attack",
+  "speed:fly",
+  "trait:keen sight"
+ ],
+ "monster:earth-elemental": [
+  "action:melee-attack",
+  "action:multiattack",
+  "condition_immunities",
+  "immunities:plain",
+  "resistances:nonmagical-clause",
+  "sense:darkvision",
+  "sense:tremorsense",
+  "speed:burrow",
+  "trait:earth glide",
+  "trait:siege monster",
+  "vulnerabilities:plain"
+ ],
+ "monster:efreeti": [
+  "action:melee-attack",
+  "action:multiattack",
+  "action:ranged-attack",
+  "immunities:plain",
+  "sense:darkvision",
+  "speed:fly",
+  "trait:elemental demise",
+  "trait:innate spellcasting"
+ ],
+ "monster:elephant": [
+  "action:melee-attack",
+  "trait:trampling charge"
+ ],
+ "monster:elk": [
+  "action:melee-attack",
+  "trait:charge"
+ ],
+ "monster:erinyes": [
+  "action:melee-attack",
+  "action:multiattack",
+  "action:ranged-attack+save",
+  "condition_immunities",
+  "immunities:plain",
+  "reaction:parry",
+  "resistances:nonmagical-clause",
+  "resistances:plain",
+  "sense:truesight",
+  "speed:fly",
+  "trait:hellish weapons",
+  "trait:magic resistance"
+ ],
+ "monster:ettercap": [
+  "action-usage:recharge 5-6",
+  "action:melee-attack",
+  "action:melee-attack+save",
+  "action:multiattack",
+  "action:ranged-attack",
+  "sense:darkvision",
+  "speed:climb",
+  "trait:spider climb",
+  "trait:web sense",
+  "trait:web walker"
+ ],
+ "monster:ettin": [
+  "action:melee-attack",
+  "action:multiattack",
+  "sense:darkvision",
+  "trait:two heads",
+  "trait:wakeful"
+ ],
+ "monster:fire-elemental": [
+  "action:melee-attack",
+  "action:multiattack",
+  "condition_immunities",
+  "immunities:plain",
+  "resistances:nonmagical-clause",
+  "sense:darkvision",
+  "trait:fire form",
+  "trait:illumination",
+  "trait:water susceptibility"
+ ],
+ "monster:fire-giant": [
+  "action:melee-attack",
+  "action:multiattack",
+  "action:ranged-attack",
+  "immunities:plain"
+ ],
+ "monster:flesh-golem": [
+  "action:melee-attack",
+  "action:multiattack",
+  "condition_immunities",
+  "immunities:nonmagical-clause",
+  "immunities:plain",
+  "sense:darkvision",
+  "trait:aversion of fire",
+  "trait:berserk",
+  "trait:immutable form",
+  "trait:lightning absorption",
+  "trait:magic resistance",
+  "trait:magic weapons"
+ ],
+ "monster:flying-snake": [
+  "action:melee-attack",
+  "sense:blindsight",
+  "speed:fly",
+  "speed:swim",
+  "trait:flyby"
+ ],
+ "monster:flying-sword": [
+  "action:melee-attack",
+  "condition_immunities",
+  "immunities:plain",
+  "sense:blindsight",
+  "speed:fly",
+  "speed:hover",
+  "trait:antimagic susceptibility",
+  "trait:false appearance"
+ ],
+ "monster:frog": [
+  "sense:darkvision",
+  "speed:swim",
+  "trait:amphibious",
+  "trait:standing leap"
+ ],
+ "monster:frost-giant": [
+  "action:melee-attack",
+  "action:multiattack",
+  "action:ranged-attack",
+  "immunities:plain"
+ ],
+ "monster:gargoyle": [
+  "action:melee-attack",
+  "action:multiattack",
+  "condition_immunities",
+  "immunities:plain",
+  "resistances:nonmagical-clause",
+  "sense:darkvision",
+  "speed:fly",
+  "trait:false appearance"
+ ],
+ "monster:gelatinous-cube": [
+  "action:melee-attack",
+  "action:save-effect+damage",
+  "condition_immunities",
+  "sense:blindsight",
+  "trait:ooze cube",
+  "trait:transparent"
+ ],
+ "monster:ghast": [
+  "action:melee-attack",
+  "action:melee-attack+save",
+  "condition_immunities",
+  "immunities:plain",
+  "resistances:plain",
+  "sense:darkvision",
+  "trait:stench",
+  "trait:turn defiance"
+ ],
+ "monster:ghost": [
+  "action-usage:recharge 6",
+  "action:melee-attack",
+  "action:other:etherealness",
+  "action:save-effect",
+  "condition_immunities",
+  "immunities:plain",
+  "resistances:nonmagical-clause",
+  "resistances:plain",
+  "sense:darkvision",
+  "speed:fly",
+  "speed:hover",
+  "trait:ethereal sight",
+  "trait:incorporeal movement"
+ ],
+ "monster:ghoul": [
+  "action:melee-attack",
+  "action:melee-attack+save",
+  "condition_immunities",
+  "immunities:plain",
+  "sense:darkvision"
+ ],
+ "monster:giant-ape": [
+  "action:melee-attack",
+  "action:multiattack",
+  "action:ranged-attack",
+  "speed:climb"
+ ],
+ "monster:giant-badger": [
+  "action:melee-attack",
+  "action:multiattack",
+  "sense:darkvision",
+  "speed:burrow",
+  "trait:keen smell"
+ ],
+ "monster:giant-bat": [
+  "action:melee-attack",
+  "sense:blindsight",
+  "speed:fly",
+  "trait:echolocation",
+  "trait:keen hearing"
+ ],
+ "monster:giant-boar": [
+  "action:melee-attack",
+  "trait:charge",
+  "trait:relentless",
+  "usage:recharge-after-rest"
+ ],
+ "monster:giant-centipede": [
+  "action:melee-attack+save",
+  "sense:blindsight",
+  "speed:climb"
+ ],
+ "monster:giant-constrictor-snake": [
+  "action:melee-attack",
+  "action:melee-attack+grapple",
+  "sense:blindsight",
+  "speed:swim"
+ ],
+ "monster:giant-crab": [
+  "action:melee-attack+grapple",
+  "sense:blindsight",
+  "speed:swim",
+  "trait:amphibious"
+ ],
+ "monster:giant-crocodile": [
+  "action:melee-attack+grapple",
+  "action:melee-attack+save+grapple+prone",
+  "action:multiattack",
+  "speed:swim",
+  "trait:hold breath"
+ ],
+ "monster:giant-eagle": [
+  "action:melee-attack",
+  "action:multiattack",
+  "speed:fly",
+  "trait:keen sight"
+ ],
+ "monster:giant-elk": [
+  "action:melee-attack",
+  "trait:charge"
+ ],
+ "monster:giant-fire-beetle": [
+  "action:melee-attack",
+  "sense:blindsight",
+  "trait:illumination"
+ ],
+ "monster:giant-frog": [
+  "action:melee-attack+grapple",
+  "action:other:swallow",
+  "sense:darkvision",
+  "speed:swim",
+  "trait:amphibious",
+  "trait:standing leap"
+ ],
+ "monster:giant-goat": [
+  "action:melee-attack",
+  "trait:charge",
+  "trait:sure-footed"
+ ],
+ "monster:giant-hyena": [
+  "action:melee-attack",
+  "trait:rampage"
+ ],
+ "monster:giant-lizard": [
+  "action:melee-attack",
+  "sense:darkvision",
+  "speed:climb"
+ ],
+ "monster:giant-octopus": [
+  "action-usage:recharge-after-rest",
+  "action:melee-attack+grapple",
+  "action:other:ink cloud",
+  "sense:darkvision",
+  "speed:swim",
+  "trait:hold breath",
+  "trait:underwater camouflage",
+  "trait:water breathing"
+ ],
+ "monster:giant-owl": [
+  "action:melee-attack",
+  "sense:darkvision",
+  "speed:fly",
+  "trait:flyby",
+  "trait:keen hearing and sight"
+ ],
+ "monster:giant-poisonous-snake": [
+  "action:melee-attack+save",
+  "sense:blindsight",
+  "speed:swim"
+ ],
+ "monster:giant-rat": [
+  "action:melee-attack",
+  "sense:darkvision",
+  "trait:keen smell",
+  "trait:pack tactics"
+ ],
+ "monster:giant-rat-diseased": [
+  "action:melee-attack+save",
+  "sense:darkvision",
+  "trait:keen smell",
+  "trait:pack tactics"
+ ],
+ "monster:giant-scorpion": [
+  "action:melee-attack+grapple",
+  "action:melee-attack+save",
+  "action:multiattack",
+  "sense:blindsight"
+ ],
+ "monster:giant-sea-horse": [
+  "action:melee-attack",
+  "speed:swim",
+  "trait:charge",
+  "trait:water breathing"
+ ],
+ "monster:giant-shark": [
+  "action:melee-attack",
+  "sense:blindsight",
+  "speed:swim",
+  "trait:blood frenzy",
+  "trait:water breathing"
+ ],
+ "monster:giant-spider": [
+  "action-usage:recharge 5-6",
+  "action:melee-attack+save",
+  "action:ranged-attack",
+  "sense:blindsight",
+  "sense:darkvision",
+  "speed:climb",
+  "trait:spider climb",
+  "trait:web sense",
+  "trait:web walker"
+ ],
+ "monster:giant-toad": [
+  "action:melee-attack+grapple",
+  "action:other:swallow",
+  "sense:darkvision",
+  "speed:swim",
+  "trait:amphibious",
+  "trait:standing leap"
+ ],
+ "monster:giant-vulture": [
+  "action:melee-attack",
+  "action:multiattack",
+  "speed:fly",
+  "trait:keen sight and smell",
+  "trait:pack tactics"
+ ],
+ "monster:giant-wasp": [
+  "action:melee-attack+save",
+  "speed:fly",
+  "speed:swim"
+ ],
+ "monster:giant-weasel": [
+  "action:melee-attack",
+  "sense:darkvision",
+  "trait:keen hearing and smell"
+ ],
+ "monster:giant-wolf-spider": [
+  "action:melee-attack+save",
+  "sense:blindsight",
+  "sense:darkvision",
+  "speed:climb",
+  "trait:spider climb",
+  "trait:web sense",
+  "trait:web walker"
+ ],
+ "monster:gibbering-mouther": [
+  "action-usage:recharge 5-6",
+  "action:melee-attack+save+prone",
+  "action:multiattack",
+  "action:save-effect",
+  "condition_immunities",
+  "sense:darkvision",
+  "speed:swim",
+  "trait:aberrant ground",
+  "trait:gibbering"
+ ],
+ "monster:glabrezu": [
+  "action:melee-attack",
+  "action:melee-attack+grapple",
+  "action:multiattack",
+  "condition_immunities",
+  "immunities:plain",
+  "resistances:nonmagical-clause",
+  "resistances:plain",
+  "sense:truesight",
+  "trait:innate spellcasting",
+  "trait:magic resistance"
+ ],
+ "monster:gladiator": [
+  "action:melee-attack",
+  "action:melee-attack+save+prone",
+  "action:multiattack",
+  "reaction:parry",
+  "trait:brave",
+  "trait:brute"
+ ],
+ "monster:gnoll": [
+  "action:melee-attack",
+  "action:ranged-attack",
+  "sense:darkvision",
+  "trait:rampage"
+ ],
+ "monster:goat": [
+  "action:melee-attack",
+  "trait:charge",
+  "trait:sure-footed"
+ ],
+ "monster:goblin": [
+  "action:melee-attack",
+  "action:ranged-attack",
+  "sense:darkvision",
+  "trait:nimble escape"
+ ],
+ "monster:gold-dragon-wyrmling": [
+  "action-usage:recharge 5-6",
+  "action:melee-attack",
+  "action:other:breath weapons",
+  "action:save-effect",
+  "action:save-effect+damage",
+  "immunities:plain",
+  "sense:blindsight",
+  "sense:darkvision",
+  "speed:fly",
+  "speed:swim",
+  "trait:amphibious"
+ ],
+ "monster:gorgon": [
+  "action-usage:recharge 5-6",
+  "action:melee-attack",
+  "action:save-effect",
+  "condition_immunities",
+  "sense:darkvision",
+  "trait:trampling charge"
+ ],
+ "monster:gray-ooze": [
+  "action:melee-attack",
+  "condition_immunities",
+  "resistances:plain",
+  "sense:blindsight",
+  "speed:climb",
+  "trait:amorphous",
+  "trait:corrode metal",
+  "trait:false appearance"
+ ],
+ "monster:green-dragon-wyrmling": [
+  "action-usage:recharge 5-6",
+  "action:melee-attack",
+  "action:save-effect+damage",
+  "condition_immunities",
+  "immunities:plain",
+  "sense:blindsight",
+  "sense:darkvision",
+  "speed:fly",
+  "speed:swim",
+  "trait:amphibious"
+ ],
+ "monster:green-hag": [
+  "action:melee-attack",
+  "action:other:illusory appearance",
+  "action:other:invisible passage",
+  "sense:darkvision",
+  "trait:amphibious",
+  "trait:innate spellcasting",
+  "trait:mimicry"
+ ],
+ "monster:grick": [
+  "action:melee-attack",
+  "action:multiattack",
+  "resistances:nonmagical-clause",
+  "sense:darkvision",
+  "speed:climb",
+  "trait:stone camouflage"
+ ],
+ "monster:griffon": [
+  "action:melee-attack",
+  "action:multiattack",
+  "sense:darkvision",
+  "speed:fly",
+  "trait:keen sight"
+ ],
+ "monster:grimlock": [
+  "action:melee-attack",
+  "condition_immunities",
+  "sense:blindsight",
+  "trait:blind senses",
+  "trait:keen hearing and smell",
+  "trait:stone camouflage"
+ ],
+ "monster:guard": [
+  "action:melee-attack"
+ ],
+ "monster:guardian-naga": [
+  "action:melee-attack+save",
+  "action:ranged-attack+save",
+  "condition_immunities",
+  "immunities:plain",
+  "sense:darkvision",
+  "trait:rejuvenation",
+  "trait:spellcasting"
+ ],
+ "monster:gynosphinx": [
+  "action:melee-attack",
+  "action:multiattack",
+  "condition_immunities",
+  "immunities:plain",
+  "legendary:actions",
+  "legendary:cost-1",
+  "legendary:cost-2",
+  "legendary:cost-3",
+  "resistances:nonmagical-clause",
+  "sense:truesight",
+  "speed:fly",
+  "trait:inscrutable",
+  "trait:magic weapons",
+  "trait:spellcasting"
+ ],
+ "monster:half-red-dragon-veteran": [
+  "action-usage:recharge 5-6",
+  "action:melee-attack",
+  "action:multiattack",
+  "action:ranged-attack",
+  "action:save-effect+damage",
+  "resistances:plain",
+  "sense:blindsight",
+  "sense:darkvision"
+ ],
+ "monster:harpy": [
+  "action:melee-attack",
+  "action:multiattack",
+  "action:save-effect",
+  "speed:fly"
+ ],
+ "monster:hawk": [
+  "action:melee-attack",
+  "speed:fly",
+  "trait:keen sight"
+ ],
+ "monster:hell-hound": [
+  "action-usage:recharge 5-6",
+  "action:melee-attack",
+  "action:save-effect+damage",
+  "immunities:plain",
+  "sense:darkvision",
+  "trait:keen hearing and smell",
+  "trait:pack tactics"
+ ],
+ "monster:hezrou": [
+  "action:melee-attack",
+  "action:multiattack",
+  "condition_immunities",
+  "immunities:plain",
+  "resistances:nonmagical-clause",
+  "resistances:plain",
+  "sense:darkvision",
+  "trait:magic resistance",
+  "trait:stench"
+ ],
+ "monster:hill-giant": [
+  "action:melee-attack",
+  "action:multiattack",
+  "action:ranged-attack"
+ ],
+ "monster:hippogriff": [
+  "action:melee-attack",
+  "action:multiattack",
+  "speed:fly",
+  "trait:keen sight"
+ ],
+ "monster:hobgoblin": [
+  "action:melee-attack",
+  "action:ranged-attack",
+  "sense:darkvision",
+  "trait:martial advantage"
+ ],
+ "monster:homunculus": [
+  "action:melee-attack+save",
+  "condition_immunities",
+  "immunities:plain",
+  "sense:darkvision",
+  "speed:fly",
+  "trait:telepathic bond"
+ ],
+ "monster:horned-devil": [
+  "action:melee-attack",
+  "action:melee-attack+save",
+  "action:multiattack",
+  "action:ranged-attack",
+  "condition_immunities",
+  "immunities:plain",
+  "resistances:nonmagical-clause",
+  "resistances:plain",
+  "sense:darkvision",
+  "speed:fly",
+  "trait:devil's sight",
+  "trait:magic resistance"
+ ],
+ "monster:hunter-shark": [
+  "action:melee-attack",
+  "sense:darkvision",
+  "speed:swim",
+  "trait:blood frenzy",
+  "trait:water breathing"
+ ],
+ "monster:hydra": [
+  "action:melee-attack",
+  "action:multiattack",
+  "sense:darkvision",
+  "speed:swim",
+  "trait:hold breath",
+  "trait:multiple heads",
+  "trait:reactive heads",
+  "trait:wakeful"
+ ],
+ "monster:hyena": [
+  "action:melee-attack",
+  "trait:pack tactics"
+ ],
+ "monster:ice-devil": [
+  "action:melee-attack",
+  "action:multiattack",
+  "action:save-effect",
+  "condition_immunities",
+  "immunities:plain",
+  "resistances:nonmagical-clause",
+  "sense:blindsight",
+  "sense:darkvision",
+  "trait:devil's sight",
+  "trait:magic resistance"
+ ],
+ "monster:ice-mephit": [
+  "action-usage:recharge 6",
+  "action:melee-attack",
+  "action:save-effect+damage",
+  "condition_immunities",
+  "immunities:plain",
+  "sense:darkvision",
+  "speed:fly",
+  "trait:death burst",
+  "trait:false appearance",
+  "trait:innate spellcasting",
+  "vulnerabilities:plain"
+ ],
+ "monster:imp": [
+  "action:melee-attack+save",
+  "action:other:invisibility",
+  "condition_immunities",
+  "immunities:plain",
+  "resistances:nonmagical-clause",
+  "resistances:plain",
+  "sense:darkvision",
+  "speed:fly",
+  "trait:devil's sight",
+  "trait:magic resistance",
+  "trait:shapechanger"
+ ],
+ "monster:invisible-stalker": [
+  "action:melee-attack",
+  "action:multiattack",
+  "condition_immunities",
+  "immunities:plain",
+  "resistances:nonmagical-clause",
+  "sense:darkvision",
+  "speed:fly",
+  "speed:hover",
+  "trait:faultless tracker",
+  "trait:invisibility"
+ ],
+ "monster:iron-golem": [
+  "action-usage:recharge 5-6",
+  "action:melee-attack",
+  "action:multiattack",
+  "action:save-effect+damage",
+  "condition_immunities",
+  "immunities:nonmagical-clause",
+  "immunities:plain",
+  "sense:darkvision",
+  "trait:fire absorption",
+  "trait:immutable form",
+  "trait:magic resistance",
+  "trait:magic weapons"
+ ],
+ "monster:jackal": [
+  "action:melee-attack",
+  "trait:keen hearing and smell",
+  "trait:pack tactics"
+ ],
+ "monster:killer-whale": [
+  "action:melee-attack",
+  "sense:blindsight",
+  "speed:swim",
+  "trait:echolocation",
+  "trait:hold breath",
+  "trait:keen hearing"
+ ],
+ "monster:knight": [
+  "action-usage:recharge-after-rest",
+  "action:melee-attack",
+  "action:multiattack",
+  "action:other:leadership",
+  "action:ranged-attack",
+  "reaction:parry",
+  "trait:brave"
+ ],
+ "monster:kobold": [
+  "action:melee-attack",
+  "action:ranged-attack",
+  "sense:darkvision",
+  "trait:pack tactics",
+  "trait:sunlight sensitivity"
+ ],
+ "monster:kraken": [
+  "action:melee-attack+grapple",
+  "action:melee-attack+save+grapple+swallow",
+  "action:multiattack",
+  "action:save-effect",
+  "action:save-effect+damage",
+  "condition_immunities",
+  "immunities:nonmagical-clause",
+  "immunities:plain",
+  "legendary:actions",
+  "legendary:cost-1",
+  "legendary:cost-2",
+  "legendary:cost-3",
+  "sense:truesight",
+  "speed:swim",
+  "trait:amphibious",
+  "trait:freedom of movement",
+  "trait:siege monster"
+ ],
+ "monster:lamia": [
+  "action:melee-attack",
+  "action:multiattack",
+  "sense:darkvision",
+  "trait:innate spellcasting"
+ ],
+ "monster:lemure": [
+  "action:melee-attack",
+  "condition_immunities",
+  "immunities:plain",
+  "resistances:plain",
+  "sense:darkvision",
+  "trait:devil's sight",
+  "trait:hellish rejuvenation"
+ ],
+ "monster:lich": [
+  "action:melee-attack+save",
+  "condition_immunities",
+  "immunities:nonmagical-clause",
+  "immunities:plain",
+  "legendary:actions",
+  "legendary:cost-1",
+  "legendary:cost-2",
+  "legendary:cost-3",
+  "resistances:plain",
+  "sense:truesight",
+  "trait:legendary resistance",
+  "trait:rejuvenation",
+  "trait:spellcasting",
+  "trait:turn resistance",
+  "usage:per-day"
+ ],
+ "monster:lion": [
+  "action:melee-attack",
+  "trait:keen smell",
+  "trait:pack tactics",
+  "trait:pounce",
+  "trait:running leap"
+ ],
+ "monster:lizard": [
+  "action:melee-attack",
+  "sense:darkvision",
+  "speed:climb"
+ ],
+ "monster:lizardfolk": [
+  "action:melee-attack",
+  "action:multiattack",
+  "speed:swim",
+  "trait:hold breath"
+ ],
+ "monster:mage": [
+  "ac:alternate",
+  "action:melee-attack",
+  "trait:spellcasting"
+ ],
+ "monster:magma-mephit": [
+  "action-usage:recharge 6",
+  "action:melee-attack",
+  "action:save-effect+damage",
+  "condition_immunities",
+  "immunities:plain",
+  "sense:darkvision",
+  "speed:fly",
+  "trait:death burst",
+  "trait:false appearance",
+  "trait:innate spellcasting",
+  "vulnerabilities:plain"
+ ],
+ "monster:magmin": [
+  "action:melee-attack",
+  "immunities:plain",
+  "resistances:nonmagical-clause",
+  "sense:darkvision",
+  "trait:death burst",
+  "trait:ignited illumination"
+ ],
+ "monster:mammoth": [
+  "action:melee-attack",
+  "trait:trampling charge"
+ ],
+ "monster:manticore": [
+  "action:melee-attack",
+  "action:multiattack",
+  "action:ranged-attack",
+  "sense:darkvision",
+  "speed:fly",
+  "trait:tail spike regrowth"
+ ],
+ "monster:marilith": [
+  "action:melee-attack",
+  "action:melee-attack+grapple",
+  "action:multiattack",
+  "action:other:teleport",
+  "condition_immunities",
+  "immunities:plain",
+  "reaction:parry",
+  "resistances:nonmagical-clause",
+  "resistances:plain",
+  "sense:truesight",
+  "trait:magic resistance",
+  "trait:magic weapons",
+  "trait:reactive"
+ ],
+ "monster:mastiff": [
+  "action:melee-attack+save+prone",
+  "trait:keen hearing and smell"
+ ],
+ "monster:medusa": [
+  "action:melee-attack",
+  "action:multiattack",
+  "action:ranged-attack",
+  "sense:darkvision",
+  "trait:petrifying gaze"
+ ],
+ "monster:merfolk": [
+  "action:melee-attack",
+  "speed:swim",
+  "trait:amphibious"
+ ],
+ "monster:merrow": [
+  "action:melee-attack",
+  "action:multiattack",
+  "sense:darkvision",
+  "speed:swim",
+  "trait:amphibious"
+ ],
+ "monster:mimic": [
+  "action:melee-attack",
+  "condition_immunities",
+  "immunities:plain",
+  "sense:darkvision",
+  "trait:adhesive",
+  "trait:false appearance",
+  "trait:grappler",
+  "trait:shapechanger"
+ ],
+ "monster:minotaur": [
+  "action:melee-attack",
+  "sense:darkvision",
+  "trait:charge",
+  "trait:labyrinthine recall",
+  "trait:reckless"
+ ],
+ "monster:minotaur-skeleton": [
+  "action:melee-attack",
+  "condition_immunities",
+  "immunities:plain",
+  "sense:darkvision",
+  "trait:charge",
+  "vulnerabilities:plain"
+ ],
+ "monster:mule": [
+  "action:melee-attack",
+  "trait:beast of burden",
+  "trait:sure-footed"
+ ],
+ "monster:mummy": [
+  "action:melee-attack+save",
+  "action:multiattack",
+  "action:save-effect",
+  "condition_immunities",
+  "immunities:plain",
+  "resistances:nonmagical-clause",
+  "sense:darkvision",
+  "vulnerabilities:plain"
+ ],
+ "monster:mummy-lord": [
+  "action:melee-attack+save",
+  "action:multiattack",
+  "action:save-effect",
+  "condition_immunities",
+  "immunities:nonmagical-clause",
+  "immunities:plain",
+  "legendary:actions",
+  "legendary:cost-1",
+  "legendary:cost-2",
+  "sense:darkvision",
+  "trait:magic resistance",
+  "trait:rejuvenation",
+  "trait:spellcasting",
+  "vulnerabilities:plain"
+ ],
+ "monster:nalfeshnee": [
+  "action-usage:recharge 5-6",
+  "action:melee-attack",
+  "action:multiattack",
+  "action:other:teleport",
+  "action:save-effect",
+  "condition_immunities",
+  "immunities:plain",
+  "resistances:nonmagical-clause",
+  "resistances:plain",
+  "sense:truesight",
+  "speed:fly",
+  "trait:magic resistance"
+ ],
+ "monster:night-hag": [
+  "action-usage:per-day",
+  "action:melee-attack",
+  "action:other:change shape",
+  "action:other:etherealness",
+  "action:other:nightmare haunting",
+  "condition_immunities",
+  "resistances:nonmagical-clause",
+  "resistances:plain",
+  "sense:darkvision",
+  "trait:innate spellcasting",
+  "trait:magic resistance",
+  "trait:night hag items"
+ ],
+ "monster:nightmare": [
+  "action:melee-attack",
+  "action:other:ethereal stride",
+  "immunities:plain",
+  "speed:fly",
+  "trait:confer fire resistance",
+  "trait:illumination"
+ ],
+ "monster:noble": [
+  "action:melee-attack",
+  "reaction:parry"
+ ],
+ "monster:ochre-jelly": [
+  "action:melee-attack",
+  "condition_immunities",
+  "immunities:plain",
+  "reaction:split",
+  "resistances:plain",
+  "sense:blindsight",
+  "speed:climb",
+  "trait:amorphous",
+  "trait:spider climb"
+ ],
+ "monster:octopus": [
+  "action-usage:recharge-after-rest",
+  "action:melee-attack+grapple",
+  "action:ranged-attack",
+  "sense:darkvision",
+  "speed:swim",
+  "trait:hold breath",
+  "trait:underwater camouflage",
+  "trait:water breathing"
+ ],
+ "monster:ogre": [
+  "action:melee-attack",
+  "sense:darkvision"
+ ],
+ "monster:ogre-zombie": [
+  "action:melee-attack",
+  "condition_immunities",
+  "immunities:plain",
+  "sense:darkvision",
+  "trait:undead fortitude"
+ ],
+ "monster:oni": [
+  "action:melee-attack",
+  "action:multiattack",
+  "action:other:change shape",
+  "sense:darkvision",
+  "speed:fly",
+  "trait:innate spellcasting",
+  "trait:magic weapons",
+  "trait:regeneration"
+ ],
+ "monster:orc": [
+  "action:melee-attack",
+  "sense:darkvision",
+  "trait:aggressive"
+ ],
+ "monster:otyugh": [
+  "action:melee-attack+grapple",
+  "action:melee-attack+save",
+  "action:multiattack",
+  "action:save-effect",
+  "sense:darkvision",
+  "trait:limited telepathy"
+ ],
+ "monster:owl": [
+  "action:melee-attack",
+  "sense:darkvision",
+  "speed:fly",
+  "trait:flyby",
+  "trait:keen hearing and sight"
+ ],
+ "monster:owlbear": [
+  "action:melee-attack",
+  "action:multiattack",
+  "sense:darkvision",
+  "trait:keen sight and smell"
+ ],
+ "monster:panther": [
+  "action:melee-attack",
+  "speed:climb",
+  "trait:keen smell",
+  "trait:pounce"
+ ],
+ "monster:pegasus": [
+  "action:melee-attack",
+  "speed:fly"
+ ],
+ "monster:phase-spider": [
+  "action:melee-attack+save",
+  "sense:darkvision",
+  "speed:climb",
+  "trait:ethereal jaunt",
+  "trait:spider climb",
+  "trait:web walker"
+ ],
+ "monster:pit-fiend": [
+  "action:melee-attack",
+  "action:melee-attack+save",
+  "action:multiattack",
+  "condition_immunities",
+  "immunities:plain",
+  "resistances:nonmagical-clause",
+  "resistances:plain",
+  "sense:truesight",
+  "speed:fly",
+  "trait:fear aura",
+  "trait:innate spellcasting",
+  "trait:magic resistance",
+  "trait:magic weapons"
+ ],
+ "monster:planetar": [
+  "action-usage:per-day",
+  "action:melee-attack",
+  "action:multiattack",
+  "action:other:healing touch",
+  "condition_immunities",
+  "resistances:nonmagical-clause",
+  "resistances:plain",
+  "sense:truesight",
+  "speed:fly",
+  "trait:angelic weapons",
+  "trait:divine awareness",
+  "trait:innate spellcasting",
+  "trait:magic resistance"
+ ],
+ "monster:plesiosaurus": [
+  "action:melee-attack",
+  "speed:swim",
+  "trait:hold breath"
+ ],
+ "monster:poisonous-snake": [
+  "action:melee-attack+save",
+  "sense:blindsight",
+  "speed:swim"
+ ],
+ "monster:polar-bear": [
+  "action:melee-attack",
+  "action:multiattack",
+  "speed:swim",
+  "trait:keen smell"
+ ],
+ "monster:pony": [
+  "action:melee-attack"
+ ],
+ "monster:priest": [
+  "action:melee-attack",
+  "trait:divine eminence",
+  "trait:spellcasting"
+ ],
+ "monster:pseudodragon": [
+  "action:melee-attack",
+  "action:melee-attack+save",
+  "sense:blindsight",
+  "sense:darkvision",
+  "speed:fly",
+  "trait:keen senses",
+  "trait:limited telepathy",
+  "trait:magic resistance"
+ ],
+ "monster:purple-worm": [
+  "action:melee-attack+save",
+  "action:melee-attack+save+swallow",
+  "action:multiattack",
+  "sense:blindsight",
+  "sense:tremorsense",
+  "speed:burrow",
+  "trait:tunneler"
+ ],
+ "monster:quasit": [
+  "action-usage:per-day",
+  "action:melee-attack+save",
+  "action:other:invisibility",
+  "action:save-effect",
+  "condition_immunities",
+  "immunities:plain",
+  "resistances:nonmagical-clause",
+  "resistances:plain",
+  "sense:darkvision",
+  "trait:magic resistance",
+  "trait:shapechanger"
+ ],
+ "monster:quipper": [
+  "action:melee-attack",
+  "sense:darkvision",
+  "speed:swim",
+  "trait:blood frenzy",
+  "trait:water breathing"
+ ],
+ "monster:rakshasa": [
+  "action:melee-attack",
+  "action:multiattack",
+  "immunities:nonmagical-clause",
+  "sense:darkvision",
+  "trait:innate spellcasting",
+  "trait:limited magic immunity",
+  "vulnerabilities:plain"
+ ],
+ "monster:rat": [
+  "action:melee-attack",
+  "sense:darkvision",
+  "trait:keen smell"
+ ],
+ "monster:raven": [
+  "action:melee-attack",
+  "speed:fly",
+  "trait:mimicry"
+ ],
+ "monster:red-dragon-wyrmling": [
+  "action-usage:recharge 5-6",
+  "action:melee-attack",
+  "action:save-effect+damage",
+  "immunities:plain",
+  "sense:blindsight",
+  "sense:darkvision",
+  "speed:climb",
+  "speed:fly"
+ ],
+ "monster:reef-shark": [
+  "action:melee-attack",
+  "sense:blindsight",
+  "speed:swim",
+  "trait:pack tactics",
+  "trait:water breathing"
+ ],
+ "monster:remorhaz": [
+  "action:melee-attack+grapple",
+  "action:save-effect",
+  "immunities:plain",
+  "sense:darkvision",
+  "sense:tremorsense",
+  "speed:burrow",
+  "trait:heated body"
+ ],
+ "monster:rhinoceros": [
+  "action:melee-attack",
+  "trait:charge"
+ ],
+ "monster:riding-horse": [
+  "action:melee-attack"
+ ],
+ "monster:roc": [
+  "action:melee-attack",
+  "action:melee-attack+grapple",
+  "action:multiattack",
+  "speed:fly",
+  "trait:keen sight"
+ ],
+ "monster:roper": [
+  "action:melee-attack",
+  "action:melee-attack+grapple",
+  "action:multiattack",
+  "action:other:reel",
+  "sense:darkvision",
+  "speed:climb",
+  "trait:false appearance",
+  "trait:grasping tendrils",
+  "trait:spider climb"
+ ],
+ "monster:rug-of-smothering": [
+  "action:melee-attack+grapple",
+  "condition_immunities",
+  "immunities:plain",
+  "sense:blindsight",
+  "trait:antimagic susceptibility",
+  "trait:damage transfer",
+  "trait:false appearance"
+ ],
+ "monster:rust-monster": [
+  "action:melee-attack",
+  "action:save-effect",
+  "sense:darkvision",
+  "trait:iron scent",
+  "trait:rust metal"
+ ],
+ "monster:saber-toothed-tiger": [
+  "action:melee-attack",
+  "trait:keen smell",
+  "trait:pounce"
+ ],
+ "monster:sahuagin": [
+  "action:melee-attack",
+  "action:multiattack",
+  "sense:darkvision",
+  "speed:swim",
+  "trait:blood frenzy",
+  "trait:limited amphibiousness",
+  "trait:shark telepathy"
+ ],
+ "monster:salamander": [
+  "action:melee-attack",
+  "action:melee-attack+grapple",
+  "action:multiattack",
+  "immunities:plain",
+  "resistances:nonmagical-clause",
+  "sense:darkvision",
+  "trait:heated body",
+  "trait:heated weapons",
+  "vulnerabilities:plain"
+ ],
+ "monster:satyr": [
+  "action:melee-attack",
+  "action:ranged-attack",
+  "trait:magic resistance"
+ ],
+ "monster:scorpion": [
+  "action:melee-attack+save",
+  "sense:blindsight"
+ ],
+ "monster:scout": [
+  "action:melee-attack",
+  "action:multiattack",
+  "action:ranged-attack",
+  "trait:keen hearing and sight"
+ ],
+ "monster:sea-hag": [
+  "action:melee-attack",
+  "action:other:illusory appearance",
+  "action:save-effect",
+  "sense:darkvision",
+  "speed:swim",
+  "trait:amphibious",
+  "trait:horrific appearance"
+ ],
+ "monster:sea-horse": [
+  "speed:swim",
+  "trait:water breathing"
+ ],
+ "monster:shadow": [
+  "action:melee-attack",
+  "condition_immunities",
+  "immunities:plain",
+  "resistances:nonmagical-clause",
+  "resistances:plain",
+  "sense:darkvision",
+  "trait:amorphous",
+  "trait:shadow stealth",
+  "trait:sunlight weakness",
+  "vulnerabilities:plain"
+ ],
+ "monster:shambling-mound": [
+  "action:melee-attack",
+  "action:multiattack",
+  "action:save-effect",
+  "condition_immunities",
+  "immunities:plain",
+  "resistances:plain",
+  "sense:blindsight",
+  "speed:swim",
+  "trait:lightning absorption"
+ ],
+ "monster:shield-guardian": [
+  "action:melee-attack",
+  "action:multiattack",
+  "condition_immunities",
+  "immunities:plain",
+  "reaction:shield",
+  "sense:blindsight",
+  "sense:darkvision",
+  "trait:bound",
+  "trait:regeneration",
+  "trait:spell storing"
+ ],
+ "monster:shrieker": [
+  "condition_immunities",
+  "reaction:shriek",
+  "sense:blindsight",
+  "trait:false appearance"
+ ],
+ "monster:silver-dragon-wyrmling": [
+  "action-usage:recharge 5-6",
+  "action:melee-attack",
+  "action:other:breath weapons",
+  "action:save-effect",
+  "action:save-effect+damage",
+  "immunities:plain",
+  "sense:blindsight",
+  "sense:darkvision",
+  "speed:fly"
+ ],
+ "monster:skeleton": [
+  "action:melee-attack",
+  "action:ranged-attack",
+  "condition_immunities",
+  "immunities:plain",
+  "sense:darkvision",
+  "vulnerabilities:plain"
+ ],
+ "monster:solar": [
+  "action-usage:per-day",
+  "action:melee-attack",
+  "action:multiattack",
+  "action:other:flying sword",
+  "action:other:healing touch",
+  "action:ranged-attack+save",
+  "condition_immunities",
+  "immunities:plain",
+  "legendary:actions",
+  "legendary:cost-1",
+  "legendary:cost-2",
+  "legendary:cost-3",
+  "resistances:nonmagical-clause",
+  "resistances:plain",
+  "sense:truesight",
+  "speed:fly",
+  "trait:angelic weapons",
+  "trait:divine awareness",
+  "trait:innate spellcasting",
+  "trait:magic resistance"
+ ],
+ "monster:specter": [
+  "action:melee-attack+save",
+  "condition_immunities",
+  "immunities:plain",
+  "resistances:nonmagical-clause",
+  "resistances:plain",
+  "sense:darkvision",
+  "speed:fly",
+  "speed:hover",
+  "trait:incorporeal movement",
+  "trait:sunlight sensitivity"
+ ],
+ "monster:spider": [
+  "action:melee-attack+save",
+  "sense:darkvision",
+  "speed:climb",
+  "trait:spider climb",
+  "trait:web sense",
+  "trait:web walker"
+ ],
+ "monster:spirit-naga": [
+  "action:melee-attack+save",
+  "condition_immunities",
+  "immunities:plain",
+  "sense:darkvision",
+  "trait:rejuvenation",
+  "trait:spellcasting"
+ ],
+ "monster:sprite": [
+  "action:melee-attack",
+  "action:other:invisibility",
+  "action:ranged-attack+save",
+  "action:save-effect",
+  "speed:fly"
+ ],
+ "monster:spy": [
+  "action:melee-attack",
+  "action:multiattack",
+  "action:ranged-attack",
+  "trait:cunning action",
+  "trait:sneak attack"
+ ],
+ "monster:steam-mephit": [
+  "action-usage:recharge 6",
+  "action:melee-attack",
+  "action:save-effect+damage",
+  "condition_immunities",
+  "immunities:plain",
+  "sense:darkvision",
+  "speed:fly",
+  "trait:death burst",
+  "trait:innate spellcasting"
+ ],
+ "monster:stirge": [
+  "action:melee-attack",
+  "sense:darkvision",
+  "speed:fly"
+ ],
+ "monster:stone-giant": [
+  "action:melee-attack",
+  "action:multiattack",
+  "action:ranged-attack+save+prone",
+  "reaction:rock catching",
+  "sense:darkvision",
+  "trait:stone camouflage"
+ ],
+ "monster:stone-golem": [
+  "action-usage:recharge 5-6",
+  "action:melee-attack",
+  "action:multiattack",
+  "action:save-effect",
+  "condition_immunities",
+  "immunities:nonmagical-clause",
+  "immunities:plain",
+  "sense:darkvision",
+  "trait:immutable form",
+  "trait:magic resistance",
+  "trait:magic weapons"
+ ],
+ "monster:storm-giant": [
+  "action-usage:recharge 5-6",
+  "action:melee-attack",
+  "action:multiattack",
+  "action:ranged-attack",
+  "action:save-effect+damage",
+  "immunities:plain",
+  "resistances:plain",
+  "speed:swim",
+  "trait:amphibious",
+  "trait:innate spellcasting"
+ ],
+ "monster:succubus-incubus": [
+  "action:melee-attack",
+  "action:other:etherealness",
+  "action:save-effect",
+  "action:save-effect+damage",
+  "resistances:nonmagical-clause",
+  "resistances:plain",
+  "sense:darkvision",
+  "speed:fly",
+  "trait:shapechanger",
+  "trait:telepathic bond"
+ ],
+ "monster:swarm-of-bats": [
+  "action:melee-attack",
+  "condition_immunities",
+  "resistances:plain",
+  "sense:blindsight",
+  "speed:fly",
+  "trait:echolocation",
+  "trait:keen hearing",
+  "trait:swarm"
+ ],
+ "monster:swarm-of-beetles": [
+  "action:melee-attack",
+  "condition_immunities",
+  "resistances:plain",
+  "sense:blindsight",
+  "speed:burrow",
+  "speed:climb",
+  "trait:swarm"
+ ],
+ "monster:swarm-of-centipedes": [
+  "action:melee-attack",
+  "condition_immunities",
+  "resistances:plain",
+  "sense:blindsight",
+  "speed:climb",
+  "trait:swarm"
+ ],
+ "monster:swarm-of-insects": [
+  "action:melee-attack",
+  "condition_immunities",
+  "resistances:plain",
+  "sense:blindsight",
+  "speed:climb",
+  "trait:swarm"
+ ],
+ "monster:swarm-of-poisonous-snakes": [
+  "action:melee-attack+save",
+  "condition_immunities",
+  "resistances:plain",
+  "sense:blindsight",
+  "speed:swim",
+  "trait:swarm"
+ ],
+ "monster:swarm-of-quippers": [
+  "action:melee-attack",
+  "condition_immunities",
+  "resistances:plain",
+  "sense:darkvision",
+  "speed:swim",
+  "trait:blood frenzy",
+  "trait:swarm",
+  "trait:water breathing"
+ ],
+ "monster:swarm-of-rats": [
+  "action:melee-attack",
+  "condition_immunities",
+  "resistances:plain",
+  "sense:darkvision",
+  "trait:keen smell",
+  "trait:swarm"
+ ],
+ "monster:swarm-of-ravens": [
+  "action:melee-attack",
+  "condition_immunities",
+  "resistances:plain",
+  "speed:fly",
+  "trait:swarm"
+ ],
+ "monster:swarm-of-spiders": [
+  "action:melee-attack",
+  "condition_immunities",
+  "resistances:plain",
+  "sense:blindsight",
+  "speed:climb",
+  "trait:spider climb",
+  "trait:swarm",
+  "trait:web sense",
+  "trait:web walker"
+ ],
+ "monster:swarm-of-wasps": [
+  "action:melee-attack",
+  "condition_immunities",
+  "resistances:plain",
+  "sense:blindsight",
+  "speed:fly",
+  "trait:swarm"
+ ],
+ "monster:tarrasque": [
+  "action:melee-attack",
+  "action:melee-attack+grapple",
+  "action:melee-attack+save+prone",
+  "action:multiattack",
+  "action:save-effect",
+  "condition_immunities",
+  "immunities:nonmagical-clause",
+  "immunities:plain",
+  "legendary:actions",
+  "legendary:cost-1",
+  "legendary:cost-2",
+  "sense:blindsight",
+  "trait:legendary resistance",
+  "trait:magic resistance",
+  "trait:reflective carapace",
+  "trait:siege monster",
+  "usage:per-day"
+ ],
+ "monster:thug": [
+  "action:melee-attack",
+  "action:multiattack",
+  "action:ranged-attack",
+  "trait:pack tactics"
+ ],
+ "monster:tiger": [
+  "action:melee-attack",
+  "sense:darkvision",
+  "trait:keen smell",
+  "trait:pounce"
+ ],
+ "monster:treant": [
+  "action-usage:per-day",
+  "action:melee-attack",
+  "action:multiattack",
+  "action:other:animate trees",
+  "action:ranged-attack",
+  "resistances:plain",
+  "trait:false appearance",
+  "trait:siege monster",
+  "vulnerabilities:plain"
+ ],
+ "monster:tribal-warrior": [
+  "action:melee-attack",
+  "trait:pack tactics"
+ ],
+ "monster:triceratops": [
+  "action:melee-attack",
+  "trait:trampling charge"
+ ],
+ "monster:troll": [
+  "action:melee-attack",
+  "action:multiattack",
+  "sense:darkvision",
+  "trait:keen smell",
+  "trait:regeneration"
+ ],
+ "monster:tyrannosaurus-rex": [
+  "action:melee-attack",
+  "action:melee-attack+grapple",
+  "action:multiattack"
+ ],
+ "monster:unicorn": [
+  "action-usage:per-day",
+  "action:melee-attack",
+  "action:multiattack",
+  "action:other:healing touch",
+  "action:other:teleport",
+  "condition_immunities",
+  "immunities:plain",
+  "legendary:actions",
+  "legendary:cost-1",
+  "legendary:cost-2",
+  "legendary:cost-3",
+  "sense:darkvision",
+  "trait:charge",
+  "trait:innate spellcasting",
+  "trait:magic resistance",
+  "trait:magic weapons"
+ ],
+ "monster:vampire-bat": [
+  "action-usage:per-day",
+  "action:melee-attack+grapple",
+  "action:other:children of the night",
+  "action:save-effect",
+  "legendary:actions",
+  "legendary:cost-1",
+  "legendary:cost-2",
+  "resistances:nonmagical-clause",
+  "resistances:plain",
+  "sense:darkvision",
+  "speed:fly",
+  "trait:legendary resistance",
+  "trait:misty escape",
+  "trait:regeneration",
+  "trait:shapechanger",
+  "trait:spider climb",
+  "trait:vampire weaknesses",
+  "usage:per-day"
+ ],
+ "monster:vampire-mist": [
+  "legendary:actions",
+  "legendary:cost-1",
+  "legendary:cost-2",
+  "resistances:nonmagical-clause",
+  "resistances:plain",
+  "sense:darkvision",
+  "speed:fly",
+  "trait:legendary resistance",
+  "trait:misty escape",
+  "trait:regeneration",
+  "trait:shapechanger",
+  "trait:spider climb",
+  "trait:vampire weaknesses",
+  "usage:per-day"
+ ],
+ "monster:vampire-spawn": [
+  "action:melee-attack",
+  "action:melee-attack+grapple",
+  "action:multiattack",
+  "resistances:nonmagical-clause",
+  "resistances:plain",
+  "sense:darkvision",
+  "trait:regeneration",
+  "trait:spider climb",
+  "trait:vampire weaknesses"
+ ],
+ "monster:vampire-vampire": [
+  "action-usage:per-day",
+  "action:melee-attack",
+  "action:melee-attack+grapple",
+  "action:multiattack",
+  "action:other:children of the night",
+  "action:save-effect",
+  "legendary:actions",
+  "legendary:cost-1",
+  "legendary:cost-2",
+  "resistances:nonmagical-clause",
+  "resistances:plain",
+  "sense:darkvision",
+  "trait:legendary resistance",
+  "trait:misty escape",
+  "trait:regeneration",
+  "trait:shapechanger",
+  "trait:spider climb",
+  "trait:vampire weaknesses",
+  "usage:per-day"
+ ],
+ "monster:veteran": [
+  "action:melee-attack",
+  "action:multiattack",
+  "action:ranged-attack"
+ ],
+ "monster:violet-fungus": [
+  "action:melee-attack",
+  "action:multiattack",
+  "condition_immunities",
+  "sense:blindsight",
+  "trait:false appearance"
+ ],
+ "monster:vrock": [
+  "action-usage:per-day",
+  "action-usage:recharge 6",
+  "action:melee-attack",
+  "action:multiattack",
+  "action:save-effect",
+  "condition_immunities",
+  "immunities:plain",
+  "resistances:nonmagical-clause",
+  "resistances:plain",
+  "sense:darkvision",
+  "speed:fly",
+  "trait:magic resistance"
+ ],
+ "monster:vulture": [
+  "action:melee-attack",
+  "speed:fly",
+  "trait:keen sight and smell",
+  "trait:pack tactics"
+ ],
+ "monster:warhorse": [
+  "action:melee-attack",
+  "trait:trampling charge"
+ ],
+ "monster:warhorse-skeleton": [
+  "action:melee-attack",
+  "condition_immunities",
+  "immunities:plain",
+  "sense:darkvision",
+  "vulnerabilities:plain"
+ ],
+ "monster:water-elemental": [
+  "action-usage:recharge 4-6",
+  "action:melee-attack",
+  "action:multiattack",
+  "action:save-effect+damage",
+  "condition_immunities",
+  "immunities:plain",
+  "resistances:nonmagical-clause",
+  "resistances:plain",
+  "sense:darkvision",
+  "speed:swim",
+  "trait:freeze",
+  "trait:water form"
+ ],
+ "monster:weasel": [
+  "action:melee-attack",
+  "trait:keen hearing and smell"
+ ],
+ "monster:werebear-bear": [
+  "action:melee-attack",
+  "action:melee-attack+save",
+  "action:multiattack",
+  "immunities:nonmagical-clause",
+  "speed:climb",
+  "trait:keen smell",
+  "trait:shapechanger"
+ ],
+ "monster:werebear-human": [
+  "action:melee-attack",
+  "action:multiattack",
+  "immunities:nonmagical-clause",
+  "trait:keen smell",
+  "trait:shapechanger"
+ ],
+ "monster:werebear-hybrid": [
+  "action:melee-attack",
+  "action:melee-attack+save",
+  "action:multiattack",
+  "immunities:nonmagical-clause",
+  "speed:climb",
+  "trait:keen smell",
+  "trait:shapechanger"
+ ],
+ "monster:wereboar-boar": [
+  "action:melee-attack+save",
+  "immunities:nonmagical-clause",
+  "trait:charge",
+  "trait:relentless",
+  "trait:shapechanger",
+  "usage:recharge-after-rest"
+ ],
+ "monster:wereboar-human": [
+  "action:melee-attack",
+  "action:multiattack",
+  "immunities:nonmagical-clause",
+  "trait:relentless",
+  "trait:shapechanger",
+  "usage:recharge-after-rest"
+ ],
+ "monster:wereboar-hybrid": [
+  "action:melee-attack",
+  "action:melee-attack+save",
+  "action:multiattack",
+  "immunities:nonmagical-clause",
+  "trait:charge",
+  "trait:relentless",
+  "trait:shapechanger",
+  "usage:recharge-after-rest"
+ ],
+ "monster:wererat-human": [
+  "action:melee-attack",
+  "action:multiattack",
+  "action:ranged-attack",
+  "immunities:nonmagical-clause",
+  "trait:keen smell",
+  "trait:shapechanger"
+ ],
+ "monster:wererat-hybrid": [
+  "action:melee-attack",
+  "action:melee-attack+save",
+  "action:multiattack",
+  "action:ranged-attack",
+  "immunities:nonmagical-clause",
+  "trait:keen smell",
+  "trait:shapechanger"
+ ],
+ "monster:wererat-rat": [
+  "action:melee-attack+save",
+  "immunities:nonmagical-clause",
+  "sense:darkvision",
+  "trait:keen smell",
+  "trait:shapechanger"
+ ],
+ "monster:weretiger-human": [
+  "action:melee-attack",
+  "action:multiattack",
+  "action:ranged-attack",
+  "immunities:nonmagical-clause",
+  "sense:darkvision",
+  "trait:keen hearing and smell",
+  "trait:shapechanger"
+ ],
+ "monster:weretiger-hybrid": [
+  "action:melee-attack",
+  "action:melee-attack+save",
+  "action:multiattack",
+  "action:ranged-attack",
+  "immunities:nonmagical-clause",
+  "sense:darkvision",
+  "trait:keen hearing and smell",
+  "trait:pounce",
+  "trait:shapechanger"
+ ],
+ "monster:weretiger-tiger": [
+  "action:melee-attack",
+  "action:melee-attack+save",
+  "immunities:nonmagical-clause",
+  "sense:darkvision",
+  "trait:keen hearing and smell",
+  "trait:pounce",
+  "trait:shapechanger"
+ ],
+ "monster:werewolf-human": [
+  "action:melee-attack",
+  "action:multiattack",
+  "immunities:nonmagical-clause",
+  "trait:keen hearing and smell",
+  "trait:shapechanger"
+ ],
+ "monster:werewolf-hybrid": [
+  "action:melee-attack",
+  "action:melee-attack+save",
+  "action:multiattack",
+  "immunities:nonmagical-clause",
+  "trait:keen hearing and smell",
+  "trait:shapechanger"
+ ],
+ "monster:werewolf-wolf": [
+  "action:melee-attack+save",
+  "immunities:nonmagical-clause",
+  "trait:keen hearing and smell",
+  "trait:shapechanger"
+ ],
+ "monster:white-dragon-wyrmling": [
+  "action-usage:recharge 5-6",
+  "action:melee-attack",
+  "action:save-effect+damage",
+  "immunities:plain",
+  "sense:blindsight",
+  "sense:darkvision",
+  "speed:burrow",
+  "speed:fly",
+  "speed:swim"
+ ],
+ "monster:wight": [
+  "action:melee-attack",
+  "action:melee-attack+save",
+  "action:multiattack",
+  "action:ranged-attack",
+  "condition_immunities",
+  "immunities:plain",
+  "resistances:nonmagical-clause",
+  "resistances:plain",
+  "sense:darkvision",
+  "trait:sunlight sensitivity"
+ ],
+ "monster:will-o-wisp": [
+  "action:melee-attack",
+  "action:other:invisibility",
+  "condition_immunities",
+  "immunities:plain",
+  "resistances:nonmagical-clause",
+  "resistances:plain",
+  "sense:darkvision",
+  "speed:fly",
+  "speed:hover",
+  "trait:consume life",
+  "trait:ephemeral",
+  "trait:incorporeal movement",
+  "trait:variable illumination"
+ ],
+ "monster:winter-wolf": [
+  "action-usage:recharge 5-6",
+  "action:melee-attack+save+prone",
+  "action:save-effect+damage",
+  "immunities:plain",
+  "trait:keen hearing and smell",
+  "trait:pack tactics",
+  "trait:snow camouflage"
+ ],
+ "monster:wolf": [
+  "action:melee-attack+save+prone",
+  "trait:keen hearing and smell",
+  "trait:pack tactics"
+ ],
+ "monster:worg": [
+  "action:melee-attack+save+prone",
+  "sense:darkvision",
+  "trait:keen hearing and smell"
+ ],
+ "monster:wraith": [
+  "action:melee-attack+save",
+  "action:other:create specter",
+  "condition_immunities",
+  "immunities:plain",
+  "resistances:nonmagical-clause",
+  "resistances:plain",
+  "sense:darkvision",
+  "speed:fly",
+  "speed:hover",
+  "trait:incorporeal movement",
+  "trait:sunlight sensitivity"
+ ],
+ "monster:wyvern": [
+  "action:melee-attack",
+  "action:melee-attack+save",
+  "action:multiattack",
+  "sense:darkvision",
+  "speed:fly"
+ ],
+ "monster:xorn": [
+  "action:melee-attack",
+  "action:multiattack",
+  "resistances:nonmagical-clause",
+  "sense:darkvision",
+  "sense:tremorsense",
+  "speed:burrow",
+  "trait:earth glide",
+  "trait:stone camouflage",
+  "trait:treasure sense"
+ ],
+ "monster:young-black-dragon": [
+  "action-usage:recharge 5-6",
+  "action:melee-attack",
+  "action:multiattack",
+  "action:save-effect+damage",
+  "immunities:plain",
+  "sense:blindsight",
+  "sense:darkvision",
+  "speed:fly",
+  "speed:swim",
+  "trait:amphibious"
+ ],
+ "monster:young-blue-dragon": [
+  "action-usage:recharge 5-6",
+  "action:melee-attack",
+  "action:multiattack",
+  "action:save-effect+damage",
+  "immunities:plain",
+  "sense:blindsight",
+  "sense:darkvision",
+  "speed:burrow",
+  "speed:fly"
+ ],
+ "monster:young-brass-dragon": [
+  "action-usage:recharge 5-6",
+  "action:melee-attack",
+  "action:multiattack",
+  "action:other:breath weapons",
+  "action:save-effect",
+  "action:save-effect+damage",
+  "immunities:plain",
+  "sense:blindsight",
+  "sense:darkvision",
+  "speed:burrow",
+  "speed:fly"
+ ],
+ "monster:young-bronze-dragon": [
+  "action-usage:recharge 5-6",
+  "action:melee-attack",
+  "action:multiattack",
+  "action:other:breath weapons",
+  "action:save-effect",
+  "action:save-effect+damage",
+  "immunities:plain",
+  "sense:blindsight",
+  "sense:darkvision",
+  "speed:fly",
+  "speed:swim",
+  "trait:amphibious"
+ ],
+ "monster:young-copper-dragon": [
+  "action-usage:recharge 5-6",
+  "action:melee-attack",
+  "action:multiattack",
+  "action:other:breath weapons",
+  "action:save-effect",
+  "action:save-effect+damage",
+  "immunities:plain",
+  "sense:blindsight",
+  "sense:darkvision",
+  "speed:climb",
+  "speed:fly"
+ ],
+ "monster:young-gold-dragon": [
+  "action-usage:recharge 5-6",
+  "action:melee-attack",
+  "action:multiattack",
+  "action:other:breath weapons",
+  "action:save-effect",
+  "action:save-effect+damage",
+  "immunities:plain",
+  "sense:blindsight",
+  "sense:darkvision",
+  "speed:fly",
+  "speed:swim",
+  "trait:amphibious"
+ ],
+ "monster:young-green-dragon": [
+  "action-usage:recharge 5-6",
+  "action:melee-attack",
+  "action:multiattack",
+  "action:save-effect+damage",
+  "condition_immunities",
+  "immunities:plain",
+  "sense:blindsight",
+  "sense:darkvision",
+  "speed:fly",
+  "speed:swim",
+  "trait:amphibious"
+ ],
+ "monster:young-red-dragon": [
+  "action-usage:recharge 5-6",
+  "action:melee-attack",
+  "action:multiattack",
+  "action:save-effect+damage",
+  "immunities:plain",
+  "sense:blindsight",
+  "sense:darkvision",
+  "speed:climb",
+  "speed:fly"
+ ],
+ "monster:young-silver-dragon": [
+  "action-usage:recharge 5-6",
+  "action:melee-attack",
+  "action:multiattack",
+  "action:other:breath weapons",
+  "action:save-effect",
+  "action:save-effect+damage",
+  "immunities:plain",
+  "sense:blindsight",
+  "sense:darkvision",
+  "speed:fly"
+ ],
+ "monster:young-white-dragon": [
+  "action-usage:recharge 5-6",
+  "action:melee-attack",
+  "action:multiattack",
+  "action:save-effect+damage",
+  "immunities:plain",
+  "sense:blindsight",
+  "sense:darkvision",
+  "speed:burrow",
+  "speed:fly",
+  "speed:swim",
+  "trait:ice walk"
+ ],
+ "monster:zombie": [
+  "action:melee-attack",
+  "condition_immunities",
+  "immunities:plain",
+  "sense:darkvision",
+  "trait:undead fortitude"
+ ]
+}

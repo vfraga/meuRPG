@@ -43,4 +43,9 @@ for m in mo:
   if m.get('armor_class_alts'): add('ac:alternate',m)
 out={k:{'count':len(set(v)),'examples':sorted(set(v))[:3]} for k,v in sorted(inv.items())}
 json.dump(out,open(sys.argv[2],'w'),indent=1)
+if len(sys.argv)>3:
+  per=collections.defaultdict(set)
+  for k,v in inv.items():
+    for mk in v: per[mk].add(k)
+  json.dump({mk:sorted(ks) for mk,ks in sorted(per.items())},open(sys.argv[3],'w'),indent=1)
 print(len(out))
