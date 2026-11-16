@@ -1,6 +1,7 @@
 package leaktest
 
 import (
+	"cmp"
 	"slices"
 	"strings"
 	"testing"
@@ -92,6 +93,10 @@ type tides struct {
 	out     []string // the options the table keeps out, live among them unless the way keeps it
 	names   []string // the names of those options
 	close   func(t *testing.T)
+	// absent is the stored key of an option that does not exist, and option the key a pick of the completion names for a
+	// stored one; both are the plain key (absentKey) for the options of a feature, and are set for a pick of a spell.
+	absent string
+	option func(stored string) string
 	// archived says the table retired the entry: closed to the master too. liveStays says the live option is still on offer.
 	archived, liveStays bool
 }
@@ -233,13 +238,14 @@ func (td *tides) answersBy(t *testing.T, what string, mutates bool, keys []strin
 			continue
 		}
 		for _, key := range keys {
-			named, absent := call(who, key), call(who, absentKey)
+			missing := cmp.Or(td.absent, absentKey)
+			named, absent := call(who, key), call(who, missing)
 			switch {
 			case td.mayPick(who):
 				if !named.ok() || len(named.body) == 0 {
 					t.Errorf("%s, %s: the pick of %s: HTTP %d %s; want it taken", what, who.name, key, named.status, shorten(named.body))
 				}
-			case !sameAnswer(named, key, absent, absentKey):
+			case !sameAnswer(named, td.optionOf(key), absent, td.optionOf(missing)):
 				t.Errorf("%s, %s: the pick of %s: HTTP %d %s\nthe pick of a key that does not exist: HTTP %d %s", what, who.name, key, named.status, shorten(named.body), absent.status, shorten(absent.body))
 			}
 		}
@@ -386,9 +392,17 @@ func (td *tides) checkCompletion(t *testing.T, holder *charactersv1.Character) {
 	td.answersBy(t, "CompleteCharacterChoices", true, td.out, func(who reader, key string) reply {
 		return who.person.call(charactersv1connect.CharacterServiceCompleteCharacterChoicesProcedure, &charactersv1.CompleteCharacterChoicesRequest{
 			CampaignId: w.campaign, CharacterId: holder.GetId(), ExpectedRevision: current.GetRevision(),
-			Picks: []*charactersv1.ChoicePick{{ChoiceKey: td.ask, OptionKeys: []string{key}}},
+			Picks: []*charactersv1.ChoicePick{{ChoiceKey: td.ask, OptionKeys: []string{td.optionOf(key)}}},
 		})
 	})
+}
+
+// optionOf is the key of the option a pick of the completion names for the stored key.
+func (td *tides) optionOf(stored string) string {
+	if td.option == nil {
+		return stored
+	}
+	return td.option(stored)
 }
 
 // expectNone checks the answer of a call names none of the options.

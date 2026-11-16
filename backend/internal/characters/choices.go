@@ -200,7 +200,7 @@ func choiceToProto(ch rules.Choice) *charactersv1.Choice {
 	for _, o := range ch.Options {
 		po := &charactersv1.ChoiceOption{
 			Key: o.Key, StoredKey: o.Stored, NamePt: o.NamePT, SummaryPt: o.SummaryPT, ReasonPt: o.ReasonPT,
-			SpellLevel: i32(o.SpellLevel), SchoolPt: o.SchoolPT, ClassesPt: o.ClassesPT, NeedsText: o.NeedsText,
+			SpellLevel: i32(o.SpellLevel), SchoolPt: o.SchoolPT, ClassesPt: o.ClassesPT, NeedsText: o.NeedsText, Ritual: o.Ritual,
 		}
 		for _, p := range o.Prerequisites {
 			po.Prerequisites = append(po.Prerequisites, &charactersv1.ChoicePrerequisite{
@@ -541,8 +541,9 @@ func applyChoicePicksFor(content, view *rules.Content, full *charactersv1.FullSh
 	return next, labels, nil
 }
 
-// withoutKeptOut takes out of the choices that offer the options of another feature the options that the reader's
-// view keeps out of their pools: the choices stay as they are, and a pick of one of those options is not one they list.
+// withoutKeptOut takes out of the choices that offer the options of another feature, and of the choices of spells that
+// offer the reader's pool, the options that the reader's view keeps out of their pools: the choices stay as they are, and a
+// pick of one of those options is not one they list.
 func withoutKeptOut(set rules.ChoiceSet, view *rules.Content, b rules.Build) rules.ChoiceSet {
 	shown := shownOptions(view, b)
 	for _, g := range set.Groups {
@@ -555,13 +556,13 @@ func withoutKeptOut(set rules.ChoiceSet, view *rules.Content, b rules.Build) rul
 	return set
 }
 
-// shownOptions are the keys of the options the view lists in each choice that offers the options of another feature,
-// each such choice named even when it lists none.
+// shownOptions are the keys of the options the view lists in each choice that offers the options of another feature or
+// the reader's pool of spells, each such choice named even when it lists none.
 func shownOptions(view *rules.Content, b rules.Build) map[string][]string {
 	shown := map[string][]string{}
 	for _, g := range view.Choices(b).Groups {
 		for _, ch := range g.Choices {
-			if !view.AsksOptionsOf(ch.Key) {
+			if !view.AsksOptionsOf(ch.Key) && !ch.Narrowed {
 				continue
 			}
 			shown[ch.Key] = []string{}
