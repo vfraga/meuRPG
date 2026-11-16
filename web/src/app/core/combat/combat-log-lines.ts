@@ -39,6 +39,7 @@ import {
   readiedLostLine,
   readiedText,
 } from './combat-log-readied';
+import { FAVOR_LINES } from './combat-log-favor';
 import { ITEM_USE_LINES } from './combat-log-item-use';
 
 /** What a line builder is given: the entry, the fields every line shares, the combat's name and who is reading. */
@@ -232,6 +233,7 @@ const LINE_BUILDERS: ReadonlyMap<CombatLogKind, (args: LineArgs) => LogLine | nu
   ],
   ...MOUNT_LINES,
   ...ITEM_USE_LINES,
+  ...FAVOR_LINES,
   [
     CombatLogKind.EFFECT_ENDED,
     ({ e, base, ctx }) => {
