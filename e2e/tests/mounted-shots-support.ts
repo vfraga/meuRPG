@@ -137,8 +137,8 @@ async function steedScreens(t: MountedTable, l: Look): Promise<void> {
 }
 
 /** The goblin's shove on the horse, through the API: the master's dice are not what these screens show. */
-async function shoveSteedRPC(t: MountedTable, enc: Encounter, outcome: 'SHOVE_OUTCOME_PUSH' | 'SHOVE_OUTCOME_PRONE'): Promise<void> {
-  const { m, campaignId } = t;
+async function shoveSteedRPC(t: MountedTable, enc: Encounter, outcome: 'SHOVE_OUTCOME_PUSH' | 'SHOVE_OUTCOME_PRONE', waitForSheet = false): Promise<void> {
+  const { m, p, campaignId } = t;
   const started = await contestRPC(m, 'StartContest', {
     campaignId,
     encounterId: enc.id,
@@ -148,6 +148,10 @@ async function shoveSteedRPC(t: MountedTable, enc: Encounter, outcome: 'SHOVE_OU
     roll: { d20Faces: { faces: [20] } },
   });
   const contestId = (started.contest as { id: string }).id;
+  if (waitForSheet) {
+    // From a tablet up the contest sheet opens on the player's screen when the shove starts; answering before it is there would leave it out.
+    await expect(p.getByRole('dialog', { name: /Goblin 1 tenta empurrar/ })).toBeVisible();
+  }
   await contestRPC(m, 'RespondContest', { campaignId, encounterId: enc.id, contestId, skill: 'CONTEST_SKILL_ATHLETICS', roll: { d20Faces: { faces: [1] } } });
   await contestRPC(m, 'ResolveShove', { campaignId, encounterId: enc.id, contestId, outcome });
 }
@@ -184,6 +188,18 @@ async function rideScreens(t: MountedTable, l: Look): Promise<void> {
   const panel = p.getByRole('region', { name: 'Montaria' });
   await expect(panel.getByRole('button', { name: 'Montar' })).toBeVisible();
   await see(p, 'mover-montaria', l, panel);
+
+  // A mount that cannot be mounted now: the master puts the horse four squares away. Its button stays, dashed and off, with the reason linked.
+  const horse = idOf(enc, STEED);
+  await combatRPC(m, 'MoveCombatant', { campaignId, encounterId: enc.id, combatantId: horse, col: 6, row: 11, forced: true });
+  const row = panel.getByRole('listitem').filter({ hasText: STEED });
+  await expect(row.getByText(/chegue ao lado/)).toBeVisible();
+  const refusedGo = row.getByRole('button', { name: 'Montar' });
+  await expect(refusedGo).toBeDisabled();
+  await expect(refusedGo).toHaveAttribute('aria-describedby', /mp-line-/);
+  await see(p, 'mover-recusa', l, panel);
+  await combatRPC(m, 'MoveCombatant', { campaignId, encounterId: enc.id, combatantId: horse, col: 6, row: 7, forced: true });
+  await expect(row.getByText('Ao lado')).toBeVisible();
   await panel.getByRole('button', { name: 'Montar' }).click();
   await expect.poll(async () => (await getEncounterRPC(m, campaignId)).combatants.find((c) => c.label === 'Isolda')?.mountedOnId).toBe(idOf(enc, STEED));
 
@@ -235,7 +251,7 @@ async function rideScreens(t: MountedTable, l: Look): Promise<void> {
   // Goblin 1 pushes the horse: the save to stay on, on her screen, and the master's wait.
   await endTurnOf(p, m, campaignId, 'Isolda');
   enc = await passTurnsToAndWait(m, campaignId, 'Goblin 1', [m, p]);
-  await shoveSteedRPC(t, enc, 'SHOVE_OUTCOME_PUSH');
+  await shoveSteedRPC(t, enc, 'SHOVE_OUTCOME_PUSH', l.width >= 768);
   const save = p.getByRole('alertdialog', { name: /Você cai da montaria\?/ });
   await expect(save.getByText(`O ${STEED} foi empurrado.`)).toBeVisible();
   await see(p, 'teste', l);
@@ -249,15 +265,29 @@ async function rideScreens(t: MountedTable, l: Look): Promise<void> {
   await expect(save.locator('.res')).toContainText('4: você caiu Derrubado');
   await see(p, 'teste-resultado', l);
   await closeSheet(save);
-  // From a tablet up the shove's own sheet is under it (the horse is hers); a phone holds one sheet at a time.
-  const shove = p.getByRole('dialog', { name: /Goblin 1 tenta empurrar/ });
-  if (await shove.isVisible()) {
+  // From a tablet up the shove's own sheet is under it (the horse is the player's); a phone holds one sheet at a time.
+  if (l.width >= 768) {
+    const shove = p.getByRole('dialog', { name: /Goblin 1 tenta empurrar/ });
+    await expect(shove).toBeVisible();
     await closeSheet(shove);
   }
   await expect(p.getByText('Derrubado').first()).toBeVisible();
   const log = await openCombatLog(p);
   await expect(log.getByText(/caiu/).first()).toBeVisible();
   await see(p, 'registro', l, log);
+
+  // Out of her turn the card's "Dispensar" is refused (it spends the action): off, with the reason linked under the actions.
+  await p.goto(`/campaigns/${campaignId}/characters/${t.table.characterId}`);
+  const card = p.locator('app-creatures-panel app-creature-card');
+  await expect(card.getByRole('heading', { name: STEED })).toBeVisible();
+  await card.getByRole('button', { name: /Dispensar/ }).click();
+  const ask = card.locator('app-steed-ask');
+  await ask.getByRole('button', { name: new RegExp(`Dispensar\\s+${STEED}`) }).click();
+  const off = card.getByRole('button', { name: /Dispensar/ });
+  await expect(off).toHaveAttribute('aria-disabled', 'true');
+  await expect(off).toHaveAttribute('aria-describedby', /steed-why-/);
+  await expect(card.getByText(/Só na vez de .*: dispensar gasta a ação\./)).toBeVisible();
+  await see(p, 'cartao-recusa', l, card);
 }
 
 /**

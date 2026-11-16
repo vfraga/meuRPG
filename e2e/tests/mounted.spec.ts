@@ -14,7 +14,7 @@ import { tapSquare } from './move-support';
 // everything the player presses and reads is the screen's.
 
 test(
-  'Isolda convoca a montaria, monta, cavalga, um empurrão no cavalo pede o teste e, falhando, ela cai derrubada ao lado',
+  'Isolda convoca a montaria, monta, cavalga, um empurrão no cavalo pede o teste e, falhando, Isolda cai da montaria ao lado',
   { tag: ['@588'] },
   async ({ browser }) => {
     test.setTimeout(240_000);
