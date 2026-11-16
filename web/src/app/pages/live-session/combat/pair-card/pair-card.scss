@@ -1,11 +1,6 @@
 // The pair card (588-04, 588-05): the accent frame of the turn, the mount's line, three equal outlined buttons and one line.
 :host {
   display: block;
-
-  // Inside the action card the phone keeps it under the economy row (588-05); from 768 px it comes first (588-04).
-  @media (min-width: 768px) {
-    order: -1;
-  }
 }
 
 .pair {

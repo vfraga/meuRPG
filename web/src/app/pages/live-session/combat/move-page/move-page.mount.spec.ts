@@ -186,6 +186,8 @@ describe('MovePage, the "Montaria" panel', () => {
       'Já leva alguém.',
     ]);
     expect(refused.getAttribute('aria-label')).toBeNull();
+    // The saddle is not a mat-icon, so the button gives it no gap: the panel does (seen glued to "Montar" in the render).
+    expect(getComputedStyle(refused.querySelector('app-saddle-icon')!).marginRight).toBe('8px');
   });
 
   it('presses nothing on a refused row', () => {

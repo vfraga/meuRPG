@@ -299,6 +299,16 @@ app-fold {
   }
 }
 
+// The pair card's slot: under the economy row on a phone (588-05), first from 768 px (588-04).
+.groups > .groups__pair {
+  margin-right: 12px;
+  margin-left: 12px;
+
+  @media (min-width: 768px) {
+    order: -1;
+  }
+}
+
 // With a pair card above it (588-04), the row holds only "Mover": at the end of the line, where it is with the shapes.
 .groups > .econ--move {
   justify-content: flex-end;

@@ -26,7 +26,16 @@ describe('CombatMap: a rider on its mount (588-04)', () => {
     expect(el.querySelectorAll('.cm__tk')).toHaveLength(1);
     expect(el.querySelector('.cm__tk')?.getAttribute('data-id')).toBe('h');
     expect(el.querySelector('.cm__rider')?.textContent).toContain('T');
-    expect(el.querySelector('app-saddle-icon')).not.toBeNull();
+    // Board 588-04: the rider's small disc sits inside the mount's token, top right, on an ink saddle crescent, and the
+    // mount's own initial moves to the lower left.
+    const mark = el.querySelector('.cm__tk app-rider-mark')!;
+    expect(mark.querySelector('svg.rm__saddle path')).not.toBeNull();
+    const disc = getComputedStyle(mark.querySelector('.rm__disc')!);
+    expect([disc.position, disc.top, disc.right]).toEqual(['absolute', '12%', '9%']);
+    const mount = el.querySelector('.cm__tk > app-combatant-token')!;
+    expect(mount.classList).toContain('tk--ridden');
+    expect(getComputedStyle(mount).alignItems).toBe('flex-end');
+    expect(getComputedStyle(mount).justifyContent).toBe('flex-start');
   });
 
   it('gives the pair the turn when the rider has it, and lets the rider be moved by the mount token', () => {

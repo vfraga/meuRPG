@@ -1,4 +1,5 @@
 import { create } from '@bufbuild/protobuf';
+import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
 import { CombatantSchema } from '../../../../../gen/meurpg/play/v1/combat_pb';
@@ -42,6 +43,38 @@ function setup(own: Record<string, unknown> = {}, inputs: Record<string, unknown
 }
 const text = (n: Element | null) => (n?.textContent ?? '').replace(/\s+/g, ' ').trim();
 const label = (li: Element) => li.getAttribute('aria-label')?.replace(/ /g, ' ');
+
+/** The page's use of the panel: the pair card is projected into it, so the panel's own child rules do not reach the card. */
+@Component({
+  imports: [ActionGroups],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `<app-action-groups [options]="options" [own]="own" [withPair]="paired"
+    ><span pair class="probe">o par</span></app-action-groups
+  >`,
+})
+class PairHost {
+  readonly options = create(TurnOptionsSchema, {});
+  readonly own = create(CombatantSchema, { movementLeftFt: 40, speedFt: 40 });
+  paired = true;
+}
+
+describe('ActionGroups: the projected pair card (588-05)', () => {
+  it('sits in a slot of the panel, 12 px from its sides like every other child, and first from 768 px', () => {
+    const fixture = TestBed.createComponent(PairHost);
+    fixture.detectChanges();
+    const slot = (fixture.nativeElement as HTMLElement).querySelector('.groups > .groups__pair')!;
+    expect(slot.querySelector('.probe')).not.toBeNull();
+    const css = getComputedStyle(slot);
+    expect([css.marginLeft, css.marginRight]).toEqual(['12px', '12px']);
+  });
+
+  it('has no slot, and so no gap of its own, without a pair', () => {
+    const fixture = TestBed.createComponent(PairHost);
+    fixture.componentInstance.paired = false;
+    fixture.detectChanges();
+    expect((fixture.nativeElement as HTMLElement).querySelector('.groups__pair')).toBeNull();
+  });
+});
 
 describe('ActionGroups: the economy row', () => {
   it('is the first thing in the panel, a list named "O que resta da vez", with the state in words', () => {

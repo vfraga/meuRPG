@@ -294,6 +294,10 @@ export class OrderList {
 
   /** The line under the name of a compact row: "Inic. 14 · CA 15", or the state word first ("Escondido · inic. 7"). */
   protected compactSub(c: Combatant, inGroup: boolean): string {
+    // A mount under its rider says the link alone (588-08): its numbers are in the opened row.
+    if (this.follows(c)) {
+      return '';
+    }
     const init = c.initiative !== undefined && !inGroup ? c.initiative : null;
     const state = rowState(c);
     if (state) {

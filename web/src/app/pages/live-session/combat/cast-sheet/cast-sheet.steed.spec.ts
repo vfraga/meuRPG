@@ -86,6 +86,10 @@ describe('CastSheet: "Estrela também", a self-only spell that reaches the steed
   it('frames the check in the accent, as board 588-26 card 6 draws it', async () => {
     const { el } = await open(true);
     const row = getComputedStyle(el.querySelector('app-steed-also .also')!);
+    // The mark is the app's garnet, not the browser's blue (seen in the render).
+    expect(getComputedStyle(el.querySelector('app-steed-also input')!).accentColor).toBe(
+      'var(--mr-accent)',
+    );
     expect(row.borderTopStyle).toBe('solid');
     expect(parseFloat(row.borderTopWidth)).toBe(1);
     expect(parseFloat(row.minHeight)).toBe(44);

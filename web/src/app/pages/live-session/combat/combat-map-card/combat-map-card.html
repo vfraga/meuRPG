@@ -375,7 +375,14 @@
         </li>
       }
       @if (hasMounted()) {
-        <li><app-saddle-icon />Montado</li>
+        <li>
+          <span class="legend__pair" aria-hidden="true"
+            ><app-combatant-token initial="" [npc]="true" [ridden]="true" [size]="22" [onMap]="true" /><app-rider-mark
+              initial=""
+              [onMap]="true"
+              size="22px" /></span
+          >{{ isMaster() ? 'Montado' : 'Montado: o cavaleiro pequeno, na sela' }}
+        </li>
       }
       <li>
         <app-combatant-token initial="P" [current]="true" [onMap]="true" [size]="18" />{{

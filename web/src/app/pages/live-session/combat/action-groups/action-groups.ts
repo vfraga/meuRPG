@@ -190,6 +190,8 @@ export class ActionGroups {
   readonly shapesAside = input(false);
   /** The pair card comes right under the economy row (a phone, 588-05): the row has no divider and no room of its own under it. */
   readonly paired = input(false);
+  /** A pair card is projected (`[pair]`): its slot is drawn, at any width. */
+  readonly withPair = input(false);
   /** The master acts for the character: "Mover" is in the map's header (C8-01), so the economy row does not repeat it. */
   readonly moveAside = input(false);
   /** "Permanecer na forma": what it costs and why it cannot be pressed ('' when it can); `null` outside a form. */

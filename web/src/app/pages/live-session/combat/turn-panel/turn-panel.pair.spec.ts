@@ -38,6 +38,15 @@ describe('TurnPanel: the rider with the mount it directs (588-04, 588-05)', () =
     expect(el.querySelector('.turn__sub')?.textContent?.replace(/\s+/g, ' ')).toContain(
       'Montado no Cavalo de guerra · em seguida: Zumbi 1',
     );
+    // Boards 588-04 and 588-05: the token of the turn is the pair's, the mount with the rider's small disc on its corner.
+    const pair = el.querySelector('.turn__banner app-pair-token')!;
+    const [mount, rider] = Array.from(pair.querySelectorAll('app-combatant-token'));
+    expect([mount.textContent?.trim(), rider.textContent?.trim()]).toEqual(['C', 'T']);
+    expect(mount.classList).toContain('tk--npc');
+    expect(mount.classList).toContain('tk--current');
+    const disc = getComputedStyle(rider);
+    expect([disc.position, disc.top, disc.right]).toEqual(['absolute', '-6px', '-6px']);
+    expect(el.querySelectorAll('.turn__banner > app-combatant-token')).toHaveLength(0);
     expect(el.querySelector('app-joint-pill')).toBeNull();
     expect(el.querySelector('app-end-part')).toBeNull();
     expect(el.querySelector('app-end-turn')).not.toBeNull();

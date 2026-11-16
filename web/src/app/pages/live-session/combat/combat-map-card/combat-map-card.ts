@@ -42,7 +42,7 @@ import {
   tileRects,
   visionLegend,
 } from '../../../../core/maps/vision';
-import { SaddleIcon } from '../../../../shared/saddle-icon/saddle-icon';
+import { RiderMark } from '../../../../shared/combatant-token/rider-mark';
 
 /**
  * The map panel of a running combat or of its setup (E6-04, E6-05, E6-11):
@@ -63,7 +63,7 @@ const CROP_MAX_SHARE = 0.6;
 @Component({
   selector: 'app-combat-map-card',
   imports: [
-    SaddleIcon,
+    RiderMark,
     AreaOverlay,
     CombatMap,
     CombatantToken,

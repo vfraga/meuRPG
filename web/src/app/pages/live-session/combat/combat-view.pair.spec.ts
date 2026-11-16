@@ -113,8 +113,11 @@ describe('CombatView: the rider and the mount it directs (588-04)', () => {
     const kids = [...m.el.querySelector('app-action-groups .groups')!.children];
     const at = (sel: string) => kids.findIndex((k) => k.matches(sel));
     expect(at('.econ')).toBeGreaterThanOrEqual(0);
-    expect(at('app-pair-card')).toBeGreaterThan(at('.econ'));
-    expect(at('app-tab-list')).toBeGreaterThan(at('app-pair-card'));
+    // The card is in the panel's own slot, which takes the panel's 12 px sides (the card is projected: no child rule reaches it).
+    expect(at('.groups__pair')).toBeGreaterThan(at('.econ'));
+    expect(at('app-tab-list')).toBeGreaterThan(at('.groups__pair'));
+    expect(m.el.querySelector('.groups > .groups__pair > app-pair-card')).not.toBeNull();
+    expect(getComputedStyle(kids[at('.groups__pair')]).marginLeft).toBe('12px');
     expect(m.el.querySelector('.econ app-economy-shapes')).not.toBeNull();
     expect(m.el.querySelector('.econ .econ__move')).not.toBeNull();
     // No divider between the row and the card, and 12 px of the column's gap (588-05).

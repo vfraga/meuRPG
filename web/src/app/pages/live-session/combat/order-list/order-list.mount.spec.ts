@@ -19,7 +19,14 @@ describe('OrderList with a rider and its mount', () => {
     mountedOnId: 'h',
   });
   const horse = (mountKind: string, initiative = 17) =>
-    combatant({ id: 'h', label: 'Cavalo de guerra', initiative, riderId: 'tor', mountKind });
+    combatant({
+      id: 'h',
+      label: 'Cavalo de guerra',
+      initiative,
+      riderId: 'tor',
+      mountKind,
+      armorClass: 11,
+    });
   const zombie = combatant({ id: 'z', label: 'Zumbi', initiative: 12 });
 
   function render(combatants: Combatant[]) {
@@ -41,6 +48,8 @@ describe('OrderList with a rider and its mount', () => {
     const line = box?.querySelector('.row--mount .row__ride');
     expect(text(line)).toBe('linkAdestrada · leva Tor');
     expect(line?.querySelector('mat-icon')?.getAttribute('aria-hidden')).toBe('true');
+    // Board 588-08: the mount's row under its rider says the link and nothing else (its numbers are in the opened row).
+    expect(text(box?.querySelector('.row--mount .row__sub'))).toBe('linkAdestrada · leva Tor');
   });
 
   it('indents the mount under its rider, in the rendered row, past the box padding of the master list', () => {
@@ -54,6 +63,11 @@ describe('OrderList with a rider and its mount', () => {
     expect(el.querySelector('app-order-group')).toBeNull();
     expect(text(el.querySelector('[data-combatant="h"] .row__sub'))).toContain(
       'Leva o Tor · independente',
+    );
+    // The line is a flex row, where a plain space at an item's edge is dropped: the dot between the link and the numbers keeps
+    // its spaces (seen as "leva Isolda·CA 11" in the render).
+    expect(el.querySelector('[data-combatant="h"] .row__sub')?.textContent).toMatch(
+      /independente\u00a0·\u00a0\S/,
     );
   });
 

@@ -14,6 +14,7 @@ import type { DoorSquare, MapLayers } from '../../core/maps/layers';
 import { combatantInitial, isPlayer } from '../../core/combat/combat-view';
 import { isCreature } from '../../core/combat/creature-names';
 import { CombatantToken } from '../combatant-token/combatant-token';
+import { RiderMark } from '../combatant-token/rider-mark';
 import type { Vision } from '../../core/maps/vision';
 import { FogBase } from '../fog-map/fog-base';
 import { DoorPicks } from '../map-layers/door-picks';
@@ -23,7 +24,6 @@ import { type PickMark, type PickNote, PickLayer } from './pick-layer';
 import { costAbove } from './cost-above';
 import { MapPairs } from './map-pairs';
 import { type TokenDrop, TokenDrag } from './token-drag';
-import { SaddleIcon } from '../saddle-icon/saddle-icon';
 
 export type { PickMark, PickNote } from './pick-layer';
 
@@ -94,9 +94,9 @@ export type { TokenDrop } from './token-drag';
  */
 @Component({
   selector: 'app-combat-map',
-  imports: [CombatantToken, DoorPicks, FogBase, MapLayersOverlay, MatIconModule, SaddleIcon],
+  imports: [CombatantToken, DoorPicks, FogBase, MapLayersOverlay, MatIconModule, RiderMark],
   templateUrl: './combat-map.html',
-  styleUrls: ['./combat-map.scss', './combat-map-pairs.scss'],
+  styleUrl: './combat-map.scss',
 })
 export class CombatMap {
   readonly image = input.required<CombatMapImage>();

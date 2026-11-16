@@ -22,6 +22,14 @@
   font-size: calc(var(--tk) * 0.4);
 }
 
+// The mount of a pair: its initial steps aside, to the lower left, for the rider's disc on the saddle (588-04).
+:host(.tk--ridden) {
+  align-items: flex-end;
+  justify-content: flex-start;
+  padding: 0 0 14% 15%;
+  font-size: calc(var(--tk) * 0.32);
+}
+
 // An NPC: a rounded square with an ink border on the surface.
 :host(.tk--npc) {
   border-color: var(--mr-ink);

@@ -171,14 +171,12 @@
           [marked]="c.conditions.length > 0"
           [onMap]="true"
           [sealLeft]="!!pair.riderOf(c)"
+          [ridden]="!!pair.riderOf(c)"
           size="calc(var(--cm-tk) * var(--span, 1))"
         />
         @if (pair.riderOf(c); as r) {
-          <!-- The rider rides on the mount's token: its initial in a small disc top right and the saddle under it (588-04). -->
-          <span class="cm__rider" aria-hidden="true">
-            <app-combatant-token [initial]="initial(r)" [npc]="npc(r)" [creature]="creature(r)" [defeated]="r.defeated" [mine]="r.mine" size="calc(var(--cm-tk) * 0.5)" />
-          </span>
-          <app-saddle-icon class="cm__saddle" />
+          <!-- The rider rides on the mount's token: its small disc top right, on the saddle (588-04). -->
+          <app-rider-mark class="cm__rider" [initial]="initial(r)" [npc]="npc(r)" [creature]="creature(r)" [defeated]="r.defeated" [onMap]="true" size="calc(var(--cm-tk) * var(--span, 1))" />
         }
       </span>
      }

@@ -1185,6 +1185,7 @@
             <app-action-groups
               [shapesAside]="!!riding() && !phone()"
               [paired]="!!riding() && phone()"
+              [withPair]="!!riding()"
               [options]="turnOptions"
               [gearFlow]="gearFlow"
               [choosing]="targeting.mode.session()?.key ?? ''"

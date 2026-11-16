@@ -85,3 +85,8 @@
   min-width: 7rem;
   min-height: 2.75rem;
 }
+
+// The saddle is not a mat-icon: the button's own gap between icon and label does not reach it.
+.mp__go app-saddle-icon {
+  margin-right: 8px;
+}

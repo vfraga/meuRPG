@@ -658,8 +658,11 @@ describe('CombatMapCard: the "Montado" legend line (588-04)', () => {
         isMaster,
         encounter: encounter({ currentCombatantId: 'p', combatants: [tor, horse] }),
       });
-      expect(legend(el)).toContain('Montado');
-      expect(el.querySelector('.legend app-saddle-icon')).not.toBeNull();
+      // The player reads what the mark is (588-04); the master, who marked the mount, reads the short word (588-08).
+      const item = plain(el.querySelector('.legend .legend__pair')?.parentElement?.textContent);
+      expect(item).toBe(isMaster ? 'Montado' : 'Montado: o cavaleiro pequeno, na sela');
+      // The legend draws the mark itself: a small token with the rider's disc on the saddle.
+      expect(el.querySelector('.legend .legend__pair app-rider-mark')).not.toBeNull();
     }
   });
 

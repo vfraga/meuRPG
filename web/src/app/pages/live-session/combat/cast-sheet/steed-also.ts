@@ -42,6 +42,7 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
       width: 20px;
       height: 20px;
       margin: 0;
+      accent-color: var(--mr-accent);
     }
 
     .also__text {

@@ -6,7 +6,11 @@
       <span class="banner__big">{{ round() }}</span>
     </div>
     <div class="banner__who">
-      <app-combatant-token [initial]="initial(banner().who!)" [npc]="false" [current]="true" [size]="44" />
+      @if (banner().riding; as m) {
+        <app-pair-token [mount]="initial(m)" [rider]="initial(banner().who!)" [npc]="npc(m)" [current]="true" [size]="44" />
+      } @else {
+        <app-combatant-token [initial]="initial(banner().who!)" [npc]="false" [current]="true" [size]="44" />
+      }
       <div class="banner__main">
         <div role="status" aria-live="polite">
           <h2 #hero class="banner__title" tabindex="-1">{{ banner().title }}</h2>
@@ -74,6 +78,8 @@
           <app-combatant-token [initial]="initial(m)" [creature]="true" [current]="true" [size]="30" />
         }
       </span>
+    } @else if (banner().riding; as m) {
+      <app-pair-token [mount]="initial(m)" [rider]="initial(banner().who!)" [npc]="npc(m)" [current]="true" />
     } @else if (banner().who; as who) {
       <app-combatant-token
         [initial]="initial(who)"
