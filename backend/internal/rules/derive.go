@@ -62,6 +62,8 @@ type deriver struct {
 	// inactiveFeats are the feats the character took and no longer meets the prerequisite
 	// of: the sheet lists them but their effects do not apply.
 	inactiveFeats map[string]bool
+	// lost are those feats and the options lost the same way, with what each lacks.
+	lost map[string]*LostPrerequisite
 
 	env *formula.Env
 	// activeKeys are the keys of the states that are on (Build.ActiveStates that a state effect
@@ -104,23 +106,39 @@ func derive(b Build, c *content) Derived {
 	// A character that loses a feat's prerequisite cannot use the feat until it has the
 	// prerequisite again (SRD 5.1, Feats). What the character has is judged with the
 	// feats in place, and the sheet is made again without the ones that no longer fit.
-	lost := c.lostFeats(b, d)
-	for k := range c.lostOptions(b, d) {
-		if lost == nil {
-			lost = map[string]bool{}
+	why := c.lostFeats(b, d)
+	for k, l := range c.lostOptions(b, d) {
+		if why == nil {
+			why = map[string]*LostPrerequisite{}
 		}
-		lost[k] = true
+		why[k] = l
 	}
-	if len(lost) == 0 {
+	if len(why) == 0 {
 		return d
 	}
-	return deriveWith(b, c, lost)
+	out := deriveWith(b, c, why)
+	// What the character has is said over the sheet as it ends up, without the lost entries: the numbers the reader sees.
+	for i, is := range out.Issues {
+		if is.Lost != nil {
+			out.Issues[i].Lost = c.retold(is.Lost, b, out)
+			out.Issues[i].Message = out.Issues[i].Lost.SentencePT("", false)
+		}
+	}
+	return out
 }
 
-// deriveWith is derive with the feats in inactive (by key) listed but not applied.
-func deriveWith(b Build, c *content, inactive map[string]bool) Derived {
+// deriveWith is derive with the feats and options in lost (by key) listed but not applied; each is told with what
+// it lacks as the sheet with them in place had it.
+func deriveWith(b Build, c *content, lost map[string]*LostPrerequisite) Derived {
 	d := &Derived{ContentVersion: c.version}
-	x := &deriver{b: b, c: c, d: d, proficient: map[string]bool{}, conditions: map[*Effect]bool{}, appliedTagged: map[*Effect]bool{}, inactiveFeats: inactive}
+	var inactive map[string]bool
+	for k := range lost {
+		if inactive == nil {
+			inactive = map[string]bool{}
+		}
+		inactive[k] = true
+	}
+	x := &deriver{b: b, c: c, d: d, proficient: map[string]bool{}, conditions: map[*Effect]bool{}, appliedTagged: map[*Effect]bool{}, inactiveFeats: inactive, lost: lost}
 
 	x.equip()
 	x.resolve()
@@ -179,6 +197,12 @@ func (x *deriver) dropReplacedTiers() {
 // issue records a problem on the sheet.
 func (x *deriver) issue(code, field, format string, args ...any) {
 	x.d.Issues = append(x.d.Issues, Issue{Code: code, Field: field, Message: fmt.Sprintf(format, args...), Keys: x.issueKeys(code, field)})
+}
+
+// lostIssue records the issue of a lost feat or option: its Message names nobody and no hidden entry, and Issue.Lost
+// tells the sentence to each reader.
+func (x *deriver) lostIssue(code, field string, l *LostPrerequisite) {
+	x.d.Issues = append(x.d.Issues, Issue{Code: code, Field: field, Message: l.SentencePT("", false), Keys: x.issueKeys(code, field), Lost: l})
 }
 
 // issueChange records an issue and, when it is tied to a table entry, the
@@ -662,7 +686,7 @@ func (col *collector) feats() {
 			continue
 		}
 		if x.inactiveFeats[key] {
-			x.issue(IssueFeatPrerequisite, fmt.Sprintf("full.feat_keys[%d]", i), "O personagem não cumpre mais o pré-requisito de %s: o talento só vale de novo quando cumprir.", x.c.namePT(key))
+			x.lostIssue(IssueFeatPrerequisite, fmt.Sprintf("full.feat_keys[%d]", i), x.lost[key])
 		} else {
 			col.add(key)
 		}
@@ -734,6 +758,14 @@ func (col *collector) featureOption(field, key string, pickedNames map[string]bo
 		col.add(key)
 	}
 	col.feature(key, f.Name, parent, x.featureLevel(parent), f.Desc)
+	col.offeredBy(parent)
+}
+
+// offeredBy marks the feature just listed as an option of parent: its row reads "Opção de <parent>" (board 580-05).
+func (col *collector) offeredBy(parent string) {
+	last := &col.x.d.Features[len(col.x.d.Features)-1]
+	last.OptionOfPT = col.x.c.namePT(parent)
+	last.OptionOfKey = parent
 }
 
 // optionNotOffered is the issue of a pick that nothing on the sheet offers, tied
@@ -760,6 +792,7 @@ func (col *collector) traitOption(field, key string) {
 	}
 	col.add(key)
 	col.feature(key, t.Name, t.Parent, 0, t.Desc)
+	col.offeredBy(t.Parent)
 }
 
 // optionSummary is the one-line rule of a chosen option, or "".

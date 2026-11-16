@@ -1,9 +1,10 @@
-import type { MessageInitShape } from '@bufbuild/protobuf';
+import { create, type MessageInitShape } from '@bufbuild/protobuf';
 
 import {
   type TableBackground,
   TableBackgroundSchema,
   type TableFeature,
+  OptionPrerequisiteSchema,
   TableFeatureSchema,
   type TableRace,
   TableRaceSchema,
@@ -21,6 +22,7 @@ import {
   rangeMeters,
   unreadableNumberPaths,
 } from './effect-draft';
+import type { Asks } from './asks';
 import { effectInputPaths } from './effect-input-paths';
 import { paragraphs } from './spell-draft';
 import {
@@ -389,4 +391,43 @@ export function optionsInit(
 
 function optionsOf(f: FeatureDraft, menu: EffectMenuVm): { options?: FeatureInit[] } {
   return optionsInit(f.options, menu);
+}
+
+/** The five values an option row of a feature asks (board 580-03), out of the prerequisite the draft keeps. */
+export function featureAsks(f: FeatureDraft): Asks {
+  const p = f.prerequisite;
+  return {
+    classKey: p?.classLevel?.classKey ?? '',
+    classLevel: p?.classLevel && p.classLevel.level > 0 ? String(p.classLevel.level) : '',
+    requiresPact: p?.requiresPact ?? '',
+    requiresSpell: p?.requiresSpellKey ?? '',
+    requiresOptions: [...(p?.requiresOptionKeys ?? [])],
+  };
+}
+
+/** The feature with some of its asks changed; with every one cleared it has no prerequisite at all (the server reads that as none). */
+export function withAsks(f: FeatureDraft, change: Partial<Asks>): FeatureDraft {
+  const a = { ...featureAsks(f), ...change };
+  const level = a.classLevel.trim();
+  const empty =
+    a.classKey === '' &&
+    level === '' &&
+    a.requiresPact === '' &&
+    a.requiresSpell === '' &&
+    a.requiresOptions.length === 0;
+  const { prerequisite: _gone, ...rest } = f;
+  void _gone;
+  return empty
+    ? rest
+    : {
+        ...rest,
+        prerequisite: create(OptionPrerequisiteSchema, {
+          ...(a.classKey !== '' || level !== ''
+            ? { classLevel: { classKey: a.classKey, level: level === '' ? 0 : Number(level) } }
+            : {}),
+          requiresOptionKeys: [...a.requiresOptions],
+          requiresPact: a.requiresPact,
+          requiresSpellKey: a.requiresSpell,
+        }),
+      };
 }

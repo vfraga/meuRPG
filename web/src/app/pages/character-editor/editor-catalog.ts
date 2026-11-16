@@ -142,6 +142,13 @@ export class EditorCatalog {
   readonly weaponGroups = computed(() =>
     weaponGroups(this.catalog()?.weapons ?? [], this.selectedWeaponKeys(), this.master()),
   );
+  /** The closed list names the weapons picked, without the category and damage of their rows. */
+  readonly weaponNames = computed(() => {
+    const names = new Map((this.catalog()?.weapons ?? []).map((w) => [w.key, w.namePt]));
+    return this.selectedWeaponKeys()
+      .map((k) => names.get(k) ?? k)
+      .join(', ');
+  });
   readonly subraceOptions = computed(() =>
     offered(this.availableSubraces(), [this.selectedSubraceKey()], this.master()),
   );

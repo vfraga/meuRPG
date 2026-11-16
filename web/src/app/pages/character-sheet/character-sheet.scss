@@ -1,11 +1,24 @@
 :host {
+  --sheet-gap: var(--mr-space-4);
+
   display: flex;
   flex-direction: column;
-  gap: var(--mr-space-4);
+  gap: var(--sheet-gap);
 
   @media (min-width: 768px) {
-    gap: var(--mr-space-5);
+    --sheet-gap: var(--mr-space-5);
   }
+}
+
+// A banner the page may not draw (nothing to say) is no box at all: a zero-height box would still take its gap.
+app-level-up-banner:empty,
+app-pending-choices-banner:empty {
+  display: none;
+}
+
+// "Pendências de regra" sits 16 px from the card above and from the sheet below, whatever the page's gap is (board 580-05).
+.issues-notice {
+  margin-block: calc(var(--mr-space-4) - var(--sheet-gap));
 }
 
 .back {
@@ -215,6 +228,13 @@ app-revive-blocked {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     align-items: start;
     gap: 20px;
+
+    // The wrapper is its own grid here: the names of the sheet's areas are not its own, and
+    // two children placed by them would land on the same cell, one over the other.
+    > .sheet__features,
+    > .sheet__tstory {
+      grid-area: auto;
+    }
   }
 }
 

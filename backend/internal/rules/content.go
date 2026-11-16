@@ -94,6 +94,8 @@ type content struct {
 	consumables map[string]bool
 	// itemCharges are the charges of the catalog items that have them (effects/item_charges.json).
 	itemCharges map[string]ItemCharges
+	// potions are the effects of the potions the app carries out (effects/potions.json).
+	potions map[string]PotionEffect
 	// ammunition maps a weapon with the ammunition property to the ammunition it fires (effects/ammunition.json).
 	ammunition map[string]string
 	// ammunitionKinds are the keys of the catalog's ammunition, sorted, found once at load.
@@ -398,7 +400,7 @@ func (c *content) loadEffectFiles(fsys fs.FS) error {
 	return runContentSteps(fsys, []contentStep{
 		c.loadEffects, c.loadChoiceData, c.loadStandardActions, c.loadAdvancement, c.loadSpellEffects,
 		c.loadSpellTargets, c.loadDamageResistances, c.loadTraps, c.loadLights, c.loadCombatEffects,
-		c.loadEncounterBudget, c.loadMagicItemEffects, c.loadItemCharges, c.loadAmmunition, noFiles(c.indexCasting),
+		c.loadEncounterBudget, c.loadMagicItemEffects, c.loadItemCharges, c.loadPotions, c.loadAmmunition, noFiles(c.indexCasting),
 	})
 }
 
@@ -617,7 +619,7 @@ func (c *content) loadEffects(fsys fs.FS) error {
 var notEffectFiles = map[string]bool{
 	"names_pt.json": true, "revision.json": true, "standard_actions.json": true, "advancement.json": true,
 	"spells.json": true, "spell_targets.json": true, "corrections.json": true, "damage_resistances.json": true,
-	"traps.json": true, "lights.json": true, "combat_effects.json": true, "consumables.json": true, "item_charges.json": true, "ammunition.json": true,
+	"traps.json": true, "lights.json": true, "combat_effects.json": true, "consumables.json": true, "item_charges.json": true, "potions.json": true, "ammunition.json": true,
 	"encounter_budget.json": true, "magic_item_values.json": true, "treasure.json": true, "choices.json": true,
 	"spells_pt.json": true, "magic_items_pt.json": true, "features_pt.json": true, "traits_pt.json": true,
 	"backgrounds_pt.json": true, "feats_pt.json": true,

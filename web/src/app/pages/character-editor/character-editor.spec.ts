@@ -222,8 +222,18 @@ function catalog(): RulesCatalogVm {
         fromTable: false,
         archived: false,
         off: false,
+        category: 'simple',
+        damage: '1d6',
       },
-      { key: 'equipment:dagger', namePt: 'Adaga', fromTable: false, archived: false, off: false },
+      {
+        key: 'equipment:dagger',
+        namePt: 'Adaga',
+        fromTable: false,
+        archived: false,
+        off: false,
+        category: 'simple',
+        damage: '1d4',
+      },
     ],
     spells: [
       {

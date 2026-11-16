@@ -101,7 +101,8 @@ func (s *Service) sheetForChoices(ctx context.Context, m authz.Membership, conte
 		return stored, nil
 	}
 	if mayEditSheet(m, row) && row.Status != statusDead {
-		return s.checkEditedSheet(ctx, m, content, characterID, raw)
+		sheet, _, err := s.checkEditedSheet(ctx, m, content, characterID, raw)
+		return sheet, err
 	}
 	full := stored.GetFull()
 	if full == nil || raw.GetFull() == nil {

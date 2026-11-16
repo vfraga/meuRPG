@@ -189,9 +189,12 @@ func (s *Service) refreshKnownIssues(ctx context.Context, tx pgx.Tx, campaignID 
 	if err != nil {
 		return wrap("read rules content", err)
 	}
-	before := issueIDs(rules.Derive(buildOf(was), content).Issues)
-	after := issueIDs(rules.Derive(buildOf(next), content).Issues)
-	known := slices.DeleteFunc(slices.Clone(next.KnownIssues), func(id string) bool {
+	beforeIssues := rules.Derive(buildOf(was), content).Issues
+	afterIssues := rules.Derive(buildOf(next), content).Issues
+	before, after := issueIDs(beforeIssues), issueIDs(afterIssues)
+	// A stored sentence is read as the issue it holds, so the issue that ends takes its row with it.
+	known := rules.IdentitiesOf(rules.IdentitiesOf(next.KnownIssues, beforeIssues), afterIssues)
+	known = slices.DeleteFunc(known, func(id string) bool {
 		return slices.Contains(before, id) && !slices.Contains(after, id)
 	})
 	for _, id := range after {

@@ -1,0 +1,16 @@
+{
+ "item:potion-of-healing-common": {"kind": "heal", "dice": "2d4+2"},
+ "item:potion-of-healing-greater": {"kind": "heal", "dice": "4d4+4"},
+ "item:potion-of-healing-superior": {"kind": "heal", "dice": "8d4+8"},
+ "item:potion-of-healing-supreme": {"kind": "heal", "dice": "10d4+20"},
+ "item:potion-of-resistance-acid": {"kind": "resistance", "damage_type": "damage-type:acid", "rounds": 600},
+ "item:potion-of-resistance-cold": {"kind": "resistance", "damage_type": "damage-type:cold", "rounds": 600},
+ "item:potion-of-resistance-fire": {"kind": "resistance", "damage_type": "damage-type:fire", "rounds": 600},
+ "item:potion-of-resistance-force": {"kind": "resistance", "damage_type": "damage-type:force", "rounds": 600},
+ "item:potion-of-resistance-lightning": {"kind": "resistance", "damage_type": "damage-type:lightning", "rounds": 600},
+ "item:potion-of-resistance-necrotic": {"kind": "resistance", "damage_type": "damage-type:necrotic", "rounds": 600},
+ "item:potion-of-resistance-poison": {"kind": "resistance", "damage_type": "damage-type:poison", "rounds": 600},
+ "item:potion-of-resistance-psychic": {"kind": "resistance", "damage_type": "damage-type:psychic", "rounds": 600},
+ "item:potion-of-resistance-radiant": {"kind": "resistance", "damage_type": "damage-type:radiant", "rounds": 600},
+ "item:potion-of-resistance-thunder": {"kind": "resistance", "damage_type": "damage-type:thunder", "rounds": 600}
+}

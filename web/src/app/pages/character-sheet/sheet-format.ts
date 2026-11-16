@@ -95,8 +95,8 @@ const ISSUE_TITLES = new Map<string, string>([
   ['score_above_20', 'Habilidade acima de 20.'],
   ['level', 'Nível acima do máximo.'],
   ['formula', 'Efeito ignorado.'],
-  ['feat_prerequisite', 'Talento que não vale agora.'],
-  ['option_prerequisite', 'Opção que não vale agora.'],
+  ['feat_prerequisite', 'Pré-requisito perdido.'],
+  ['option_prerequisite', 'Pré-requisito perdido.'],
 ]);
 
 /** The bold first phrase of a rules issue in the notice under the header:
@@ -325,4 +325,32 @@ export function grantedSpellNumbers(g: GrantedSpellVm): string {
 /** The level of a granted spell in words: "Truque" or "2º nível". */
 export function grantedSpellLevel(g: GrantedSpellVm): string {
   return g.level === 0 ? 'Truque' : spellLevelLabel(g.level);
+}
+
+/** The issue codes of a feat or an option the sheet keeps but that does not apply until its prerequisite is met again. */
+const LOST_CODES = new Set(['feat_prerequisite', 'option_prerequisite']);
+const LOST_FIELD = /^full\.(feat_keys|feature_choice_keys)\[(\d+)\]$/;
+/** A choice that took a feat is stored "<owner key>#feat=<feat key>". */
+const FEAT_PICK = '#feat=';
+
+/**
+ * The keys of the feats and options the sheet keeps that do not apply now (board 580-05), read from the field each
+ * `feat_prerequisite` and `option_prerequisite` issue names: what its row in "Características e traços" marks.
+ */
+export function lostKeys(
+  full: { readonly featKeys: readonly string[]; readonly featureChoiceKeys: readonly string[] },
+  issues: readonly IssueVm[],
+): Set<string> {
+  const out = new Set<string>();
+  for (const issue of issues) {
+    const m = LOST_CODES.has(issue.code) ? LOST_FIELD.exec(issue.field) : null;
+    const list = m?.[1] === 'feat_keys' ? full.featKeys : full.featureChoiceKeys;
+    const value = m ? list[Number(m[2])] : undefined;
+    if (value === undefined) {
+      continue;
+    }
+    const at = value.indexOf(FEAT_PICK);
+    out.add(at >= 0 ? value.slice(at + FEAT_PICK.length) : value);
+  }
+  return out;
 }

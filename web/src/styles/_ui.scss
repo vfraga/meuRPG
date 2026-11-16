@@ -261,6 +261,17 @@ a.mr-list__row:hover .mr-list__name {
     color: var(--mr-warning-ink);
   }
 
+  // The small tag of a row (board 580-05): 22 px high, 12 px text, dashed when it says a state is pending.
+  &--compact {
+    height: 22px;
+    padding: 0 var(--mr-space-2);
+    font-size: var(--mr-font-12);
+
+    &.mr-tag--pending {
+      border-style: dashed;
+    }
+  }
+
   &--success {
     border-color: var(--mr-success-ink);
     color: var(--mr-success-ink);

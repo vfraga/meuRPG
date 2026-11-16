@@ -1484,6 +1484,13 @@ message Feature {
   // True when the text exists only in Portuguese (a table feature): `description` already
   // is the Portuguese, and there is no English to offer.
   bool description_pt_only = 9;
+  // For an option the character picked (a fighting style, an invocation, a feat's option), the Portuguese name
+  // of the feature, trait or feat that offers it; empty for every other feature. The sheet reads "Opção de <it>".
+  string option_of_pt = 10;
+  // The key of that feature, trait or feat (the sheet puts the option under the row with this key: two features can
+  // have the same name, as the Fighter's and the Paladin's "Estilo de Luta"); empty for every other feature.
+  // Every reader of the sheet receives it, as every reader already receives that feature's own key in `features`.
+  string option_of_key = 11;
 }
 
 // Proficiencies lists armor, weapon and tool proficiencies, as Portuguese
@@ -1517,6 +1524,10 @@ message Issue {
   // problem is not about one field.
   string field = 2;
   // What is wrong, in Portuguese, for the app to show.
+  // The text is written for the reader of the call: a feat or an option that lost its prerequisite
+  // ("feat_prerequisite", "option_prerequisite") names the character and says what is missing, and a condition on an
+  // entry the players may not read is named for the master only ("uma condição que a mesa não mostra" for a player).
+  // So the same issue may read differently for two readers; tell issues apart by code and field, never by this text.
   string message = 3;
 }
 
@@ -1853,6 +1864,8 @@ message Weapon {
   bool archived = 6;
   // Switched off for the players (see Race.off); the weapon stays on a sheet that carries it, marked.
   bool off = 7;
+  // The damage dice, such as "1d6", for the row of a list of weapons; empty for a weapon that deals none (a net).
+  string damage = 8;
 }
 
 // Spell is a spell from the rules content.

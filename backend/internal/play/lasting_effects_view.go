@@ -313,6 +313,8 @@ func sourceKindProto(kind string, onlyConditions bool) playv1.EffectSourceKind {
 		return playv1.EffectSourceKind_EFFECT_SOURCE_KIND_SPELL
 	case "feature":
 		return playv1.EffectSourceKind_EFFECT_SOURCE_KIND_FEATURE
+	case sourceKindItem:
+		return playv1.EffectSourceKind_EFFECT_SOURCE_KIND_ITEM
 	}
 	if onlyConditions {
 		return playv1.EffectSourceKind_EFFECT_SOURCE_KIND_CONDITION
@@ -390,6 +392,8 @@ func (ev *effectViewer) originOf(f playdb.CombatantState, caster playdb.Combatan
 		return "O fim de " + name
 	}
 	switch {
+	case conv.OrZero(f.SourceKind) == sourceKindItem:
+		return "Do item " + ev.names(conv.OrZero(f.SourceKey))
 	case conv.OrZero(f.SourceKind) == "master" || f.SourceID == nil:
 		return "Do mestre"
 	case seen:

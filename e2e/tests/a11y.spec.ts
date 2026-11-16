@@ -19,7 +19,7 @@ import { addClueRPC, cartClues, cartHooks, createNoteRPC } from './notes-support
 import { createCapitaoRPC, createMiraRPC, playedCombatRPC, putOnStageRPC, uploadPortrait } from './stage-support';
 import { printRoute, tableForPrinting } from './print-support';
 import { tableWithOpenChoices } from './choices-support';
-import { classCard, passClassStep, tableForLevelUp } from './levelup-support';
+import { classCard, passClassStep, tableForLevelUp, toren as levelUpToren } from './levelup-support';
 import { aurora, auroraSheet, beginPlacedCombatRPC, nael, naelSheet, orla, orlaSheet, spendForRestRPC } from './rests-support';
 import { castSheet, choiceCard, openCastOf, pickChoice, pickSlotRadio, pickTargetOf, tableForCasting } from './casting-support';
 import { movingTable, paintRPC, pickRadio, tapSquare } from './move-support';
@@ -73,6 +73,7 @@ import { armorClassOf, bonusCombatSheet, bonusSheet, cropBonus, masterSetsBonuse
 import { combatWithTwoDown, reviveRPC, tableWithDead } from './revivify-support';
 import { brisa, brisaAidSheet, brisaSheet, dalila, dalilaSheet, ragna, ragnaSheet } from './combat-support';
 import { createPrerequisiteFeatsRPC } from './feat-prerequisites-support';
+import { lostPrerequisiteTable, type LostKind, type LostTable } from './lost-prerequisite-support';
 import { createFeatsRPC, createNightRaceRPC, createSnowSubraceRPC, tor } from './editor-races-support';
 import { beginCrowdedCombatRPC, boxIn, callFeatBody, chamadosFeatBody, elementFeatBody, endSessionOf, haloFeatBody, haloSquares, markFeatBody, volleyFeatBody } from './feature-use-support';
 import { createFeatOptionsRPC, expectInViewport, featShotScale, featViewport, openSelect, shootFeat, type FeatOptionsTable } from './feat-options-support';
@@ -15507,4 +15508,419 @@ for (const [colorScheme, theme] of [
       },
     );
   }
+}
+
+/**
+ * The sheet that keeps a feat, then one that keeps an option, whose prerequisite is a class the master switched off (#580, board
+ * 580-05, RN-23): the owner reads "uma condição que a mesa não mostra" and the row says "Não vale agora"; the master reads the
+ * class by its name.
+ */
+/**
+ * The rows and the banner of a sheet that keeps a lost feat or option (#580, board 580-05): the option row has no label on the right
+ * and says "Opção de <feature>" under its name, 16 px in; the lost name is muted; the tag is the dashed pending tag, 22 px high with
+ * 12 px text; "Pré-requisito perdido." has 16 px above and below it (the empty banners and the live region add nothing).
+ */
+async function expectLostRows(page: Page, table: LostTable, kind: LostKind, where: string): Promise<void> {
+  const row = page.locator('details.feature', { has: page.locator('.feature__lost') }).filter({ hasText: table.entryName });
+  await expect(row, `uma linha perdida ${where}`).toHaveCount(1);
+  await expect(row.locator('.feature__name')).toHaveText(table.entryName);
+  const look = await row.evaluate((el) => {
+    const css = (node: Element) => getComputedStyle(node);
+    const tag = el.querySelector('.feature__lost')!;
+    const name = el.querySelector('.feature__name')!;
+    const list = el.closest('ul')!.getBoundingClientRect();
+    const muted = document.querySelector('details.feature:not(.feature--option) .feature__source');
+    const optionRows = [...document.querySelectorAll('details.feature--option')];
+    return {
+      tagHeight: tag.getBoundingClientRect().height,
+      tagFont: css(tag).fontSize,
+      tagBorder: css(tag).borderTopStyle,
+      tagInk: css(tag).color,
+      tagLine: css(tag).borderTopColor,
+      nameInk: css(name).color,
+      mutedInk: muted ? css(muted).color : '',
+      option: el.classList.contains('feature--option'),
+      source: !!el.querySelector('.feature__source'),
+      sub: el.querySelector('.feature__sub')?.textContent?.trim() ?? '',
+      indent: name.getBoundingClientRect().left - list.left,
+      optionRows: optionRows.map((r) => ({
+        source: !!r.querySelector('.feature__source'),
+        sub: r.querySelector('.feature__sub')?.textContent?.trim() ?? '',
+        indent: r.querySelector('.feature__name')!.getBoundingClientRect().left - r.closest('ul')!.getBoundingClientRect().left,
+      })),
+    };
+  });
+  expect(look.tagHeight, `a etiqueta "Não vale agora" tem 22 px de altura ${where}`).toBe(22);
+  expect(look.tagFont, `a etiqueta tem texto de 12 px ${where}`).toBe('12px');
+  expect(look.tagBorder, `a etiqueta tem borda tracejada ${where}`).toBe('dashed');
+  expect(look.tagInk, `a etiqueta na cor de aviso ${where}`).toBe(look.tagLine);
+  expect(look.nameInk, `o nome da linha perdida em tinta suave ${where}`).toBe(look.mutedInk);
+  if (kind !== 'feat') {
+    expect(look.option && !look.source, `a linha da opção não tem rótulo à direita ${where}`).toBe(true);
+    expect(look.sub, `a linha da opção diz de quem ela é ${where}`).toBe('Opção de ' + table.featName);
+  } else {
+    expect(look.option, `o talento não é uma linha de opção ${where}`).toBe(false);
+    expect(look.sub).toBe('');
+  }
+  // Every option row, lost or not (the fighting style the sheet picked too): no label on the right, "Opção de ...", 16 px in.
+  for (const [i, option] of look.optionRows.entries()) {
+    expect(option.source, `a opção ${i + 1} sem rótulo à direita ${where}`).toBe(false);
+    expect(option.sub.startsWith('Opção de '), `a opção ${i + 1} diz "Opção de ..." ${where}`).toBe(true);
+    expect(option.indent, `a opção ${i + 1} entra 16 px ${where}`).toBe(16);
+  }
+  const banner = await page.getByRole('note', { name: 'Pendências de regra' }).evaluate((el) => {
+    const box = el.getBoundingClientRect();
+    const seen = (node: Element) => {
+      const r = node.getBoundingClientRect();
+      return r.height > 1 && getComputedStyle(node).position !== 'absolute';
+    };
+    let before = el.previousElementSibling;
+    while (before && !seen(before)) {
+      before = before.previousElementSibling;
+    }
+    let after = el.nextElementSibling;
+    while (after && !seen(after)) {
+      after = after.nextElementSibling;
+    }
+    return { above: before ? box.top - before.getBoundingClientRect().bottom : -1, below: after ? after.getBoundingClientRect().top - box.bottom : -1 };
+  });
+  expect(banner.above, `16 px acima de "Pré-requisito perdido." ${where}`).toBe(16);
+  expect(banner.below, `16 px abaixo de "Pré-requisito perdido." ${where}`).toBe(16);
+}
+
+async function scanLostPrerequisite(browser: Browser, colorScheme: 'light' | 'dark', width: number, reader: 'owner' | 'master'): Promise<void> {
+  const master = await browser.newContext({ storageState: authStatePath('Mestre Teste'), colorScheme, viewport: sizeOf(width) });
+  const player = await browser.newContext({ storageState: authStatePath('Jogador Teste'), colorScheme, viewport: sizeOf(width) });
+  const m = await master.newPage();
+  const p = await player.newPage();
+  const where = `(${reader === 'owner' ? 'dono' : 'mestre'}, ${colorScheme}, ${width}px)`;
+  try {
+    await Promise.all([m.goto('/'), p.goto('/')]);
+    for (const kind of ['feat', 'option', 'both'] as const) {
+      const table = await lostPrerequisiteTable(m, p, `Acessibilidade pré-requisito perdido ${Date.now()}`, kind, true);
+      const page = reader === 'owner' ? p : m;
+      await open(page, `/campaigns/${table.campaignId}/characters/${table.characterId}`);
+      const asked = reader === 'owner' ? 'uma condição que a mesa não mostra' : 'Ordem Esquecida 3, e Toren não tem nível de Ordem Esquecida';
+      await expect(page.getByText(`${table.entryName} pede ${asked}:`)).toBeVisible();
+      await expect(page.getByText('Pré-requisito perdido.').first()).toBeVisible();
+      await expect(page.getByText('Não vale agora')).toHaveCount(kind === 'both' ? 2 : 1);
+      if (kind === 'both') {
+        // The feat and its option, lost together, are two lines of one list in "Pendências de regra".
+        await expect(page.getByRole('note', { name: 'Pendências de regra' }).locator('li')).toHaveCount(2);
+        await expect(page.getByText(`${table.alsoName} pede ${asked}:`)).toBeVisible();
+      }
+      await expectLostRows(page, table, kind, where);
+      // The story sits beside the features on a tablet, never over them: the heading of the features stays in sight.
+      const features = await page.locator('app-features-panel').boundingBox();
+      const story = await page.locator('app-story-panel').boundingBox();
+      expect(features && story && features.x < story.x + story.width && story.x < features.x + features.width && features.y < story.y + story.height && story.y < features.y + features.height, `a história cobre as características ${where}`).toBe(false);
+      await expectScreenPasses(page, `Ficha com ${{ feat: 'o talento', option: 'a opção', both: 'o talento e a opção' }[kind]} de pré-requisito perdido ${where}`);
+    }
+  } finally {
+    await Promise.all([master.close(), player.close()]);
+  }
+}
+
+test('a ficha com o talento e a opção de pré-requisito perdido, que o dono lê sem o nome escondido, passa no axe e nas conferências de layout no tema claro, no celular', { tag: ['@a11y', '@MR-025', '@MR-040'] }, async ({ browser }) => {
+  test.setTimeout(240_000);
+  await scanLostPrerequisite(browser, 'light', 390, 'owner');
+});
+
+test('a ficha com o talento e a opção de pré-requisito perdido, que o dono lê sem o nome escondido, passa no axe e nas conferências de layout no tema escuro, no desktop', { tag: ['@a11y', '@MR-025', '@MR-040'] }, async ({ browser }) => {
+  test.setTimeout(240_000);
+  await scanLostPrerequisite(browser, 'dark', 1280, 'owner');
+});
+
+test('a ficha com o talento e a opção de pré-requisito perdido, que o mestre lê com o nome, passa no axe e nas conferências de layout no tema escuro, no tablet', { tag: ['@a11y', '@MR-025', '@MR-040'] }, async ({ browser }) => {
+  test.setTimeout(240_000);
+  await scanLostPrerequisite(browser, 'dark', 768, 'master');
+});
+
+// The level-up's "Falta escolher" chip and its stepper on a tablet (#580, board 580-04): the five steps end inside the card's right edge
+// (the viewport's edge is not enough: the page's gutter is 48 px there), the chip is the pending tag in the colour of the footer line,
+// and it sits 12 px above the "Aumentar habilidades / Um talento" control.
+async function scanLevelUpFeatChip(browser: Browser, colorScheme: 'light' | 'dark', width: number): Promise<void> {
+  const master = await browser.newContext({ storageState: authStatePath('Mestre Teste'), colorScheme, viewport: sizeOf(width) });
+  const player = await browser.newContext({ storageState: authStatePath('Jogador Teste'), colorScheme, viewport: sizeOf(width) });
+  const m = await master.newPage();
+  const p = await player.newPage();
+  const where = `(${colorScheme}, ${width}px)`;
+  try {
+    await Promise.all([m.goto('/'), p.goto('/')]);
+    const table = await tableForLevelUp(m, p, `Acessibilidade chip ${Date.now()}`, { session: false });
+    await createPrerequisiteFeatsRPC(m, table.campaignId);
+    await open(p, `/campaigns/${table.campaignId}/characters/${table.characterId}/level-up`);
+    await passClassStep(p);
+    await pickRadio(p, 'Um talento');
+    const chip = p.locator('app-abilities-step .asi-head .mr-tag');
+    await expect(chip).toHaveText('Falta escolher');
+
+    const geometry = await p.evaluate(() => {
+      const rect = (selector: string) => document.querySelector(selector)!.getBoundingClientRect();
+      const bar = rect('app-steps-bar');
+      const card = rect('#pick-abilities');
+      return {
+        steps: [...document.querySelectorAll('app-steps-bar .step')].map((s) => s.getBoundingClientRect().right),
+        barRight: bar.right,
+        cardRight: card.right,
+        headBottom: rect('.asi-head').bottom,
+        chipBottom: rect('.asi-head .mr-tag').bottom,
+        modeTop: rect('#pick-abilities .mode').top,
+        overflow: document.documentElement.scrollWidth - window.innerWidth,
+      };
+    });
+    expect(geometry.steps, `o passo a passo tem os cinco passos ${where}`).toHaveLength(5);
+    for (const [i, right] of geometry.steps.entries()) {
+      expect(right, `o passo ${i + 1} termina dentro do cartão ${where}`).toBeLessThanOrEqual(Math.min(geometry.barRight, geometry.cardRight) + 0.5);
+    }
+    expect(geometry.overflow, `a página sem rolagem lateral ${where}`).toBeLessThanOrEqual(0);
+    expect(geometry.modeTop - Math.max(geometry.headBottom, geometry.chipBottom), `o chip a 12 px do controle ${where}`).toBeCloseTo(12, 0);
+
+    const inkOf = (locator: Locator) => locator.evaluate((el) => getComputedStyle(el).color);
+    await expect(chip).toHaveClass(/mr-tag--pending/);
+    await expect(chip).not.toHaveClass(/mr-tag--danger/);
+    expect(await inkOf(chip), `o chip na cor da linha "Falta escolher o talento." ${where}`).toBe(await inkOf(p.locator('.foot__reason')));
+    await expectScreenPasses(p, `Subir de nível, o chip "Falta escolher" e o passo a passo ${where}`);
+  } finally {
+    await Promise.all([master.close(), player.close()]);
+  }
+}
+
+test('o chip "Falta escolher" do subir de nível e o passo a passo cabem no cartão no tema escuro, no tablet', { tag: ['@a11y', '@MR-025', '@MR-040'] }, async ({ browser }) => {
+  test.setTimeout(180_000);
+  await scanLevelUpFeatChip(browser, 'dark', 768);
+});
+
+test('o chip "Falta escolher" do subir de nível e o passo a passo cabem no cartão no tema claro, no tablet', { tag: ['@a11y', '@MR-025', '@MR-040'] }, async ({ browser }) => {
+  test.setTimeout(180_000);
+  await scanLevelUpFeatChip(browser, 'light', 768);
+});
+
+// The kinds strip of "Conteúdo da mesa" on a tablet (#580, board 580-12): the open kind is in sight when the page opens and when the kind
+// changes, the fade is 40 px wide, and it follows the strip when the window is resized.
+async function scanKindsStrip(browser: Browser, colorScheme: 'light' | 'dark', width: number): Promise<void> {
+  const master = await browser.newContext({ storageState: authStatePath('Mestre Teste'), colorScheme, viewport: { width, height: 900 } });
+  const player = await browser.newContext({ storageState: authStatePath('Jogador Teste'), colorScheme, viewport: { width, height: 900 } });
+  const m = await master.newPage();
+  const p = await player.newPage();
+  const where = `(${colorScheme}, ${width}px)`;
+  const strip = m.locator('.menu__list');
+  const state = () =>
+    strip.evaluate((el) => {
+      const on = el.querySelector('[aria-current="page"]')!.getBoundingClientRect();
+      const box = el.getBoundingClientRect();
+      return {
+        name: el.querySelector('[aria-current="page"] span')!.textContent,
+        inside: on.left >= box.left - 1 && on.right <= box.right + 1,
+        start: el.classList.contains('menu__list--fade-start'),
+        end: el.classList.contains('menu__list--fade-end'),
+        moreBefore: el.scrollLeft > 1,
+        moreAfter: el.scrollLeft + el.clientWidth < el.scrollWidth - 1,
+        mask: getComputedStyle(el).maskImage,
+        overflow: document.documentElement.scrollWidth - window.innerWidth,
+      };
+    });
+  try {
+    await Promise.all([m.goto('/'), p.goto('/')]);
+    const campaignId = await campaignWithEmptyPlayer(m, p, `Acessibilidade faixa ${Date.now()}`);
+    await open(m, `/campaigns/${campaignId}/content?kind=weapons`);
+    await expect.poll(async () => (await state()).inside, { message: `Armas à vista ao abrir a página ${where}` }).toBe(true);
+    const weapons = await state();
+    expect(weapons.name, `o tipo aberto ${where}`).toBe('Armas');
+    expect(weapons.start, `a borda esquerda esmaece, há tipos antes ${where}`).toBe(true);
+    expect(weapons.end, `a borda direita não esmaece, Armas é o último ${where}`).toBe(false);
+    expect(weapons.mask, `o esmaecimento de 40 px ${where}`).toContain('40px');
+    expect(weapons.overflow, `a página sem rolagem lateral ${where}`).toBeLessThanOrEqual(0);
+
+    await strip.getByRole('link', { name: /^Magias/ }).click();
+    await expect(strip.locator('[aria-current="page"]')).toContainText('Magias');
+    await expect.poll(async () => (await state()).inside, { message: `Magias à vista depois de trocar o tipo ${where}` }).toBe(true);
+    const spells = await state();
+    expect(spells.start && spells.end, `os dois lados esmaecem com um tipo do meio ${where}`).toBe(true);
+    await expectScreenPasses(m, `Conteúdo da mesa, a faixa de tipos com um tipo do meio aberto ${where}`);
+
+    await open(m, `/campaigns/${campaignId}/content`);
+    const first = await state();
+    expect(first.name).toBe('Classes');
+    expect(first.start, `sem esmaecimento à esquerda no primeiro tipo ${where}`).toBe(false);
+    expect(first.end, `esmaecimento à direita no primeiro tipo ${where}`).toBe(true);
+
+    // The window is resized: the fade is measured again and follows what the strip really has beyond each edge.
+    await m.setViewportSize({ width: 1090, height: 900 });
+    await expect.poll(async () => {
+      const s = await state();
+      return s.start === s.moreBefore && s.end === s.moreAfter;
+    }, { message: `o esmaecimento acompanha a faixa depois de redimensionar ${where}` }).toBe(true);
+    await m.setViewportSize({ width, height: 900 });
+    await expect.poll(async () => {
+      const s = await state();
+      return s.start === s.moreBefore && s.end === s.moreAfter && s.end;
+    }, { message: `o esmaecimento volta ao tamanho da página ${where}` }).toBe(true);
+  } finally {
+    await Promise.all([master.close(), player.close()]);
+  }
+}
+
+test('a faixa de tipos do conteúdo da mesa mostra o tipo aberto e o esmaecimento no tema claro, no tablet', { tag: ['@a11y', '@MR-025'] }, async ({ browser }) => {
+  test.setTimeout(180_000);
+  await scanKindsStrip(browser, 'light', 768);
+});
+
+test('a faixa de tipos do conteúdo da mesa mostra o tipo aberto e o esmaecimento no tema escuro, no tablet', { tag: ['@a11y', '@MR-025'] }, async ({ browser }) => {
+  test.setTimeout(180_000);
+  await scanKindsStrip(browser, 'dark', 768);
+});
+
+// The option rows of a subclass feature ask (#580, board 580-03): "Nível mínimo" is 140 px, "Adicionar pré-requisito" is a text action with a
+// caret, "Remover opção" is in the "⋮" menu of the row, the hint says it is never the option itself, and the open feature's accent frame has
+// no second outline of the option card a few pixels inside it.
+async function scanOptionAsks(browser: Browser, colorScheme: 'light' | 'dark', width: number): Promise<void> {
+  const master = await browser.newContext({ storageState: authStatePath('Mestre Teste'), colorScheme, viewport: { width, height: 900 } });
+  const player = await browser.newContext({ storageState: authStatePath('Jogador Teste'), colorScheme, viewport: { width, height: 900 } });
+  const m = await master.newPage();
+  const p = await player.newPage();
+  const where = `(${colorScheme}, ${width}px)`;
+  try {
+    await Promise.all([m.goto('/'), p.goto('/')]);
+    const campaignId = await campaignWithEmptyPlayer(m, p, `Acessibilidade opções que pedem ${Date.now()}`);
+    const brasa = await createEntryRPC(m, campaignId, 'tableOption', { namePt: 'Olhar de Brasa', descPt: ['Você enxerga no escuro.'], set: 'invocation' });
+    const subclass = await createSubclassRPC(m, campaignId, {
+      namePt: 'Guarda do Corvo',
+      classKey: 'class:fighter',
+      descPt: ['Quem aprendeu a lâmina com os corvos.'],
+      levels: [{ level: 3, features: [{
+        namePt: 'Truques de lâmina',
+        descPt: ['Escolha entre as opções da lista.'],
+        effects: [{ type: 'choice', choice: 'feature', count: 1 }],
+        options: ['Golpe do Corvo', 'Asa Partida'].map((n) => ({ namePt: n, descPt: [`${n}: um truque da lista.`] })),
+      }] }],
+    });
+    const entry = (await listEntries(m, campaignId)).find((e) => e.key === subclass)!;
+    const feature = entry.tableSubclass.levels[0].features[0];
+    const asking = { ...feature.options[1], prerequisite: { classLevel: { classKey: 'class:fighter', level: 7 }, requiresOptionKeys: [brasa] } };
+    const updated = await callRPC(m, 'meurpg.rules.v1.TableContentService/UpdateTableEntry', {
+      campaignId,
+      key: subclass,
+      expectedRevision: entry.revision,
+      tableSubclass: { ...entry.tableSubclass, levels: [{ ...entry.tableSubclass.levels[0], features: [{ ...feature, options: [feature.options[0], asking] }] }] },
+    });
+    expect(updated.ok(), await updated.text()).toBeTruthy();
+
+    await open(m, entryRoute(campaignId, subclass));
+    await m.getByRole('button', { name: /Truques de lâmina/ }).first().click();
+    const option = m.getByRole('group', { name: 'Opção 2' });
+    await expect(option.getByLabel('Nome da opção')).toHaveValue('Asa Partida');
+    const add = option.getByRole('button', { name: 'Adicionar pré-requisito' });
+    await add.scrollIntoViewIfNeeded();
+    await expect(option).toContainText('Nunca a própria opção.');
+    const level = await option.locator('app-ask-rows app-text-field').first().boundingBox();
+    expect(level?.width, `"Nível mínimo" com 140 px ${where}`).toBeCloseTo(140, 0);
+    await expect(add, `"Adicionar pré-requisito" é uma ação de texto ${where}`).not.toHaveClass(/mat-mdc-outlined-button/);
+    expect(await add.evaluate((el) => getComputedStyle(el).borderTopWidth), `sem contorno em "Adicionar pré-requisito" ${where}`).toBe('0px');
+    await expect(option.getByRole('button', { name: 'Remover opção' }), `"Remover opção" só no menu ${where}`).toHaveCount(0);
+    // The accent frame of the open feature is the only outline near the edge: the option card inside it keeps none of its own.
+    expect(await option.evaluate((el) => getComputedStyle(el.querySelector('.feature') ?? el).borderRightColor), `o cartão da opção sem contorno ${where}`).toBe('rgba(0, 0, 0, 0)');
+    await m.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
+    await expectScreenPasses(m, `Editor de subclasse, a opção que pede nível e opção ${where}`);
+
+    await option.getByRole('button', { name: /^Mais ações de/ }).click();
+    await expect(m.getByRole('menuitem', { name: 'Remover opção' })).toBeVisible();
+    await expectScreenPasses(m, `Editor de subclasse, o menu da opção ${where}`);
+    await m.keyboard.press('Escape');
+    await add.click();
+    await expect(m.getByRole('menuitem', { name: /Magia que conhece/ })).toBeVisible();
+    await expectScreenPasses(m, `Editor de subclasse, "Adicionar pré-requisito" aberto ${where}`);
+  } finally {
+    await Promise.all([master.close(), player.close()]);
+  }
+}
+
+test('a opção de uma característica que pede nível e opção passa no axe e nas conferências de layout no tema escuro, no tablet', { tag: ['@a11y', '@MR-025', '@RN-23'] }, async ({ browser }) => {
+  test.setTimeout(240_000);
+  await scanOptionAsks(browser, 'dark', 768);
+});
+
+test('a opção de uma característica que pede nível e opção passa no axe e nas conferências de layout no tema claro, no desktop', { tag: ['@a11y', '@MR-025', '@RN-23'] }, async ({ browser }) => {
+  test.setTimeout(240_000);
+  await scanOptionAsks(browser, 'light', 1280);
+});
+
+// The weapons list of the sheet editor (#580, board 580-16, state 4): the table's group first with its book icon, a rule between the
+// two groups, "Do SRD" second, and the helper line under the field stays in sight above the open list.
+async function scanWeaponsList(browser: Browser, colorScheme: 'light' | 'dark', width: number, height?: number): Promise<void> {
+  const viewport = height === undefined ? sizeOf(width) : { width, height };
+  const master = await browser.newContext({ storageState: authStatePath('Mestre Teste'), colorScheme, viewport });
+  const player = await browser.newContext({ storageState: authStatePath('Jogador Teste'), colorScheme, viewport });
+  const m = await master.newPage();
+  const p = await player.newPage();
+  const where = `(${colorScheme}, ${width}px${height === undefined ? '' : `, ${height}px de altura`})`;
+  try {
+    await Promise.all([m.goto('/'), p.goto('/')]);
+    const table = await tableForLevelUp(m, p, `Acessibilidade armas ${Date.now()}`, { build: levelUpToren, session: false, milestone: false });
+    await createEntryRPC(m, table.campaignId, 'tableWeapon', { namePt: 'Machado de Lenhador', category: 'WEAPON_CATEGORY_SIMPLE', damage: '1d6', damageType: 'damage-type:slashing', properties: [], weightOz: 80, priceCp: 700 });
+    await open(p, `/campaigns/${table.campaignId}/characters/${table.characterId}/edit`);
+    await p.getByRole('tab', { name: 'Equipamento' }).click();
+    const select = p.getByRole('combobox', { name: 'Armas', exact: true });
+    await select.scrollIntoViewIfNeeded();
+    await select.click();
+    await expect(p.getByRole('option', { name: /Machado de Lenhador/ })).toBeVisible();
+    // The panel is in the page, and visible, a few frames before the overlay places it (it is at the top of the window until then):
+    // measure once it stands under the helper line, which is where the list is placed.
+    await expect.poll(
+      () => p.evaluate(() => {
+        const hint = [...document.querySelectorAll('mat-hint')].find((h) => h.textContent?.includes('Escolha quantas quiser'))!;
+        return document.querySelector('.mr-weapons-panel')!.getBoundingClientRect().top - hint.getBoundingClientRect().bottom;
+      }),
+      { message: `a lista é posicionada abaixo da linha de ajuda ${where}`, timeout: 10_000 },
+    ).toBeGreaterThanOrEqual(0);
+    const list = await p.evaluate(() => {
+      const label = (g: Element) => g.querySelector('.mat-mdc-optgroup-label')!;
+      const groups = [...document.querySelectorAll('.mr-weapons-panel mat-optgroup')];
+      const hint = [...document.querySelectorAll('mat-hint')].find((h) => h.textContent?.includes('Escolha quantas quiser'))!;
+      const at = hint.getBoundingClientRect();
+      const top = document.elementFromPoint(at.left + at.width / 2, at.top + at.height / 2);
+      return {
+        labels: groups.map((g) => label(g).textContent!.replace(/menu_book/, '').replace(/\s+/g, ' ').trim()),
+        icons: groups.map((g) => label(g).querySelector('mat-icon')?.textContent?.trim() ?? ''),
+        rules: groups.map((g) => getComputedStyle(g, '::before').height),
+        iconBeforeText: (() => {
+          const icon = label(groups[0]).querySelector('mat-icon')!.getBoundingClientRect();
+          const range = document.createRange();
+          const words = [...label(groups[0]).querySelector('.mdc-list-item__primary-text')!.childNodes].find((n) => n.nodeType === Node.TEXT_NODE && n.textContent!.trim() !== '')!;
+          range.selectNodeContents(words);
+          return icon.right <= range.getBoundingClientRect().left;
+        })(),
+        hintCovered: !!top?.closest('.mr-weapons-panel'),
+        hintAbovePanel: document.querySelector('.mr-weapons-panel')!.getBoundingClientRect().top - at.bottom,
+      };
+    });
+    expect(list.labels, `a lista abre com o grupo da mesa e depois o do SRD ${where}`).toEqual(['Da mesa', 'Do SRD']);
+    expect(list.icons, `só o rótulo "Da mesa" tem o ícone de livro ${where}`).toEqual(['menu_book', '']);
+    expect(list.iconBeforeText, `o ícone vem antes do rótulo ${where}`).toBe(true);
+    expect(list.rules, `uma linha separa os dois grupos ${where}`).toEqual(['auto', '1px']);
+    expect(list.hintCovered, `a linha de ajuda do campo não fica atrás da lista ${where}`).toBe(false);
+    expect(list.hintAbovePanel, `a lista abre abaixo da linha de ajuda ${where}`).toBeGreaterThanOrEqual(0);
+    await expectScreenPasses(p, `Editar ficha, a lista de armas aberta ${where}`);
+  } finally {
+    await Promise.all([master.close(), player.close()]);
+  }
+}
+
+test('a lista de armas do editor, com o grupo da mesa, a linha entre os grupos e a ajuda à vista, passa no axe e nas conferências de layout no tema claro, no celular', { tag: ['@a11y', '@MR-025', '@MR-040'] }, async ({ browser }) => {
+  test.setTimeout(240_000);
+  await scanWeaponsList(browser, 'light', 390);
+});
+
+test('a lista de armas do editor, com o grupo da mesa, a linha entre os grupos e a ajuda à vista, passa no axe e nas conferências de layout no tema escuro, no tablet', { tag: ['@a11y', '@MR-025', '@MR-040'] }, async ({ browser }) => {
+  test.setTimeout(240_000);
+  await scanWeaponsList(browser, 'dark', 768);
+});
+
+// The list opens under the helper line whatever the height of the window and wherever the field stands in it: with little room
+// below the field the list is shorter and the field is brought to the middle, and the list never covers "Escolha quantas quiser.".
+for (const [scheme, width, label] of [['light', 390, 'no tema claro, no celular'], ['dark', 768, 'no tema escuro, no tablet'], ['light', 1280, 'no tema claro, no desktop']] as const) {
+  test(`a lista de armas do editor abre abaixo da linha de ajuda, também com a janela baixa, ${label}`, { tag: ['@a11y', '@MR-025', '@MR-040'] }, async ({ browser }) => {
+    test.setTimeout(240_000);
+    await scanWeaponsList(browser, scheme, width, 600);
+  });
 }

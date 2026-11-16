@@ -34,6 +34,7 @@ func (s *Service) PreviewCharacter(
 		return nil, s.dbError(ctx, "read rules content", err)
 	}
 	var sheet *charactersv1.CharacterSheet
+	r := reader{master: isMaster(m)} // a sheet being made has no name yet: its sentences say "o personagem"
 	if req.Msg.GetCharacterId() == "" {
 		kind, ok := kindToDB[req.Msg.GetKind()]
 		if !ok {
@@ -45,7 +46,7 @@ func (s *Service) PreviewCharacter(
 		if sheet, err = checkNewSheet(content, m, kind, req.Msg.GetSheet()); err != nil {
 			return nil, err
 		}
-	} else if sheet, err = s.checkEditedSheet(ctx, m, content, req.Msg.GetCharacterId(), req.Msg.GetSheet()); err != nil {
+	} else if sheet, r.name, err = s.checkEditedSheet(ctx, m, content, req.Msg.GetCharacterId(), req.Msg.GetSheet()); err != nil {
 		return nil, err
 	}
 	var derived rules.Derived
@@ -54,7 +55,7 @@ func (s *Service) PreviewCharacter(
 	} else {
 		derived = basicDerived(content, sheet.GetBasic())
 	}
-	return connect.NewResponse(&charactersv1.PreviewCharacterResponse{Derived: derivedToProto(derived)}), nil
+	return connect.NewResponse(&charactersv1.PreviewCharacterResponse{Derived: r.derived(derived)}), nil
 }
 
 // checkEditedSheet is what UpdateCharacter checks before it writes, for the
@@ -62,34 +63,34 @@ func (s *Service) PreviewCharacter(
 // now (RN-01), the sheet fits the row's kind, and no choice is new that is
 // archived or switched off, judged against the stored sheet. It returns the
 // checked sheet.
-func (s *Service) checkEditedSheet(ctx context.Context, m authz.Membership, content *rules.Content, characterID string, raw *charactersv1.CharacterSheet) (*charactersv1.CharacterSheet, error) {
+func (s *Service) checkEditedSheet(ctx context.Context, m authz.Membership, content *rules.Content, characterID string, raw *charactersv1.CharacterSheet) (*charactersv1.CharacterSheet, string, error) {
 	id, ok := uid.Canonical(characterID)
 	if !ok {
-		return nil, errCharacterNotFound()
+		return nil, "", errCharacterNotFound()
 	}
 	sheet, err := checkSheet(content, raw)
 	if err != nil {
-		return nil, invalidArgument(err)
+		return nil, "", invalidArgument(err)
 	}
 	row, err := s.queries.GetCharacter(ctx, charactersdb.GetCharacterParams{CampaignID: m.CampaignID, ID: id})
 	if err != nil {
-		return nil, s.dbError(ctx, "read a character to preview its sheet", err)
+		return nil, "", s.dbError(ctx, "read a character to preview its sheet", err)
 	}
 	if !canSee(m, row.Kind, row.Status, row.PlayerUserID) {
-		return nil, errCharacterNotFound()
+		return nil, "", errCharacterNotFound()
 	}
 	if !mayEditSheet(m, row) {
-		return nil, errBlocked(blockedReason(characterState(row.Status, row.SheetLockedAt)), row.ID)
+		return nil, "", errBlocked(blockedReason(characterState(row.Status, row.SheetLockedAt)), row.ID)
 	}
 	if err := checkSheetKind(row.Kind, sheet); err != nil {
-		return nil, invalidArgument(err)
+		return nil, "", invalidArgument(err)
 	}
 	stored, err := loadSheet(row.ID, row.Sheet)
 	if err != nil {
-		return nil, s.dbError(ctx, "read a character to preview its sheet", err)
+		return nil, "", s.dbError(ctx, "read a character to preview its sheet", err)
 	}
 	if err := refuseNewChoices(content, m, row.ID, stored.GetFull(), sheet.GetFull()); err != nil {
-		return nil, err
+		return nil, "", err
 	}
-	return sheet, nil
+	return sheet, row.Name, nil
 }

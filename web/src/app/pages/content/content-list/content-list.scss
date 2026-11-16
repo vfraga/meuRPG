@@ -118,6 +118,28 @@
       padding: 0;
       overflow: visible;
     }
+
+    // Below 1100 px the strip scrolls inside its card: it fades where more kinds lie beyond the edge.
+    &--fade-start,
+    &--fade-end {
+      @media (max-width: 1099.98px) {
+        mask-image: linear-gradient(
+          to right,
+          transparent 0,
+          #000 var(--fade-start, 0px),
+          #000 calc(100% - var(--fade-end, 0px)),
+          transparent 100%
+        );
+      }
+    }
+
+    &--fade-start {
+      --fade-start: 40px;
+    }
+
+    &--fade-end {
+      --fade-end: 40px;
+    }
   }
 
   &__item {

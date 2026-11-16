@@ -1,12 +1,22 @@
 import { Component, TemplateRef, computed, input, output } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { MatMenuModule } from '@angular/material/menu';
 
 import type { TableEntry } from '../../../gen/meurpg/rules/v1/table_content_pb';
 import type { EffectDraft, EffectMenuVm, FeatChoice } from '../../core/content/effect-draft';
 import { emptyEffect } from '../../core/content/effect-draft';
-import { emptyFeature, type FeatureDraft, NAME_MAX } from '../../core/content/feature-draft';
+import {
+  emptyFeature,
+  type FeatureDraft,
+  featureAsks,
+  NAME_MAX,
+  withAsks,
+} from '../../core/content/feature-draft';
 import { followResource, resourcesOf, type SummonDraft } from '../../core/content/summon-draft';
+import type { Asks } from '../../core/content/asks';
+import { pactChoices, requirableOptions } from '../../core/content/requirable-options';
+import { AskRows } from '../ask-rows/ask-rows';
 import { latestInput } from '../latest-input';
 import { EffectPicker } from '../effect-picker/effect-picker';
 import { FieldNote } from '../form-fields/field-note';
@@ -24,11 +34,13 @@ import { SummonBlock } from '../summon-block/summon-block';
 @Component({
   selector: 'app-feature-editor',
   imports: [
+    AskRows,
     EffectPicker,
     FieldNote,
     FeatureEditor,
     MatButtonModule,
     MatIconModule,
+    MatMenuModule,
     SummonBlock,
     TextField,
   ],
@@ -54,6 +66,8 @@ export class FeatureEditor {
   readonly heading = input('');
   /** No card of its own (no border, fill or padding): the page already frames it, as the open feature of a class does. */
   readonly flat = input(false);
+  /** The page already draws a frame around this card (an option inside the open feature of a class): the card keeps no outline of its own. */
+  readonly framed = input(false);
   /** The feat editor: its effects may be the types only a feat has. */
   readonly featEditor = input(false);
   /**
@@ -88,6 +102,28 @@ export class FeatureEditor {
   readonly oneOf = input(false);
   /** The feature is one of a list of options: an option with no name is not sent. */
   readonly isOption = input(false);
+  /** An option of a class or subclass feature may ask something of who picks it (a level, a pact, a spell, other options; board 580-03). */
+  readonly allowAsks = input(false);
+  protected readonly asks = computed(() => featureAsks(this.feature()));
+  /** An option row of a feature takes its removal into the "⋮" menu of its head (board 580-03); a trait keeps the button at the foot. */
+  protected readonly rowMenu = computed(() => this.isOption() && this.removeLabel() !== '');
+  protected readonly classOptions = computed<SelectOption[]>(() => [
+    { value: '', label: 'Nenhuma' },
+    ...(this.catalog()?.classes ?? []),
+  ]);
+  protected readonly pactOptions = computed<SelectOption[]>(() =>
+    pactChoices(this.menu(), this.entries()),
+  );
+  protected readonly requirable = computed<SelectOption[]>(() =>
+    requirableOptions(this.menu(), this.entries(), this.feature().key),
+  );
+  protected readonly spellSearch = computed(() => this.catalog()?.spellSearch ?? []);
+
+  protected setAsks(change: Partial<Asks>): void {
+    const next = withAsks(this.latest.current(), change);
+    this.latest.sent(next);
+    this.featureChange.emit(next);
+  }
   /** An option that has content but no name: the save leaves it out, and the screen says so. */
   protected readonly nameMax = NAME_MAX;
   protected readonly unsaved = computed(() => {

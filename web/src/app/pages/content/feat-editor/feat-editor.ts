@@ -63,7 +63,7 @@ import { PickList } from '../../../shared/form-fields/pick-list';
 import { SearchPick } from '../../../shared/form-fields/search-pick';
 import { SelectField, type SelectOption } from '../../../shared/form-fields/select-field';
 import { TextField } from '../../../shared/form-fields/text-field';
-import { AskRows } from '../ask-rows/ask-rows';
+import { AskRows } from '../../../shared/ask-rows/ask-rows';
 import { EditorAlerts, EditorBar } from '../editor-bar/editor-bar';
 import { EntryRead } from '../entry-read/entry-read';
 import { FeatChoices } from './feat-choices/feat-choices';

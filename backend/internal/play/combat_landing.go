@@ -96,30 +96,28 @@ func (s *Service) healCombatant(ctx context.Context, c *combatTx, target playdb.
 	if err != nil {
 		return hit, nil, err
 	}
-	if w := now.GetWildShape(); w != nil {
-		// In a beast form the healing is the beast's (MR-037).
-		r := combat.ApplyHeal(int(w.GetHitPointsCurrent()), int(w.GetHitPointsMax()), int(amount))
-		hp := clamp32(r.HP, 0, math.MaxInt32)
-		before, after, err := s.vitalsOf(ctx, c, target.CharacterID, &playv1.AdjustCharacterVitalsRequest{WildShapeHitPointsCurrent: &hp})
-		if err != nil {
-			return hit, nil, err
-		}
-		hit.DeathBefore = deathOf(target)
-		hit.Before, hit.After = new(hpStateOf(before)), new(hpStateOf(after))
-		hit.Amount = clamp32(r.Healed, 0, math.MaxInt32)
-		return hit, after, nil
-	}
-	r := combat.ApplyHeal(int(now.GetHitPointsCurrent()), int(now.GetHitPointsMax()), int(amount))
-	hp := clamp32(r.HP, 0, math.MaxInt32)
-	before, after, err := s.vitalsOf(ctx, c, target.CharacterID, &playv1.AdjustCharacterVitalsRequest{HitPointsCurrent: &hp})
+	req, healed := healRequest(now, amount)
+	before, after, err := s.vitalsOf(ctx, c, target.CharacterID, req)
 	if err != nil {
 		return hit, nil, err
 	}
 	hit.DeathBefore = deathOf(target)
 	hit.Before = new(hpStateOf(before))
 	hit.After = new(hpStateOf(after))
-	hit.Amount = clamp32(r.Healed, 0, math.MaxInt32)
+	hit.Amount = healed
 	return hit, after, nil
+}
+
+// healRequest is the change of a player's character's vitals that a heal of amount makes, and the hit points it regains: up to
+// the maximum, and in a beast form the healing is the beast's (MR-037). Both the combat's heal and the heal outside a combat
+// write it, so they agree.
+func healRequest(now *playv1.CharacterVitals, amount int32) (*playv1.AdjustCharacterVitalsRequest, int32) {
+	if w := now.GetWildShape(); w != nil {
+		r := combat.ApplyHeal(int(w.GetHitPointsCurrent()), int(w.GetHitPointsMax()), int(amount))
+		return &playv1.AdjustCharacterVitalsRequest{WildShapeHitPointsCurrent: new(clamp32(r.HP, 0, math.MaxInt32))}, clamp32(r.Healed, 0, math.MaxInt32)
+	}
+	r := combat.ApplyHeal(int(now.GetHitPointsCurrent()), int(now.GetHitPointsMax()), int(amount))
+	return &playv1.AdjustCharacterVitalsRequest{HitPointsCurrent: new(clamp32(r.HP, 0, math.MaxInt32))}, clamp32(r.Healed, 0, math.MaxInt32)
 }
 
 // concentrationDC is the Constitution save DC to keep concentrating after a

@@ -354,89 +354,6 @@
   }
 }
 
-.asks-head {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: var(--mr-space-2);
-}
-
-.ask {
-  display: grid;
-  grid-template-columns: minmax(0, 11rem) minmax(0, 1fr) 44px;
-  align-items: start;
-  gap: var(--mr-space-3);
-  padding: var(--mr-space-3) 0;
-  border-top: 1px dashed var(--mr-rule);
-
-  &__name {
-    display: flex;
-    align-items: center;
-    gap: var(--mr-space-2);
-    min-height: 44px;
-    font-weight: 600;
-  }
-
-  &__x {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 44px;
-    height: 44px;
-    border: 0;
-    background: transparent;
-    color: inherit;
-    cursor: pointer;
-  }
-
-  @media (max-width: 599px) {
-    grid-template-columns: minmax(0, 1fr) 44px;
-
-    &__body {
-      grid-column: 1 / -1;
-      grid-row: 2;
-    }
-  }
-}
-
-.asks-add {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--mr-space-3);
-  padding-top: var(--mr-space-3);
-  border-top: 1px dashed var(--mr-rule);
-
-  &__menu {
-    position: relative;
-  }
-
-  &__list {
-    display: flex;
-    flex-direction: column;
-    min-width: 14rem;
-    margin-top: var(--mr-space-1);
-    background: var(--mr-surface, #fff);
-    border: 1px solid var(--mr-rule);
-    border-radius: var(--mr-radius-md);
-
-    button {
-      display: flex;
-      align-items: center;
-      gap: var(--mr-space-2);
-      min-height: 44px;
-      padding: 0 var(--mr-space-3);
-      border: 0;
-      background: transparent;
-      color: inherit;
-      font: inherit;
-      text-align: left;
-      cursor: pointer;
-    }
-  }
-}
-
 .seg-group {
   display: flex;
   flex-direction: column;
@@ -467,23 +384,4 @@
     font-size: var(--mr-font-16);
     font-weight: 700;
   }
-}
-
-.ask-menu {
-  &__name {
-    flex: 1;
-  }
-
-  &__tag {
-    font-size: var(--mr-font-14);
-    color: var(--mr-ink-muted);
-  }
-}
-
-.asks-add__foot {
-  margin: 0;
-  padding: var(--mr-space-2) var(--mr-space-3);
-  border-top: 1px solid var(--mr-rule);
-  font-size: var(--mr-font-14);
-  color: var(--mr-ink-muted);
 }

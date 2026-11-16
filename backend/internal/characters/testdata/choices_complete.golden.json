@@ -332,7 +332,7 @@
             "namePt": "Guerreiro"
           }
         ],
-        "contentVersion": "srd51@a8abc93b235c+fx.60",
+        "contentVersion": "srd51@a8abc93b235c+fx.62",
         "features": [
           {
             "key": "trait:darkvision",
@@ -374,6 +374,8 @@
             "key": "feature:fighter-fighting-style-defense",
             "name": "Fighting Style: Defense",
             "namePt": "Estilo de Luta: Defesa",
+            "optionOfKey": "feature:fighter-fighting-style",
+            "optionOfPt": "Estilo de Luta",
             "sourcePt": "Guerreiro 1",
             "summaryPt": "+1 de CA enquanto usa armadura."
           }
@@ -681,9 +683,6 @@
             "feature:fighter-fighting-style-defense",
             "race:half-elf#abilities=ability:dex"
           ],
-          "knownIssues": [
-            "skill_count|full.skill_proficiency_keys|Faltam 4 perícias para escolher."
-          ],
           "languages": [
             "Anão",
             "Élfico",
@@ -796,7 +795,7 @@
             "namePt": "Guerreiro"
           }
         ],
-        "contentVersion": "srd51@a8abc93b235c+fx.60",
+        "contentVersion": "srd51@a8abc93b235c+fx.62",
         "features": [
           {
             "key": "trait:darkvision",
@@ -838,6 +837,8 @@
             "key": "feature:fighter-fighting-style-defense",
             "name": "Fighting Style: Defense",
             "namePt": "Estilo de Luta: Defesa",
+            "optionOfKey": "feature:fighter-fighting-style",
+            "optionOfPt": "Estilo de Luta",
             "sourcePt": "Guerreiro 1",
             "summaryPt": "+1 de CA enquanto usa armadura."
           }
@@ -1142,9 +1143,6 @@
             "race:half-elf#abilities=ability:dex",
             "race:half-elf#abilities=ability:con"
           ],
-          "knownIssues": [
-            "skill_count|full.skill_proficiency_keys|Faltam 4 perícias para escolher."
-          ],
           "languages": [
             "Anão",
             "Élfico",
@@ -1266,7 +1264,7 @@
             "namePt": "Guerreiro"
           }
         ],
-        "contentVersion": "srd51@a8abc93b235c+fx.60",
+        "contentVersion": "srd51@a8abc93b235c+fx.62",
         "features": [
           {
             "key": "background-feature:shelter-of-the-faithful",
@@ -1290,6 +1288,8 @@
             "key": "feature:fighter-fighting-style-archery",
             "name": "Fighting Style: Archery",
             "namePt": "Estilo de Luta: Arquearia",
+            "optionOfKey": "feature:fighter-fighting-style",
+            "optionOfPt": "Estilo de Luta",
             "sourcePt": "Guerreiro 1",
             "summaryPt": "+2 nas jogadas de ataque com armas à distância."
           }
@@ -1736,7 +1736,7 @@
             "namePt": "Guerreiro"
           }
         ],
-        "contentVersion": "srd51@a8abc93b235c+fx.60",
+        "contentVersion": "srd51@a8abc93b235c+fx.62",
         "features": [
           {
             "key": "feature:fighter-fighting-style",
@@ -1760,6 +1760,8 @@
             "key": "feature:fighter-fighting-style-archery",
             "name": "Fighting Style: Archery",
             "namePt": "Estilo de Luta: Arquearia",
+            "optionOfKey": "feature:fighter-fighting-style",
+            "optionOfPt": "Estilo de Luta",
             "sourcePt": "Guerreiro 1",
             "summaryPt": "+2 nas jogadas de ataque com armas à distância."
           }

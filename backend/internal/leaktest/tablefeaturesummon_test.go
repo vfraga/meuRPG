@@ -1,6 +1,7 @@
 package leaktest
 
 import (
+	"slices"
 	"strings"
 	"testing"
 
@@ -126,8 +127,10 @@ func TestATableFeatureThatSummonsKeepsItsCreatureAndCountFromThoseWhoHoldNone(t 
 }
 
 // The spell a feature's summon lowers to belongs to the feature's entry: GetSpellDetails answers it to the master and to
-// a player whose character has the entry, whether the entry is live or archived, and as an unknown spell to every other
-// member. The canary is the feature's name, which the spell carries. The entry is a class, a race or a class feature of an SRD class.
+// a player whose sheet has the entry, and as an unknown spell to every other member. The holder of a class or a race reads
+// it live, archived or switched off (a sheet keeps its own class and race). A class feature's is read by a player whose
+// sheet has the feature, which a switched-off one no longer is: it leaves the class's rows, so only the master reads the
+// spell then. The canary is the feature's name, which the spell carries. The entry is a class, a race or a class feature of an SRD class.
 func TestTheHiddenSpellOfAFeatureSummonIsReadOnlyByTheMasterAndTheHolderOfItsEntry(t *testing.T) {
 	for _, owner := range []string{"class", "race", "classfeature"} {
 		t.Run(owner, func(t *testing.T) { hiddenSpellOfAFeatureSummon(t, owner) })
@@ -184,11 +187,17 @@ func hiddenSpellOfAFeatureSummon(t *testing.T, owner string) {
 	details := func(p *person) reply {
 		return p.call(rulesv1connect.ContentServiceGetSpellDetailsProcedure, &rulesv1.GetSpellDetailsRequest{CampaignId: w.campaign, SpellKey: spell})
 	}
-	check := func(when string) {
+	// readers are the people who read the hidden spell at this step; every other member gets the unknown-spell answer.
+	check := func(when string, readers ...*person) {
 		t.Helper()
-		for _, p := range []*person{m, w.ana} {
-			if r := details(p); !r.ok() || !strings.Contains(string(r.body), featureName) {
+		for _, p := range []*person{m, w.ana, w.caio} {
+			r := details(p)
+			reads := r.ok() && strings.Contains(string(r.body), featureName)
+			if slices.Contains(readers, p) && !reads {
 				t.Errorf("%s: %s does not read the hidden spell of the feature (the positive control): %d %s", when, p.name, r.status, shorten(r.body))
+			}
+			if !slices.Contains(readers, p) && (r.ok() || strings.Contains(string(r.body), featureName)) {
+				t.Errorf("%s: %s, whose sheet has not the entry, reads the feature's hidden spell: %d %s", when, p.name, r.status, shorten(r.body))
 			}
 		}
 		// The catalog (ListContent) lists neither the feature's hidden spell nor a table class feature, to anyone, the master and the holder
@@ -209,16 +218,18 @@ func hiddenSpellOfAFeatureSummon(t *testing.T, owner string) {
 				t.Errorf("%s: the catalog %s reads (character %q) names the feature's hidden spell or class feature", when, who.p.name, who.character)
 			}
 		}
-		if r := details(w.caio); r.ok() || strings.Contains(string(r.body), featureName) {
-			t.Errorf("%s: Caio, whose character has not the entry, reads the feature's hidden spell: %d %s", when, r.status, shorten(r.body))
-		}
 	}
-	check("live " + owner)
+	holders := []*person{m, w.ana}
+	check("live "+owner, holders...)
 	must(m.table.ArchiveTableEntry(ctx, rq(&rulesv1.ArchiveTableEntryRequest{CampaignId: w.campaign, Key: entry.GetKey()})))
-	check("archived " + owner)
+	check("archived "+owner, holders...)
 	must(m.table.UnarchiveTableEntry(ctx, rq(&rulesv1.UnarchiveTableEntryRequest{CampaignId: w.campaign, Key: entry.GetKey()})))
 	must(m.table.SetOptionSwitches(ctx, rq(&rulesv1.SetOptionSwitchesRequest{CampaignId: w.campaign, Switches: []*rulesv1.OptionSwitch{{Key: entry.GetKey(), Off: true}}})))
-	check("off " + owner)
+	if owner == "classfeature" {
+		// A switched-off class feature leaves the class's rows, so Ana's sheet no longer has it: only the master reads the spell.
+		holders = []*person{m}
+	}
+	check("off "+owner, holders...)
 }
 
 // summonerClass is a table class whose level 1 feature summons: two uses of "chamados" back on a long rest.

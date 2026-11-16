@@ -1,15 +1,15 @@
 {
-  "already on the sheet": "[{\"Feat\":\"feat:livre@mesa\",\"Owner\":\"trait:talento@mesa\"}]",
+  "already on the sheet": "[{\"Feat\":\"feat:livre@mesa\",\"Owner\":\"trait:talento@mesa\",\"At\":1}]",
   "an owner that grants nothing": "null",
-  "an unknown feat": "[{\"Feat\":\"feat:livre@mesa\",\"Owner\":\"trait:talento@mesa\"}]",
+  "an unknown feat": "[{\"Feat\":\"feat:livre@mesa\",\"Owner\":\"trait:talento@mesa\",\"At\":1}]",
   "not a feat": "null",
   "not a feat choice": "null",
   "not scoped": "null",
   "nothing": "null",
-  "off the list": "[{\"Feat\":\"feat:alerta@mesa\",\"Owner\":\"trait:talento@mesa\"}]",
-  "one pick": "[{\"Feat\":\"feat:alerta@mesa\",\"Owner\":\"trait:talento@mesa\"}]",
-  "past the count": "[{\"Feat\":\"feat:alerta@mesa\",\"Owner\":\"trait:talento@mesa\"}]",
+  "off the list": "[{\"Feat\":\"feat:alerta@mesa\",\"Owner\":\"trait:talento@mesa\",\"At\":1}]",
+  "one pick": "[{\"Feat\":\"feat:alerta@mesa\",\"Owner\":\"trait:talento@mesa\",\"At\":0}]",
+  "past the count": "[{\"Feat\":\"feat:alerta@mesa\",\"Owner\":\"trait:talento@mesa\",\"At\":0}]",
   "the owner is not on the sheet": "null",
-  "twice": "[{\"Feat\":\"feat:alerta@mesa\",\"Owner\":\"trait:talento@mesa\"}]",
-  "two of one owner, a repeat": "[{\"Feat\":\"feat:alerta@mesa\",\"Owner\":\"trait:talento@mesa\"},{\"Feat\":\"feat:livre@mesa\",\"Owner\":\"trait:talento@mesa\"}]"
+  "twice": "[{\"Feat\":\"feat:alerta@mesa\",\"Owner\":\"trait:talento@mesa\",\"At\":0}]",
+  "two of one owner, a repeat": "[{\"Feat\":\"feat:alerta@mesa\",\"Owner\":\"trait:talento@mesa\",\"At\":0},{\"Feat\":\"feat:livre@mesa\",\"Owner\":\"trait:talento@mesa\",\"At\":2}]"
 }

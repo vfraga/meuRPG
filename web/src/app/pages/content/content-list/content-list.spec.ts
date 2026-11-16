@@ -1,8 +1,8 @@
 import { TestBed } from '@angular/core/testing';
-import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
+import { ActivatedRoute, convertToParamMap, provideRouter, type ParamMap } from '@angular/router';
 import { create } from '@bufbuild/protobuf';
 import { Code, ConnectError } from '@connectrpc/connect';
-import { of } from 'rxjs';
+import { BehaviorSubject, of } from 'rxjs';
 
 import { Role } from '../../../../gen/meurpg/campaigns/v1/campaigns_pb';
 import { ContentSchema } from '../../../../gen/meurpg/rules/v1/rules_pb';
@@ -49,6 +49,8 @@ describe('ContentList', () => {
       entries?: ReturnType<typeof mirathel>;
       phone?: boolean;
       kind?: string;
+      /** The query of the route, when the test changes the kind after the page opened. */
+      query?: BehaviorSubject<ParamMap>;
       leftOut?: TableContentViolation[];
     } = {},
   ) {
@@ -85,7 +87,8 @@ describe('ContentList', () => {
           provide: ActivatedRoute,
           useValue: {
             paramMap: of(convertToParamMap({ id: 'camp-1' })),
-            queryParamMap: of(convertToParamMap(opts.kind ? { kind: opts.kind } : {})),
+            queryParamMap:
+              opts.query ?? of(convertToParamMap(opts.kind ? { kind: opts.kind } : {})),
           },
         },
         { provide: CampaignsService, useValue: { getCampaign } },
@@ -118,6 +121,133 @@ describe('ContentList', () => {
     const head = text(races.querySelector('.list__head')!);
     expect(head).toContain('Nova raça');
     expect(head).toContain('Nova sub-raça');
+  });
+
+  it('fades the edge of the kinds strip where more kinds follow, and only there (board 580-12 at 768)', async () => {
+    const proto = HTMLElement.prototype;
+    const widths = { scrollWidth: 700, clientWidth: 300 };
+    for (const [k, v] of Object.entries(widths)) {
+      Object.defineProperty(proto, k, { configurable: true, get: () => v });
+    }
+    try {
+      const { fixture, el, settle } = await setup(Role.MASTER);
+      const strip = el.querySelector<HTMLElement>('.menu__list')!;
+      expect(strip.classList).toContain('menu__list--fade-end');
+      expect(strip.classList).not.toContain('menu__list--fade-start');
+      strip.scrollLeft = 150;
+      strip.dispatchEvent(new Event('scroll'));
+      await settle();
+      expect(strip.classList).toContain('menu__list--fade-start');
+      expect(strip.classList).toContain('menu__list--fade-end');
+      strip.scrollLeft = 400;
+      strip.dispatchEvent(new Event('scroll'));
+      await settle();
+      expect(strip.classList).toContain('menu__list--fade-start');
+      expect(strip.classList).not.toContain('menu__list--fade-end');
+      fixture.destroy();
+    } finally {
+      for (const k of Object.keys(widths)) {
+        delete (proto as unknown as Record<string, unknown>)[k];
+      }
+    }
+  });
+
+  it('measures the fade of the kinds strip again when the window is resized (board 580-12)', async () => {
+    const proto = HTMLElement.prototype;
+    const widths = { scrollWidth: 300, clientWidth: 300 };
+    for (const k of Object.keys(widths)) {
+      Object.defineProperty(proto, k, {
+        configurable: true,
+        get: () => widths[k as keyof typeof widths],
+      });
+    }
+    try {
+      const { fixture, el, settle } = await setup(Role.MASTER);
+      const strip = el.querySelector<HTMLElement>('.menu__list')!;
+      expect(strip.classList).not.toContain('menu__list--fade-end');
+      widths.scrollWidth = 700;
+      window.dispatchEvent(new Event('resize'));
+      await settle();
+      expect(strip.classList).toContain('menu__list--fade-end');
+      widths.clientWidth = 700;
+      window.dispatchEvent(new Event('resize'));
+      await settle();
+      expect(strip.classList).not.toContain('menu__list--fade-end');
+      fixture.destroy();
+    } finally {
+      for (const k of Object.keys(widths)) {
+        delete (proto as unknown as Record<string, unknown>)[k];
+      }
+    }
+  });
+
+  describe('the active kind of the strip', () => {
+    const scrolled = vi.fn();
+    const proto = HTMLElement.prototype;
+    let wide = true;
+    let previousScrollIntoView: typeof Element.prototype.scrollIntoView;
+
+    beforeEach(() => {
+      wide = true;
+      scrolled.mockReset();
+      // A mock of its own on Element.prototype (not the one of test-setup.ts, which `--coverage` does not renew per test):
+      // the strip's scrolls are told to `scrolled`, and the previous value is back after the test.
+      previousScrollIntoView = Element.prototype.scrollIntoView;
+      Element.prototype.scrollIntoView = vi.fn(function (
+        this: Element,
+        arg?: boolean | ScrollIntoViewOptions,
+      ) {
+        scrolled(this, arg);
+      });
+      for (const k of ['scrollWidth', 'clientWidth']) {
+        Object.defineProperty(proto, k, {
+          configurable: true,
+          get: () => (k === 'scrollWidth' && wide ? 700 : 300),
+        });
+      }
+    });
+    afterEach(() => {
+      Element.prototype.scrollIntoView = previousScrollIntoView;
+      for (const k of ['scrollWidth', 'clientWidth']) {
+        delete (proto as unknown as Record<string, unknown>)[k];
+      }
+    });
+
+    const centred = () =>
+      scrolled.mock.calls.filter(
+        ([, arg]) => (arg as ScrollIntoViewOptions | undefined)?.inline === 'center',
+      );
+
+    it('is brought into view when the page opens, so "Armas" is never out of sight to the right (board 580-12)', async () => {
+      const { el, fixture } = await setup(Role.MASTER, { kind: 'weapons' });
+      const on = el.querySelector('.menu__item--on')!;
+      expect(on.textContent).toContain('Armas');
+      expect(centred().map(([target]) => target)).toContain(on);
+      expect((centred().at(-1)![1] as ScrollIntoViewOptions).block).toBe('nearest');
+      fixture.destroy();
+    });
+
+    it('is brought into view again when the kind changes, and not on every render', async () => {
+      const query = new BehaviorSubject(convertToParamMap({ kind: 'weapons' }));
+      const { el, fixture, settle } = await setup(Role.MASTER, { query });
+      const before = centred().length;
+      await settle();
+      expect(centred()).toHaveLength(before);
+      query.next(convertToParamMap({ kind: 'spells' }));
+      await settle();
+      const on = el.querySelector('.menu__item--on')!;
+      expect(on.textContent).toContain('Magias');
+      expect(centred()).toHaveLength(before + 1);
+      expect(centred().at(-1)![0]).toBe(on);
+      fixture.destroy();
+    });
+
+    it('does not move the page when the strip has nothing beyond its edges (a column, or a strip that fits)', async () => {
+      wide = false;
+      const { fixture } = await setup(Role.MASTER, { kind: 'weapons' });
+      expect(centred()).toHaveLength(0);
+      fixture.destroy();
+    });
   });
 
   it('shows the limit line under the tabs too, below 1100 px (it is not hidden by size)', async () => {

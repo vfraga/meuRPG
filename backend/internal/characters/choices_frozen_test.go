@@ -460,7 +460,9 @@ func TestCompleteCharacterChoicesFrozen(t *testing.T) {
 		"case": "the master completes an NPC's style", "character": choicesProtoJSON(t, choicesCharacterView(npc)),
 		"history": tb.host.take(), "live": tb.live.count(), "logs": tb.logs.take(t),
 	})
-	if read := tb.caio.get(t, tb.campaign, caios.GetId()); !proto.Equal(choicesCharacterView(read).GetSheet(), choicesCharacterView(byMaster).GetSheet()) {
+	wrote := proto.CloneOf(choicesCharacterView(byMaster).GetSheet())
+	wrote.GetFull().KnownIssues = nil // the server's bookkeeping: only the master receives it
+	if read := tb.caio.get(t, tb.campaign, caios.GetId()); !proto.Equal(choicesCharacterView(read).GetSheet(), wrote) {
 		t.Errorf("Caio reads another sheet than the master wrote")
 	}
 

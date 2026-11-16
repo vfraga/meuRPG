@@ -12,10 +12,22 @@
     <ul class="features">
       @for (f of s.features; track $index) {
         <li>
-          <details class="feature">
+          <details class="feature" [class.feature--option]="f.optionOf !== ''">
             <summary class="feature__summary">
-              <span class="feature__name">{{ f.name }}</span>
-              <span class="feature__source">{{ f.sourcePt }}</span>
+              <span class="feature__main">
+                <span class="feature__line">
+                  <span class="feature__name" [class.feature__name--lost]="f.lost">{{ f.name }}</span>
+                  @if (f.lost) {
+                    <span class="mr-tag mr-tag--pending mr-tag--compact feature__lost">Não vale agora</span>
+                  }
+                </span>
+                @if (f.optionOf) {
+                  <span class="feature__sub">Opção de {{ f.optionOf }}</span>
+                }
+              </span>
+              @if (!f.optionOf) {
+                <span class="feature__source">{{ f.sourcePt }}</span>
+              }
               <mat-icon class="feature__chevron" aria-hidden="true">expand_more</mat-icon>
             </summary>
             @if (f.summaryPt) {

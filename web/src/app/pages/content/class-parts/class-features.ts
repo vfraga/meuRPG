@@ -1,3 +1,4 @@
+import type { CatalogVm } from '../../../core/content/catalog';
 import { Component, computed, input, output } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -61,6 +62,7 @@ import { SelectField, type SelectOption } from '../../../shared/form-fields/sele
                 [allowSummon]="true"
                 [campaignId]="campaignId()"
                 [entries]="entries()"
+                [catalog]="catalog()"
                 [feature]="f.feature"
                 [menu]="menu()"
                 [basePath]="baseOf()(i)"
@@ -212,6 +214,8 @@ export class ClassFeatures {
   /** The campaign and its entries: the open feature's "Invoca criaturas" searches the bestiary and names the table's creatures. */
   readonly campaignId = input('');
   readonly entries = input<readonly TableEntry[]>([]);
+  /** What the option rows of a feature need to name a class, a pact and a spell (board 580-03). */
+  readonly catalog = input<CatalogVm | null>(null);
   readonly openId = input('');
   readonly headingId = input('features-t');
   /** The path of the panel head: where "the class has too many features" lands. */

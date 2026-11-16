@@ -570,7 +570,7 @@ func (s *Service) PreviewLevelUp(
 		return connect.NewResponse(&charactersv1.PreviewLevelUpResponse{Refusal: plan.refusal}), nil
 	}
 	res := &charactersv1.PreviewLevelUpResponse{
-		After:   derivedToProto(rules.Derive(buildOf(plan.sheet), t.content)),
+		After:   reader{name: t.row.Name, master: isMaster(m)}.derived(rules.Derive(buildOf(plan.sheet), t.content)),
 		Refusal: plan.refusal,
 	}
 	newClass := ""

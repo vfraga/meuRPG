@@ -235,7 +235,13 @@
       <!-- The master on a laptop (E10-01 states 1 and 2). -->
       <div class="layout">
         <nav class="menu mr-panel" aria-label="Tipos de conteúdo">
-          <ul class="menu__list">
+          <ul
+            #strip
+            class="menu__list"
+            [class.menu__list--fade-start]="fadeStart()"
+            [class.menu__list--fade-end]="fadeEnd()"
+            (scroll)="measureStrip()"
+          >
             @for (n of nav; track n.slug) {
               <li>
                 <a

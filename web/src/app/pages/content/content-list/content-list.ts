@@ -4,6 +4,7 @@ import {
   ElementRef,
   Injector,
   afterNextRender,
+  afterRenderEffect,
   computed,
   inject,
   signal,
@@ -54,6 +55,7 @@ import { SelectField, type SelectOption } from '../../../shared/form-fields/sele
 import { mediaQuery, PHONE_QUERY } from '../../../shared/map-view/media-query';
 import { openSheet } from '../../../shared/sheet/sheet-host';
 import { ArchiveSheet, type ArchiveSheetData } from '../archive/archive-sheet';
+import { showActiveKind, stripEdges } from './kinds-strip';
 
 type PageState =
   | { status: 'loading' }
@@ -80,6 +82,7 @@ type PageState =
     TextField,
   ],
   providers: [ContentWatcher, LiveSessionSourceLive],
+  host: { '(window:resize)': 'measureStrip()' },
   templateUrl: './content-list.html',
   styleUrl: './content-list.scss',
 })
@@ -93,6 +96,21 @@ export class ContentList {
   private readonly watcher = inject(ContentWatcher);
   private readonly creatures = inject(CreaturesClient);
   private readonly title = viewChild<ElementRef<HTMLElement>>('title');
+  private readonly strip = viewChild<ElementRef<HTMLElement>>('strip');
+  /** The kinds strip scrolls sideways below 1100 px: it fades at an edge where more kinds lie beyond it. */
+  protected readonly fadeStart = signal(false);
+  protected readonly fadeEnd = signal(false);
+
+  /** Reads the strip's scroll position and says which edges have more kinds beyond them. */
+  protected measureStrip(): void {
+    const el = this.strip()?.nativeElement;
+    if (!el) {
+      return;
+    }
+    const edges = stripEdges(el);
+    this.fadeStart.set(edges.start);
+    this.fadeEnd.set(edges.end);
+  }
 
   protected readonly nav = CONTENT_NAV;
   protected readonly filters = CONTENT_FILTERS;
@@ -152,6 +170,14 @@ export class ContentList {
   }));
 
   constructor() {
+    afterRenderEffect(() => {
+      this.slug();
+      const el = this.strip()?.nativeElement;
+      if (el) {
+        showActiveKind(el);
+      }
+      this.measureStrip();
+    });
     this.route.paramMap.pipe(takeUntilDestroyed(inject(DestroyRef))).subscribe((params) => {
       const id = params.get('id');
       if (id) {

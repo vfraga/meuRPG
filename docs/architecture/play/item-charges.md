@@ -92,17 +92,77 @@ When the stock row counts another combat only the piece comes back, and a row le
 
 ## Events
 
-The events are `item_charge_spent`, `item_charges_restored`, `item_destroyed`, `dawn_taken`, `ammunition_spent` and `ammunition_recovered`.
+The events are `item_charge_spent`, `item_charges_restored`, `item_destroyed`, `dawn_taken`, `ammunition_spent`, `ammunition_recovered` and `consumable_used`.
 In a combat that has the character, `SpendCharges` writes `COMBAT_LOG_KIND_ITEM_CHARGE_SPENT` and `RollLastCharge` writes `COMBAT_LOG_KIND_ITEM_LAST_CHARGE_ROLLED`.
 An event of `ammunition_spent` reads as `COMBAT_LOG_KIND_AMMUNITION_SPENT`.
 The web words the three lines in `core/combat/combat-log-item-use.ts` ("gastou a última carga da Varinha de teia", "rolou 1 no d20 da última carga: ...", "atirou com o Arco longo: 1 flecha, restam 3").
 `SetCharges`, `RecoverAmmunition` and any call outside a combat write the session event only, and no line.
 
+## Consumables
+
+`UseConsumable` uses up one unit of a consumable of the sheet: a potion, a scroll or another item of `effects/consumables.json`.
+One entry of `FullSheet.magic_items` is one unit, and the keeper's `RemoveConsumable` takes it off the sheet in the call's transaction.
+The code is `consumables.go`, and the dice, the healing, the resistance and the payload are in `play/consumable`.
+The character's player and the master may call it, a dead user or a dead receiver is refused with `CHARACTER_DEAD`, and it needs an open game session.
+The receiver is the user, or `target_character_id` for a gift: the user's entry is the one spent, and the effect is the receiver's.
+Out of a combat there is no turn and no adjacency.
+A user at 0 hit points does not act and is refused with `COMBATANT_DOWN`, and it may still receive a potion.
+A receiver that is an NPC, a reserved character or not of the campaign is `not_found`.
+A retry of a key is answered to the character's player or the master only, before anything else is read.
+The answer holds the receiver's vitals for the master and for the receiver's own player alone, and the hit points regained and the receiver's id for the giver.
+In a combat (`consumables_combat.go`) the use follows the combat's rules, with the same refusals as any action, for a potion:
+- The user's combatant must be on its turn (`mustActNow`), and `payConsumableAction` spends its action.
+- The extra action of Haste does not pay for it: activating a potion is an action, not Use an Object, so a user whose action is used is refused with `ACTION_USED`.
+- The master acts for a player's character under the same turn, action and 5 feet.
+- An NPC is not a player's combatant (`wearerIn` finds player combatants only), so an NPC combatant of a running combat is not gated by the turn or the action: the master's own use of an NPC's potion is spent and logged as text with no effect and no line of the combat's log, and an NPC's potion given to a player's character in a running combat is refused with `TARGET_NOT_ADJACENT`.
+- A gift reaches a player's character that fights in the combat within 5 feet (`giftReach`; a combat with no map has no distance), else `EncounterBlocked` `TARGET_NOT_ADJACENT`.
+- A player's combatant is never hidden from its party, so no hidden creature can be a receiver.
+- A user or a receiver that is the only one of the two in a running combat is refused with the same reason.
+- A receiver that is dead (the master confirmed it, three failed death saves, or its character died) is refused with `TARGET_DEAD` whatever the item (`refuseTheDead`), so no potion raises it.
+- A combat in setup has no turn: the unit is spent and no turn or action is, and nothing is gated.
+- Every potion costs the turn and the action, whether or not `effects/potions.json` has an effect for it: a potion that is only text is gated, spent and logged as text, and pays the action.
+- A potion is an item of the SRD category `potion` (`rules.Content.IsPotion`), except the SRD's oils, which `rules` names by key in one place (`oils`): applying an oil takes a minute or ten, so it is no action.
+- An oil, a scroll and any other consumable is spent and logged as text on any turn with no gate, and the master judges the time of an oil.
+- The heal is `healCombatant`, so temporary hit points, the dying state and the death saves follow the combat's rules, and a creature at 0 hit points gets up.
+- Out of a combat the heal is `healCharacter`, and both write the request of `healRequest`, so a druid in a beast form heals the beast first.
+- A resistance is a lasting effect of the receiver's combatant (`addEffects`, source kind `item`, owner audience) that lasts `rules.PotionResistanceRounds` rounds from the receiver's turn, and a second potion of the same kind ends the first.
+- A resistance for a receiver that fights in a combat in setup is put on its combatant, never on the character, whoever uses the potion.
+- The effect's card reads "Do item" and the potion's name (`EFFECT_SOURCE_KIND_ITEM`), not "Do mestre".
+- The event is written with the combat's id when the user fights in it, so the combat's log and undo chain read it; the line is `COMBAT_LOG_KIND_CONSUMABLE_USED`.
+An entry that is no longer on the sheet is `EncounterBlocked` `ITEM_GONE`, in a combat or out of it.
+`ListConsumableTargets` is the read behind "Dar a…", and it offers only who the use accepts (`consumableTargets`).
+For a potion in a running combat a user that fights gets the player's characters within 5 feet of its combatant, with the distance and the state word (down or on its feet) that the order of the combat gives every player.
+For a potion in a running combat a user that does not fight gets the characters that do not fight either, with distance 0 and no state.
+For any other consumable, a combat in setup or no combat, the list is the other characters of the party that are not dead, with distance 0 and no state.
+The list follows the state word a player already reads (`stateWordFor` in `combat_view.go`, and Death saves in [Rules](../../product/rules.md)): `receiverStanding` lists a creature with three failed death saves that the master has not confirmed as down for a player.
+The master's list leaves that creature out, and a death the master confirmed (the combatant defeated, or its character marked dead) is on no list.
+The use refuses such a receiver with `TARGET_DEAD` before anything is spent.
+A failed read of the open session is an error of the call, and only the absence of an open session is a campaign with no combat.
+Outside a running combat the list carries no state, so it tells a player no hit points of another character.
+An entry that is no consumable is `invalid_argument` (the keeper's `ConsumableItem`), and an entry that is gone is `ITEM_GONE`.
+It has the same authorization as the use, and the master reads the list of the character it acts for.
+`rules.Content.IsPotion` says an item is a potion by its SRD category, the oils apart, which is what the combat's gate and the list of receivers read.
+`rules.Content.PotionEffect` says what a potion does (`effects/potions.json`).
+A healing potion rolls its dice and heals the receiver up to the maximum, and the response says the hit points really regained.
+The dice follow the table's dice mode like the d20 of the last charge: the app rolls them, or `typed_faces` holds one face for each die, each a face of the die.
+A resistance potion puts a record of `character_effects` on the receiver (source kind `item`) with the damage type and 3600 seconds of game time, the master's and the owner's to read.
+The record counts down with `AdvanceGameTime` like any effect outside a combat, and a second potion of the same kind starts the hour again.
+Any other consumable, and a potion that is only text, only spends the unit, and the response returns the item's text (outcome `TEXT_ONLY`).
+The same holds for an NPC's own potion: an NPC has no hit points and no effects outside a combat, so the use is spent and logged as text, the master tells what it did, and an NPC is never refused as down.
+`consumable_used` is written with the key of the call, so a retry returns the first answer and spends nothing again.
+Two calls with different keys on one entry give one use: the second finds no entry and is refused with `ITEM_GONE`.
+`consumable_used` is not an undoable kind, so it closes the undo chain ([Undo](undo.md)).
+The sheet's `effect_pt` says what a potion does ("Cura 2d4 + 2"), and `spell_key` and `spell_name_pt` hold the spell of a scroll that casts its spell and are empty for every other item.
+
 ## Privacy
 
 Charges, ammunition and these lines are the master's and the owning player's alone (RN-10).
-No other player reads the line, the event (secret) or the hint that the stream carries.
-The leak test is `internal/leaktest/itemuse_test.go`.
+No other player reads the line or the event (secret), and the stream tells `vitals_changed` to the master and the owner only.
+The use of a consumable is read more widely:
+- The master, the user's owner and the receiver's owner read the numbers: the dice, the faces, the total, the hit points regained and the resistance a potion left.
+- In a combat the line says to the whole table who used which item and on whom ("Tor bebeu uma Poção de cura", "Tor deu uma Poção de cura a Brisa"), without a number (`consumable.Line`).
+- The stream tells the master and the owners `vitals_changed`, and tells the table `encounter_changed` and `combat_log_changed` in a combat, and an empty `spell_casts_changed` for any resistance, in a combat or out of one: hints with no content, as every lasting effect sends.
+The leak tests are `internal/leaktest/itemuse_test.go` and `internal/leaktest/consumables_test.go`, which also hold the rows of `ListConsumableTargets` (a creature the master hid next to the user) and the streams a third player hears.
 
 ## Refusals
 

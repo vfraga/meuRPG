@@ -17,6 +17,7 @@ import (
 	playv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/play/v1"
 	"github.com/PuraFome/meuRPG/backend/internal/authz"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/db"
+	"github.com/PuraFome/meuRPG/backend/internal/play/consumable"
 	"github.com/PuraFome/meuRPG/backend/internal/play/damagesteps"
 	"github.com/PuraFome/meuRPG/backend/internal/play/link"
 	"github.com/PuraFome/meuRPG/backend/internal/play/playdb"
@@ -79,6 +80,8 @@ type logEntry struct {
 	gear gearSwapEvent
 	// item is the use of an item of an ITEM_* or AMMUNITION_SPENT line: its payload is its own type (charges.go).
 	item itemUseEvent
+	// consumable is the use of a consumable of a CONSUMABLE_USED line (consumables.go).
+	consumable consumableUsedEvent
 	// shapeStarted: a Wild Shape line is the druid becoming the beast, not leaving it.
 	shapeStarted bool
 	// seq is the highest session_events.seq among the events in hosts: a later event that joins the entry raises it.
@@ -585,6 +588,7 @@ var logHandlers = map[string]logHandler{
 	eventItemChargesRestored:     itemUseLine,
 	eventItemDestroyed:           itemUseLine,
 	eventAmmunitionSpent:         itemUseLine,
+	eventConsumableUsed:          consumableUsedLine,
 	eventActionReadied:           readiedLine(playv1.CombatLogKind_COMBAT_LOG_KIND_ACTION_READIED),
 	eventReadiedFired:            readiedLine(playv1.CombatLogKind_COMBAT_LOG_KIND_READIED_FIRED),
 	eventReadiedLost:             readiedLine(playv1.CombatLogKind_COMBAT_LOG_KIND_READIED_LOST),
@@ -697,6 +701,17 @@ func itemUseLine(_ *logBuilder, e playdb.ListEncounterEventsRow, entry *logEntry
 	return true
 }
 
+// consumableUsedLine is the handler of consumable_used: the table's line (the item), whose numbers consumable.Line leaves to the
+// master and the owners of the user and the receiver.
+func consumableUsedLine(_ *logBuilder, e playdb.ListEncounterEventsRow, entry *logEntry) bool {
+	var use consumableUsedEvent
+	if json.Unmarshal(e.Payload, &use) != nil {
+		return false
+	}
+	entry.kind, entry.consumable = playv1.CombatLogKind_COMBAT_LOG_KIND_CONSUMABLE_USED, use
+	return true
+}
+
 // itemUseKind is the kind of the line of an item's use.
 func itemUseKind(eventKind string, use itemUseEvent) playv1.CombatLogKind {
 	switch {
@@ -708,14 +723,15 @@ func itemUseKind(eventKind string, use itemUseEvent) playv1.CombatLogKind {
 	return playv1.CombatLogKind_COMBAT_LOG_KIND_ITEM_CHARGE_SPENT
 }
 
-// ownerLineKinds are the lines the master and the character's owner read and no other player does, whatever the fog says: the
-// owner's own lines (RN-10, RN-29).
+// ownerLineKinds are the lines the owner of the acting combatant reads whatever the fog says (RN-10, RN-29), and for a consumable's
+// use the receiver's owner too; the other players read a line by the table's visibility, the whole table a CONSUMABLE_USED line.
 var ownerLineKinds = map[playv1.CombatLogKind]bool{
 	playv1.CombatLogKind_COMBAT_LOG_KIND_RECHARGE_ROLLED:         true,
 	playv1.CombatLogKind_COMBAT_LOG_KIND_GEAR_SWAPPED:            true,
 	playv1.CombatLogKind_COMBAT_LOG_KIND_ITEM_CHARGE_SPENT:       true,
 	playv1.CombatLogKind_COMBAT_LOG_KIND_ITEM_LAST_CHARGE_ROLLED: true,
 	playv1.CombatLogKind_COMBAT_LOG_KIND_AMMUNITION_SPENT:        true,
+	playv1.CombatLogKind_COMBAT_LOG_KIND_CONSUMABLE_USED:         true,
 }
 
 // effectLine is the handler of the events of the effects that last.
@@ -1101,7 +1117,7 @@ func (e *logEntry) visibility(v combatViewer, byID map[string]playdb.Combatant, 
 	}
 	// The roll of a Recharge is the line of the master and of the player who controls the creature (RN-29), on
 	// any map: the row is secret and fogged for everybody else.
-	if ownerLineKinds[e.kind] && v.owns(actor) {
+	if ownerLineKinds[e.kind] && (v.owns(actor) || (e.kind == playv1.CombatLogKind_COMBAT_LOG_KIND_CONSUMABLE_USED && v.owns(target))) {
 		return true, true
 	}
 	return visible && e.hitsVisible(byID), seen
@@ -1186,6 +1202,7 @@ var actedForPlayerKinds = map[playv1.CombatLogKind]bool{
 	playv1.CombatLogKind_COMBAT_LOG_KIND_ITEM_CHARGE_SPENT:       true,
 	playv1.CombatLogKind_COMBAT_LOG_KIND_ITEM_LAST_CHARGE_ROLLED: true,
 	playv1.CombatLogKind_COMBAT_LOG_KIND_AMMUNITION_SPENT:        true,
+	playv1.CombatLogKind_COMBAT_LOG_KIND_CONSUMABLE_USED:         true,
 	playv1.CombatLogKind_COMBAT_LOG_KIND_FEATURE_USED:            true,
 	playv1.CombatLogKind_COMBAT_LOG_KIND_RESOURCE:                true,
 	playv1.CombatLogKind_COMBAT_LOG_KIND_WILD_SHAPE:              true,
@@ -1218,9 +1235,6 @@ func (e *logEntry) commonFields(c *logViewing, visible bool, lastID string) *pla
 	}
 	return out
 }
-
-// deathSaveCount is how many successes make a character stable and how many failures make it dying.
-const deathSaveCount = 3
 
 // logFiller writes the fields of one kind of entry, and says false when the viewer has
 // nothing of it to read after all.
@@ -1262,6 +1276,7 @@ var logFillers = map[playv1.CombatLogKind]logFiller{
 	playv1.CombatLogKind_COMBAT_LOG_KIND_ITEM_CHARGE_SPENT:       (*logEntry).fillItemUse,
 	playv1.CombatLogKind_COMBAT_LOG_KIND_ITEM_LAST_CHARGE_ROLLED: (*logEntry).fillItemUse,
 	playv1.CombatLogKind_COMBAT_LOG_KIND_AMMUNITION_SPENT:        (*logEntry).fillItemUse,
+	playv1.CombatLogKind_COMBAT_LOG_KIND_CONSUMABLE_USED:         (*logEntry).fillConsumableUse,
 }
 
 // fill writes the fields of the entry's kind.
@@ -1316,6 +1331,14 @@ func (e *logEntry) fillItemUse(_ *logViewing, out *playv1.CombatLogEntry) bool {
 	out.ItemUse = &playv1.ItemUseLogLine{
 		ItemNamePt: use.Name, Amount: use.Amount, Left: use.Left, Max: use.Max, D20: use.D20, Outcome: itemOutcomeOf(use.Outcome), AmmunitionNamePt: use.Ammo, Lost: charactersv1.ItemLoss(use.Lost),
 	}
+	return true
+}
+
+// fillConsumableUse writes the line of a consumable used in the combat. The table reads who used which item and on whom; the
+// dice, the roll and the hit points regained are the master's and the owners' of the user and of the receiver (RN-10). A line whose
+// user or receiver is hidden never reaches another player (visibleToTable), so the receiver is never named past the fog.
+func (e *logEntry) fillConsumableUse(c *logViewing, out *playv1.CombatLogEntry) bool {
+	out.ConsumableUse = consumable.Line(e.consumable, c.names.contentName(c.ctx, e.consumable.DamageType), c.target.Label, c.v.master || c.v.owns(c.actor) || c.v.owns(c.target))
 	return true
 }
 
@@ -1577,7 +1600,7 @@ func (e *logEntry) fillDeathSave(c *logViewing, out *playv1.CombatLogEntry) bool
 		// The table keeps the road to the owner and the master (RN-24): a save that
 		// went on is no line for anybody else, and the one that made the character
 		// stable says only that it did, a result the table sees.
-		if after.Successes < deathSaveCount || e.ev.DeathOutcome != deathSuccess {
+		if after.Successes < combat.DeathSaveGoal || e.ev.DeathOutcome != deathSuccess {
 			return false
 		}
 		out.DeathSave = &playv1.CombatLogDeathSave{Stable: true}
@@ -1585,7 +1608,7 @@ func (e *logEntry) fillDeathSave(c *logViewing, out *playv1.CombatLogEntry) bool
 	}
 	out.DeathSave = &playv1.CombatLogDeathSave{
 		Outcome: deathOutcomeToProto[e.ev.DeathOutcome], Successes: after.Successes, Failures: after.Failures,
-		Stable: after.Successes >= deathSaveCount, Dying: v.master && after.Failures >= deathSaveCount,
+		Stable: after.Successes >= combat.DeathSaveGoal, Dying: v.master && after.Failures >= combat.DeathSaveGoal,
 	}
 	if v.master || v.owns(c.actor) {
 		out.DeathSave.Roll = deathRoll(e.ev)

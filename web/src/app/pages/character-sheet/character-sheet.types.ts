@@ -172,6 +172,11 @@ export interface FeatureVm {
   /** The rule in one line, in Portuguese (`Feature.summary_pt`), for an option the player picked (a fighting
    * style, an invocation, a pact boon); empty for the other features. */
   readonly summaryPt: string;
+  /** For an option the character picked, the name of the feature, trait or feat that offers it (`Feature.option_of_pt`, and `option_of_key` for its key):
+   * its row reads "Opção de <it>" and has no source on the right (board 580-05); empty for every other feature. */
+  readonly optionOf: string;
+  /** A feat or an option the sheet keeps whose prerequisite it no longer meets: it does not apply now (board 580-05). */
+  readonly lost: boolean;
 }
 
 /** A real problem with the sheet (`DerivedSheet.issues`): shown in the

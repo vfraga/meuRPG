@@ -131,6 +131,14 @@ A family is never a unit in a rarity its variants do not have, except the Crysta
 Loading refuses a category or item that does not exist, a repeated one and one the category already covers.
 The SRD 5.2.1 value table halves a consumable, except the Spell scroll, which `SpellScroll` marks; the treasure generator applies it through `Content.MagicItemValue`.
 
+**Potions.**
+`effects/potions.json` maps the key of a potion the app drinks to its effect: `heal` with the potion's `dice` (2d4+2, 4d4+4, 8d4+8, 10d4+20), or `resistance` with a `damage_type` and `rounds` (600, one hour).
+Loading refuses a key that is no consumable of the catalog or is a family, an unknown kind, a heal without dice or with a damage type, and a resistance without a catalog damage type or with a time out of 1 to 600 rounds.
+A test reads each healing dice and each resistance type from the item's SRD text.
+`Content.PotionEffect(key)` returns the effect; every other consumable has none, and drinking it spends it and shows its text.
+`Content.IsPotion(key)` says an item is a potion by its SRD category (`potion`), with or without an effect.
+The SRD's oils are in that category, and `IsPotion` is false for them: applying one takes a minute or ten, so the combat does not gate it.
+
 ## Trap and light presets
 
 `effects/traps.json` (the SRD's eight sample traps, in our words and with the SRD's numbers, plus the severity table and the damage per level) and `effects/lights.json` (the SRD's lights, in feet) are handwritten and checked on load.

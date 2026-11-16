@@ -79,6 +79,10 @@ type DeathSaveResult struct {
 	HP int
 }
 
+// DeathSaveGoal is how many death save successes make a character stable and how many failures end it (SRD 5.1, RN-03): the one
+// number the combat, its view, the lists of receivers and the rules of healing read.
+const DeathSaveGoal = 3
+
 // DeathSaveDC is the number a death save's roll reaches to be a success (SRD 5.1).
 const DeathSaveDC = 10
 
@@ -123,11 +127,11 @@ func AddFailures(successes, failures, n int) DeathSaveResult {
 // marker of the stable state, and the failures are cleared, so the next hit
 // starts from one failure.
 func tally(successes, failures int) DeathSaveResult {
-	r := DeathSaveResult{Successes: min(successes, 3), Failures: min(failures, 3), Outcome: DeathSaveContinues}
+	r := DeathSaveResult{Successes: min(successes, DeathSaveGoal), Failures: min(failures, DeathSaveGoal), Outcome: DeathSaveContinues}
 	switch {
-	case r.Failures >= 3:
+	case r.Failures >= DeathSaveGoal:
 		r.Outcome = DeathSaveDying
-	case r.Successes >= 3:
+	case r.Successes >= DeathSaveGoal:
 		r.Outcome, r.Failures = DeathSaveStable, 0
 	}
 	return r

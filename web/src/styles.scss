@@ -369,6 +369,60 @@ html {
   --mdc-dialog-container-shape: 28px 28px 0 0;
 }
 
+// The weapons list of the sheet editor (board 580-16, state 4): the name at the left and
+// the category and damage at the right of each row, quiet.
+.mr-weapons-panel.mat-mdc-select-panel {
+  // The list opens under the field's helper line ("Escolha quantas quiser.", 20 px and a 4 px gap), not over it.
+  margin-top: var(--mr-space-6);
+  // Low enough that the list under the helper line still fits a phone's screen; `appOpenDown` on the select keeps it from opening over the field when the room below is short.
+  max-height: 256px;
+
+  .mdc-list-item__primary-text {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .weapon-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--mr-space-3);
+  }
+
+  .weapon-row__name {
+    min-width: 0;
+  }
+
+  .weapon-row__detail {
+    flex: none;
+    font-size: var(--mr-font-14);
+    color: var(--mr-ink-muted);
+  }
+
+  // The label of the table's group carries the book icon, ahead of its words (the mark of the table's content elsewhere).
+  .mat-mdc-optgroup-label .mdc-list-item__primary-text {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .mat-mdc-optgroup-label .mat-icon {
+    order: -1;
+    width: 16px;
+    height: 16px;
+    font-size: var(--mr-font-16);
+  }
+
+  // A rule between the table's weapons and the SRD's, inset like the rows' text so a highlighted last row does not swallow it.
+  .mat-mdc-optgroup + .mat-mdc-optgroup::before {
+    content: '';
+    display: block;
+    height: 1px;
+    margin: var(--mr-space-1) var(--mr-space-4) 0;
+    background: var(--mr-line);
+  }
+}
+
 // The ND list of the NPC editor (E7-11): six rows of 44px, then it scrolls,
 // with a quiet "mais 28 opções" stuck under the last visible row.
 .mr-nd-panel.mat-mdc-select-panel {

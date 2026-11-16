@@ -7479,8 +7479,15 @@ type Feature struct {
 	// True when the text exists only in Portuguese (a table feature): `description` already
 	// is the Portuguese, and there is no English to offer.
 	DescriptionPtOnly bool `protobuf:"varint,9,opt,name=description_pt_only,json=descriptionPtOnly,proto3" json:"description_pt_only,omitempty"`
-	unknownFields     protoimpl.UnknownFields
-	sizeCache         protoimpl.SizeCache
+	// For an option the character picked (a fighting style, an invocation, a feat's option), the Portuguese name
+	// of the feature, trait or feat that offers it; empty for every other feature. The sheet reads "Opção de <it>".
+	OptionOfPt string `protobuf:"bytes,10,opt,name=option_of_pt,json=optionOfPt,proto3" json:"option_of_pt,omitempty"`
+	// The key of that feature, trait or feat (the sheet puts the option under the row with this key: two features can
+	// have the same name, as the Fighter's and the Paladin's "Estilo de Luta"); empty for every other feature.
+	// Every reader of the sheet receives it, as every reader already receives that feature's own key in `features`.
+	OptionOfKey   string `protobuf:"bytes,11,opt,name=option_of_key,json=optionOfKey,proto3" json:"option_of_key,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *Feature) Reset() {
@@ -7574,6 +7581,20 @@ func (x *Feature) GetDescriptionPtOnly() bool {
 		return x.DescriptionPtOnly
 	}
 	return false
+}
+
+func (x *Feature) GetOptionOfPt() string {
+	if x != nil {
+		return x.OptionOfPt
+	}
+	return ""
+}
+
+func (x *Feature) GetOptionOfKey() string {
+	if x != nil {
+		return x.OptionOfKey
+	}
+	return ""
 }
 
 // Proficiencies lists armor, weapon and tool proficiencies, as Portuguese
@@ -7709,6 +7730,10 @@ type Issue struct {
 	// problem is not about one field.
 	Field string `protobuf:"bytes,2,opt,name=field,proto3" json:"field,omitempty"`
 	// What is wrong, in Portuguese, for the app to show.
+	// The text is written for the reader of the call: a feat or an option that lost its prerequisite
+	// ("feat_prerequisite", "option_prerequisite") names the character and says what is missing, and a condition on an
+	// entry the players may not read is named for the master only ("uma condição que a mesa não mostra" for a player).
+	// So the same issue may read differently for two readers; tell issues apart by code and field, never by this text.
 	Message       string `protobuf:"bytes,3,opt,name=message,proto3" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -9260,7 +9285,9 @@ type Weapon struct {
 	// Set for a table weapon the master retired, or switched off for the players (RN-23); the SRD's are never.
 	Archived bool `protobuf:"varint,6,opt,name=archived,proto3" json:"archived,omitempty"`
 	// Switched off for the players (see Race.off); the weapon stays on a sheet that carries it, marked.
-	Off           bool `protobuf:"varint,7,opt,name=off,proto3" json:"off,omitempty"`
+	Off bool `protobuf:"varint,7,opt,name=off,proto3" json:"off,omitempty"`
+	// The damage dice, such as "1d6", for the row of a list of weapons; empty for a weapon that deals none (a net).
+	Damage        string `protobuf:"bytes,8,opt,name=damage,proto3" json:"damage,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -9342,6 +9369,13 @@ func (x *Weapon) GetOff() bool {
 		return x.Off
 	}
 	return false
+}
+
+func (x *Weapon) GetDamage() string {
+	if x != nil {
+		return x.Damage
+	}
+	return ""
 }
 
 // Spell is a spell from the rules content.
@@ -15150,7 +15184,7 @@ const file_meurpg_rules_v1_rules_proto_rawDesc = "" +
 	"\x06thrown\x18\x1c \x01(\bR\x06thrown\x12%\n" +
 	"\x0eammunition_key\x18\x1d \x01(\tR\rammunitionKey\x122\n" +
 	"\x04grip\x18\x1e \x01(\x0e2\x1e.meurpg.rules.v1.VersatileGripR\x04gripB\x12\n" +
-	"\x10_ammunition_left\"\xb3\x02\n" +
+	"\x10_ammunition_left\"\xf9\x02\n" +
 	"\aFeature\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x17\n" +
@@ -15161,7 +15195,11 @@ const file_meurpg_rules_v1_rules_proto_rawDesc = "" +
 	"summary_pt\x18\x06 \x01(\tR\tsummaryPt\x12%\n" +
 	"\x0edescription_pt\x18\a \x01(\tR\rdescriptionPt\x124\n" +
 	"\x16description_pt_missing\x18\b \x01(\bR\x14descriptionPtMissing\x12.\n" +
-	"\x13description_pt_only\x18\t \x01(\bR\x11descriptionPtOnly\"U\n" +
+	"\x13description_pt_only\x18\t \x01(\bR\x11descriptionPtOnly\x12 \n" +
+	"\foption_of_pt\x18\n" +
+	" \x01(\tR\n" +
+	"optionOfPt\x12\"\n" +
+	"\roption_of_key\x18\v \x01(\tR\voptionOfKey\"U\n" +
 	"\rProficiencies\x12\x14\n" +
 	"\x05armor\x18\x01 \x03(\tR\x05armor\x12\x18\n" +
 	"\aweapons\x18\x02 \x03(\tR\aweapons\x12\x14\n" +
@@ -15300,7 +15338,7 @@ const file_meurpg_rules_v1_rules_proto_rawDesc = "" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x17\n" +
 	"\aname_pt\x18\x03 \x01(\tR\x06namePt\x12:\n" +
-	"\bcategory\x18\x04 \x01(\x0e2\x1e.meurpg.rules.v1.ArmorCategoryR\bcategory\"\xca\x01\n" +
+	"\bcategory\x18\x04 \x01(\x0e2\x1e.meurpg.rules.v1.ArmorCategoryR\bcategory\"\xe2\x01\n" +
 	"\x06Weapon\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x17\n" +
@@ -15308,7 +15346,8 @@ const file_meurpg_rules_v1_rules_proto_rawDesc = "" +
 	"\bcategory\x18\x04 \x01(\x0e2\x1f.meurpg.rules.v1.WeaponCategoryR\bcategory\x12\x16\n" +
 	"\x06ranged\x18\x05 \x01(\bR\x06ranged\x12\x1a\n" +
 	"\barchived\x18\x06 \x01(\bR\barchived\x12\x10\n" +
-	"\x03off\x18\a \x01(\bR\x03off\"\xc8\x02\n" +
+	"\x03off\x18\a \x01(\bR\x03off\x12\x16\n" +
+	"\x06damage\x18\b \x01(\tR\x06damage\"\xc8\x02\n" +
 	"\x05Spell\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x17\n" +

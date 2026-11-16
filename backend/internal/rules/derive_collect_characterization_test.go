@@ -10,7 +10,16 @@ import (
 // writes what the step leaves: the active effects (by owner, type and place in
 // the owner's list), the features without their texts, and the issues.
 func collectDump(b Build, c *content, inactive map[string]bool) (string, error) {
-	x := &deriver{b: b, c: c, d: &Derived{ContentVersion: c.version}, proficient: map[string]bool{}, conditions: map[*Effect]bool{}, appliedTagged: map[*Effect]bool{}, inactiveFeats: inactive}
+	// A case may make a feat inactive whose prerequisite it meets: it is told with no condition.
+	why := c.lostFeats(b, deriveWith(b, c, nil))
+	lost := map[string]*LostPrerequisite{}
+	for k := range inactive {
+		lost[k] = why[k]
+		if lost[k] == nil {
+			lost[k] = &LostPrerequisite{EntryPT: c.namePT(k)}
+		}
+	}
+	x := &deriver{b: b, c: c, d: &Derived{ContentVersion: c.version}, proficient: map[string]bool{}, conditions: map[*Effect]bool{}, appliedTagged: map[*Effect]bool{}, inactiveFeats: inactive, lost: lost}
 	x.resolve()
 	x.resolveArmor()
 	x.names()

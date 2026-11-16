@@ -17,6 +17,7 @@ import {
   type Content,
   NamedKeyKind,
   SpellPreparation as GenSpellPreparation,
+  WeaponCategory,
 } from '../../../gen/meurpg/rules/v1/rules_pb';
 import { ABILITY_FROM_GEN } from '../../core/characters/ability-gen';
 import { isTableKey } from '../../core/content/catalog';
@@ -256,6 +257,8 @@ export function catalogFromGen(
       fromTable: isTableKey(w.key),
       archived: w.archived,
       off: w.off,
+      category: w.category === WeaponCategory.MARTIAL ? ('martial' as const) : ('simple' as const),
+      damage: w.damage,
     })),
     spells: content.spells.map((sp) => ({
       key: sp.key,

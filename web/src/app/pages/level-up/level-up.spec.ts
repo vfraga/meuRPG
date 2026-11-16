@@ -219,6 +219,30 @@ describe('LevelUpPage', () => {
     expect(sent).toMatchObject({ featKey: 'feat:atleta@mesa', abilityIncrease: { strength: 1 } });
   });
 
+  it('draws the "Falta escolher" chip, the pending tag, at the right end of the title row while no feat is picked (board 580-04)', async () => {
+    const f = await setup(wizardOptions({ preparedMaxAfter: 3, feats: featOptions() }));
+    const chip = () => el(f).querySelector('app-abilities-step .asi-head .mr-tag');
+    expect(chip()).toBeNull();
+    await click(
+      f,
+      el(f).querySelector<HTMLInputElement>('input[name="asi-take"][type="radio"]:not(:checked)'),
+    );
+    expect(chip()?.textContent?.trim()).toBe('Falta escolher');
+    // The pending tag (warning ink), as the footer line, never the danger one: nothing is wrong yet (board 580-04).
+    expect(chip()?.classList).toContain('mr-tag--pending');
+    expect(chip()?.classList).not.toContain('mr-tag--danger');
+    expect(el(f).querySelector('app-abilities-step .asi-head h2')?.textContent).toContain(
+      'Incremento ou talento',
+    );
+    // The amber bar of the step stays too.
+    expect(text(f)).toContain('Falta escolher o talento.');
+    await click(
+      f,
+      el(f).querySelectorAll<HTMLInputElement>('app-feat-picker input[type="radio"]')[1],
+    );
+    expect(chip()).toBeNull();
+  });
+
   it('says an ability past 20 in the feat branch too, in its own alert region that was there first', async () => {
     const f = await setup(wizardOptions({ preparedMaxAfter: 3, feats: featOptions() }));
     await click(

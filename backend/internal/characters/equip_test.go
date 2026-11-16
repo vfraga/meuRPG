@@ -320,7 +320,7 @@ func TestSetEquippedRefreshesKnownIssues(t *testing.T) {
 	t.Parallel()
 	et := newEquipTable(t)
 	issues := func() []string {
-		return et.dona.get(t, et.campaign, et.pc.GetId()).GetSheet().GetFull().GetKnownIssues()
+		return storedIssues(t, et.h, et.pc.GetId()) // the stored ones: only the master receives them
 	}
 	if len(issues()) != 2 {
 		t.Fatalf("a wizard in leather armor with a shield has issues %v, want two", issues())

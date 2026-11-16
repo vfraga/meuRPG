@@ -1,0 +1,19 @@
+{
+  "round": 1,
+  "combatant_id": "x",
+  "secret": true,
+  "use_entry": "x",
+  "use_item": "x",
+  "use_name_pt": "x",
+  "use_outcome": "x",
+  "use_target": "x",
+  "target_id": "x",
+  "use_dice": "x",
+  "use_faces": [
+    1
+  ],
+  "use_total": 1,
+  "use_healed": 1,
+  "use_physical": true,
+  "use_damage_type": "x"
+}

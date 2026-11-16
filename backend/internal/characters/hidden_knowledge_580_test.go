@@ -151,36 +151,116 @@ func TestAPlayersLevelUpRefusalNamesNoHiddenEntry(t *testing.T) {
 	}
 }
 
-// The sheet's issue of a lost option prerequisite reaches the owner through GetCharacter, and a condition on an entry
-// the player may not read names nothing in it.
-func TestTheOwnerReadsTheLostOptionPrerequisiteIssueWithoutHiddenNames(t *testing.T) {
+// Board 580-05 with RN-23: the issue of a lost option or a lost feat names the character, and a missing condition on an
+// entry the players may not read is "uma condição que a mesa não mostra" for the owner and for another player; the master
+// reads it named. The sentence is built for the reader: the sheet's stored issues name no hidden entry either.
+func TestALostPrerequisiteIsToldToEachReaderWithoutHiddenNames(t *testing.T) {
+	t.Parallel()
+	for _, kind := range []string{"option", "feat"} {
+		t.Run(kind, func(t *testing.T) {
+			t.Parallel()
+			hk := newHiddenKnowledge(t)
+			m := hk.master
+			current := m.get(t, hk.campaign, hk.pc.GetId())
+			sheet := proto.CloneOf(current.GetSheet())
+			code, entry := "feat_prerequisite", "Pede a ordem"
+			if kind == "option" {
+				feat := m.addEntry(t, hk.campaign, &rulesv1.TableFeat{
+					NamePt: "Posturas do vale", DescPt: []string{"Texto."},
+					Effects: []*rulesv1.TableEffect{{Type: "choice", Choice: "feature", Count: 1}},
+					Options: []*rulesv1.TableFeature{{NamePt: "Postura exigente", DescPt: []string{"Texto."}, Prerequisite: &rulesv1.OptionPrerequisite{
+						ClassLevel: &rulesv1.OptionClassLevel{ClassKey: hk.class, Level: 3},
+					}}},
+				})
+				sheet.GetFull().FeatKeys = []string{feat.GetKey()}
+				sheet.GetFull().FeatureChoiceKeys = []string{feat.GetTableFeat().GetOptions()[0].GetKey()}
+				code, entry = "option_prerequisite", "Postura exigente"
+			} else {
+				sheet.GetFull().FeatKeys = []string{hk.byClass}
+			}
+			if _, err := m.update(t, current, current.GetName(), sheet); err != nil {
+				t.Fatalf("the master's save of a sheet whose %s asks for a class it lacks: %v", kind, err)
+			}
+			name, ends := current.GetName(), map[string]string{"option": "a opção", "feat": "o talento"}[kind]
+			hidden := entry + " pede uma condição que a mesa não mostra: " + ends + " só vale de novo quando " + name + " cumprir."
+			named := entry + " pede " + forgottenClass + " 3, e " + name + " não tem nível de " + forgottenClass + ": " + ends + " só vale de novo quando " + name + " cumprir."
+			for _, r := range []struct {
+				who  string
+				u    *user
+				want string
+			}{{"the owner", hk.owner, hidden}, {"the master", m, named}} {
+				read := r.u.get(t, hk.campaign, hk.pc.GetId())
+				var message string
+				for _, i := range read.GetDerived().GetIssues() {
+					if i.GetCode() == code {
+						message = i.GetMessage()
+					}
+				}
+				if message != r.want {
+					t.Errorf("%s reads %q, want %q", r.who, message, r.want)
+				}
+				if r.u != m {
+					wantNames(t, r.who+"'s sheet", read, false, forgottenClass, hk.class)
+				}
+			}
+			// Another player does not read the sheet at all, and the party list tells them nothing of the condition.
+			_, err := hk.other.api.GetCharacter(t.Context(), connect.NewRequest(&charactersv1.GetCharacterRequest{CampaignId: hk.campaign, CharacterId: hk.pc.GetId()}))
+			if connect.CodeOf(err) != connect.CodeNotFound {
+				t.Errorf("another player's read = %v, want not found", err)
+			}
+			for _, sum := range hk.other.list(t, hk.campaign) {
+				wantNames(t, "another player's list", sum, false, forgottenClass, hk.class)
+			}
+			stored := m.get(t, hk.campaign, hk.pc.GetId()).GetSheet().GetFull().GetKnownIssues()
+			for _, id := range stored {
+				if strings.Contains(id, forgottenClass) || strings.Contains(id, name) {
+					t.Errorf("a stored issue names %q or the character: %q", forgottenClass, id)
+				}
+			}
+		})
+	}
+}
+
+// After the master's edit, the lost line is told in "A mudança na mesa" (changed content) the same way: masked for the
+// owner, named for the master.
+func TestALostPrerequisiteAfterAnEditIsToldInTheChangedEntryPerReader(t *testing.T) {
 	t.Parallel()
 	hk := newHiddenKnowledge(t)
 	m := hk.master
-	feat := m.addEntry(t, hk.campaign, &rulesv1.TableFeat{
-		NamePt: "Posturas do vale", DescPt: []string{"Texto."},
-		Effects: []*rulesv1.TableEffect{{Type: "choice", Choice: "feature", Count: 1}},
-		Options: []*rulesv1.TableFeature{{NamePt: "Postura exigente", DescPt: []string{"Texto."}, Prerequisite: &rulesv1.OptionPrerequisite{
-			ClassLevel: &rulesv1.OptionClassLevel{ClassKey: hk.class, Level: 3},
-		}}},
-	})
-	option := feat.GetTableFeat().GetOptions()[0].GetKey()
+	feat := m.addEntry(t, hk.campaign, &rulesv1.TableFeat{NamePt: "Pede depois", DescPt: []string{"Texto."}})
 	current := m.get(t, hk.campaign, hk.pc.GetId())
 	sheet := proto.CloneOf(current.GetSheet())
 	sheet.GetFull().FeatKeys = []string{feat.GetKey()}
-	sheet.GetFull().FeatureChoiceKeys = []string{option}
 	if _, err := m.update(t, current, current.GetName(), sheet); err != nil {
-		t.Fatalf("the master's save of a sheet whose option asks for a class it lacks: %v", err)
+		t.Fatalf("the master's save of the feat: %v", err)
 	}
-	owned := hk.owner.get(t, hk.campaign, hk.pc.GetId())
-	var message string
-	for _, i := range owned.GetDerived().GetIssues() {
-		if i.GetCode() == "option_prerequisite" {
-			message = i.GetMessage()
+	edited := proto.CloneOf(bodyMessage(feat).(*rulesv1.TableFeat))
+	edited.Prerequisite = &rulesv1.FeatPrerequisite{ClassLevel: &rulesv1.FeatClassLevel{ClassKey: hk.class, Level: 3}}
+	if _, err := m.table.UpdateTableEntry(t.Context(), connect.NewRequest(updateReq(hk.campaign, feat.GetKey(), feat.GetRevision(), edited))); err != nil {
+		t.Fatalf("UpdateTableEntry() error = %v", err)
+	}
+	name := current.GetName()
+	tail := ": o talento só vale de novo quando " + name + " cumprir."
+	for _, r := range []struct {
+		who  string
+		u    *user
+		want string
+	}{
+		{"the owner", hk.owner, "Pede depois pede uma condição que a mesa não mostra" + tail},
+		{"the master", m, "Pede depois pede " + forgottenClass + " 3, e " + name + " não tem nível de " + forgottenClass + tail},
+	} {
+		read := r.u.get(t, hk.campaign, hk.pc.GetId())
+		var got []string
+		for _, ch := range read.GetDerived().GetChangedContent() {
+			if ch.GetKey() == feat.GetKey() {
+				got = ch.GetMessages()
+			}
+		}
+		if len(got) != 1 || got[0] != r.want {
+			t.Errorf("%s reads the changed feat as %q, want [%q]", r.who, got, r.want)
+		}
+		if r.u != m {
+			wantNames(t, r.who+"'s sheet", read, false, forgottenClass, hk.class)
 		}
 	}
-	if want := "O personagem não cumpre mais o pré-requisito de Postura exigente: pede uma condição que a mesa não mostra."; message != want {
-		t.Errorf("the owner's issue = %q, want %q", message, want)
-	}
-	wantNames(t, "the owner's sheet", owned, false, forgottenClass, hk.class)
 }

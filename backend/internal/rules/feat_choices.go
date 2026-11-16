@@ -27,7 +27,11 @@ const featChoiceSuffix = textSeparator + "feat"
 func FeatChoiceKey(owner string) string { return owner + featChoiceSuffix }
 
 // choiceFeat is a feat picked through a choice, and the owner that granted it.
-type choiceFeat struct{ Feat, Owner string }
+type choiceFeat struct {
+	Feat, Owner string
+	// At is the pick's place in Build.FeatureChoices.
+	At int
+}
 
 // featChoiceSpec is what the feat choices of an owner ask in all: how many feats
 // and the list they come from (empty: any feat).
@@ -64,7 +68,7 @@ func (c *content) choiceSpec(owner, kind string) (picks int, from []string, ok b
 func (c *content) pickedChoiceFeats(b Build, owned func(string) bool) []choiceFeat {
 	var out []choiceFeat
 	var count map[string]int
-	for _, k := range b.FeatureChoices {
+	for at, k := range b.FeatureChoices {
 		owner, value, ok := featPickParts(k)
 		if !ok || !owned(owner) || !c.featPickFits(b, out, count[owner], owner, value) {
 			continue
@@ -73,7 +77,7 @@ func (c *content) pickedChoiceFeats(b Build, owned func(string) bool) []choiceFe
 			count = map[string]int{}
 		}
 		count[owner]++
-		out = append(out, choiceFeat{Feat: value, Owner: owner})
+		out = append(out, choiceFeat{Feat: value, Owner: owner, At: at})
 	}
 	return out
 }
@@ -129,7 +133,7 @@ func (x *deriver) choiceFeats(owned map[string]bool, add func(string), feature f
 	for _, cf := range c.pickedChoiceFeats(x.b, func(k string) bool { return owned[k] }) {
 		f := c.feats[cf.Feat]
 		if x.inactiveFeats[cf.Feat] {
-			x.issue(IssueFeatPrerequisite, choiceKeysField, "O personagem não cumpre mais o pré-requisito de %s: o talento só vale de novo quando cumprir.", c.namePT(cf.Feat))
+			x.lostIssue(IssueFeatPrerequisite, fmt.Sprintf("%s[%d]", choiceKeysField, cf.At), x.lost[cf.Feat])
 		} else {
 			add(cf.Feat)
 		}

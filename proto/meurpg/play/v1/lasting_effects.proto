@@ -22,6 +22,8 @@ enum EffectSourceKind {
   EFFECT_SOURCE_KIND_CONDITION = 3;
   // Something the master added from the catalog without a spell.
   EFFECT_SOURCE_KIND_MASTER = 4;
+  // What an item did when it was used up (a potion of resistance): the card names the item.
+  EFFECT_SOURCE_KIND_ITEM = 5;
 }
 
 // EffectDurationKind is how an effect ends by itself.

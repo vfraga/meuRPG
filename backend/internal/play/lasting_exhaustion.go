@@ -33,9 +33,6 @@ type exhaustionTarget struct {
 	combatant   *playdb.Combatant
 }
 
-// deathFailuresToDie are the failed death saves that bring a character to the confirmation of its death (SRD 5.1).
-const deathFailuresToDie = 3
-
 // SetExhaustion implements playv1connect.LastingEffectServiceHandler.
 func (s *Service) SetExhaustion(
 	ctx context.Context,
@@ -319,7 +316,7 @@ func (s *Service) setCharacterExhaustion(ctx context.Context, c *combatTx, subje
 		return s.roster.MarkDead(ctx, c.tx, c.session.CampaignID, charID, c.now)
 	}
 	if who != nil && dies {
-		if err := c.q.SetCombatantDeathSaves(ctx, playdb.SetCombatantDeathSavesParams{ID: who.ID, DeathSuccesses: 0, DeathFailures: deathFailuresToDie, DeathSaveRolled: who.DeathSaveRolled, Defeated: who.Defeated}); err != nil {
+		if err := c.q.SetCombatantDeathSaves(ctx, playdb.SetCombatantDeathSavesParams{ID: who.ID, DeathSuccesses: 0, DeathFailures: combat.DeathSaveGoal, DeathSaveRolled: who.DeathSaveRolled, Defeated: who.Defeated}); err != nil {
 			return fmt.Errorf("take the character to the death confirmation: %w", err)
 		}
 	}

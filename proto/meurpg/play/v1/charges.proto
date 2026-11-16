@@ -11,6 +11,8 @@ syntax = "proto3";
 package meurpg.play.v1;
 
 import "meurpg/characters/v1/characters.proto";
+import "meurpg/play/v1/combat.proto";
+import "meurpg/play/v1/play.proto";
 
 // ChargesService runs the charges of the magic items and the ammunition of a campaign's characters.
 //
@@ -86,6 +88,48 @@ service ChargesService {
   // Errors: `permission_denied` for a player; `failed_precondition` with NO_OPEN_SESSION; `invalid_argument` for an
   // idempotency key that is not a UUID or one reused for another request.
   rpc Dawn(DawnRequest) returns (DawnResponse);
+
+  // UseConsumable uses up one unit of a consumable of a character's sheet (a potion, a scroll or another single-use
+  // item of the catalog): the sheet entry (one entry is one unit) is removed, the use is written as the session event
+  // `consumable_used` and, in a running combat, as the log line CONSUMABLE_USED, and the response says what happened. A
+  // healing potion restores hit points with the dice of its text, and a resistance potion gives one hour of resistance
+  // to its damage type; every other consumable only spends the unit and returns its SRD text, with no automatic effect
+  // (a spell scroll is not cast). The receiver is the user, or `target_character_id` for an item given to another
+  // character. Only a potion is an action, and every potion is, one that is only text included: in a running combat it
+  // costs the user's action (the extra action of Haste does not pay for it) and needs the user's turn and, when it is
+  // given, a receiver within 5 feet; out of a combat and in one that has not begun it costs no turn and needs no
+  // adjacency, and any other consumable never does: a scroll, and an oil of the SRD's potion category, which takes a
+  // minute or ten to apply and is spent and logged as text for the master to judge. A creature with three failed death
+  // saves is dead and receives nothing, for every reader and also at a table that hides death saves; the refusal spends
+  // nothing. A consumable event ends the undo chain. The user's
+  // player (or the master, for any character) may use it. The dice follow the table's rule (RN-18). A character with no
+  // hit points of its own outside a combat (an NPC) spends the unit and tells nothing automatic: the master narrates it.
+  //
+  // Errors: `permission_denied` for a character that is not the caller's (a player); `not_found` for a character or a
+  // receiver that is not there (an NPC, a reserved character or one of another campaign is not a receiver);
+  // `invalid_argument` for an entry that is not a consumable, an idempotency key that is not a UUID or one reused for
+  // another request, and a roll the request does not carry; `failed_precondition` with NO_OPEN_SESSION, CharacterBlocked
+  // CHARACTER_DEAD, and EncounterBlocked: ITEM_GONE for an entry that is no longer on the sheet, COMBATANT_DOWN for a
+  // user at 0 hit points (it may still receive), TARGET_DEAD for a receiver with three failed death saves, and for a
+  // potion in a running combat NOT_YOUR_TURN, ACTION_USED and the other reasons of an action, and TARGET_NOT_ADJACENT
+  // for a receiver beyond 5 feet or out of the combat. The response carries the receiver's vitals to the master and to
+  // the receiver's own player only.
+  rpc UseConsumable(UseConsumableRequest) returns (UseConsumableResponse);
+
+  // ListConsumableTargets lists who the character may give the consumable to, which is who the use would accept: for a
+  // potion (every one of them, one that is only text included) in a running combat, the player's characters of the combat
+  // that are adjacent (5 feet) to the user's combatant, with the distance (a creature that is not a player's character is
+  // never listed, so a hidden one never is), and, when the user does not fight in it, the characters that do not fight
+  // either; for any other consumable (a scroll, an oil), or with no running combat, the other characters of the party that
+  // are not dead. The list follows the state word a player already reads: a creature is down at 0 hit points and on its
+  // feet above, whatever its death saves, and a confirmed death is never listed.
+  // The master's list leaves out a creature with three failed death saves. The master reads the list of the character it
+  // acts for, and it is the one that character's player would get, except for that creature. Read only.
+  //
+  // Errors: `permission_denied` for a character that is not the caller's (a player); `not_found` for a character that
+  // is not there; `invalid_argument` for an entry that is no consumable; `failed_precondition` with EncounterBlocked
+  // ITEM_GONE for an entry that is no longer on the sheet and CharacterBlocked CHARACTER_DEAD for a dead user.
+  rpc ListConsumableTargets(ListConsumableTargetsRequest) returns (ListConsumableTargetsResponse);
 }
 
 // ChargesBlockedReason is why a charges or ammunition call was refused with `failed_precondition`.
@@ -209,4 +253,78 @@ message DawnRestored {
   meurpg.characters.v1.SheetMagicItem item = 2;
   // The charges it regained.
   int32 regained = 3;
+}
+
+message UseConsumableRequest {
+  string campaign_id = 1;
+  // The character that uses the consumable: the one whose sheet holds it.
+  string character_id = 2;
+  // The id of the entry on the sheet (SheetMagicItem.id).
+  string entry_id = 3;
+  // The character that receives the effect, when it is not the user. Empty for the user.
+  string target_character_id = 4;
+  string idempotency_key = 5;
+  // How the healing dice come (RN-18), for a healing potion only: the app rolls them, or the player typed the faces of
+  // real dice, one for each die of the potion. Ignored by every other consumable.
+  bool roll_in_app = 6;
+  repeated int32 typed_faces = 7;
+}
+
+message UseConsumableResponse {
+  // The entry that was used up (SheetMagicItem.id).
+  string entry_id = 1;
+  // The catalog key and the name, in Portuguese when the content has it, of the item used.
+  string item_key = 2;
+  string item_name_pt = 3;
+  ConsumableUseOutcome outcome = 4;
+  // The item's text, in Portuguese when the content has it, else the SRD's in English: what the table applies for a
+  // consumable the app carries out no effect for (TEXT_ONLY).
+  repeated string text = 5;
+  // HEALED: the dice, the faces rolled or typed, the total and the hit points regained.
+  string dice_text = 6;
+  repeated int32 faces = 7;
+  int32 roll_total = 8;
+  int32 healed = 9;
+  // RESISTANCE: the damage type's key.
+  string damage_type_key = 10;
+  // The character that received the effect.
+  string target_character_id = 11;
+  // The vitals of the characters the use changed (the receiver).
+  repeated CharacterVitals vitals = 12;
+}
+
+message ListConsumableTargetsRequest {
+  string campaign_id = 1;
+  // The character that holds the consumable (the user).
+  string character_id = 2;
+  // The id of the entry on the sheet (SheetMagicItem.id).
+  string entry_id = 3;
+}
+
+message ListConsumableTargetsResponse {
+  repeated ConsumableTarget targets = 1;
+}
+
+// ConsumableTarget is a character the consumable may be given to.
+message ConsumableTarget {
+  string character_id = 1;
+  string name = 2;
+  // The distance from the user's combatant, in feet; 0 when the list has no distance (no running combat, or a user that
+  // does not fight in it).
+  int32 distance_ft = 3;
+  // How the character stands: set for a combatant of a running combat, UNSPECIFIED for a character outside one (the hit
+  // points of a player's character are no other player's to read there).
+  ConsumableTargetState state = 4;
+  // Whether the character may receive it (true for every listed character).
+  bool may_receive = 5;
+}
+
+// ConsumableTargetState is how a possible receiver stands, as every player at the table may see it.
+enum ConsumableTargetState {
+  // Not told: the character is outside a running combat.
+  CONSUMABLE_TARGET_STATE_UNSPECIFIED = 0;
+  // On its feet: above 0 hit points.
+  CONSUMABLE_TARGET_STATE_OK = 1;
+  // At 0 hit points (unconscious): it cannot act, and a potion given to it wakes it.
+  CONSUMABLE_TARGET_STATE_DOWN = 2;
 }

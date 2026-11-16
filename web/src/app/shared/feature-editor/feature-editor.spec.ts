@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { emptyEffect } from '../../core/content/effect-draft';
-import { emptyFeature, type FeatureDraft } from '../../core/content/feature-draft';
+import { emptyFeature, type FeatureDraft, withAsks } from '../../core/content/feature-draft';
 import { menu } from '../../core/content/content-testing-menu';
 import { costsMenu } from '../../core/content/content-testing-menu-costs';
 import { TableSummonSchema } from '../../../gen/meurpg/rules/v1/table_content_pb';
@@ -41,6 +41,7 @@ describe('FeatureEditor (a trait, a feature)', () => {
       allowSummon?: boolean;
       menu?: ReturnType<typeof menu>;
       oneOf?: boolean;
+      allowAsks?: boolean;
     } = {},
   ) {
     emitted.length = 0;
@@ -70,6 +71,7 @@ describe('FeatureEditor (a trait, a feature)', () => {
     fixture.componentRef.setInput('campaignId', 'camp-1');
     fixture.componentRef.setInput('allowOptions', over.oneOf ?? false);
     fixture.componentRef.setInput('oneOf', over.oneOf ?? false);
+    fixture.componentRef.setInput('allowAsks', over.allowAsks ?? false);
     fixture.componentInstance.featureChange.subscribe((f) => emitted.push(f));
     fixture.componentInstance.removed.subscribe(removed);
     fixture.detectChanges();
@@ -340,6 +342,74 @@ describe('FeatureEditor (a trait, a feature)', () => {
       fixture.componentRef.setInput('allowOptions', true);
       fixture.detectChanges();
       expect(text(el.querySelector('.options')!)).toContain('Ponha na característica um efeito');
+    });
+  });
+
+  describe('what an option row asks (board 580-03)', () => {
+    it('draws "O que a opção pede" only for an option row whose feature may ask', () => {
+      setup({ ...emptyFeature(), name: 'Golpe' }, { isOption: true });
+      expect(text(el)).not.toContain('O que a opção pede');
+      setup({ ...emptyFeature(), name: 'Golpe' }, { isOption: false, allowAsks: true });
+      expect(text(el)).not.toContain('O que a opção pede');
+      setup({ ...emptyFeature(), name: 'Golpe' }, { isOption: true, allowAsks: true });
+      expect(text(el)).toContain('O que a opção pede');
+      expect(button('Adicionar pré-requisito')).toBeDefined();
+    });
+
+    it('offers "Adicionar pré-requisito" as a text action with a caret, not as an outlined button (board 580-03)', () => {
+      setup({ ...emptyFeature(), name: 'Golpe' }, { isOption: true, allowAsks: true });
+      const add = button('Adicionar pré-requisito');
+      expect(add.classList).toContain('asks-add__link');
+      expect(add.classList).not.toContain('mat-mdc-outlined-button');
+      expect(text(add)).toContain('arrow_drop_down');
+    });
+
+    it('says in the hint of "Outras opções" that it is never the option itself (board 580-03)', () => {
+      const asked = withAsks(
+        { ...emptyFeature(), name: 'Golpe' },
+        { requiresOptions: ['option:x'] },
+      );
+      setup(asked, { isOption: true, allowAsks: true });
+      expect(text(el)).toContain(
+        '1 de 10. Opções que o personagem já escolheu, do SRD ou da mesa. Nunca a própria opção.',
+      );
+    });
+
+    it('removes an option from the "⋮" menu of its row, and leaves no second outlined button beside "Adicionar pré-requisito" (board 580-03)', async () => {
+      setup(
+        { ...emptyFeature(), name: 'Golpe' },
+        { isOption: true, allowAsks: true, removeLabel: 'Remover opção' },
+      );
+      expect(el.querySelector('.remove')).toBeNull();
+      expect(button('Remover opção')).toBeUndefined();
+      const more = el.querySelector<HTMLButtonElement>('button[aria-label="Mais ações de Golpe"]')!;
+      expect(more.querySelector('mat-icon')?.textContent).toBe('more_vert');
+      more.click();
+      fixture.detectChanges();
+      await fixture.whenStable();
+      const item = document.querySelector<HTMLButtonElement>(
+        '.mat-mdc-menu-panel [role="menuitem"]',
+      )!;
+      expect(text(item)).toContain('Remover opção');
+      item.click();
+      expect(removed).toHaveBeenCalledTimes(1);
+    });
+
+    it('keeps the outlined "Remover" for a trait that is not an option row', () => {
+      setup(two(), { removeLabel: 'Remover traço' });
+      expect(button('Remover traço').classList).toContain('remove');
+      expect(el.querySelector('button[aria-label^="Mais ações de"]')).toBeNull();
+    });
+
+    it('shows the row the option already asks, and clearing it sends the option with no prerequisite', () => {
+      const asked = withAsks(
+        { ...emptyFeature(), name: 'Golpe' },
+        { classKey: 'class:fighter', classLevel: '7' },
+      );
+      setup(asked, { isOption: true, allowAsks: true });
+      expect(text(el)).toContain('Nível de classe');
+      el.querySelector<HTMLButtonElement>('button[aria-label="Tirar Nível de classe"]')!.click();
+      expect(emitted.at(-1)?.prerequisite).toBeUndefined();
     });
   });
 });

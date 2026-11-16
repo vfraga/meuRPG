@@ -225,3 +225,22 @@ func TestSheetReadsTheRechargeRulesOfItsMagicItems(t *testing.T) {
 		t.Errorf("a bag carries recharge rules: %v", r)
 	}
 }
+
+// The sheet carries the line of what "Usar" does for a potion the app carries out, and nothing for any other item.
+func TestSheetReadsTheEffectLineOfItsPotions(t *testing.T) {
+	t.Parallel()
+	et, pc := attuneTable(t, "item:potion-of-healing-greater", "item:potion-of-resistance-fire", "item:potion-of-climbing", "item:spell-scroll-1st", bagKey)
+	sheet := et.read(t, et.master, pc.GetId())
+	for key, want := range map[string]string{
+		"item:potion-of-healing-greater": "Cura 4d4 + 4",
+		"item:potion-of-resistance-fire": "Resistência a fogo por 1 hora",
+		"item:potion-of-climbing":        "",
+		"item:spell-scroll-1st":          "",
+		bagKey:                           "",
+	} {
+		it := magicItemOf(sheet, key)
+		if it.GetEffectPt() != want || it.GetSpellKey() != "" || it.GetSpellNamePt() != "" {
+			t.Errorf("%s: effect %q spell %q/%q, want effect %q and no spell", key, it.GetEffectPt(), it.GetSpellKey(), it.GetSpellNamePt(), want)
+		}
+	}
+}

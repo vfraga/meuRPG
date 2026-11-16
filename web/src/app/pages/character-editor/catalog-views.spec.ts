@@ -4,6 +4,7 @@ import type {
   RaceOptionVm,
   RulesCatalogVm,
   SubraceOptionVm,
+  WeaponOptionVm,
 } from './character-editor.types';
 import type { CasterSection } from './class-blocks';
 import {
@@ -19,6 +20,7 @@ import {
   skillNoteOf,
   subclassHintOf,
   subclassWaits,
+  weaponDetail,
   weaponGroups,
 } from './catalog-views';
 
@@ -296,9 +298,11 @@ describe('sectionHeadingOf', () => {
 });
 
 describe('weaponGroups (#580 board 580-16)', () => {
-  const w = (key: string, over: Partial<typeof SRD & { namePt: string }> = {}) => ({
+  const w = (key: string, over: Partial<WeaponOptionVm> = {}): WeaponOptionVm => ({
     key,
     namePt: key,
+    category: 'simple',
+    damage: '1d4',
     ...SRD,
     ...over,
   });
@@ -326,5 +330,13 @@ describe('weaponGroups (#580 board 580-16)', () => {
     expect(weaponGroups(weapons, ['weapon:velha@mesa'], false).table.map((x) => x.key)).toContain(
       'weapon:velha@mesa',
     );
+  });
+
+  it('says the category and the damage dice of a row, and the category alone for a weapon with no damage', () => {
+    expect(weaponDetail(w('equipment:dagger'))).toBe('Simples · 1d4');
+    expect(weaponDetail(w('equipment:halberd', { category: 'martial', damage: '1d10' }))).toBe(
+      'Marcial · 1d10',
+    );
+    expect(weaponDetail(w('equipment:net', { category: 'martial', damage: '' }))).toBe('Marcial');
   });
 });

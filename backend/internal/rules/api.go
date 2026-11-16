@@ -1203,6 +1203,12 @@ type Feature struct {
 	// SummaryPT is the rule in one line, in Portuguese, for an option the player
 	// picked (a fighting style, an invocation); empty for the others.
 	SummaryPT string `json:",omitempty"`
+	// OptionOfPT is, for an option the character picked, the Portuguese name of the feature, trait or feat that
+	// offers it ("Truques de lâmina"); empty for the other features.
+	OptionOfPT string `json:"-"`
+	// OptionOfKey is the key of that feature, trait or feat: two of them can have one name (the Fighter's and the
+	// Paladin's "Estilo de Luta"); empty for the other features.
+	OptionOfKey string `json:"-"`
 }
 
 // Proficiency is an armor, weapon or tool proficiency.
@@ -1285,6 +1291,12 @@ type Issue struct {
 	// is the entry that changed; for any other it is told without a name. Empty
 	// when ChangeMessage is not about one entry.
 	ChangeSubject string `json:",omitempty"`
+	// Lost is what a lost feat or option asks and the character lacks (IssueFeatPrerequisite,
+	// IssueOptionPrerequisite): the sentence a reader gets is Lost.SentencePT, with the character's
+	// name and, for the master, the hidden conditions named. Message is that sentence for nobody in
+	// particular, with no hidden name; the sheet stores neither (known issues hold the issue's ID). Never
+	// in JSON: it may name a hidden entry.
+	Lost *LostPrerequisite `json:"-"`
 }
 
 // Issue codes.

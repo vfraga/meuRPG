@@ -276,7 +276,7 @@
         <app-changed-content [changes]="full.changedContent" [canEdit]="vm.canEdit" [skills]="trainedSkills(full)" />
       }
       @if (ownIssues(full).length > 0) {
-        <div class="mr-notice mr-notice--warning" role="note" aria-label="Pendências de regra">
+        <div class="mr-notice mr-notice--warning issues-notice" role="note" aria-label="Pendências de regra">
           <mat-icon aria-hidden="true">warning</mat-icon>
           <ul class="issues">
             @for (issue of ownIssues(full); track $index) {

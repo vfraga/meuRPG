@@ -30,6 +30,7 @@ import { LiveSessionSourceLive } from '../../core/play/live-session-source.live'
 import { isFullSheetKind } from '../../core/characters/characters.types';
 import { ChoiceGroups } from '../../shared/choice-groups/choice-groups';
 import { FictionNotice } from '../../shared/fiction-notice/fiction-notice';
+import { OpenDown } from '../../shared/form-fields/open-down';
 import { TableMark } from '../../shared/table-mark/table-mark';
 import { AbilityFields } from './ability-fields/ability-fields';
 import { AbilityScores } from './ability-scores/ability-scores';
@@ -46,7 +47,7 @@ import {
 import { ClassBlockFields } from './class-block/class-block';
 import { GrantedSpells } from './granted-spells/granted-spells';
 import type { ClassBlock } from './class-blocks';
-import { subclassWaits } from './catalog-views';
+import { subclassWaits, weaponDetail } from './catalog-views';
 import { CUTTING_WORDS_OPTIONS } from './editor-options';
 import { EditorLoader } from './editor-loader';
 import { type PageState, startingXp } from './editor-state';
@@ -134,6 +135,7 @@ import { EditorSpellDetails } from './editor-spell-details';
     MatProgressSpinnerModule,
     MatRadioModule,
     MatSelectModule,
+    OpenDown,
     DefeatXp,
     FeatsField,
     NpcShortForm,
@@ -246,6 +248,7 @@ export class CharacterEditor {
 
   protected readonly cuttingWordsOptions = CUTTING_WORDS_OPTIONS;
   protected readonly isFullSheetKind = isFullSheetKind;
+  protected readonly weaponDetail = weaponDetail;
   protected readonly stepLabels = EDITOR_STEP_LABELS;
   protected readonly alignmentKeys = Object.keys(ALIGNMENT_LABELS) as AlignmentKey[];
   protected readonly alignmentLabel = (key: AlignmentKey) => ALIGNMENT_LABELS[key];

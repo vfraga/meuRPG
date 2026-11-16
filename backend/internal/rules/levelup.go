@@ -1289,13 +1289,13 @@ func (c *content) checkLevelUpSkills(before, after Build, mc *MulticlassOffer, g
 func checkNewIssues(dBefore, dAfter Derived, offOwnList map[string]bool) *LevelUpError {
 	had := map[string]bool{}
 	for _, is := range dBefore.Issues {
-		had[is.Code+"|"+is.Field+"|"+is.Message] = true
+		had[is.ID()] = true
 	}
 	for _, is := range dAfter.Issues {
 		if is.Code == IssueSpellNotOnList && offOwnList[is.Field] {
 			continue
 		}
-		if !had[is.Code+"|"+is.Field+"|"+is.Message] {
+		if !had[is.ID()] {
 			return &LevelUpError{Field: is.Field, Reason: LevelUpReasonSheetIssue, Code: is.Code, Message: is.Message}
 		}
 	}

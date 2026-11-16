@@ -3341,13 +3341,17 @@ type FullSheet struct {
 	// gave the sheet a new issue since, shows "A classe mudou"
 	// (DerivedSheet.changed_content). 0 when the table had no content.
 	ContentRevision int32 `protobuf:"varint,29,opt,name=content_revision,json=contentRevision,proto3" json:"content_revision,omitempty"`
-	// The issues the sheet had when it was last saved ("code|field|message" of each,
-	// sorted), set by the server and ignored from the client: what "A classe mudou"
+	// The issues the sheet had when it was last saved (the identity of each, sorted:
+	// "code|field|message", or "code|<list>|lost:<entry key>" for a feat or an option that
+	// lost its prerequisite, whose sentence changes with the reader and the character, and
+	// whose pick's place in <list> ("full.feat_keys", "full.feature_choice_keys") changes with the picks before it),
+	// set by the server and ignored from the client: what "A classe mudou"
 	// compares against, so an issue the sheet already had is never blamed on a change.
 	// An issue that was flagged and still stands is left out, so a save never clears
 	// it; only fixing what it says does.
 	// The server computes it again on every save (checkFullSheet in backend/internal/characters/sheet.go).
-	// The editor sends back what it read (web/src/app/pages/character-editor/character-editor-sheet-map.ts:211-232).
+	// Only the campaign's master receives it; any other reader gets it empty. The editor sends back what it read
+	// (web/src/app/pages/character-editor/character-editor-sheet-map.ts:211-232), which the server ignores.
 	// The request limit is 1000 items, the table's most entries (backend/internal/rules/overlay.go).
 	KnownIssues []string `protobuf:"bytes,30,rep,name=known_issues,json=knownIssues,proto3" json:"known_issues,omitempty"`
 	// For each table entry the sheet is still flagged for (a changed entry with an
@@ -3355,7 +3359,10 @@ type FullSheet struct {
 	// fit it at. Set by the server and ignored from the client; an entry not here
 	// uses `content_revision`.
 	// The server clears it on every save and sets it again from the stored sheet (checkFullSheet in backend/internal/characters/sheet.go).
-	// The editor sends back what it read (web/src/app/pages/character-editor/character-editor-sheet-map.ts:211-232).
+	// Every reader receives it as stored: its keys are entries the sheet itself uses (the keys of its build and the
+	// class features of its classes), which the owner reads, and nothing in the web reads it, so no reader is told
+	// anything it was not already. Only known_issues is the master's alone. The editor sends back what it read
+	// (web/src/app/pages/character-editor/character-editor-sheet-map.ts:211-232), which the server ignores.
 	// The request limit is 1000 entries, the table's most entries (backend/internal/rules/overlay.go).
 	ContentBaselines map[string]int32 `protobuf:"bytes,31,rep,name=content_baselines,json=contentBaselines,proto3" json:"content_baselines,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"varint,2,opt,name=value"`
 	// The feats the character took (MR-025), as content keys: "feat:grappler" or a
@@ -3905,7 +3912,17 @@ type SheetMagicItem struct {
 	// ("Volta 1d6 + 1 ao amanhecer", "Não volta", the d20 of the last charge). Absent for an item with no
 	// charges. Filled by the server on every read from the catalog; a save ignores it. Read by the same
 	// people as the charges: the character's player and the master.
-	Recharge      *ItemRecharge `protobuf:"bytes,13,opt,name=recharge,proto3" json:"recharge,omitempty"`
+	Recharge *ItemRecharge `protobuf:"bytes,13,opt,name=recharge,proto3" json:"recharge,omitempty"`
+	// The effect "Usar" carries out for this consumable, as the sheet shows it ("Cura 2d4 + 2", "Resistência a fogo por 1
+	// hora"); empty for an item with no automatic effect (its text is all there is). Filled by the server from the
+	// catalog on every read; a save ignores it. Read by the same people as the charges: the character's player and the
+	// master.
+	EffectPt string `protobuf:"bytes,14,opt,name=effect_pt,json=effectPt,proto3" json:"effect_pt,omitempty"`
+	// The spell a scroll casts (the catalog's key, "spell:fireball") and its name in Portuguese. Filled by the server on every
+	// read for a scroll that casts its spell; empty for every other item, a spell scroll that is only text included. A save
+	// ignores them.
+	SpellKey      string `protobuf:"bytes,15,opt,name=spell_key,json=spellKey,proto3" json:"spell_key,omitempty"`
+	SpellNamePt   string `protobuf:"bytes,16,opt,name=spell_name_pt,json=spellNamePt,proto3" json:"spell_name_pt,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -4029,6 +4046,27 @@ func (x *SheetMagicItem) GetRecharge() *ItemRecharge {
 		return x.Recharge
 	}
 	return nil
+}
+
+func (x *SheetMagicItem) GetEffectPt() string {
+	if x != nil {
+		return x.EffectPt
+	}
+	return ""
+}
+
+func (x *SheetMagicItem) GetSpellKey() string {
+	if x != nil {
+		return x.SpellKey
+	}
+	return ""
+}
+
+func (x *SheetMagicItem) GetSpellNamePt() string {
+	if x != nil {
+		return x.SpellNamePt
+	}
+	return ""
 }
 
 // ItemRecharge is the catalog's charge rules of one item (SRD 5.1: each wand, staff, ring and
@@ -14508,7 +14546,7 @@ const file_meurpg_characters_v1_characters_proto_rawDesc = "" +
 	"\x03key\x18\x02 \x01(\tR\x03key\x129\n" +
 	"\n" +
 	"until_rest\x18\x03 \x01(\x0e2\x1a.meurpg.rules.v1.RestBoundR\tuntilRest\x12\x1c\n" +
-	"\tsignature\x18\x04 \x01(\tR\tsignature\"\x9c\x04\n" +
+	"\tsignature\x18\x04 \x01(\tR\tsignature\"\xfa\x04\n" +
 	"\x0eSheetMagicItem\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x18\n" +
 	"\aattuned\x18\x02 \x01(\bR\aattuned\x12/\n" +
@@ -14524,7 +14562,10 @@ const file_meurpg_characters_v1_characters_proto_rawDesc = "" +
 	" \x01(\x05R\vchargesLeft\x122\n" +
 	"\x04lost\x18\v \x01(\x0e2\x1e.meurpg.characters.v1.ItemLossR\x04lost\x12*\n" +
 	"\x11last_roll_pending\x18\f \x01(\bR\x0flastRollPending\x12>\n" +
-	"\brecharge\x18\r \x01(\v2\".meurpg.characters.v1.ItemRechargeR\brecharge\"\xc7\x02\n" +
+	"\brecharge\x18\r \x01(\v2\".meurpg.characters.v1.ItemRechargeR\brecharge\x12\x1b\n" +
+	"\teffect_pt\x18\x0e \x01(\tR\beffectPt\x12\x1b\n" +
+	"\tspell_key\x18\x0f \x01(\tR\bspellKey\x12\"\n" +
+	"\rspell_name_pt\x18\x10 \x01(\tR\vspellNamePt\"\xc7\x02\n" +
 	"\fItemRecharge\x12:\n" +
 	"\x04kind\x18\x01 \x01(\x0e2&.meurpg.characters.v1.ItemRechargeKindR\x04kind\x12\x1f\n" +
 	"\vregain_dice\x18\x02 \x01(\tR\n" +

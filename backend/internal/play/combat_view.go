@@ -21,6 +21,7 @@ import (
 	"github.com/PuraFome/meuRPG/backend/internal/play/live"
 	"github.com/PuraFome/meuRPG/backend/internal/play/playdb"
 	"github.com/PuraFome/meuRPG/backend/internal/rules"
+	"github.com/PuraFome/meuRPG/backend/internal/rules/combat"
 	"github.com/PuraFome/meuRPG/backend/internal/rules/grid"
 )
 
@@ -495,10 +496,6 @@ func (r combatantReader) masterView(p *playv1.Combatant, c playdb.Combatant) {
 	p.InSunlight, p.SunlightTrait = r.sun.lit(c), npc.sunTrait // the master's alone (RN-20, RN-29)
 }
 
-// deathSaveGoal is how many death save successes make a character stable, and how many
-// failures kill it (RN-03).
-const deathSaveGoal = 3
-
 // combatantToProto builds the Combatant the viewer sees. The caller checked
 // that the viewer sees it. armorClass is its sheet's, and portrait the URL of
 // its sheet's portrait, for the master's copy only (0 and "" when unknown).
@@ -642,9 +639,9 @@ func stateWordFor(state playv1.CombatantState, c playdb.Combatant, v combatViewe
 		return playv1.CombatantState_COMBATANT_STATE_DEAD
 	case c.Kind == kindPlayer && isDownIn(vitals):
 		switch {
-		case c.DeathSuccesses >= deathSaveGoal:
+		case c.DeathSuccesses >= combat.DeathSaveGoal:
 			return playv1.CombatantState_COMBATANT_STATE_STABLE
-		case c.DeathFailures >= deathSaveGoal && v.master:
+		case c.DeathFailures >= combat.DeathSaveGoal && v.master:
 			return playv1.CombatantState_COMBATANT_STATE_DYING
 		}
 		return playv1.CombatantState_COMBATANT_STATE_DOWN
@@ -688,7 +685,7 @@ func isDownIn(v *playv1.CharacterVitals) bool {
 // turn.
 func deathSaveDue(c playdb.Combatant, vitals *playv1.CharacterVitals) bool {
 	return c.Kind == kindPlayer && !c.Defeated && isDownIn(vitals) &&
-		c.DeathSuccesses < deathSaveGoal && c.DeathFailures < deathSaveGoal && !c.DeathSaveRolled
+		c.DeathSuccesses < combat.DeathSaveGoal && c.DeathFailures < combat.DeathSaveGoal && !c.DeathSaveRolled
 }
 
 // The database's statuses and kinds, and the API's.

@@ -49,10 +49,40 @@
   }
 }
 
-.feature__name {
+// The name and, under it, what an option is an option of; the source (when the row has one) keeps the right end.
+.feature__main {
+  display: flex;
+  flex-direction: column;
   flex-grow: 1;
   min-width: 0;
+}
+
+.feature__line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px var(--mr-space-2);
+}
+
+.feature__name {
+  min-width: 0;
   font-weight: 500;
+
+  // A lost feat or option does not apply now (board 580-05): its name is quiet.
+  &--lost {
+    color: var(--mr-ink-muted);
+  }
+}
+
+.feature__sub {
+  font-size: var(--mr-font-14);
+  line-height: 18px;
+  color: var(--mr-ink-muted);
+}
+
+// An option sits 16 px in under the feature that offers it (board 580-05); the rule between rows stays full width.
+.feature--option {
+  padding-left: var(--mr-space-4);
 }
 
 .feature__source {

@@ -33,6 +33,17 @@ describe('the words around the change sentences', () => {
     expect(changeTitle(change({ key: 'nothing' }))).toBe('O conteúdo mudou.');
   });
 
+  it('names a feat, an option and a class feature as the server does (580-05)', () => {
+    expect(changeTitle(change({ key: 'feat:pede-depois@mesa' }))).toBe('O talento mudou.');
+    expect(changeTitle(change({ key: 'option:fighting_style:x@mesa' }))).toBe('A opção mudou.');
+    expect(changeTitle(change({ key: 'classfeature:x@mesa' }))).toBe('A característica mudou.');
+    expect(
+      changeIntro(
+        change({ key: 'feat:pede-depois@mesa', namePt: 'Pede depois', changedAt: undefined }),
+      ),
+    ).toContain('O mestre mudou o talento Pede depois.');
+  });
+
   it('says who changed it only as "o mestre", with the date, and never the history', () => {
     expect(changeIntro(change())).toBe(
       'O mestre mudou a classe Guardião do Vale em 05/10/2026. Os números da ficha já usam as regras novas. O que não combina mais:',

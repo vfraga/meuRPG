@@ -320,7 +320,7 @@ Both cascade from the session or the character.
 ## `character_effects`
 
 Effects that last on a character outside a running combat (RN-22).
-`source_key` is the spell or catalog key, `source_character_id` who cast it (`SET NULL`), `group_id` the cast's id (so ending the cast ends them all), `source_kind` is `spell`, `feature` or `master`.
+`source_key` is the spell or catalog key, `source_character_id` who cast it (`SET NULL`), `group_id` the cast's id (so ending the cast ends them all), `source_kind` is `spell`, `feature`, `master` or `item` (what a potion left).
 `condition_keys` and `modifiers` (JSON array, at most 8) are what it gives.
 `duration_kind` is `rounds`, `until_start_of_turn_of`, `until_end_of_turn_of`, `concentration`, `until_dismissed` or `long_rest`; `seconds_left` is the game time left (a round is 6 seconds; `NULL` until it is dismissed or the caster stops concentrating).
 The save columns (`end_save_ability`, `start_save_ability`, `save_dc`, `on_fail_effect`), the trigger columns (`trigger_dice`, `trigger_damage_type`, `trigger_max_triggers`, `triggers_fired`) and `follows_key` (an effect that follows another, such as Haste's lethargy) carry the effect's rules.

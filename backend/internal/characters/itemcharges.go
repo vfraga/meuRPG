@@ -28,6 +28,7 @@ func (s *Service) fillItemCharges(ctx context.Context, content *rules.Content, c
 		state[r.EntryID] = r
 	}
 	for _, it := range full.GetMagicItems() {
+		it.EffectPt = content.PotionEffectLinePT(it.GetKey())
 		ic, ok := content.ItemCharges(it.GetKey())
 		if !ok {
 			continue

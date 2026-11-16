@@ -54,6 +54,21 @@ describe('combat errors', () => {
     ).toBe('Sem munição. Não sobrou munição desse tipo: o tiro não sai. Nada foi gasto.');
   });
 
+  it('says a consumable given out of reach or to someone outside the fight, and one gone from the sheet, in words, and that nothing was spent', () => {
+    expect(
+      blockedMessage(
+        create(EncounterBlockedSchema, {
+          reason: EncounterBlockedReason.TARGET_NOT_ADJACENT,
+        }),
+      ),
+    ).toBe(
+      'Quem recebe o item precisa estar a até 1,5 m de quem o dá, e os dois na luta ou os dois fora dela. Nada foi gasto.',
+    );
+    expect(
+      blockedMessage(create(EncounterBlockedSchema, { reason: EncounterBlockedReason.ITEM_GONE })),
+    ).toBe('Esse item não está mais na ficha: alguém já o usou ou o tirou. Nada foi gasto.');
+  });
+
   it('says every refusal of a spent action of a stat block in words, and that nothing was spent', () => {
     for (const reason of [
       EncounterBlockedReason.CREATURE_ACTION_RECHARGING,

@@ -220,6 +220,8 @@ func featureToProto(f rules.Feature) *rulesv1.Feature {
 		DescriptionPt:        strings.Join(f.DescriptionPT, "\n\n"),
 		DescriptionPtMissing: f.DescriptionPTMissing,
 		DescriptionPtOnly:    f.DescriptionPTOnly,
+		OptionOfPt:           f.OptionOfPT,
+		OptionOfKey:          f.OptionOfKey,
 	}
 }
 
@@ -515,7 +517,7 @@ func armorToProto(a rules.ArmorEntry) *rulesv1.Armor {
 }
 
 func weaponToProto(w rules.WeaponEntry) *rulesv1.Weapon {
-	return &rulesv1.Weapon{Key: w.Key, Name: w.Name, NamePt: w.NamePT, Category: weaponCategoryToProto[w.Category], Ranged: w.Range == "ranged", Archived: w.Archived, Off: w.Off}
+	return &rulesv1.Weapon{Key: w.Key, Name: w.Name, NamePt: w.NamePT, Category: weaponCategoryToProto[w.Category], Ranged: w.Range == "ranged", Archived: w.Archived, Off: w.Off, Damage: w.Damage}
 }
 
 func challengeRatingToProto(r rules.ChallengeRating) *rulesv1.ChallengeRating {

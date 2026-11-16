@@ -166,6 +166,7 @@ var notReads = map[string]classified{
 	playv1connect.ChargesServiceSetAmmunitionProcedure:                          {playerAction, "a player sets the ammunition of their own character while the sheet is open to editing; the master any time"},
 	playv1connect.ChargesServiceSetChargesProcedure:                             {masterWrite, masterOnlyWhy},
 	playv1connect.ChargesServiceSpendChargesProcedure:                           {playerAction, "a player spends the charges of an item of their own character; the master any"},
+	playv1connect.ChargesServiceUseConsumableProcedure:                          {playerAction, "a player uses up a consumable of their own character, for itself or for another character; the master any"},
 	playv1connect.FavorServiceGrantFavorProcedure:                               {masterWrite, masterOnlyWhy},
 	playv1connect.FavorServicePassFavorProcedure:                                {playerAction, "the holder's player passes the Inspiration of their own character to another player character; not built yet, it answers unimplemented (see unbuilt)"},
 	playv1connect.LastingEffectServiceAdvanceGameTimeProcedure:                  {masterWrite, masterOnlyWhy},

@@ -12,6 +12,10 @@
   background: var(--mr-ground);
 }
 
+.feature--framed {
+  border-color: transparent;
+}
+
 .feature--flat {
   padding: 0;
   border: 0;
@@ -171,5 +175,34 @@
 
   app-feature-editor {
     width: 100%;
+  }
+}
+
+// What an option row asks of who picks it (board 580-03): the rows of the feat's and the option's editors, under the option.
+.asks {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mr-space-3);
+  padding-top: var(--mr-space-3);
+  border-top: 1px dashed var(--mr-line);
+
+  .options__title,
+  .options__hint {
+    margin: 0;
+  }
+
+  .options__title {
+    font: inherit;
+    font-weight: 600;
+  }
+
+  .options__hint {
+    color: var(--mr-ink-muted);
+  }
+
+  .inline-issue {
+    margin: 0;
+    font-size: var(--mr-font-14);
+    color: var(--mr-danger-ink);
   }
 }

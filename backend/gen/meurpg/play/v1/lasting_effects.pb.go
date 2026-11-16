@@ -42,6 +42,8 @@ const (
 	EffectSourceKind_EFFECT_SOURCE_KIND_CONDITION EffectSourceKind = 3
 	// Something the master added from the catalog without a spell.
 	EffectSourceKind_EFFECT_SOURCE_KIND_MASTER EffectSourceKind = 4
+	// What an item did when it was used up (a potion of resistance): the card names the item.
+	EffectSourceKind_EFFECT_SOURCE_KIND_ITEM EffectSourceKind = 5
 )
 
 // Enum value maps for EffectSourceKind.
@@ -52,6 +54,7 @@ var (
 		2: "EFFECT_SOURCE_KIND_FEATURE",
 		3: "EFFECT_SOURCE_KIND_CONDITION",
 		4: "EFFECT_SOURCE_KIND_MASTER",
+		5: "EFFECT_SOURCE_KIND_ITEM",
 	}
 	EffectSourceKind_value = map[string]int32{
 		"EFFECT_SOURCE_KIND_UNSPECIFIED": 0,
@@ -59,6 +62,7 @@ var (
 		"EFFECT_SOURCE_KIND_FEATURE":     2,
 		"EFFECT_SOURCE_KIND_CONDITION":   3,
 		"EFFECT_SOURCE_KIND_MASTER":      4,
+		"EFFECT_SOURCE_KIND_ITEM":        5,
 	}
 )
 
@@ -2648,13 +2652,14 @@ const file_meurpg_play_v1_lasting_effects_proto_rawDesc = "" +
 	" \x03(\tR\x10conditionNamesPt\x12%\n" +
 	"\x0eplayer_visible\x18\v \x01(\bR\rplayerVisible\x12:\n" +
 	"\baudience\x18\f \x01(\x0e2\x1e.meurpg.play.v1.EffectAudienceR\baudienceB\x0f\n" +
-	"\r_seconds_left*\xb5\x01\n" +
+	"\r_seconds_left*\xd2\x01\n" +
 	"\x10EffectSourceKind\x12\"\n" +
 	"\x1eEFFECT_SOURCE_KIND_UNSPECIFIED\x10\x00\x12\x1c\n" +
 	"\x18EFFECT_SOURCE_KIND_SPELL\x10\x01\x12\x1e\n" +
 	"\x1aEFFECT_SOURCE_KIND_FEATURE\x10\x02\x12 \n" +
 	"\x1cEFFECT_SOURCE_KIND_CONDITION\x10\x03\x12\x1d\n" +
-	"\x19EFFECT_SOURCE_KIND_MASTER\x10\x04*\xb1\x02\n" +
+	"\x19EFFECT_SOURCE_KIND_MASTER\x10\x04\x12\x1b\n" +
+	"\x17EFFECT_SOURCE_KIND_ITEM\x10\x05*\xb1\x02\n" +
 	"\x12EffectDurationKind\x12$\n" +
 	" EFFECT_DURATION_KIND_UNSPECIFIED\x10\x00\x12\x1f\n" +
 	"\x1bEFFECT_DURATION_KIND_ROUNDS\x10\x01\x12/\n" +

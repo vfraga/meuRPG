@@ -67,3 +67,78 @@ describe('FeaturesPanel "Lembretes"', () => {
     ).toEqual([SHIELD_HINT.text, OTHER_HINT.text]);
   });
 });
+
+function panelRows(features: object[]): HTMLElement[] {
+  const fixture = TestBed.createComponent(FeaturesPanel);
+  fixture.componentRef.setInput('sheet', {
+    kind: 'full',
+    features,
+    hints: [],
+    gear: [],
+    itemModifiers: [],
+    shieldIdle: false,
+    resistances: [],
+    languages: [],
+    proficiencies: [],
+  } as unknown as FullSheetVm);
+  fixture.detectChanges();
+  return Array.from(
+    (fixture.nativeElement as HTMLElement).querySelectorAll<HTMLElement>('.feature'),
+  );
+}
+
+const featureRow = (name: string, over: object = {}) => ({
+  name,
+  sourcePt: 'Talento',
+  description: '',
+  descriptionPt: '',
+  descriptionPtMissing: false,
+  descriptionPtOnly: true,
+  summaryPt: '',
+  optionOf: '',
+  lost: false,
+  ...over,
+});
+
+describe('FeaturesPanel, a feat or option that does not apply now (board 580-05)', () => {
+  it('marks the lost row with the pending "Não vale agora" tag, and only that row', () => {
+    const rows = panelRows([
+      featureRow('Golpe do Corvo', { optionOf: 'Truques de lâmina' }),
+      featureRow('Asa Partida', { optionOf: 'Truques de lâmina', lost: true }),
+    ]);
+    expect(rows[0].querySelector('.feature__lost')).toBeNull();
+    const tag = rows[1].querySelector('.feature__lost');
+    expect(tag?.textContent?.trim()).toBe('Não vale agora');
+    expect(tag?.classList).toContain('mr-tag--pending');
+    expect(tag?.classList).toContain('mr-tag--compact');
+  });
+
+  it("draws the lost row's name muted, a row that applies as it was", () => {
+    const rows = panelRows([featureRow('Postura Firme', { lost: true }), featureRow('Fúria')]);
+    expect(rows[0].querySelector('.feature__name')?.classList).toContain('feature__name--lost');
+    expect(rows[1].querySelector('.feature__name')?.classList).not.toContain('feature__name--lost');
+  });
+});
+
+describe('FeaturesPanel, an option row (board 580-05)', () => {
+  it('says "Opção de <feature>" under the name and has no source on the right, for every option', () => {
+    const rows = panelRows([
+      featureRow('Golpe do Corvo', { optionOf: 'Truques de lâmina' }),
+      featureRow('Asa Partida', { optionOf: 'Truques de lâmina', lost: true }),
+    ]);
+    for (const row of rows) {
+      expect(row.querySelector('.feature__source')).toBeNull();
+      expect(row.querySelector('.feature__sub')?.textContent?.trim()).toBe(
+        'Opção de Truques de lâmina',
+      );
+      expect(row.classList).toContain('feature--option');
+    }
+  });
+
+  it('keeps the source on the right and no sub-line for a row that is not an option', () => {
+    const [row] = panelRows([featureRow('Recuperação Arcana', { sourcePt: 'Mago 1' })]);
+    expect(row.querySelector('.feature__source')?.textContent?.trim()).toBe('Mago 1');
+    expect(row.querySelector('.feature__sub')).toBeNull();
+    expect(row.classList).not.toContain('feature--option');
+  });
+});

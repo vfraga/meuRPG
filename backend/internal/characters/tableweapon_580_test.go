@@ -10,6 +10,7 @@ import (
 
 	charactersv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/characters/v1"
 	rulesv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/rules/v1"
+	"github.com/PuraFome/meuRPG/backend/internal/rules"
 )
 
 // #580 S2: the weapon content kind, as the master writes it and the sheet and a player read it.
@@ -151,5 +152,14 @@ func TestACarriedTableWeaponStaysInTheOwnersCatalog(t *testing.T) {
 	}
 	if got := weapons(other, ""); len(got) != 0 {
 		t.Errorf("another player's catalog weapons = %v, want none", got)
+	}
+}
+
+// The catalog's weapon carries its damage dice, for the row of the sheet editor's list ("Simples · 1d6", board 580-16 state 4).
+func TestTheCatalogWeaponCarriesItsDamageDice(t *testing.T) {
+	t.Parallel()
+	got := weaponToProto(rules.WeaponEntry{Key: "weapon:machado@mesa", NamePT: "Machado de Lenhador", Category: "simple", Range: "melee", Damage: "1d6"})
+	if got.GetDamage() != "1d6" || got.GetCategory() != rulesv1.WeaponCategory_WEAPON_CATEGORY_SIMPLE {
+		t.Errorf("weapon = %v, want simple with 1d6", got)
 	}
 }

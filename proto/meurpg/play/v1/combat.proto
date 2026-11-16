@@ -2202,6 +2202,14 @@ enum EncounterBlockedReason {
   // RollAttack: the attack fires ammunition (a bow, a crossbow, a sling, a blowgun) and the character has a count for the kind
   // (a row, even at 0) with none left. Nothing is written. A kind with no count is not counted and the shot goes. The melee line of the weapon, and a thrown weapon, spend no ammunition.
   ENCOUNTER_BLOCKED_REASON_AMMUNITION_EMPTY = 145;
+
+  // UseConsumable: a potion used in a running combat between two characters of which one does not fight in it, or given to a
+  // creature that is not within 5 feet of the giver (a player's character is never hidden from its party, so no gift is
+  // refused for what the giver sees). The refusal names nobody. Nothing is written.
+  ENCOUNTER_BLOCKED_REASON_TARGET_NOT_ADJACENT = 146;
+
+  // UseConsumable and ListConsumableTargets: the entry is not on the sheet (it was used or taken off). Nothing is written.
+  ENCOUNTER_BLOCKED_REASON_ITEM_GONE = 147;
 }
 
 // FamiliarSightBlockedReason says why "Ver pelos olhos do familiar" was refused
@@ -6087,6 +6095,11 @@ enum CombatLogKind {
   // A character fired a piece of ammunition with a ranged attack ("Tor atirou com o Arco longo: 1 flecha, restam 3"):
   // the actor and `item_use`. The audience of ITEM_CHARGE_SPENT.
   COMBAT_LOG_KIND_AMMUNITION_SPENT = 115;
+  // A character drank a potion, read a scroll or used up another consumable (ChargesService.UseConsumable: "Pensantus
+  // bebeu a Poção de cura e recuperou 9 pontos de vida"): the actor, the receiver as `target_id` when it is another
+  // character, and `consumable_use`. The master, the user's owner and the receiving character's owner read the dice and the
+  // hit points; any other player reads who used which item and on whom, without a number (RN-10).
+  COMBAT_LOG_KIND_CONSUMABLE_USED = 119;
   // A contest or a special action (SRD 5.1, "Contests", "Hide", "Help", "Surprise"): the
   // actor, the target and `contest`, which says what happened. Never a total (RN-20).
   COMBAT_LOG_KIND_CONTEST = 50;
@@ -6354,6 +6367,8 @@ message CombatLogEntry {
   // ITEM_CHARGE_SPENT, ITEM_LAST_CHARGE_ROLLED and AMMUNITION_SPENT: what was spent or rolled and what is left. The
   // master's and the owner's.
   ItemUseLogLine item_use = 130;
+  // CONSUMABLE_USED: the item, what it did and the roll. The master's, the user's owner's and the receiver's owner's.
+  ConsumableUseLogLine consumable_use = 132;
   // ACTION_READIED, READIED_FIRED and READIED_LOST: the trigger and the held action. The master's and the readier's
   // owner's; any other player's entry has the kind and the actor only (RN-10).
   CombatLogReadied readied = 119;
@@ -6561,6 +6576,36 @@ message ItemUseLogLine {
   // How the item was lost on a LOST line (the line says "virou cinzas" only for GONE, and a plain or partly magic
   // item says what is left of it); UNSPECIFIED on the other outcomes.
   meurpg.characters.v1.ItemLoss lost = 8;
+}
+
+// ConsumableUseOutcome is what using up a consumable did.
+enum ConsumableUseOutcome {
+  CONSUMABLE_USE_OUTCOME_UNSPECIFIED = 0;
+  // A healing potion restored hit points (`healed`, possibly 0 for a receiver already at full hit points).
+  CONSUMABLE_USE_OUTCOME_HEALED = 1;
+  // A resistance potion gave the receiver resistance to `damage_type_key` for one hour.
+  CONSUMABLE_USE_OUTCOME_RESISTANCE = 2;
+  // The unit was spent and the table applies the text: the app carries out no effect for this consumable.
+  CONSUMABLE_USE_OUTCOME_TEXT_ONLY = 3;
+}
+
+// ConsumableUseLogLine is the line of a consumable used in a combat, for the master, the user's owner and the receiver's owner.
+message ConsumableUseLogLine {
+  // The item's name, in Portuguese when the content has it, else the SRD's in English.
+  string item_name_pt = 1;
+  ConsumableUseOutcome outcome = 2;
+  // HEALED: the potion's dice as the sheet writes them ("2d4+2"); empty on the other outcomes.
+  string dice_text = 3;
+  // HEALED: the dice rolled, one face for each die, and their total with the potion's bonus.
+  repeated int32 faces = 4;
+  int32 roll_total = 5;
+  // HEALED: the hit points actually regained, cut to the maximum.
+  int32 healed = 6;
+  // RESISTANCE: the damage type's key ("damage-type:fire") and its name in Portuguese.
+  string damage_type_key = 7;
+  string damage_type_name_pt = 8;
+  // The name of the receiver when it is not the user (a potion given to another creature); empty for the user.
+  string target_label = 9;
 }
 
 // CombatLogReadied is a readied action in a line of the log, for the master and the readier's owner.

@@ -349,6 +349,9 @@ export interface WeaponOptionVm {
   readonly fromTable: boolean;
   readonly archived: boolean;
   readonly off: boolean;
+  readonly category: 'simple' | 'martial';
+  /** The damage dice ("1d6"); empty for a weapon that deals none. */
+  readonly damage: string;
 }
 
 export interface SpellOptionVm {

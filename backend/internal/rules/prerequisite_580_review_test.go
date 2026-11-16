@@ -340,7 +340,7 @@ func TestALostOptionPrerequisiteIsAnIssueOfTheSheet(t *testing.T) {
 	if i < 0 {
 		t.Fatalf("issues = %+v, want %q", lost.Issues, IssueOptionPrerequisite)
 	}
-	if got := lost.Issues[i]; got.Field != "full.feature_choice_keys[0]" || !strings.Contains(got.Message, "Postura do Touro") || !strings.Contains(got.Message, "nível 5") {
+	if got := lost.Issues[i]; got.Field != "full.feature_choice_keys[0]" || !strings.Contains(got.Message, "Postura do Touro") || !strings.Contains(got.Message, "Guerreiro 5, e o personagem está no 3") {
 		t.Errorf("issue = %+v, want the option and what is missing", got)
 	}
 	if kept := Derive(postureBuild(5, postureBull), c); slices.ContainsFunc(kept.Issues, func(i Issue) bool { return i.Code == IssueOptionPrerequisite }) {
@@ -379,13 +379,13 @@ func TestAnOptionWhoseLevelIsLostStopsWorkingUntilItIsBack(t *testing.T) {
 	}
 }
 
-// The sentence of the issue reads as one: "…pré-requisito de X: precisa de nível 5 de Y.".
+// The sentence of the issue reads as one, naming nobody: "X pede Y 5, e o personagem está no 3: …".
 func TestTheOptionPrerequisiteIssueReadsAsOneSentence(t *testing.T) {
 	t.Parallel()
 	c := withOverlay(t, gatedPostureOverlay())
 	d := Derive(postureBuild(3, postureBull), c)
 	i := slices.IndexFunc(d.Issues, func(i Issue) bool { return i.Code == IssueOptionPrerequisite })
-	const want = "O personagem não cumpre mais o pré-requisito de Postura do Touro: precisa de nível 5 de Guerreiro."
+	const want = "Postura do Touro pede Guerreiro 5, e o personagem está no 3: a opção só vale de novo quando o personagem cumprir."
 	if i < 0 || d.Issues[i].Message != want {
 		t.Errorf("issue = %+v, want %q", d.Issues, want)
 	}

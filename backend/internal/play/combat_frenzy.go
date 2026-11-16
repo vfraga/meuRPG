@@ -133,7 +133,7 @@ func (s *Service) raiseExhaustion(ctx context.Context, c *combatTx, fresh playdb
 	}
 	// Level 6 is death: the character goes to the confirmation as the third failed death
 	// save does; only the master's ConfirmDeath says it died (RN-03).
-	if err := c.q.SetCombatantDeathSaves(ctx, playdb.SetCombatantDeathSavesParams{ID: fresh.ID, DeathSuccesses: 0, DeathFailures: deathFailuresToDie, DeathSaveRolled: fresh.DeathSaveRolled, Defeated: fresh.Defeated}); err != nil {
+	if err := c.q.SetCombatantDeathSaves(ctx, playdb.SetCombatantDeathSavesParams{ID: fresh.ID, DeathSuccesses: 0, DeathFailures: combat.DeathSaveGoal, DeathSaveRolled: fresh.DeathSaveRolled, Defeated: fresh.Defeated}); err != nil {
 		return fmt.Errorf("take the character to the death confirmation: %w", err)
 	}
 	return nil

@@ -253,21 +253,25 @@ func CheckFeat(b Build, key string, c *Content) ([]FeatUnmet, error) {
 
 // lostFeats are the feats the build has and whose prerequisite the derived sheet no
 // longer meets (the ability increase of a feat already taken is not asked again).
-func (c *content) lostFeats(b Build, d Derived) map[string]bool {
-	var lost map[string]bool
+func (c *content) lostFeats(b Build, d Derived) map[string]*LostPrerequisite {
+	var lost map[string]*LostPrerequisite
 	keys := slices.Clone(b.Feats)
 	for _, cf := range c.pickedChoiceFeats(b, ownedBy(b, d)) {
 		keys = append(keys, cf.Feat)
 	}
 	for _, key := range keys {
 		f, ok := c.feats[key]
-		if !ok || len(c.unmetPrerequisite(c.featEntry(f), b, d)) == 0 {
+		if !ok {
+			continue
+		}
+		unmet := c.unmetPrerequisite(c.featEntry(f), b, d)
+		if len(unmet) == 0 {
 			continue
 		}
 		if lost == nil {
-			lost = map[string]bool{}
+			lost = map[string]*LostPrerequisite{}
 		}
-		lost[key] = true
+		lost[key] = c.lost(key, false, unmet, b, d)
 	}
 	return lost
 }

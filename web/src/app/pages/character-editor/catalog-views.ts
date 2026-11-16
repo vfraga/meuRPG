@@ -193,6 +193,12 @@ export function subclassWaits(
   return !!c && c.subclassLevel > 0 && level < c.subclassLevel && subclassKey === '';
 }
 
+/** What a weapon's row says at its right: "Simples · 1d6", or the category alone for a weapon with no damage (board 580-16). */
+export function weaponDetail(w: WeaponOptionVm): string {
+  const category = w.category === 'martial' ? 'Marcial' : 'Simples';
+  return w.damage ? `${category} · ${w.damage}` : category;
+}
+
 /** The weapons a sheet may carry, the book's and the table's apart (#580): a table weapon that is archived is offered to nobody new,
  * and one switched off for the players only to the master; a weapon the sheet already carries stays on the list either way. */
 export function weaponGroups(

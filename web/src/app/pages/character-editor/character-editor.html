@@ -716,7 +716,7 @@
 
               <cdk-step [label]="stepLabels.equipamento" [hasError]="draft.stepHasError('equipamento')">
                 <p class="step-lead">
-                  Armadura, escudo e armas vêm da lista do livro. O resto é texto livre.
+                  Armadura, escudo e armas vêm da lista do SRD. O resto é texto livre.
                 </p>
                 <div class="form-grid">
                   <mat-form-field appearance="outline" subscriptSizing="dynamic">
@@ -733,22 +733,35 @@
                   </div>
                   <mat-form-field appearance="outline" subscriptSizing="dynamic" class="span-all">
                     <mat-label>Armas</mat-label>
-                    <mat-select formControlName="weaponKeys" multiple>
-                      <mat-optgroup label="Do livro">
-                        @for (w of views.weaponGroups().book; track w.key) {
-                          <mat-option [value]="w.key">{{ w.namePt }}</mat-option>
-                        }
-                      </mat-optgroup>
+                    <mat-select formControlName="weaponKeys" multiple panelClass="mr-weapons-panel" appOpenDown>
+                      <!-- The table's weapons first, then the SRD's; each row ends with its category and damage (board 580-16, state 4). -->
+                      <mat-select-trigger>{{ views.weaponNames() }}</mat-select-trigger>
                       @if (views.weaponGroups().table.length > 0) {
                         <mat-optgroup label="Da mesa">
+                          <mat-icon aria-hidden="true">menu_book</mat-icon>
                           @for (w of views.weaponGroups().table; track w.key) {
                             <mat-option [value]="w.key">
-                              {{ w.namePt }}
-                              <app-table-mark [fromTable]="false" [archived]="w.archived" [off]="w.off" />
+                              <span class="weapon-row">
+                                <span class="weapon-row__name">
+                                  {{ w.namePt }}
+                                  <app-table-mark [fromTable]="false" [archived]="w.archived" [off]="w.off" />
+                                </span>&ngsp;
+                                <span class="weapon-row__detail">{{ weaponDetail(w) }}</span>
+                              </span>
                             </mat-option>
                           }
                         </mat-optgroup>
                       }
+                      <mat-optgroup label="Do SRD">
+                        @for (w of views.weaponGroups().book; track w.key) {
+                          <mat-option [value]="w.key">
+                            <span class="weapon-row">
+                              <span class="weapon-row__name">{{ w.namePt }}</span>&ngsp;
+                              <span class="weapon-row__detail">{{ weaponDetail(w) }}</span>
+                            </span>
+                          </mat-option>
+                        }
+                      </mat-optgroup>
                     </mat-select>
                     <mat-hint>Escolha quantas quiser.</mat-hint>
                   </mat-form-field>

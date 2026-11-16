@@ -14,6 +14,7 @@ import (
 	"github.com/PuraFome/meuRPG/backend/internal/play/link"
 	"github.com/PuraFome/meuRPG/backend/internal/play/playdb"
 	"github.com/PuraFome/meuRPG/backend/internal/rules"
+	"github.com/PuraFome/meuRPG/backend/internal/rules/combat"
 )
 
 // What a feature that declares a use asks of the combat (docs/architecture/play/feature-state.md, "Using a feature"). The
@@ -202,7 +203,7 @@ func (sc featureScene) candidates(u link.FeatureUse) []*playv1.ResourceTarget {
 
 // outOfTheFight says the combatant is not a candidate at all: dismissed, defeated or dead.
 func (sc featureScene) outOfTheFight(c playdb.Combatant) bool {
-	return c.Dismissed || c.Defeated || c.DeathFailures >= deathSaveCount
+	return c.Dismissed || c.Defeated || c.DeathFailures >= combat.DeathSaveGoal
 }
 
 // place writes where a candidate is: on the user, or the squares to the user, and whether that is too far for the reach.

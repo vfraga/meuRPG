@@ -52,7 +52,7 @@ import { FeatureEditor } from '../../../shared/feature-editor/feature-editor';
 import { PickList } from '../../../shared/form-fields/pick-list';
 import { SelectField, type SelectOption } from '../../../shared/form-fields/select-field';
 import { TextField } from '../../../shared/form-fields/text-field';
-import { AskRows } from '../ask-rows/ask-rows';
+import { AskRows } from '../../../shared/ask-rows/ask-rows';
 import { EditorAlerts, EditorBar } from '../editor-bar/editor-bar';
 import { EntryRead } from '../entry-read/entry-read';
 import { PlayersSwitch } from '../players-switch/players-switch';

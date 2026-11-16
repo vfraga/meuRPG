@@ -28,6 +28,8 @@ import {
   raceToDraft,
   subraceToDraft,
   unreadableFeaturePaths,
+  featureAsks,
+  withAsks,
 } from './feature-draft';
 import { emptyEffect } from './effect-draft';
 import { emptyRow } from './spell-effect-draft';
@@ -422,5 +424,48 @@ describe('the paths of a feature aura (#579)', () => {
       't.effects[0].aura.modifiers[0].value_min',
       't.effects[0].aura.aura.radius_ft',
     ]);
+  });
+});
+
+describe('what an option row of a feature asks (board 580-03)', () => {
+  it('reads the five values out of the prerequisite, and nothing from an option that asks nothing', () => {
+    expect(featureAsks(emptyFeature())).toEqual({
+      classKey: '',
+      classLevel: '',
+      requiresPact: '',
+      requiresSpell: '',
+      requiresOptions: [],
+    });
+    const f = {
+      ...emptyFeature(),
+      prerequisite: create(OptionPrerequisiteSchema, {
+        classLevel: { classKey: 'class:fighter', level: 7 },
+        requiresPact: 'feature:pact-of-the-blade',
+        requiresSpellKey: 'spell:shield',
+        requiresOptionKeys: ['feature:postura-garca@mesa'],
+      }),
+    };
+    expect(featureAsks(f)).toEqual({
+      classKey: 'class:fighter',
+      classLevel: '7',
+      requiresPact: 'feature:pact-of-the-blade',
+      requiresSpell: 'spell:shield',
+      requiresOptions: ['feature:postura-garca@mesa'],
+    });
+  });
+
+  it('writes the values back into the prerequisite, and drops it when every one is cleared', () => {
+    const asked = withAsks(emptyFeature(), { classKey: 'class:fighter', classLevel: '5' });
+    expect(asked.prerequisite).toMatchObject({
+      classLevel: { classKey: 'class:fighter', level: 5 },
+    });
+    const more = withAsks(asked, { requiresOptions: ['feature:postura-garca@mesa'] });
+    expect(more.prerequisite?.requiresOptionKeys).toEqual(['feature:postura-garca@mesa']);
+    const cleared = withAsks(more, {
+      classKey: '',
+      classLevel: '',
+      requiresOptions: [],
+    });
+    expect(cleared.prerequisite).toBeUndefined();
   });
 });

@@ -152,7 +152,26 @@ function catalog(): RulesCatalogVm {
       { key: 'skill:perception', namePt: 'Percepção', ability: 'wis' },
     ],
     armor: [],
-    weapons: [],
+    weapons: [
+      {
+        key: 'equipment:dagger',
+        namePt: 'Adaga',
+        category: 'simple',
+        damage: '1d4',
+        fromTable: false,
+        archived: false,
+        off: false,
+      },
+      {
+        key: 'weapon:machado-de-lenhador@mesa',
+        namePt: 'Machado de Lenhador',
+        category: 'simple',
+        damage: '1d6',
+        fromTable: true,
+        archived: false,
+        off: false,
+      },
+    ],
     spells: [
       spell('spell:fire-bolt', 'Raio de Fogo', 0, ['class:wizard']),
       spell('spell:shield', 'Escudo Arcano', 1, ['class:wizard']),
@@ -317,6 +336,47 @@ describe('a table class, race and background in the editor (E10-02 state 5)', ()
     expect(options).toContain('Guardião do Vale Da mesa');
     expect(options).toContain('Mago');
     expect(options.filter((o) => o.includes('Da mesa'))).toEqual(['Guardião do Vale Da mesa']);
+  });
+
+  it("lists the weapons of the table first, then the SRD's, each with its category and damage (board 580-16, state 4)", async () => {
+    const { fixture, el } = await render();
+    await openStep(fixture, 'Equipamento');
+    Array.from(el.querySelectorAll<HTMLElement>('mat-form-field'))
+      .find((f) => f.querySelector('mat-label')?.textContent?.trim() === 'Armas')!
+      .querySelector<HTMLElement>('.mat-mdc-select-trigger')!
+      .click();
+    await settle(fixture);
+    const text = (e: Element) =>
+      (e.textContent ?? '')
+        .replace(/menu_book|inventory_2/g, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+    const groups = Array.from(document.querySelectorAll('mat-optgroup'));
+    expect(groups.map((g) => text(g.querySelector('.mat-mdc-optgroup-label')!))).toEqual([
+      'Da mesa',
+      'Do SRD',
+    ]);
+    expect(Array.from(groups[0].querySelectorAll('mat-option')).map(text)).toEqual([
+      'Machado de Lenhador Simples · 1d6',
+    ]);
+    expect(Array.from(groups[1].querySelectorAll('mat-option')).map(text)).toEqual([
+      'Adaga Simples · 1d4',
+    ]);
+  });
+
+  it('draws the book icon on the label of "Da mesa" and none on the SRD\'s (board 580-16, state 4)', async () => {
+    const { fixture, el } = await render();
+    await openStep(fixture, 'Equipamento');
+    Array.from(el.querySelectorAll<HTMLElement>('mat-form-field'))
+      .find((f) => f.querySelector('mat-label')?.textContent?.trim() === 'Armas')!
+      .querySelector<HTMLElement>('.mat-mdc-select-trigger')!
+      .click();
+    await settle(fixture);
+    const [table, book] = Array.from(document.querySelectorAll('mat-optgroup'));
+    const icon = table.querySelector('.mat-mdc-optgroup-label mat-icon');
+    expect(icon?.textContent?.trim()).toBe('menu_book');
+    expect(icon?.getAttribute('aria-hidden')).toBe('true');
+    expect(book.querySelector('.mat-mdc-optgroup-label mat-icon')).toBeNull();
   });
 });
 

@@ -21,6 +21,9 @@ const KINDS: Record<string, Kind> = {
   background: { title: 'O antecedente mudou.', noun: 'o antecedente' },
   spell: { title: 'A magia mudou.', noun: 'a magia' },
   weapon: { title: 'A arma mudou.', noun: 'a arma' },
+  feat: { title: 'O talento mudou.', noun: 'o talento' },
+  option: { title: 'A opção mudou.', noun: 'a opção' },
+  classfeature: { title: 'A característica mudou.', noun: 'a característica' },
 };
 
 const FALLBACK: Kind = { title: 'O conteúdo mudou.', noun: 'o conteúdo' };
