@@ -24,7 +24,7 @@ import {
   judgeFavor,
 } from './favor-spend';
 import { FavorState } from './favor-state';
-import { FakeFavorClient, favorRefused, openFavor } from './favor-testing';
+import { FakeFavorClient, favorPass, favorRefused, openFavor } from './favor-testing';
 
 const source = (kind: AdvantageSourceKind, effect: RollMode, textPt: string) =>
   create(AdvantageSourceSchema, { kind, effect, textPt });
@@ -241,7 +241,7 @@ describe('FavorSpend', () => {
     expect(fav.view()).toEqual({ kind: 'off', sub: '', reason: FAVOR_READ_FAILED });
   });
 
-  it('is dashed with the reason of the sheet, and of a pass that waits (slice 3)', () => {
+  it('is dashed with the reason of the sheet, and of a pass a sheet names', () => {
     expect(setup({ sheetReason: () => 'Há um pedido.' }).fav.view()).toMatchObject({
       kind: 'off',
       reason: 'Há um pedido.',
@@ -250,6 +250,26 @@ describe('FavorSpend', () => {
       kind: 'off',
       reason: 'Passe pendente.',
     });
+  });
+
+  it("is dashed with the player's own ask that waits for the master, and opens again when it is gone (581-07, item 4)", () => {
+    const { fav, favor } = setup();
+    favor.passes.set([favorPass({ fromId: 'c1' })]);
+    expect(fav.view()).toEqual({
+      kind: 'off',
+      sub: '',
+      reason: 'Você pediu para passar a Inspiração a Tor. Cancele o pedido para usar.',
+    });
+    fav.set(true);
+    expect(fav.spend()).toBe(false);
+    favor.passes.set([]);
+    expect(fav.view()?.kind).toBe('open');
+  });
+
+  it("reads the ask of any of the player's characters on a sheet that names none", () => {
+    const { fav, favor } = setup({ who: () => ({ characterId: '', name: '' }) });
+    favor.passes.set([favorPass({ toName: 'Pensantus' })]);
+    expect(fav.view()).toMatchObject({ kind: 'off', reason: expect.stringContaining('Pensantus') });
   });
 
   it('is open with no known mode when the sheet does not know the circumstances', () => {

@@ -10,7 +10,9 @@ import { FavorBlockedReason } from '../../../gen/meurpg/play/v1/favor_pb';
 import type { Combatant } from '../../../gen/meurpg/play/v1/combat_pb';
 import { isPlayer } from '../combat/combat-view';
 import { orNormal } from '../combat/roll-mode';
+import { sourceName } from './favor-client';
 import { favorBlocked, favorBlockedMessage } from './favor-errors';
+import { favorPassPendingText } from './favor-pass';
 import type { FavorState } from './favor-state';
 
 /** The sentence under the box when the Inspiração is the master's to hold, not the master's to spend (board 581-07, item 7). */
@@ -43,11 +45,6 @@ export interface FavorCircumstances {
   readonly undecided?: boolean;
 }
 
-/** "Ajuda de Tor" from "Ajuda de Tor: vantagem": the part of a sentence before its colon names the source. */
-function shortName(text: string): string {
-  return text.split(':')[0].trim();
-}
-
 /** The circumstances of an attack or a spell attack: the server's sources (`TargetInReach.sources`) and its suggested mode. A
  * hidden source (`OTHER_SOURCE`) keeps its side on the wire; the Inspiração itself is not a circumstance. */
 export function circumstancesOfSources(
@@ -58,7 +55,7 @@ export function circumstancesOfSources(
     (s) => s.kind !== AdvantageSourceKind.OTHER_SOURCE && s.kind !== AdvantageSourceKind.FAVOR,
   );
   const named = (effect: RollMode) =>
-    seen.filter((s) => s.effect === effect).map((s) => shortName(s.textPt));
+    seen.filter((s) => s.effect === effect).map((s) => sourceName(s.textPt));
   return {
     mode,
     advantages: named(RollMode.ADVANTAGE),
@@ -122,9 +119,9 @@ export function circumstancesOfPrompt(
     if (text.startsWith('Outra fonte')) {
       hiddenDisadvantage ||= side === 'disadvantage';
     } else if (side === 'advantage') {
-      advantages.push(shortName(text));
+      advantages.push(sourceName(text));
     } else if (side === 'disadvantage') {
-      disadvantages.push(shortName(text));
+      disadvantages.push(sourceName(text));
     } else {
       undecided = true;
     }
@@ -201,9 +198,8 @@ export interface FavorSpendHost {
   readonly byMaster?: () => boolean;
   /** The circumstances the sheet knows before the roll; without them the server judges alone. */
   readonly circumstances?: () => FavorCircumstances | null;
-  /** The text of a pass that waits for the master ("Você pediu para passar a Inspiração a Tor. Cancele o pedido para usar."),
-   * or `''`. SLICE 3 EXTENSION POINT: the pass is not built (`PassFavor` is unimplemented), so no sheet sets it; when it is, the
-   * box turns dashed with this reason and nothing else changes. */
+  /** The text of a pass that waits for the master, or `''`. A sheet leaves it out: the box reads the player's own ask from `favor` and
+   * turns dashed with "Você pediu para passar a Inspiração a Tor. Cancele o pedido para usar." (581-07, item 4). */
   readonly passPending?: () => string;
   /** A reason that comes from the sheet itself: a mode asked of the master. */
   readonly sheetReason?: () => string;
@@ -247,14 +243,22 @@ export class FavorSpend {
       : { kind: 'off', sub: '', reason: j.reason };
   });
 
-  /** The reasons the sheet itself knows to dash the box: the master acts for the player, a pass waits (slice 3), a mode was asked. */
+  /** The reasons the sheet itself knows to dash the box: the master acts for the player, an ask to pass it waits, a mode was asked. */
   private sheetOff(who: FavorWho): FavorView | null {
     if (this.host.byMaster?.()) {
       const name = who.name || this.host.favor.holders().get(who.characterId) || '';
       return { kind: 'off', sub: favorByMasterText(name), reason: FAVOR_ONLY_PLAYER };
     }
-    const reason = (this.host.passPending?.() ?? '') || (this.host.sheetReason?.() ?? '');
+    const reason =
+      (this.host.passPending?.() ?? '') || this.askedText(who) || (this.host.sheetReason?.() ?? '');
     return reason === '' ? null : { kind: 'off', sub: '', reason };
+  }
+
+  /** The reason of the player's own ask that waits for the master: the character's, or (a sheet only a player opens) any of theirs. */
+  private askedText(who: FavorWho): string {
+    const { favor } = this.host;
+    const ask = who.characterId === '' ? favor.passes()[0] : favor.passOf(who.characterId);
+    return ask ? favorPassPendingText(ask.toName) : '';
   }
 
   /** The box is ticked and can be: the request carries `spend_favor`. */

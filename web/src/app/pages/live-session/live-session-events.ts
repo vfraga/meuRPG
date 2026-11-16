@@ -60,7 +60,7 @@ export class LiveSessionEvents {
       services.spellCatalog.forget(campaignId);
       void parts.trapBoard.refresh();
       // Who has the master's Inspiração (RN-43): a reconnection or a lost hint reads it again, like the rest.
-      services.favor.follow(campaignId);
+      services.favor.follow(campaignId, state.isMaster());
       // The first `ready` reads the conversation; a reconnection reads the lines that came meanwhile.
       void parts.conversation.sync();
       return loader.readSnapshot(campaignId, generation, () => ({
