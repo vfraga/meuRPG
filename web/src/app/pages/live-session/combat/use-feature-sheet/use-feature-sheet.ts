@@ -30,7 +30,7 @@ import { ActionKey } from '../../../../core/connect/idempotency';
 import type { ResourceUsageVm } from '../../../../core/play/resource-usage.types';
 import { SheetFrame } from '../../../../shared/sheet/sheet-frame/sheet-frame';
 import { injectSheet } from '../../../../shared/sheet/sheet-host';
-import { ResourcePick } from '../resource-pick/resource-pick';
+import { ResourcePick } from '../../../../shared/resource-pick/resource-pick';
 
 /** What the page hands the sheet of a feature taken with `UseFeature`. */
 export interface UseFeatureSheetData {

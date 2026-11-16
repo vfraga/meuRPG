@@ -26,7 +26,7 @@ import { classResourceErrorMessage } from '../../../../core/resources/resources-
 import { type Segment, Segmented } from '../../../../shared/segmented/segmented';
 import { toVitalsVm } from '../../../../core/play/live-session-source.live';
 import type { VitalsVm } from '../../../../core/play/live-session.types';
-import { type PickRow, ResourcePick } from '../resource-pick/resource-pick';
+import { type PickRow, ResourcePick } from '../../../../shared/resource-pick/resource-pick';
 import { SheetFrame } from '../../../../shared/sheet/sheet-frame/sheet-frame';
 import { injectSheet } from '../../../../shared/sheet/sheet-host';
 

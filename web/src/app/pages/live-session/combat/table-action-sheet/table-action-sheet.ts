@@ -31,7 +31,7 @@ import { CountStepper } from '../../../../shared/count-stepper/count-stepper';
 import { RollPicker } from '../../../../shared/roll-picker/roll-picker';
 import { SheetFrame } from '../../../../shared/sheet/sheet-frame/sheet-frame';
 import { injectSheet } from '../../../../shared/sheet/sheet-host';
-import { type PickRow, ResourcePick } from '../resource-pick/resource-pick';
+import { type PickRow, ResourcePick } from '../../../../shared/resource-pick/resource-pick';
 
 /** What the page hands the sheet of a table feature's action. */
 export interface TableActionSheetData {

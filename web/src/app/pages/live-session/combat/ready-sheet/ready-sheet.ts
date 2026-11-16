@@ -38,7 +38,7 @@ import {
 import { ActionKey } from '../../../../core/connect/idempotency';
 import { SheetFrame } from '../../../../shared/sheet/sheet-frame/sheet-frame';
 import { injectSheet } from '../../../../shared/sheet/sheet-host';
-import { ResourcePick } from '../resource-pick/resource-pick';
+import { ResourcePick } from '../../../../shared/resource-pick/resource-pick';
 
 /** What the page hands the Ready sheet. */
 export interface ReadySheetData {

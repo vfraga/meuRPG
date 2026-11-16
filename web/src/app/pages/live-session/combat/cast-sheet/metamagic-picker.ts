@@ -10,7 +10,7 @@ import {
   TWINNED_KEY,
 } from '../../../../core/resources/metamagic';
 import { type Pool } from '../../../../core/resources/pools';
-import { type PickRow, ResourcePick } from '../resource-pick/resource-pick';
+import { type PickRow, ResourcePick } from '../../../../shared/resource-pick/resource-pick';
 
 let nextId = 0;
 

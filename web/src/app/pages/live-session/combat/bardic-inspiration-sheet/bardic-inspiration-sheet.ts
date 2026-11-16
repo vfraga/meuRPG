@@ -24,7 +24,7 @@ import { classResourceErrorMessage } from '../../../../core/resources/resources-
 import { metersText } from '../../../../core/units';
 import { CountPips } from '../../../../shared/count-pips/count-pips';
 import type { VitalsVm } from '../../../../core/play/live-session.types';
-import { type PickRow, ResourcePick } from '../resource-pick/resource-pick';
+import { type PickRow, ResourcePick } from '../../../../shared/resource-pick/resource-pick';
 import { SheetFrame } from '../../../../shared/sheet/sheet-frame/sheet-frame';
 import { injectSheet } from '../../../../shared/sheet/sheet-host';
 

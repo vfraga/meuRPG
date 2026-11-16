@@ -16,7 +16,7 @@ import type {
 } from '../../../../../gen/meurpg/play/v1/combat_pb';
 import { CombatClient } from '../../../../core/combat/combat-client';
 import { type AimNeed, type ReadiedAim, readiedAim } from '../../../../core/combat/readied-aim';
-import { ResourcePick } from '../resource-pick/resource-pick';
+import { ResourcePick } from '../../../../shared/resource-pick/resource-pick';
 
 /**
  * Who a readied attack or spell is aimed at (#582): the list of creatures the readier's own turn options give, with the one named

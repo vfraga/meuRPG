@@ -40,7 +40,7 @@ import { featureWindowView } from '../../../../core/combat/reaction-feature';
 import { ActionKey } from '../../../../core/connect/idempotency';
 import { SheetFrame } from '../../../../shared/sheet/sheet-frame/sheet-frame';
 import { injectSheet } from '../../../../shared/sheet/sheet-host';
-import { ResourcePick } from '../resource-pick/resource-pick';
+import { ResourcePick } from '../../../../shared/resource-pick/resource-pick';
 
 /** How often the prompt's countdown redraws, in ms. */
 const CLOCK_TICK_MS = 1000;
