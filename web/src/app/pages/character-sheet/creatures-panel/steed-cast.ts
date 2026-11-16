@@ -2,12 +2,18 @@ import { type Injector, signal } from '@angular/core';
 
 import type {
   CharacterCreature,
+  GetSummonOptionsResponse,
   SummonSpellOptions,
 } from '../../../../gen/meurpg/characters/v1/characters_pb';
 import { CombatClient } from '../../../core/combat/combat-client';
 import { FIND_STEED } from '../../../core/creatures/steed';
 import { steedCastHint } from '../../../core/creatures/steed-card';
 import { castCostText } from '../../../core/creatures/summon-labels';
+
+/** The character's bonded steed: the answer's own (the bond outlives an unprepared spell), or the spell's on an older server. */
+export function bondOf(options: GetSummonOptionsResponse | null): CharacterCreature | null {
+  return options?.bondedSteed ?? options?.spells.find((s) => s.bondedSteed)?.bondedSteed ?? null;
+}
 
 /**
  * What the "Criaturas" panel says at the cast button of Convocar Montaria (#588, boards 588-23 and 588-26). The cast takes
@@ -17,6 +23,8 @@ import { castCostText } from '../../../core/creatures/summon-labels';
 export class SteedCast {
   /** A running combat holds the character. */
   readonly fighting = signal(false);
+  /** The character's bonded steed, live or away; `null` for none. */
+  readonly bond = signal<CharacterCreature | null>(null);
   private seq = 0;
 
   constructor(private readonly injector: Injector) {}

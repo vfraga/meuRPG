@@ -114,3 +114,41 @@ func TestReleaseOfAnyCreatureButABondedSteedIsRefused(t *testing.T) {
 		}
 	}
 }
+
+// The bond is the character's, not the spell's: a character that cannot cast Find Steed now (it is not prepared) still reads its bonded
+// steed, live or dismissed, so the sheet can draw it and offer its release. The owner and the master read it; a release ends it.
+func TestSummonOptionsCarryTheBondedSteedWithoutTheSpell(t *testing.T) {
+	t.Parallel()
+	tb := newCreatureTable(t)
+	id := tb.steed(t, "Trovão")
+	bondOf := func(u *user) *charactersv1.CharacterCreature {
+		t.Helper()
+		res, err := u.api.GetSummonOptions(t.Context(), connect.NewRequest(&charactersv1.GetSummonOptionsRequest{CampaignId: tb.campaign, CharacterId: tb.pc.GetId()}))
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, s := range res.Msg.GetSpells() {
+			if s.GetSpellKey() == "spell:find-steed" {
+				t.Fatal("the character casts Find Steed: the test wants one that does not")
+			}
+		}
+		return res.Msg.GetBondedSteed()
+	}
+	if got := bondOf(tb.owner); got.GetId() != id || !got.GetBonded() {
+		t.Errorf("the live steed: got %q bonded %v, want %q", got.GetId(), got.GetBonded(), id)
+	}
+	if err := tb.dismissAs(tb.owner, id, charactersv1.CreatureDismissal_CREATURE_DISMISSAL_DISMISS); err != nil {
+		t.Fatal(err)
+	}
+	for name, u := range map[string]*user{"the owner": tb.owner, "the master": tb.master} {
+		if got := bondOf(u); got.GetId() != id || got.GetName() != "Trovão" || got.GetCreatureType() != "celestial" {
+			t.Errorf("%s, the dismissed steed: got %q %q %q", name, got.GetId(), got.GetName(), got.GetCreatureType())
+		}
+	}
+	if err := tb.dismissAs(tb.owner, id, charactersv1.CreatureDismissal_CREATURE_DISMISSAL_RELEASE); err != nil {
+		t.Fatal(err)
+	}
+	if got := bondOf(tb.owner); got != nil {
+		t.Errorf("after the release: got %q, want no bond", got.GetId())
+	}
+}

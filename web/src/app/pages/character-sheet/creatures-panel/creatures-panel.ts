@@ -33,7 +33,7 @@ import { isUnlimited } from '../../../core/combat/unlimited-uses';
 import { ActionKey } from '../../../core/connect/idempotency';
 import { CreatureCard } from './creature-card';
 import { SteedAway } from './steed-away';
-import { SteedCast } from './steed-cast';
+import { SteedCast, bondOf } from './steed-cast';
 import { readWild, stayBeast } from './wild-read';
 import type { EditMode } from '../../../shared/creatures/creature-edit';
 import {
@@ -115,7 +115,7 @@ export class CreaturesPanel {
   protected readonly steedCast = new SteedCast(this.injector);
   /** The bonded steed that is not among the creatures (dismissed, or gone at 0 hit points): the dashed "Fora" row (#588). */
   protected readonly away = computed(() => {
-    const steed = this.spells().find((s) => s.bondedSteed)?.bondedSteed;
+    const steed = this.steedCast.bond();
     return steed && !this.creatures().some((c) => c.id === steed.id) ? steed : null;
   });
   protected readonly visible = computed(
@@ -342,9 +342,9 @@ export class CreaturesPanel {
       return null;
     }
     this.refreshFailed.set(false);
-    this.spells.set(
-      options.status === 'fulfilled' && options.value ? [...options.value.spells] : [],
-    );
+    const read = options.status === 'fulfilled' ? options.value : null;
+    this.spells.set(read ? [...read.spells] : []);
+    this.steedCast.bond.set(bondOf(read));
     void this.steedCast.read(
       this.spells(),
       this.live() && !this.isMaster(),

@@ -61,6 +61,14 @@ func (s *Service) readSummonOptions(ctx context.Context, tx pgx.Tx, m authz.Memb
 	if err := checkSummonOptionsCharacter(ctx, q, m, id); err != nil {
 		return out, err
 	}
+	content, err := s.contentFor(ctx, tx, m.CampaignID)
+	if err != nil {
+		return out, wrap("read rules content", err)
+	}
+	// The bond is the character's, whatever it can cast now: an unprepared Find Steed does not end it.
+	if out.BondedSteed, err = s.bondedSteedProto(ctx, q, content, m.CampaignID, id); err != nil {
+		return out, err
+	}
 	b, err := s.summonCharacter(ctx, tx, m.CampaignID, id)
 	if err != nil {
 		if connect.CodeOf(err) == connect.CodeNotFound {
@@ -73,10 +81,6 @@ func (s *Service) readSummonOptions(ctx context.Context, tx pgx.Tx, m authz.Memb
 		return out, err
 	}
 	out.Slots = summonSlots(vitals)
-	content, err := s.contentFor(ctx, tx, m.CampaignID)
-	if err != nil {
-		return out, wrap("read rules content", err)
-	}
 	d := rules.Derive(b, content)
 	used := usageOf(vitals)
 	for _, key := range content.SummonSpells() {

@@ -3547,6 +3547,10 @@ message GetSummonOptionsResponse {
   // The character's spell slots, lowest circle first, pact magic slots
   // (`pact`) included: the casting sheet's "Espaço de magia a gastar".
   repeated SummonSlot slots = 2;
+  // The character's bonded steed (Find Steed), live or dismissed, whether or not the character can cast the spell now: the bond
+  // is the character's, and an unprepared spell does not end it. The same creature as SummonSpellOptions.bonded_steed. Unset
+  // when no steed is bonded.
+  CharacterCreature bonded_steed = 3;
 }
 
 // SummonSpellOptions is one summoning spell the character can cast.

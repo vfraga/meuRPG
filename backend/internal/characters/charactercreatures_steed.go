@@ -80,15 +80,21 @@ func (s *Service) steedOptions(ctx context.Context, q *charactersdb.Queries, con
 	}
 	out.TypeChoices, out.MinInt = own.Options[0].TypeChoices, i32(own.Options[0].MinInt)
 	out.Notes = steedNotes()
+	bonded, err := s.bondedSteedProto(ctx, q, content, campaignID, characterID)
+	out.BondedSteed = bonded
+	return err
+}
+
+// bondedSteedProto is the character's bonded steed as the API sends it, live or dismissed; nil for none.
+func (s *Service) bondedSteedProto(ctx context.Context, q *charactersdb.Queries, content *rules.Content, campaignID, characterID string) (*charactersv1.CharacterCreature, error) {
 	row, err := q.GetBondedCreature(ctx, charactersdb.GetBondedCreatureParams{CampaignID: campaignID, CharacterID: characterID})
 	if errors.Is(err, pgx.ErrNoRows) {
-		return nil
+		return nil, nil
 	}
 	if err != nil {
-		return wrap("read the bonded steed", err)
+		return nil, wrap("read the bonded steed", err)
 	}
-	out.BondedSteed = characterCreatureToProto(content, row.CharacterCreature)
-	return nil
+	return characterCreatureToProto(content, row.CharacterCreature), nil
 }
 
 // steedNotes are the rules of Find Steed the server only says (SRD 5.1): the bond, where the steed appears and what it understands.

@@ -4,7 +4,10 @@ import { MatBottomSheet } from '@angular/material/bottom-sheet';
 import { MatDialog } from '@angular/material/dialog';
 import { provideRouter } from '@angular/router';
 
-import { CreatureSource } from '../../../../gen/meurpg/characters/v1/characters_pb';
+import {
+  CreatureSource,
+  GetSummonOptionsResponseSchema,
+} from '../../../../gen/meurpg/characters/v1/characters_pb';
 import { create } from '@bufbuild/protobuf';
 
 import { type Encounter, EncounterSchema } from '../../../../gen/meurpg/play/v1/combat_pb';
@@ -37,10 +40,16 @@ describe('CreaturesPanel, a bonded steed that is away: the dashed "Fora" row (#5
       bonded: true,
     });
 
-  async function setup(opts: { live?: boolean; away?: boolean; master?: boolean } = {}) {
+  async function setup(
+    opts: { live?: boolean; away?: boolean; master?: boolean; unprepared?: boolean } = {},
+  ) {
     api = new FakeCreaturesClient();
     api.creatures = opts.live ? [estrela()] : [];
     api.options = summonAnswer([steedSpell(opts.away === false ? {} : { bondedSteed: estrela() })]);
+    if (opts.unprepared) {
+      // The spell is not prepared: no summon spell at all, and the bond on the answer itself.
+      api.options = create(GetSummonOptionsResponseSchema, { bondedSteed: estrela() });
+    }
     api.blocks.set('monster:warhorse', raven());
     TestBed.configureTestingModule({
       providers: [
@@ -180,6 +189,16 @@ describe('CreaturesPanel, a bonded steed that is away: the dashed "Fora" row (#5
     const closed = await setup();
     sessions.set([{ campaignId: 'camp-1' }]);
     expect(flat(closed.el.querySelector('.cast__why'))).toBe('Agora não há sessão aberta.');
+  });
+
+  it('the row comes from the bond, not from the spell: a character that cannot cast Convocar Montaria now still has it, with its release', async () => {
+    const { el, away, release, button, settle } = await setup({ unprepared: true });
+    expect(el.querySelector('.js-cast')).toBeNull();
+    expect(flat(away()!.querySelector('h3'))).toBe('Estrela');
+    await release();
+    button('Libertar Estrela').click();
+    await settle();
+    expect(api.dismiss).toHaveBeenCalledWith('camp-1', 'steed-1', 'release');
   });
 
   it("the master reads the row too, with the sentence in the owner's name", async () => {
