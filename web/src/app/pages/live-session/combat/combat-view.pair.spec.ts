@@ -4,6 +4,8 @@ import {
   CombatantKind,
   CombatantSide,
   CombatantState,
+  EncounterBlockedReason,
+  EncounterBlockedSchema,
 } from '../../../../gen/meurpg/play/v1/combat_pb';
 import { DisabledReasonCode } from '../../../../gen/meurpg/rules/v1/rules_pb';
 import { combatant, encounter } from '../../../core/combat/combat-testing';
@@ -169,6 +171,63 @@ describe('CombatView: the rider and the mount it directs (588-04)', () => {
     await settle(m.fixture);
     expect(await m.view.endTurn(false)).toBe(false);
     expect(m.callsOf('endTurn').map((c) => c.args[2])).toEqual(['tor']);
+  });
+
+  it("says no error when the rider's end opened a save that holds the mount's call, keeps the card, and the next tap ends the mount's part", async () => {
+    // The rider's part ends and an end-of-turn effect save opens for it (Imobilizar Pessoa): the server refuses the mount's call.
+    const after = enc();
+    after.combatants[0].turnPartEnded = true;
+    let held = true;
+    const m = mountCombatView({
+      enc: enc(),
+      turnOptions: (id) => (id === 'h' ? (three(true) as never) : undefined),
+      api: {
+        // A refusal makes the screen read the combat again: the rider's part stays ended there.
+        get: async () => after,
+        endTurn: async (...args: unknown[]) => {
+          if (args[2] === 'h' && held) {
+            throw new ConnectError('a reaction is pending', Code.FailedPrecondition, undefined, [
+              {
+                desc: EncounterBlockedSchema,
+                value: { reason: EncounterBlockedReason.REACTION_PENDING },
+              },
+            ]);
+          }
+          return after;
+        },
+      },
+    });
+    await settle(m.fixture);
+    await m.view.endTurn(false);
+    await settle(m.fixture);
+    expect(m.callsOf('endTurn').map((c) => c.args[2])).toEqual(['tor', 'h']);
+    expect((m.view as unknown as { error(): string }).error()).toBe('');
+    expect(m.el.querySelector('app-pair-card')).not.toBeNull();
+    // The save is rolled; the second tap ends what is left, the mount's part.
+    held = false;
+    await m.view.endTurn(false);
+    expect(m.callsOf('endTurn').map((c) => c.args[2])).toEqual(['tor', 'h', 'h']);
+  });
+
+  it("still says the refusal when the mount's part alone is held by a pending reaction: nothing ended in that tap", async () => {
+    const left = enc();
+    left.combatants[0].turnPartEnded = true;
+    const m = mountCombatView({
+      enc: left,
+      api: {
+        endTurn: async () => {
+          throw new ConnectError('a reaction is pending', Code.FailedPrecondition, undefined, [
+            {
+              desc: EncounterBlockedSchema,
+              value: { reason: EncounterBlockedReason.REACTION_PENDING },
+            },
+          ]);
+        },
+      },
+    });
+    await settle(m.fixture);
+    await m.view.endTurn(false);
+    expect((m.view as unknown as { error(): string }).error()).not.toBe('');
   });
 
   it("ends only the rider's part when the rider is down: the master leads the mount", async () => {

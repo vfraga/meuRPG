@@ -37,7 +37,11 @@ export class CombatCalls {
 
   /** Runs a call that answers with the combat: applies it, or says why not. A refusal that means the screen is stale reads the
    * combat again. `false` when it was not made (no combat, or another call in the air) or failed. */
-  async run(call: (e: Encounter) => Promise<Encounter>): Promise<boolean> {
+  async run(
+    call: (e: Encounter) => Promise<Encounter>,
+    /** A refusal the caller expects and answers on screen some other way: it is not said as an error. */
+    expected?: (err: unknown) => boolean,
+  ): Promise<boolean> {
     const e = this.ctx.encounter();
     if (!e || this.busy()) {
       return false;
@@ -48,7 +52,9 @@ export class CombatCalls {
       this.ctx.state().apply(await call(e));
       return true;
     } catch (err) {
-      this.error.set(combatErrorMessage(err));
+      if (!expected?.(err)) {
+        this.error.set(combatErrorMessage(err));
+      }
       await this.refreshAfter(err);
       return false;
     } finally {

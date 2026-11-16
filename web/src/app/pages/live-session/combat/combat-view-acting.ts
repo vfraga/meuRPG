@@ -5,6 +5,7 @@ import { vitalsPool } from '../../../core/combat/form-pool';
 import { type MineTab, membersToEnd } from '../../../core/combat/mine';
 import { moveLine } from '../../../core/combat/move-line';
 import { turnEnds } from '../../../core/combat/pair-turn';
+import { reactionPending } from '../../../core/combat/combat-errors';
 import { economyShapes } from '../../../shared/economy-shapes/economy-shapes';
 import { CombatViewDerivedDirective } from './combat-view-derived';
 import { type RevealAnswer } from './hidden-reveal/hidden-reveal-card';
@@ -77,13 +78,19 @@ export abstract class CombatViewActingDirective extends CombatViewDerivedDirecti
     return this.endTurn(discard);
   }
 
-  /** One call for each part the button ends (`turnEnds`): a rider's own part, then the mount's; a refusal stops there. */
+  /**
+   * One call for each part the button ends (`turnEnds`): a rider's own part, then the mount's; a refusal stops there. The end of
+   * the rider's part may open a save of its own (an effect that asks at the end of the turn), which holds the mount's call: that
+   * refusal is expected and says nothing, as the save's sheet is what the player reads; the button stays for the mount's part.
+   */
   protected async endTurn(discard: boolean): Promise<boolean> {
     const e = this.encounter();
+    let ended = 0;
     for (const id of e ? turnEnds(e, this.own(), this.riding()) : []) {
-      if (!(await this.endPart(id, discard))) {
+      if (!(await this.endPart(id, discard, ended > 0 ? reactionPending : undefined))) {
         return false;
       }
+      ended++;
     }
     return !!e;
   }
@@ -96,9 +103,14 @@ export abstract class CombatViewActingDirective extends CombatViewDerivedDirecti
   }
 
   /** "Encerrar a parte da Brisa": the master ends one member's part. */
-  protected endPart(id: string, discard = false): Promise<boolean> {
-    return this.calls.run((e) =>
-      this.api.turn.endTurn(this.campaignId(), e.id, id, discard, e.round),
+  protected endPart(
+    id: string,
+    discard = false,
+    expected?: (err: unknown) => boolean,
+  ): Promise<boolean> {
+    return this.calls.run(
+      (e) => this.api.turn.endTurn(this.campaignId(), e.id, id, discard, e.round),
+      expected,
     );
   }
 

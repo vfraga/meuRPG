@@ -45,6 +45,11 @@ export function encounterBlocked(err: unknown): EncounterBlocked | null {
 
 /** The typed detail of a `failed_precondition` from `ContestService` (the grapple, the shove, Hide, Help, the group check), or
  * `null`. The reasons the combat already had keep coming as `EncounterBlocked`. Never read from the message. */
+/** The call was refused because a reaction window waits for its answer (`REACTION_PENDING`). */
+export function reactionPending(err: unknown): boolean {
+  return encounterBlocked(err)?.reason === EncounterBlockedReason.REACTION_PENDING;
+}
+
 export function contestBlocked(err: unknown): ContestBlocked | null {
   const connectErr = ConnectError.from(err, Code.Unavailable);
   if (connectErr.code !== Code.FailedPrecondition) {
