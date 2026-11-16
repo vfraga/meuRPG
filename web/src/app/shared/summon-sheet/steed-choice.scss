@@ -1,0 +1,63 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.types {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.types__cap {
+  font-size: var(--mr-font-14);
+  font-weight: 500;
+  color: var(--mr-ink-muted);
+}
+
+// The bonded steed: one row that cannot be changed here, framed like a chosen row of the list.
+.same {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px;
+  border: 2px solid var(--mr-accent);
+  border-radius: var(--mr-radius-md);
+  background: var(--mr-accent-soft);
+}
+
+.same__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.same__name {
+  font-size: var(--mr-font-16);
+  font-weight: 600;
+  color: var(--mr-ink);
+  overflow-wrap: anywhere;
+}
+
+.same__sub {
+  font-size: var(--mr-font-14);
+  line-height: 19px;
+  color: var(--mr-ink-muted);
+}
+
+.same__line {
+  margin: 0;
+  font-size: var(--mr-font-14);
+  line-height: 20px;
+  color: var(--mr-ink);
+}
+
+.how {
+  margin: 0;
+  padding-left: 20px;
+  font-size: var(--mr-font-14);
+  line-height: 20px;
+  color: var(--mr-ink);
+}
