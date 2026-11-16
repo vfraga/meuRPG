@@ -112,9 +112,11 @@ describe('Convocar Montaria, the words of the summon sheet (#588, boards 588-21 
       armorClass: 11,
       hitPointsMax: 19,
     });
-    expect(steedFixedLine(steed)).toBe('Cavalo de guerra · celestial · CA 11 · 19 PV');
+    expect(steedFixedLine(steed)).toBe(
+      'Cavalo de guerra\u00a0· celestial\u00a0· CA 11\u00a0· 19 PV',
+    );
     expect(steedFixedLine(create(CharacterCreatureSchema, { ...steed, creatureType: '' }))).toBe(
-      'Cavalo de guerra · CA 11 · 19 PV',
+      'Cavalo de guerra\u00a0· CA 11\u00a0· 19 PV',
     );
   });
 });

@@ -77,7 +77,7 @@ describe('SteedChoice: the steed part of the summon sheet (#588, boards 588-21 a
     const row = el.querySelector('.same');
     expect(row?.querySelector('.same__name')?.textContent?.trim()).toBe('Estrela');
     expect(row?.querySelector('.mr-tag')?.textContent?.trim()).toBe('Mesmo corcel');
-    expect(row?.querySelector('.same__sub')?.textContent?.trim()).toBe(
+    expect(flat(row?.querySelector('.same__sub'))).toBe(
       'Cavalo de guerra · celestial · CA 11 · 19 PV',
     );
     expect(el.querySelector('.same__line')?.textContent?.trim()).toBe(

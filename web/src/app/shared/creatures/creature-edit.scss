@@ -41,6 +41,21 @@
   line-height: 20px;
 }
 
+// "● Gasta a sua ação" (a bonded steed sent away in a combat): the chip of what a choice costs, under the sentence.
+.ask__chip {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 var(--mr-space-1);
+  padding: 2px 10px;
+  border: 1px solid currentcolor;
+  border-radius: var(--mr-radius-pill);
+  font-size: var(--mr-font-14);
+  font-weight: 600;
+  line-height: 20px;
+}
+
 .form {
   display: flex;
   flex-direction: column;

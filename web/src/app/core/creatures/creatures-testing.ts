@@ -242,8 +242,8 @@ export class FakeCreaturesClient {
     this.creatures = this.creatures.map((c) => (c.id === id ? { ...c, name } : c));
     return this.creatures.find((c) => c.id === id);
   });
-  dismiss = vi.fn(async (_c: string, id: string) => {
-    this.calls.push(`dismiss ${id}`);
+  dismiss = vi.fn(async (_c: string, id: string, how?: 'dismiss' | 'release') => {
+    this.calls.push(`${how ?? 'dismiss'} ${id}`);
     if (this.failWith) {
       throw this.failWith;
     }

@@ -6,6 +6,7 @@ import {
   type Character,
   CharacterKind,
   CharacterService,
+  CreatureDismissal,
   type GetSummonOptionsResponse,
   type ListWildShapeFormsResponse,
 } from '../../../gen/meurpg/characters/v1/characters_pb';
@@ -54,6 +55,11 @@ export interface SummonCast {
   };
   readonly idempotencyKey: string;
 }
+
+const DISMISSALS = {
+  dismiss: CreatureDismissal.DISMISS,
+  release: CreatureDismissal.RELEASE,
+} as const;
 
 /**
  * Thin wrapper around the calls of the character's creatures (MR-037):
@@ -152,8 +158,17 @@ export class CreaturesClient {
     return (await this.characters.renameCreature({ campaignId, creatureId, name })).creature;
   }
 
-  async dismiss(campaignId: string, creatureId: string): Promise<void> {
-    await this.characters.dismissCreature({ campaignId, creatureId });
+  /** Sends a creature away. A bonded steed goes by `how`: `dismiss` keeps the bond, `release` ends it; any other creature goes for good. */
+  async dismiss(
+    campaignId: string,
+    creatureId: string,
+    how?: 'dismiss' | 'release',
+  ): Promise<void> {
+    await this.characters.dismissCreature({
+      campaignId,
+      creatureId,
+      ...(how ? { dismissal: DISMISSALS[how] } : {}),
+    });
   }
 
   /** The master's correction outside a combat: the hit points themselves. */

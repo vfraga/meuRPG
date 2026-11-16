@@ -10,6 +10,7 @@ import {
 } from '../../../gen/meurpg/play/v1/combat_pb';
 import { sessionClosed } from '../combat/combat-errors';
 import { circleLabel } from '../combat/combat-grid';
+import { joinDots } from '../format/text';
 import { creatureErrorMessage } from './creature-errors';
 import { CREATURE_TYPES } from './creature-types';
 
@@ -59,14 +60,14 @@ export function steedSameLine(name: string): string {
 
 /** The fixed row's second line: "Cavalo de guerra · celestial · CA 11 · 19 PV". */
 export function steedFixedLine(steed: CharacterCreature): string {
-  return [
-    steed.monsterNamePt,
-    steedTypeWord(steed.creatureType),
-    `CA ${steed.armorClass}`,
-    `${steed.hitPointsMax} PV`,
-  ]
-    .filter((part) => part !== '')
-    .join(' · ');
+  return joinDots(
+    [
+      steed.monsterNamePt,
+      steedTypeWord(steed.creatureType),
+      `CA ${steed.armorClass}`,
+      `${steed.hitPointsMax} PV`,
+    ].filter((part) => part !== ''),
+  );
 }
 
 /** A refused cast of Convocar Montaria: the two refusals of a ten-minute casting in its own words, the rest as any summon. */
