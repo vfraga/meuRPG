@@ -1,0 +1,7 @@
+# Part 2 addendum: magic items
+
+Read /home/user/srd-audit2/p2-families.md first: the family baseline (what each family needs from the engine and what exists). Then judge each item of your batch quickly against its family, noting only where it departs (an item with its own data row in item_charges.json, potions.json or consumables.json, an attunement_by, a +N, a curse, numbers that differ from the text).
+Items: backend/internal/rules/srd51/data/magic-items.json (the text is "desc"). Your batch's keys are in /home/user/srd-audit2/<batch>-items.json.
+One row per item, the brief's fields plus "family" (one of: bonus, charges, spell, consumable, resistance, ability-score, sense-movement, curse, sentient, container, other; the main thing the item does) and "rarity" (as in the data). "list" is "magic-item".
+Verdict boundary (coordinator rule): when the app itself applies or rolls something for the item and gets it wrong or leaves out what the item changes (a number different from the text, a charge spent that the text forbids, a recharge die wrong), the verdict is `wrong`. An item the app only lists on the sheet with nothing applied is `by-hand-silent` (the item's own text is not a reminder; note whether the player can read it at all). Charges counted with the rest by hand: `runs-part` only if a screen says the rest; otherwise `by-hand-silent` with "does" saying what is counted.
+A throwaway test is useful for checking a batch of charge/potion numbers at once.
