@@ -62,6 +62,9 @@ func (cb *choiceBuilder) traitChoices(g *groupBuild, tk string) {
 	for _, e := range c.effectChoices(tk, "cantrip") {
 		cb.cantripChoice(g, tk, e)
 	}
+	for _, e := range c.effectChoices(tk, "spell") {
+		cb.spellChoice(g, tk, e)
+	}
 	cb.featChoice(g, tk)
 }
 
@@ -138,6 +141,9 @@ func (cb *choiceBuilder) featureChoices(g *groupBuild, fk, subclass string) {
 	}
 	for _, e := range c.effectChoices(fk, "cantrip") {
 		cb.cantripChoice(g, fk, e)
+	}
+	for _, e := range c.effectChoices(fk, "spell") {
+		cb.spellChoice(g, fk, e)
 	}
 	cb.featChoice(g, fk)
 }
@@ -267,8 +273,13 @@ func (cb *choiceBuilder) naturalExplorer(g *groupBuild, fk string) {
 
 // cantripChoice is a feature or trait that lets the character know one more cantrip
 // from a class list (the high elf's wizard cantrip, the Land druid's druid cantrip).
-// The pick is a spell the sheet knows besides the class's own numbers.
+// The pick is a spell the sheet knows besides the class's own numbers. A choice with a
+// filter reads the filter's lists, schools and rituals instead of a list of classes.
 func (cb *choiceBuilder) cantripChoice(g *groupBuild, fk string, e *Effect) {
+	if e.Filter != nil {
+		cb.legacyCantrips(cb.narrowedSpellChoice(g, fk, e, spellPoolOf(e), true))
+		return
+	}
 	c := cb.c
 	var keys []string
 	for _, entry := range c.spellEntries {
@@ -342,7 +353,7 @@ func (cb *choiceBuilder) spellOptions(ch *Choice, keys []string) {
 	}
 	slices.SortFunc(entries, func(a, b SpellEntry) int { return strings.Compare(foldPT(a.NamePT), foldPT(b.NamePT)) })
 	for _, e := range entries {
-		o := ChoiceOption{Key: e.Key, Stored: ScopedChoice(ch.Key, e.Key), NamePT: e.NamePT, SpellLevel: e.Level, SchoolPT: e.SchoolNamePT}
+		o := ChoiceOption{Key: e.Key, Stored: ScopedChoice(ch.Key, e.Key), NamePT: e.NamePT, SpellLevel: e.Level, SchoolPT: e.SchoolNamePT, Ritual: e.Ritual}
 		for _, cl := range e.Classes {
 			if _, ok := c.classes[cl]; ok && !isTableKey(cl) {
 				o.ClassesPT = append(o.ClassesPT, c.namePT(cl))

@@ -258,6 +258,9 @@ func (s *spellSheet) collectGranted() {
 		if e.Type == "choice" && e.Choice == "cantrip" {
 			s.extraCantrips += e.Count
 			s.extraCantripLists = append(s.extraCantripLists, e.From...)
+			if e.Filter != nil {
+				s.extraCantripLists = append(s.extraCantripLists, e.Filter.ClassLists...)
+			}
 		}
 	}
 }

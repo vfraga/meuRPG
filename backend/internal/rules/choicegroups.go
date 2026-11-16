@@ -97,6 +97,8 @@ type ChoiceOption struct {
 	ClassesPT  []string
 	// NeedsText says the option takes free text (the humanoid favored enemy).
 	NeedsText bool
+	// Ritual says a spell option can be cast as a ritual.
+	Ritual bool `json:",omitempty"`
 }
 
 // Blocked says the option cannot be taken now.
@@ -136,6 +138,11 @@ type Choice struct {
 	// background or a feature lets the player pick. It is pending (the step marks it, the locked sheet and the master's
 	// list count it) but no problem is raised for it and a level-up does not ask it, as before the picks were here.
 	Advisory bool
+
+	// Narrowed says the choice's pool is the reader's: the spells of a filter or of a list of classes, less what the table
+	// keeps from a player. A pick the sheet holds stays in it, and a new pick of an option the reader's pool lacks is no
+	// pick the choice offers.
+	Narrowed bool `json:"-"`
 
 	family string
 	// plain says the picks are options written as their own keys (a fighting style),
