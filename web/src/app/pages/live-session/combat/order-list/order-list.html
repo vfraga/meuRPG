@@ -64,9 +64,10 @@
               class="bleed"
               [total]="item.total"
               [onTurn]="item.onTurn"
+              [mounted]="item.mounted"
               [label]="groupLabel(item)"
-              [names]="creatureNames(item)"
-              [hint]="item.members.length === 2 ? 'os dois agem no mesmo turno' : 'todos agem no mesmo turno'"
+              [names]="item.mounted ? '' : creatureNames(item)"
+              [hint]="item.mounted ? '' : item.members.length === 2 ? 'os dois agem no mesmo turno' : 'todos agem no mesmo turno'"
             >
               <ol class="rows">
                 @for (c of item.members; track c.id) {
@@ -90,7 +91,7 @@
     </button>
   }
   <ng-template #rowTpl let-c let-inGroup="inGroup">
-    <li class="row" [class.row--open]="isOpen(c)" [class.row--effects]="shield(c) > 0 || aid(c) > 0" [class.row--turn]="current(c)" [class.row--dying]="dying(c)" [class.row--fallen]="down(c)" [class.on-danger]="dying(c)" [attr.data-combatant]="c.id">
+    <li class="row" [class.row--mount]="inGroup && follows(c)" [class.row--open]="isOpen(c)" [class.row--effects]="shield(c) > 0 || aid(c) > 0" [class.row--turn]="current(c)" [class.row--dying]="dying(c)" [class.row--fallen]="down(c)" [class.on-danger]="dying(c)" [attr.data-combatant]="c.id">
       <button
         type="button"
         class="row__head"
@@ -123,7 +124,7 @@
             }
           </span>
           <span class="row__meta">
-            <span class="row__sub"><span class="row__lead">{{ compactSub(c, inGroup) }}@if (shield(c) > 0) {{{ compactSub(c, inGroup) ? ' · ' : '' }}<b>CA {{ c.armorClass }} + {{ shield(c) }}</b>}</span>@if (c.inSunlight && c.sunlightTrait !== NoSunTrait) {<span class="row__sun" data-testid="order-sun">{{ compactSub(c, inGroup) || shield(c) > 0 ? ' · ' : '' }}Na luz do sol</span>}@if (holdsReadied(c)) {<span class="row__ready" data-testid="order-readied"><mat-icon aria-hidden="true">alarm</mat-icon>Preparada</span>}</span>
+            <span class="row__sub">@if (ride(c); as r) {<span class="row__ride"><mat-icon aria-hidden="true">link</mat-icon>{{ r }}</span>{{ compactSub(c, inGroup) || shield(c) > 0 ? '\u00a0·\u00a0' : '' }}}<span class="row__lead">{{ compactSub(c, inGroup) }}@if (shield(c) > 0) {{{ compactSub(c, inGroup) ? ' · ' : '' }}<b>CA {{ c.armorClass }} + {{ shield(c) }}</b>}</span>@if (c.inSunlight && c.sunlightTrait !== NoSunTrait) {<span class="row__sun" data-testid="order-sun">{{ compactSub(c, inGroup) || shield(c) > 0 ? ' · ' : '' }}Na luz do sol</span>}@if (holdsReadied(c)) {<span class="row__ready" data-testid="order-readied"><mat-icon aria-hidden="true">alarm</mat-icon>Preparada</span>}</span>
           </span>
         </span>
         <span class="row__hp">
@@ -216,8 +217,18 @@
             [busy]="busy()"
             (open)="marking.set(c.id)"
             (close)="marking.set(null)"
-            (pick)="pickCover(c.id, $event)"
+            (pick)="cover.emit({ id: c.id, cover: $event })"
           />
+          @if (live() && mounting() === c.id) {
+            @if (mountView(c); as mark) {
+              <app-row-mount
+                [view]="mark"
+                [label]="c.label"
+                [busy]="busy()"
+                (pick)="mount.emit({ id: c.id, kind: $event })"
+              />
+            }
+          }
 
           @if (live() && dying(c) && deathDismissed().has(c.id)) {
             <div class="row__extra">
@@ -362,6 +373,16 @@
                   @if (c.parryAsk !== undefined) {
                     <button mat-menu-item type="button" role="menuitemcheckbox" [attr.aria-checked]="c.parryAsk" (click)="parryAsk.emit({ id: c.id, ask: !c.parryAsk })">
                       <mat-icon aria-hidden="true">{{ c.parryAsk ? 'check_box' : 'check_box_outline_blank' }}</mat-icon>Aparar: perguntar a cada golpe
+                    </button>
+                  }
+                  @if (canMount(c)) {
+                    <!-- The master's mount mark (#588, 588-08): the select opens in the row, as the cover picker does. -->
+                    <button mat-menu-item type="button" [disabled]="!!c.mountedOnId" (click)="mounting.set(mounting() === c.id ? null : c.id)">
+                      <app-saddle-icon class="mat-icon row__menu-saddle" />Montaria…
+                      @if (c.mountedOnId) {
+                        <!-- A rider is no mount: the mark waits for it to be on foot. -->
+                        <span class="row__menu-why">Só depois que {{ c.label }} desmontar.</span>
+                      }
                     </button>
                   }
                   @if (npc(c)) {

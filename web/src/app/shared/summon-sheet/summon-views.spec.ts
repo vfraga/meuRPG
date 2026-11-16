@@ -12,7 +12,9 @@ import type { SlotRow } from '../../core/combat/cast-flow';
 import {
   concentrationLineOf,
   costLineOf,
+  chosenTitles,
   creatureKeysOf,
+  steppedCounts,
   diceFlagsOf,
   joinDotsOf,
   listLabelOf,
@@ -185,6 +187,12 @@ describe('summon views: the lines of the sheet', () => {
       'Escolha a forma e dê um nome ao familiar.',
     );
     expect(plain(missingOf({ ...ready, total: 3, count: 1 }))).toBe('Tire 2 criaturas.');
+    // Convocar Montaria (#588): the form and the steed's type, each named until it is picked.
+    expect(missingOf({ ...ready, steed: true, needsType: true, total: 0 })).toBe(
+      'Escolha a forma e escolha o tipo do corcel.',
+    );
+    expect(missingOf({ ...ready, steed: true, needsType: true })).toBe('Escolha o tipo do corcel.');
+    expect(missingOf({ ...ready, steed: true, needsType: false })).toBe('');
     expect(
       plain(missingOf({ ...ready, hasSlot: false, total: 0, hasOption: false, count: 2 })),
     ).toBe('Escolha o espaço de magia.');
@@ -248,6 +256,18 @@ describe('summon views: the list, the keys and the dice', () => {
     expect(rowsOf({ ...none, option: forms }).map((r) => [r.key, r.title, r.subtitle])).toEqual([
       ['monster:cat', 'Gato', ''],
       ['monster:wolf', 'Lobo', ''],
+    ]);
+    // A form the caster cannot ride says so (#588, `too_small_for_you`); the others carry no warning.
+    const steeds = create(SummonOptionSchema, {
+      forms: [
+        { monsterKey: 'monster:warhorse', namePt: 'Cavalo de guerra' },
+        { monsterKey: 'monster:pony', namePt: 'Pônei' },
+      ],
+      tooSmallForYou: ['monster:pony'],
+    });
+    expect(rowsOf({ ...none, option: steeds }).map((r) => [r.title, r.warning])).toEqual([
+      ['Cavalo de guerra', undefined],
+      ['Pônei', 'Pequeno demais para você montar'],
     ]);
     const beasts = create(SummonOptionSchema, { type: 'beast', maxCr: '1' });
     expect(rowsOf({ ...none, option: beasts })).toEqual([]);
@@ -396,5 +416,17 @@ describe('summon views: the result of a casting in a combat', () => {
     expect(plain(resultLineOf(c, 14))).toBe('CA 14 · PV 30 de 37 · 15 m');
     expect(plain(resultLineOf(c, undefined))).toBe('PV 30 de 37 · 15 m');
     expect(plain(resultLineOf(creature({ speedFt: 50 }), 14))).toBe('CA 14 · 15 m');
+  });
+
+  it('steps the count of one kind: up while the group has room, down to nothing, and the kinds chosen by title', () => {
+    expect(steppedCounts({}, { key: 'a', delta: 1 }, false)).toEqual({ a: 1 });
+    expect(steppedCounts({ a: 1 }, { key: 'a', delta: 1 }, true)).toBeNull();
+    expect(steppedCounts({ a: 1, b: 1 }, { key: 'a', delta: -1 }, true)).toEqual({ b: 1 });
+    expect(steppedCounts({}, { key: 'a', delta: -1 }, false)).toEqual({});
+    const rows = [
+      { key: 'a', title: 'Lobo', subtitle: '' },
+      { key: 'b', title: 'Urso', subtitle: '' },
+    ];
+    expect(chosenTitles(rows, { b: 2 })).toEqual(['Urso']);
   });
 });

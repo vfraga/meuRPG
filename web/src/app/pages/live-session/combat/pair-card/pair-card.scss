@@ -1,0 +1,105 @@
+// The pair card (588-04, 588-05): the accent frame of the turn, the mount's line, three equal outlined buttons and one line.
+:host {
+  display: block;
+}
+
+.pair {
+  box-sizing: border-box;
+  padding: 12px;
+  border: 1.5px solid var(--mr-accent);
+  border-radius: 10px;
+  background: var(--mr-accent-soft);
+}
+
+.pair__head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 8px;
+  font-size: var(--mr-font-13);
+  line-height: 18px;
+  color: var(--mr-ink-muted);
+
+  b {
+    color: var(--mr-ink);
+  }
+
+  .mat-icon {
+    width: 16px;
+    height: 16px;
+    font-size: var(--mr-font-16);
+  }
+}
+
+// The rider's line and the mount's: the token, the name, and what each still has, on one line.
+.pair__line {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 36px;
+}
+
+.pair__rider {
+  margin-bottom: 4px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--mr-line);
+}
+
+.pair__loading {
+  font-size: var(--mr-font-13);
+}
+
+.pair__name {
+  flex: 1;
+  min-width: 0;
+  font-weight: 700;
+  color: var(--mr-ink);
+}
+
+// Three in a row at 390 px and in the 368 px rail (588-04, 588-05): each button as wide as its words, sharing what is left.
+// Equal columns would cut "Desengajar"; the label is one step smaller and the padding tight, as the boards draw them.
+// Under about 360 px (320 is supported) the three do not fit on one row: the row wraps, and no label is cut.
+.pair__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.pair__act {
+  --mat-button-outlined-label-text-size: var(--mr-font-13);
+  --mat-button-outlined-horizontal-padding: 6px;
+  --mat-button-outlined-icon-spacing: 4px;
+  --mat-button-outlined-icon-offset: 0;
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 0 6px;
+  white-space: nowrap;
+  letter-spacing: 0;
+
+  .mat-icon {
+    flex: none;
+    width: 16px;
+    height: 16px;
+    margin-right: 4px;
+    font-size: var(--mr-font-16);
+  }
+}
+
+.pair__why,
+.pair__note {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 10px 0 0;
+  font-size: var(--mr-font-13);
+  line-height: 18px;
+  color: var(--mr-ink-muted);
+
+  .mat-icon {
+    flex: none;
+    width: 16px;
+    height: 16px;
+    font-size: var(--mr-font-16);
+  }
+}

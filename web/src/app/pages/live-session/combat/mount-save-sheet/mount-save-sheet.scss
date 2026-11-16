@@ -1,0 +1,20 @@
+// "A vez do Wight espera este teste.": the hourglass sits on the first line of the sentence.
+.wait {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--mr-space-1);
+
+  .mat-icon {
+    flex: none;
+    width: 18px;
+    height: 18px;
+    font-size: var(--mr-font-18);
+  }
+}
+
+// The dice of the roll, the first tag: in the accent (588-06).
+.tag--dice {
+  border-color: var(--mr-accent);
+  color: var(--mr-accent-text);
+  font-weight: 700;
+}

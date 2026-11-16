@@ -46,8 +46,8 @@ export function openSheet<C, D, R>(
         data: config.data,
         ariaLabel: config.ariaLabel,
         // The title first (README-A): a stray Enter can't roll or confirm.
-        // An alert starts on its safe button (`data-initial-focus`), the others on the title.
-        autoFocus: config.alert ? '[data-initial-focus]' : (config.focus ?? 'first-heading'),
+        // An alert starts on its safe button (`data-initial-focus`), the others on the title; `focus` says otherwise (an alert with no safe answer starts on its title).
+        autoFocus: config.focus ?? (config.alert ? '[data-initial-focus]' : 'first-heading'),
         panelClass: config.panelClass ?? (config.tall ? 'mr-sheet-tall' : 'mr-sheet'),
         disableClose: config.alert,
         restoreFocus: config.restoreFocus ?? true,
@@ -65,7 +65,7 @@ export function openSheet<C, D, R>(
       maxHeight: '92dvh',
       ariaLabelledBy: config.labelledBy,
       ariaLabel: config.labelledBy ? undefined : config.ariaLabel,
-      autoFocus: config.alert ? '[data-initial-focus]' : (config.focus ?? 'first-heading'),
+      autoFocus: config.focus ?? (config.alert ? '[data-initial-focus]' : 'first-heading'),
       disableClose: config.alert,
       restoreFocus: config.restoreFocus ?? true,
       role: config.alert ? 'alertdialog' : 'dialog',

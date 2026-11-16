@@ -137,3 +137,96 @@
     font-size: var(--mr-font-12);
   }
 }
+
+// A bonded steed (#588). The tag sits under the name, before the subtitle.
+// "Montaria vinculada": under the subtitle on a phone (588-23), beside the name where the card has the room (588-25): the
+// card's own width decides, since the sheet's column at 768 px is as narrow as a phone.
+:host {
+  container-type: inline-size;
+}
+
+.head__text .mr-tag {
+  margin: 6px 0 0;
+}
+
+@container (min-width: 480px) {
+  .head__text:has(.mr-tag) {
+    display: grid;
+    grid-template-columns: minmax(0, auto) minmax(0, 1fr);
+    align-items: center;
+    column-gap: var(--mr-space-2);
+  }
+
+  .head__text .sub {
+    grid-row: 2;
+    grid-column: 1 / -1;
+  }
+
+  .head__text .mr-tag {
+    grid-row: 1;
+    grid-column: 2;
+    justify-self: start;
+    margin: 0;
+  }
+}
+
+// "⋮": a bordered 44 px square with no words, at the far right of the actions (588-23).
+.act--more {
+  justify-content: center;
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  margin-left: auto;
+  border-width: 1px;
+  border-style: solid;
+  border-color: var(--mr-control-line);
+  border-radius: var(--mr-radius-md);
+  color: var(--mr-ink);
+}
+
+// Open: the accent, as the board draws it.
+.act--more[aria-expanded='true'] {
+  border-color: var(--mr-accent);
+  background: var(--mr-accent-soft);
+}
+
+// A bonded steed's card (588-23): "Renomear" and "Corrigir PV" in ink; only "Dispensar" keeps its danger.
+.acts--steed .act:not(.act--danger, .act--off) {
+  color: var(--mr-ink);
+}
+
+// What "Dispensar" keeps, under the actions.
+.acts__hint {
+  margin: 0;
+  font-size: var(--mr-font-14);
+  line-height: 20px;
+  color: var(--mr-ink-muted);
+}
+
+// Off after the combat refused: muted, with the block icon and the word; the reason is the line under the actions.
+.act--off {
+  color: var(--mr-ink-muted);
+  cursor: default;
+}
+
+.act__off {
+  font-weight: 400;
+}
+
+.acts__why .mat-icon {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  font-size: 20px;
+  color: var(--mr-ink-muted);
+}
+
+.acts__why {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 0;
+  font-size: var(--mr-font-14);
+  line-height: 20px;
+  color: var(--mr-ink);
+}

@@ -11,12 +11,12 @@ import {
   playerWord,
   stateWord,
 } from '../../../../core/combat/combat-view';
-import { isCreature, ofOwner } from '../../../../core/combat/creature-names';
+import { isCreature, ofOwner, ownerOf } from '../../../../core/combat/creature-names';
 import {
   type OrderItem,
   jointTurn,
-  listNames,
   orderItems,
+  groupAriaLabel,
 } from '../../../../core/combat/joint-turn';
 import { conditionTags } from '../../../../core/combat/conditions';
 import { combatPool } from '../../../../core/combat/form-pool';
@@ -28,6 +28,7 @@ import { OrderGroup } from '../joint-turn/order-group';
 import { PartState } from '../joint-turn/part-state';
 import type { OwnHitPoints } from './own-numbers';
 import { CombatantToken } from '../../../../shared/combatant-token/combatant-token';
+import { followsRider, mountLineOf } from '../../../../core/combat/mount-view';
 
 /**
  * "Ordem" (E6-14): the order of the turns as a column on the left, from
@@ -54,7 +55,7 @@ import { CombatantToken } from '../../../../shared/combatant-token/combatant-tok
         @for (item of items(); track key(item)) {
           @if (item.kind === 'group') {
             <li>
-              <app-order-group class="dense" [total]="item.total" [onTurn]="item.onTurn" [label]="groupLabel(item)">
+              <app-order-group class="dense" [total]="item.total" [onTurn]="item.onTurn" [mounted]="item.mounted" [label]="groupLabel(item)">
                 <ol class="rows">
                   @for (c of item.members; track c.id) {
                     <ng-container *ngTemplateOutlet="rowTpl; context: { $implicit: c, grouped: true }" />
@@ -68,7 +69,7 @@ import { CombatantToken } from '../../../../shared/combatant-token/combatant-tok
         }
       </ol>
       <ng-template #rowTpl let-c let-grouped="grouped">
-        <li class="row" [class.row--turn]="current(c)">
+        <li class="row" [class.row--turn]="current(c)" [class.row--mount]="grouped && follows(c)">
           <span class="row__n" aria-hidden="true">{{ number(c) }}</span>
           <app-combatant-token [initial]="initial(c)" [npc]="npc(c)" [creature]="creature(c)" [defeated]="c.defeated" [mine]="c.mine" [current]="current(c)" [size]="30" />
           <span class="row__text">
@@ -78,7 +79,7 @@ import { CombatantToken } from '../../../../shared/combatant-token/combatant-tok
               @if (grouped && inTurn(c)) {<app-part-state [ended]="c.turnPartEnded" />}
             </span>
             <span class="row__word" [class.row__word--out]="c.defeated">
-              @if (c.defeated) {<mat-icon aria-hidden="true">close</mat-icon>}{{ word(c) }}
+              @if (ride(c); as r) {<mat-icon class="row__link" aria-hidden="true">link</mat-icon>{{ r }} · }@if (c.defeated) {<mat-icon aria-hidden="true">close</mat-icon>}{{ word(c) }}
             </span>
             @if (c.wildShapeBeastKey && !c.mine) {
               <app-form-tag [beast]="c.wildShapeBeastNamePt" />
@@ -139,11 +140,7 @@ export class OrderColumn {
     return item.kind === 'group' ? item.members.map((m) => m.id).join('+') : item.combatant.id;
   }
 
-  protected groupLabel(item: OrderItem): string {
-    return item.kind === 'group'
-      ? `Turno conjunto: ${listNames(item.members.map((m) => m.label))}, iniciativa ${item.total}`
-      : '';
-  }
+  protected readonly groupLabel = groupAriaLabel;
 
   /** " · 23 de 23 PV": the combatant's own numbers, or the player's vitals when the server sent none with it; empty when neither is there. In a form they are the beast's, named once: " · 7 de 11 PV (Lobo)" (584-02). */
   private ownNumbers(c: Combatant): string {
@@ -151,6 +148,10 @@ export class OrderColumn {
     const beast = c.wildShapeBeastKey ? ` (${c.wildShapeBeastNamePt})` : '';
     return pool ? ` · ${pool.current} de ${pool.max} PV${beast}` : '';
   }
+
+  /** "Montaria de Tor · Ileso": the link first, with its icon, then how it is (588-04); a mount under its rider is indented. */
+  protected readonly ride = (c: Combatant): string => mountLineOf(this.encounter(), c, false);
+  protected readonly follows = (c: Combatant): boolean => followsRider(this.encounter(), c, false);
 
   protected word(c: Combatant): string {
     if (c.defeated) {
@@ -166,7 +167,10 @@ export class OrderColumn {
     const word = isPlayer(c) ? playerWord(c) : stateWord(c.state);
     if (isCreature(c)) {
       // "da Sálvia · Ileso": whose it is and how hurt, in a word (RN-20: never its hit points).
-      return [ofOwner(this.encounter(), c), word].filter(Boolean).join(' · ');
+      // A mount under its owner already names them: "Montaria de Tor · Ileso".
+      const owner =
+        ownerOf(this.encounter(), c)?.id === c.riderId ? '' : ofOwner(this.encounter(), c);
+      return [owner, word].filter(Boolean).join(' · ');
     }
     return sideTags(c).length > 0 ? `${word} · Aliado` : word;
   }

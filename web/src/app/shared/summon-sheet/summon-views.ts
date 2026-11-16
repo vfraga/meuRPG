@@ -16,6 +16,7 @@ import {
   formSubtitle,
   isTableCreature,
 } from '../../core/creatures/creature-format';
+import { STEED_TOO_SMALL, steedFormLine } from '../../core/creatures/steed';
 import { creaturesText, replacesText } from '../../core/creatures/summon-labels';
 import { tight } from '../../core/format/text';
 import { metersText } from '../../core/units';
@@ -76,6 +77,8 @@ export interface SubtitleInput {
   readonly inCombat: boolean;
   readonly ritual: boolean;
   readonly slot: SlotRow | null;
+  /** Convocar Montaria: what the cast brings closes the line ("um corcel vinculado"). */
+  readonly tail?: string;
 }
 
 export function subtitleOf(i: SubtitleInput): string {
@@ -104,7 +107,7 @@ export function subtitleOf(i: SubtitleInput): string {
     );
   }
   return tight(
-    `Magia de ${circleLabel(s.level)}${i.ritual ? ' · ritual' : ''} · ${s.castingTimePt}${i.inCombat && s.concentration ? ' · concentração' : ''}`,
+    `Magia de ${circleLabel(s.level)}${i.ritual ? ' · ritual' : ''} · ${s.castingTimePt}${i.inCombat && s.concentration ? ' · concentração' : ''}${i.tail ? ` · ${i.tail}` : ''}`,
   );
 }
 
@@ -161,6 +164,8 @@ export interface RowsInput {
   readonly forms: readonly Creature[] | null;
   /** The list is the creatures a table's feature or spell brings: a row says what a beast's row does (ND, CA, PV, speed, attacks), the table's first. */
   readonly bring?: boolean;
+  /** Convocar Montaria: a row shows the silhouette and what matters to ride ("Grande · 18 m · CA 11 · PV 19"). */
+  readonly steed?: boolean;
 }
 
 /** The list of the sheet: the beasts the search found, or the forms the option offers, by name. */
@@ -191,8 +196,10 @@ export function rowsOf(i: RowsInput): readonly ChoiceRow[] {
       return {
         key: f.monsterKey,
         title: f.namePt,
-        subtitle: block ? formSubtitle(block) : '',
+        subtitle: block ? (i.steed ? steedFormLine(block) : formSubtitle(block)) : '',
         table,
+        ...(i.steed ? { art: true } : {}),
+        ...(o.tooSmallForYou.includes(f.monsterKey) ? { warning: STEED_TOO_SMALL } : {}),
       };
     }
     return {
@@ -234,6 +241,10 @@ export interface MissingInput {
   readonly several: boolean;
   readonly count: number;
   readonly total: number;
+  /** Convocar Montaria: the one creature is "a forma". */
+  readonly steed?: boolean;
+  /** Convocar Montaria with no bonded steed and no type picked yet. */
+  readonly needsType?: boolean;
 }
 
 /** What is still missing, in one sentence naming everything; empty when the cast is ready. */
@@ -250,12 +261,15 @@ export function missingOf(i: MissingInput): string {
     parts.push(
       i.several
         ? `escolha mais ${creaturesText(need)}`
-        : i.familiar
+        : i.familiar || i.steed
           ? 'escolha a forma'
           : 'escolha a criatura',
     );
   } else if (need < 0) {
     parts.push(`tire ${creaturesText(-need)}`);
+  }
+  if (i.needsType) {
+    parts.push('escolha o tipo do corcel');
   }
   if (parts.length === 0) {
     return '';
@@ -308,6 +322,31 @@ export function resultLineOf(c: Combatant, ac: number | undefined): string {
       ? `PV ${c.hitPointsCurrent} de ${c.hitPointsMax}`
       : '';
   return tight(joinDotsOf([ac === undefined ? '' : `CA ${ac}`, hp, metersText(c.speedFt)]));
+}
+
+/** "−" and "+" of one kind: the counts after the step, or `null` when the group is already full. */
+export function steppedCounts(
+  counts: Readonly<Record<string, number>>,
+  change: { readonly key: string; readonly delta: number },
+  full: boolean,
+): Readonly<Record<string, number>> | null {
+  if (change.delta > 0 && full) {
+    return null;
+  }
+  const next = Math.max(0, (counts[change.key] ?? 0) + change.delta);
+  const stepped = { ...counts, [change.key]: next };
+  if (next === 0) {
+    delete stepped[change.key];
+  }
+  return stepped;
+}
+
+/** The titles of the kinds chosen so far, in the list's order. */
+export function chosenTitles(
+  rows: readonly ChoiceRow[],
+  counts: Readonly<Record<string, number>>,
+): string[] {
+  return rows.filter((r) => (counts[r.key] ?? 0) > 0).map((r) => r.title);
 }
 
 /** The kinds in the list's order, each as many times as it was chosen. */

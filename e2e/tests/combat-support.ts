@@ -213,6 +213,8 @@ export interface Combatant {
   conditionNamesPt?: string[];
   concentrationSpell?: string;
   armorClassBonus?: number;
+  /** The combatant this one rides (#588); unset on foot. */
+  mountedOnId?: string;
 }
 
 /** What Pensantus carries in the casting specs: the attack specs' list plus

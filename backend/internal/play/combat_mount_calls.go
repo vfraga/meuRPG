@@ -495,6 +495,9 @@ func mountChoices(cs []playdb.Combatant, v combatViewer, rider playdb.Combatant,
 			continue
 		}
 		choice := &rulesv1.MountChoice{CombatantId: mount.ID, CostDft: clamp32(mountCostDFt(rider, standing), 0, math.MaxInt32)}
+		if placed(rider) {
+			choice.DistanceFt = clamp32(grid.RangeFt(squareOfCombatant(rider), squareOfCombatant(mount)), 0, math.MaxInt32)
+		}
 		if no := mountVerdict(cs, rider, mount, standing); no != nil {
 			choice.Refusal, choice.MissingDft = no.refusal, clamp32(no.missing, 0, math.MaxInt32)
 		}

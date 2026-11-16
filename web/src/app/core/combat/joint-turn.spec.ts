@@ -2,15 +2,18 @@ import { CombatantKind, EncounterStatus } from '../../../gen/meurpg/play/v1/comb
 import { combatant, encounter } from './combat-testing';
 import { turnBanner } from './combat-view';
 import { distanceText } from '../units';
+import { mountLineOf } from './mount-view';
 import {
   acts,
   actingIds,
   afterTurn,
+  groupAriaLabel,
   jointTurn,
   leftSentence,
   masterActor,
   missingLine,
   npcPlural,
+  orderItemKey,
   orderItems,
   passNote,
   playsBefore,
@@ -48,6 +51,72 @@ describe('joint turns (MR-013)', () => {
       ] as typeof all;
       const items = orderItems(encounter({ combatants: noTotal }), false);
       expect(items.filter((i) => i.kind === 'group')).toHaveLength(1);
+    });
+
+    describe('a rider and its mount', () => {
+      const rider = combatant({ id: 'r', label: 'Tor', kind: P, initiative: 17, mountedOnId: 'h' });
+      const horse = (over = {}) =>
+        combatant({ id: 'h', label: 'Cavalo de guerra', mountKind: 'controlled', ...over });
+      const zombie = combatant({ id: 'z', label: 'Zumbi', initiative: 15 });
+      const names = (e: ReturnType<typeof encounter>, master: boolean) =>
+        orderItems(e, master).map((i) =>
+          i.kind === 'group'
+            ? `${i.mounted ? 'montado:' : ''}${i.members.map((m) => m.label).join('+')}`
+            : i.combatant.label,
+        );
+
+      it('boxes the pair as "Montado", for the master and for a player who is not told the total of the mount', () => {
+        const e = encounter({ combatants: [rider, horse(), zombie] });
+        expect(names(e, true)).toEqual(['montado:Tor+Cavalo de guerra', 'Zumbi']);
+        expect(names(e, false)).toEqual(['montado:Tor+Cavalo de guerra', 'Zumbi']);
+        const box = orderItems(e, false)[0];
+        expect(box.kind === 'group' ? box.total : null).toBe(17);
+      });
+
+      it('leaves a mount that keeps its own turn in its own row for the master', () => {
+        const e = encounter({
+          combatants: [rider, horse({ mountKind: 'independent', initiative: 9 }), zombie],
+        });
+        expect(names(e, true)).toEqual(['Tor', 'Cavalo de guerra', 'Zumbi']);
+      });
+
+      it('does not link a mount a player is not sent: the rider stays plain, in its own row and line', () => {
+        // For a player who does not see the mount the server leaves its row out and sends the rider's `mounted_on_id` empty.
+        const plain = { ...rider, mountedOnId: '' } as typeof rider;
+        const e = encounter({ combatants: [plain, zombie] });
+        expect(names(e, false)).toEqual(['Tor', 'Zumbi']);
+        expect(mountLineOf(e, plain, false)).toBe('');
+      });
+
+      it('boxes a hidden mount for the master, who sees both rows', () => {
+        const e = encounter({ combatants: [rider, horse({ hidden: true }), zombie] });
+        expect(names(e, true)).toEqual(['montado:Tor+Cavalo de guerra', 'Zumbi']);
+      });
+
+      it("does not box an unmarked mount for the rider's player, who reads the mark", () => {
+        const mine = { ...rider, mine: true } as typeof rider;
+        const e = encounter({ combatants: [mine, horse({ mountKind: '' }), zombie] });
+        expect(names(e, false)).toEqual(['Tor', 'Cavalo de guerra', 'Zumbi']);
+      });
+
+      it('boxes an NPC pair for a player without a number: the totals are not theirs (RN-20)', () => {
+        const npc = combatant({ id: 'w', label: 'Wight', mountedOnId: 'e' });
+        const steed = combatant({ id: 'e', label: 'Esqueleto', mountKind: '' });
+        const box = orderItems(encounter({ combatants: [zombie, npc, steed] }), false)[1];
+        expect(box.kind === 'group' && box.mounted).toBe(true);
+        expect(box.kind === 'group' ? box.total : 'x').toBeNull();
+        expect(groupAriaLabel(box)).toBe('Montado: Wight e Esqueleto');
+      });
+
+      it('keeps the pair together inside a tie, under "Turno conjunto", for the master and a player', () => {
+        const brisa = combatant({ id: 'b', label: 'Brisa', kind: P, initiative: 17, mine: true });
+        const e = encounter({ combatants: [brisa, rider, horse({ initiative: 17 }), zombie] });
+        expect(names(e, true)).toEqual(['Brisa+Tor+Cavalo de guerra', 'Zumbi']);
+        const forPlayer = encounter({
+          combatants: [brisa, rider, horse({ mountKind: '' }), zombie],
+        });
+        expect(names(forPlayer, false)).toEqual(['Brisa+Tor+Cavalo de guerra', 'Zumbi']);
+      });
     });
 
     it('marks the box on turn', () => {
@@ -225,5 +294,14 @@ describe('joint turns (MR-013)', () => {
       ).toBeNull();
       expect(masterActor(mixed({ turnGroupIds: ['j'] }))).toBeNull();
     });
+  });
+});
+
+describe('orderItemKey', () => {
+  it("is the combatant's id for a row and the members' ids for a box", () => {
+    expect(orderItemKey({ kind: 'single', combatant: { id: 'a' } } as never)).toBe('a');
+    expect(orderItemKey({ kind: 'group', members: [{ id: 'a' }, { id: 'b' }] } as never)).toBe(
+      'a+b',
+    );
   });
 });

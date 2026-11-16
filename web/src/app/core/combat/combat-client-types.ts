@@ -7,6 +7,7 @@ import {
   type Encounter,
   EncounterMode,
   type HeldRollOffer,
+  type MountSaveResult,
   type PendingDamage,
   type SpellCast,
 } from '../../../gen/meurpg/play/v1/combat_pb';
@@ -106,6 +107,25 @@ export interface AttackResult {
   readonly held?: HeldRollOffer;
 }
 
+/** How a rider's save is rolled (`RollMountSave`): by the app, or the d20 the person typed, with the second one for advantage or
+ * disadvantage and the faces of the dice an effect adds (Bênção's d4). */
+export type MountSaveRoll =
+  | { readonly kind: 'app' }
+  | {
+      readonly kind: 'typed';
+      readonly face: number;
+      readonly second?: number;
+      readonly extra?: readonly number[];
+    };
+
+/** What a rider's save answers: the combat and the save, or, when the d20 was kept for a question (Lucky, a Bardic Inspiration
+ * die), the question and no save yet. */
+export interface MountSaveAnswer {
+  readonly encounter: Encounter;
+  readonly result: MountSaveResult | undefined;
+  readonly held: HeldRollOffer | undefined;
+}
+
 /** What a move answers: the combat, and whether it stopped short or provoked. */
 export interface MoveResult {
   readonly encounter: Encounter;
@@ -191,6 +211,8 @@ export interface CastExtras {
   readonly grantedBy?: string;
   /** The caster spends the master's Inspiração on the spell attack's d20 (`CastSpellRequest.spend_favor`); no `rollMode` goes with it. */
   readonly spendFavor?: boolean;
+  /** A self-only spell reaches the bonded steed the caster rides too (`CastSpellRequest.also_steed`, #588). */
+  readonly alsoSteed?: boolean;
 }
 
 /** What a summoning spell brings (`SummonChoice`): the option, a content key per creature and, optionally, a name each. */

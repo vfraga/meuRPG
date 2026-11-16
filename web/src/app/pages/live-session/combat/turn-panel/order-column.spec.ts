@@ -185,4 +185,99 @@ describe('OrderColumn', () => {
     // Another player's druid says the form by name, and no number (RN-20).
     expect(rows[1]).toContain('Na forma de Lobo');
   });
+
+  it('boxes a rider with its mount as "Montado" and says whose the mount is', () => {
+    const fixture = TestBed.createComponent(OrderColumn);
+    fixture.componentRef.setInput(
+      'encounter',
+      encounter({
+        currentCombatantId: 'tor',
+        combatants: [
+          combatant({
+            id: 'tor',
+            label: 'Tor',
+            kind: CombatantKind.PLAYER,
+            mine: true,
+            initiative: 17,
+            mountedOnId: 'h',
+          }),
+          combatant({
+            id: 'h',
+            label: 'Cavalo de guerra',
+            riderId: 'tor',
+            // The rider's player reads the mark: only a controlled mount shares the box.
+            mountKind: 'controlled',
+            state: CombatantState.UNHURT,
+          }),
+        ],
+      }),
+    );
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    const box = el.querySelector('app-order-group');
+    expect(box?.textContent?.replace(/\s+/g, ' ')).toContain('Montado· iniciativa 17');
+    expect(box?.textContent).not.toContain('Turno conjunto');
+    expect(box?.querySelector('.box')?.getAttribute('aria-label')).toBe(
+      'Montado: Tor e Cavalo de guerra, iniciativa 17',
+    );
+    const mount = el.querySelector('.row--mount');
+    expect(mount?.textContent).toContain('Montaria de Tor');
+    expect(mount?.querySelector('.row__link')?.getAttribute('aria-hidden')).toBe('true');
+    expect(getComputedStyle(mount!).paddingLeft).toBe('22px');
+  });
+
+  it('names the rider once when the mount is the rider\'s own creature: "Montaria de Tor · Ileso"', () => {
+    const fixture = TestBed.createComponent(OrderColumn);
+    fixture.componentRef.setInput(
+      'encounter',
+      encounter({
+        currentCombatantId: 'tor',
+        combatants: [
+          combatant({
+            id: 'tor',
+            label: 'Tor',
+            kind: CombatantKind.PLAYER,
+            characterId: 'ch-tor',
+            mine: true,
+            initiative: 17,
+            mountedOnId: 'h',
+          }),
+          combatant({
+            id: 'h',
+            label: 'Cavalo de guerra',
+            kind: CombatantKind.CREATURE,
+            ownerCharacterId: 'ch-tor',
+            riderId: 'tor',
+            mountKind: 'controlled',
+            state: CombatantState.UNHURT,
+          }),
+        ],
+      }),
+    );
+    fixture.detectChanges();
+    const mount = (fixture.nativeElement as HTMLElement).querySelector('.row--mount');
+    const text = mount?.textContent?.replace(/\s+/g, ' ') ?? '';
+    expect(text).toContain('Montaria de Tor · Ileso');
+    expect(text).not.toContain('do Tor');
+  });
+
+  it('boxes an NPC pair without a number: a player has no total of theirs (RN-20)', () => {
+    const fixture = TestBed.createComponent(OrderColumn);
+    fixture.componentRef.setInput(
+      'encounter',
+      encounter({
+        currentCombatantId: 'w',
+        combatants: [
+          combatant({ id: 'w', label: 'Wight', mountedOnId: 'e' }),
+          combatant({ id: 'e', label: 'Esqueleto', riderId: 'w', mountKind: '' }),
+        ],
+      }),
+    );
+    fixture.detectChanges();
+    const box = (fixture.nativeElement as HTMLElement).querySelector('app-order-group');
+    expect(box?.querySelector('.head')?.textContent?.replace(/\s+/g, '')).toBe('linkMontado');
+    expect(box?.querySelector('.box')?.getAttribute('aria-label')).toBe(
+      'Montado: Wight e Esqueleto',
+    );
+  });
 });

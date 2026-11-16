@@ -23,6 +23,7 @@ import { ActionKey } from '../../../core/connect/idempotency';
 import { MoveSaves } from '../../../core/maps/move-saves';
 import { metersFixed } from '../../../core/units';
 import type { Reach, TokenDrop } from '../../../shared/combat-map/combat-map';
+import { MoveMount, stoppedMessage } from './move-flow-mount';
 import type { JumpRequest } from './move-page/move-page';
 
 /** What `MoveFlow` reads from the screen it serves. */
@@ -91,6 +92,8 @@ export class MoveFlow {
     // A creature that left the combat is not the character: nothing moves, and the page closes (the effect below says so).
     return e ? (id ? (e.combatants.find((c) => c.id === id) ?? null) : this.ctx.own()) : null;
   });
+  /** Mounting, dismounting, and whose move a rider's is (RN-21). */
+  readonly mount = new MoveMount(() => this.ctx, this);
   private readonly moverActs = computed(() => {
     const e = this.ctx.encounter();
     const who = this.mover();
@@ -132,13 +135,15 @@ export class MoveFlow {
       // Acting for a character (C8-01): its "Mover" page asks where it can go, as the player's own does.
       const mover = this.mover();
       if (this.ctx.state().moving() && mover?.placed && this.moverActs()) {
-        return mover.id;
+        return this.mount.subjectOf(mover);
       }
       const who = currentCombatant(e);
       return this.reachOn() && who?.placed ? who.id : null;
     }
     const who = this.mover();
-    return this.ctx.state().moving() && this.moverActs() && who?.placed ? who.id : null;
+    return this.ctx.state().moving() && this.moverActs() && who?.placed
+      ? this.mount.subjectOf(who)
+      : null;
   });
 
   /** The name of the creature the page was opened for, to say it left. */
@@ -264,7 +269,10 @@ export class MoveFlow {
               `${c.label} foi mov${article(c.label) === 'a' ? 'ida' : 'ido'} à força. Ninguém recebeu oferta de ataque de oportunidade.`,
             );
           }
-          this.sayStopped(res);
+          const stopped = stoppedMessage(res);
+          if (stopped) {
+            calls.error.set(stopped);
+          }
         },
         failed: (saved, err) => {
           if (legendary) {
@@ -320,21 +328,6 @@ export class MoveFlow {
     this.overDrag = null;
   }
 
-  /** What stopped the master's drag short, in the page's notice. */
-  private sayStopped(res: MoveResult): void {
-    if (res.lockedDoor) {
-      // The master walks through closed doors but a locked one stops them too (RN-26).
-      this.ctx.calls.error.set(
-        'Uma porta trancada parou o movimento. Destranque a porta (toque nela no mapa) e mova de novo.',
-      );
-    } else if (res.stoppedEarly) {
-      // A barred or secret door stops it too: the token stands where it stopped.
-      this.ctx.calls.error.set(
-        'Uma grade levadiça ou uma porta secreta parou o movimento. Abra a porta (toque nela no mapa) e mova de novo.',
-      );
-    }
-  }
-
   /** "Mover para cá" on the "Mover" page. */
   async confirmMove(to: Square): Promise<void> {
     const own = this.mover();
@@ -342,9 +335,7 @@ export class MoveFlow {
       return;
     }
     this.moveError.set('');
-    const ok = await this.runMove((e) =>
-      this.ctx.api.moves.move(this.ctx.campaignId(), e.id, own.id, to.col, to.row),
-    );
+    const ok = await this.runMove((e) => this.mount.move(e, own, to));
     this.afterMove(ok);
   }
 
@@ -402,7 +393,7 @@ export class MoveFlow {
         );
   }
 
-  private afterMove(ok: boolean): void {
+  afterMove(ok: boolean): void {
     if (ok && this.lockedDoor()) {
       // A locked door stopped the move: the page stays, with the notice (E10-05 9). The token already stands where it stopped.
       return;
@@ -417,7 +408,7 @@ export class MoveFlow {
   }
 
   /** Runs a move: applies the combat it answers, and says when it stopped short. */
-  private async runMove(call: (e: Encounter) => Promise<MoveResult>): Promise<boolean> {
+  async runMove(call: (e: Encounter) => Promise<MoveResult>): Promise<boolean> {
     const e = this.ctx.encounter();
     const { calls } = this.ctx;
     if (!e || calls.busy()) {
@@ -454,6 +445,7 @@ export class MoveFlow {
 
   closeFullPage(): void {
     this.lockedDoor.set(false);
+    this.mount.reset();
     this.moverId.set('');
     this.dropStart.set(null);
     this.ctx.state().moving.set(false);
@@ -467,6 +459,7 @@ export class MoveFlow {
       return;
     }
     this.lockedDoor.set(false);
+    this.mount.reset();
     // The master moves the character he acts for: the page is told whose it is.
     this.moverId.set(this.ctx.isMaster() ? (this.ctx.own()?.id ?? '') : '');
     this.dropStart.set(null);
@@ -483,6 +476,7 @@ export class MoveFlow {
     this.moverName = this.ctx.encounter()?.combatants.find((c) => c.id === id)?.label ?? '';
     this.moverId.set(id);
     this.lockedDoor.set(false);
+    this.mount.reset();
     this.dropStart.set(null);
     this.moveError.set('');
     this.ctx.state().moving.set(true);

@@ -8,6 +8,7 @@ import {
 import { article } from './combat-log';
 import { treatedSourceName } from './combat-dice';
 import { creatureTurnTitle, isCreature } from './creature-names';
+import { boxedPair } from './mount-view';
 import { afterTurn, jointTurn, listNames, type JointTurn, npcPlural } from './joint-turn';
 
 /**
@@ -232,11 +233,18 @@ export interface TurnBanner {
   readonly joint: JointTurn | null;
   /** The caller's own part of the joint turn ended. */
   readonly ownEnded: boolean;
+  /** The mount the caller's character rides and directs on this turn (588-04): the two play as one, so the banner is the rider's
+   * alone, with "Montado no Cavalo de guerra". Absent otherwise. */
+  readonly riding?: Combatant;
 }
 
 export function turnBanner(e: Encounter): TurnBanner {
   const joint = jointTurn(e);
   const after = afterTurn(e);
+  const ridden = joint ? riddenPair(joint) : null;
+  if (joint && ridden) {
+    return pairBanner(e, joint, ridden, after);
+  }
   if (joint) {
     return jointBanner(e, joint, after);
   }
@@ -254,6 +262,47 @@ const MASTER_BANNER: TurnBanner = {
   joint: null,
   ownEnded: false,
 };
+
+/** The caller's character and the mount it directs, among the members of the turn that is running. */
+interface RiddenPair {
+  readonly rider: Combatant;
+  readonly mount: Combatant;
+}
+
+/** The caller's own pair inside the group on turn: alone in it, or tied with others. `null` for anyone else's pair, for an
+ * independent mount (it has its own turn) and for a mount that is not in the group. */
+function riddenPair(joint: JointTurn): RiddenPair | null {
+  const rider = joint.members.find((m) => m.mine && m.mountedOnId !== '');
+  const mount = rider ? joint.members.find((m) => m.id === rider.mountedOnId) : undefined;
+  return rider && mount && boxedPair(rider, mount, false) ? { rider, mount } : null;
+}
+
+/**
+ * The turn of a rider and the mount it directs, for the rider's player: one turn, theirs ("Sua vez, Tor"), for as long as
+ * either part is theirs to end. The mount's part is theirs while the rider is on its feet; a down rider leaves it to the
+ * master. The pair alone in the group is no joint turn; tied with others, the joint banner stays for the larger group.
+ */
+function pairBanner(
+  e: Encounter,
+  joint: JointTurn,
+  pair: RiddenPair,
+  after: TurnBanner['after'],
+): TurnBanner {
+  const { rider, mount } = pair;
+  const live = !rider.turnPartEnded || (!mount.turnPartEnded && !isDown(rider));
+  return {
+    title: live ? `Sua vez, ${rider.label}` : 'Você encerrou a sua parte',
+    who: rider,
+    mine: live,
+    masterTurn: e.masterTurn,
+    next: null,
+    nextIsMine: after?.mine ?? false,
+    after,
+    joint: joint.members.length > 2 ? joint : null,
+    ownEnded: !live,
+    riding: mount,
+  };
+}
 
 /** The title of a joint turn: the caller's own part when they have one, else who is on turn. */
 function jointTitle(e: Encounter, joint: JointTurn, own: Combatant | undefined): string {

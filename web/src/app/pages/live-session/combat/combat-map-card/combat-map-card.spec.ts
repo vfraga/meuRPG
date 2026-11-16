@@ -646,3 +646,32 @@ describe('CombatMapCard, the sun (#704)', () => {
     });
   });
 });
+
+describe('CombatMapCard: the "Montado" legend line (588-04)', () => {
+  const tor = combatant({ id: 'p', label: 'Tor', kind: CombatantKind.PLAYER, mountedOnId: 'h' });
+  const horse = combatant({ id: 'h', label: 'Cavalo de guerra', riderId: 'p' });
+  const legend = (el: HTMLElement) => plain(el.querySelector('.legend')?.textContent);
+
+  it('names the pair when a rider sits on a mount that is on the map, for the master and for a player', () => {
+    for (const isMaster of [true, false]) {
+      const { el } = mount({
+        isMaster,
+        encounter: encounter({ currentCombatantId: 'p', combatants: [tor, horse] }),
+      });
+      // The player reads what the mark is (588-04); the master, who marked the mount, reads the short word (588-08).
+      const item = plain(el.querySelector('.legend .legend__pair')?.parentElement?.textContent);
+      expect(item).toBe(isMaster ? 'Montado' : 'Montado: o cavaleiro pequeno, na sela');
+      // The legend draws the mark itself: a small token with the rider's disc on the saddle.
+      expect(el.querySelector('.legend .legend__pair app-rider-mark')).not.toBeNull();
+    }
+  });
+
+  it('says nothing when no one rides, or when the mount is not placed', () => {
+    expect(legend(mount().el)).not.toContain('Montado');
+    const off = { ...horse, placed: false } as typeof horse;
+    const { el } = mount({
+      encounter: encounter({ currentCombatantId: 'p', combatants: [tor, off] }),
+    });
+    expect(legend(el)).not.toContain('Montado');
+  });
+});

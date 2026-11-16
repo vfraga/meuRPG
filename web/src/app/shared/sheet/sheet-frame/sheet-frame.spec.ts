@@ -1,4 +1,4 @@
-import { Component, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
 import { SheetFrame } from './sheet-frame';
@@ -51,5 +51,24 @@ describe('SheetFrame', () => {
     await nextTurn();
     fixture.detectChanges();
     expect(body.classList.contains('frame__body--scrolls')).toBe(true);
+  });
+
+  it('takes a glyph of its own before the title, and a subtitle with a mark and a bold lead', () => {
+    @Component({
+      imports: [SheetFrame],
+      changeDetection: ChangeDetectionStrategy.OnPush,
+      template: `<app-sheet-frame title="A montaria caiu" subtitleLead="Reação" subtitle=" · desmontar"
+        ><i head-icon id="glyph"></i><i sub-mark id="mark"></i
+      ></app-sheet-frame>`,
+    })
+    class Rich {}
+    const fixture = TestBed.createComponent(Rich);
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('.frame__head #glyph')).not.toBeNull();
+    const sub = el.querySelector('.frame__sub')!;
+    expect(sub.textContent?.trim()).toBe('Reação · desmontar');
+    expect(sub.querySelector('b')?.textContent).toBe('Reação');
+    expect(sub.firstElementChild?.id).toBe('mark');
   });
 });

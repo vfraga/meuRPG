@@ -25,7 +25,7 @@ import (
 // summonStanding for what the sheet lets the character cast), so the
 // "Criaturas" panel keeps no copy of them. Same access as ListCharacterCreatures:
 // the master and the owner's player; anyone else gets `not_found` (RN-20). It
-// carries no hit points.
+// carries no hit points but the bonded steed's, read by the owner and the master.
 func (s *Service) GetSummonOptions(
 	ctx context.Context,
 	req *connect.Request[charactersv1.GetSummonOptionsRequest],
@@ -61,6 +61,14 @@ func (s *Service) readSummonOptions(ctx context.Context, tx pgx.Tx, m authz.Memb
 	if err := checkSummonOptionsCharacter(ctx, q, m, id); err != nil {
 		return out, err
 	}
+	content, err := s.contentFor(ctx, tx, m.CampaignID)
+	if err != nil {
+		return out, wrap("read rules content", err)
+	}
+	// The bond is the character's, whatever it can cast now: an unprepared Find Steed does not end it.
+	if out.BondedSteed, err = s.bondedSteedProto(ctx, q, content, m.CampaignID, id); err != nil {
+		return out, err
+	}
 	b, err := s.summonCharacter(ctx, tx, m.CampaignID, id)
 	if err != nil {
 		if connect.CodeOf(err) == connect.CodeNotFound {
@@ -73,10 +81,6 @@ func (s *Service) readSummonOptions(ctx context.Context, tx pgx.Tx, m authz.Memb
 		return out, err
 	}
 	out.Slots = summonSlots(vitals)
-	content, err := s.contentFor(ctx, tx, m.CampaignID)
-	if err != nil {
-		return out, wrap("read rules content", err)
-	}
 	d := rules.Derive(b, content)
 	used := usageOf(vitals)
 	for _, key := range content.SummonSpells() {

@@ -552,6 +552,19 @@ describe('the result of the cast', () => {
     expect(castNotes(create(SpellCastSchema, {}), spell).length).toBe(1);
   });
 
+  it("leaves the steed's line (#588, `steed_note`) to the result: it is not among what the cast spent", () => {
+    const spell = { name: 'Escudo da Fé', economy: 1, metaOptions: [], sorceryPoints: null };
+    const notes = castNotes(
+      create(SpellCastSchema, {
+        concentrating: true,
+        steedNote: 'O corcel também é alvo da magia.',
+      }),
+      spell,
+    );
+    expect(notes).not.toContain('O corcel também é alvo da magia.');
+    expect(notes[0]).toBe('Você está concentrado em Escudo da Fé.');
+  });
+
   it('knows a plain cast: nothing to roll, hit or save', () => {
     expect(isPlainCast(create(SpellCastSchema, { targets: [{ combatantId: 'a' }] }), 'plain')).toBe(
       true,

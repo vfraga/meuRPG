@@ -13,6 +13,7 @@ import {
 } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { MatMenuModule } from '@angular/material/menu';
 import { RouterLink } from '@angular/router';
 
 import {
@@ -20,14 +21,25 @@ import {
   CreatureSource,
 } from '../../../../gen/meurpg/characters/v1/characters_pb';
 import type { Creature } from '../../../../gen/meurpg/rules/v1/rules_pb';
+import { CombatClient } from '../../../core/combat/combat-client';
 import { CreaturesClient } from '../../../core/creatures/creatures-client';
 import { focusWithRing } from '../../../core/creatures/focus-ring';
 import { sourcePhrase } from '../../../core/creatures/creature-format';
+import {
+  STEED_NOWHERE,
+  STEED_RELEASE_LINE,
+  type SteedGoing,
+  type SteedWhere,
+  steedActionsHint,
+  steedSubtitle,
+  steedWhere,
+} from '../../../core/creatures/steed-card';
 import { joinDots, tight } from '../../../core/format/text';
 import { metersText } from '../../../core/units';
 import { FamiliarEyesButton } from '../../../shared/familiar-eyes/familiar-eyes-button';
 import { CreatureArt } from '../../../shared/creatures/creature-art';
 import { CreatureEdit, type EditMode } from '../../../shared/creatures/creature-edit';
+import { SteedAsk } from '../../../shared/creatures/steed-ask';
 
 /**
  * One creature of the character, as a card (E9-10, quadro 1): its picture, the
@@ -46,6 +58,12 @@ import { CreatureEdit, type EditMode } from '../../../shared/creatures/creature-
  *   gift included (the server decides, `DismissCreature`).
  * - "Corrigir PV": the master's correction outside a combat (RN-02).
  * The focus goes back to the action that opened a question when it closes.
+ *
+ * A bonded steed of Convocar Montaria (#588, boards 588-23 to 588-26) has the tag "Montaria vinculada", its type's word in
+ * the subtitle ("Cavalo de guerra · Grande · celestial"), and two ways to go: "Dispensar" keeps the bond, and "⋮" ›
+ * "Libertar Estrela" ends it (`SteedAsk`). In a combat that holds the steed the owner's player spends the action: the
+ * question says so, and a refusal for the turn or the action turns "Dispensar" off with the reason under the actions, until
+ * the page says the combat changed (`tick`).
  */
 @Component({
   selector: 'app-creature-card',
@@ -55,10 +73,12 @@ import { CreatureEdit, type EditMode } from '../../../shared/creatures/creature-
     FamiliarEyesButton,
     MatButtonModule,
     MatIconModule,
+    MatMenuModule,
     RouterLink,
+    SteedAsk,
   ],
   templateUrl: './creature-card.html',
-  styleUrl: './creature-card.scss',
+  styleUrls: ['./creature-card.scss', '../../../shared/creatures/steed-release.scss'],
 })
 export class CreatureCard {
   private readonly client = inject(CreaturesClient);
@@ -72,6 +92,8 @@ export class CreatureCard {
   readonly isMaster = input(false);
   /** A session is open: a familiar can be looked through ("Ver pelos olhos", MR-036). The player's, not the master's. */
   readonly live = input(false);
+  /** Bumped by the page when the combat or the character's vitals changed: a refusal the combat gave is asked again. */
+  readonly tick = input(0);
   /** The creature changed (renamed, dismissed, corrected): the panel reads the list again, and says how. */
   readonly changed = output<EditMode>();
 
@@ -80,9 +102,21 @@ export class CreatureCard {
   );
   protected readonly block = signal<Creature | null>(null);
   protected readonly mode = signal<EditMode | null>(null);
+  /** The question of a bonded steed: the dismissal that keeps the bond, or the release. */
+  protected readonly going = signal<SteedGoing | null>(null);
+  /** Where the steed is when its question is asked: in a combat (its owner's player spends the action), under its owner. */
+  protected readonly where = signal<SteedWhere>(STEED_NOWHERE);
+  /** Under a bonded steed's actions: what "Dispensar" keeps. */
+  protected readonly hint = computed(() => steedActionsHint(this.creature().name, this.isMaster()));
+  /** Why the combat refused to send the steed away now; `''` when it did not. */
+  protected readonly refusal = signal('');
+  protected readonly releaseLine = STEED_RELEASE_LINE;
 
   protected readonly subtitle = computed(() => {
     const c = this.creature();
+    if (c.bonded) {
+      return steedSubtitle(c.monsterNamePt, this.block()?.summary?.sizePt ?? '', c.creatureType);
+    }
     return joinDots(
       [
         c.monsterNamePt,
@@ -127,6 +161,10 @@ export class CreatureCard {
 
   constructor() {
     effect(() => {
+      this.tick();
+      untracked(() => this.refusal.set(''));
+    });
+    effect(() => {
       const key = this.creature().monsterKey;
       const campaignId = this.campaignId();
       untracked(() => {
@@ -135,6 +173,41 @@ export class CreatureCard {
           () => this.block.set(null),
         );
       });
+    });
+  }
+
+  /** Opens the question of a bonded steed, and reads whether a combat holds it (the owner's player then spends the action). */
+  protected ask(going: SteedGoing): void {
+    if (this.refusal()) {
+      return;
+    }
+    this.where.set(STEED_NOWHERE);
+    this.going.set(going);
+    if (!this.live()) {
+      return;
+    }
+    const id = this.creature().id;
+    this.injector
+      .get(CombatClient)
+      .turn.get(this.campaignId())
+      .then(
+        (enc) => this.where.set(steedWhere(enc, id, this.characterId())),
+        () => this.where.set(STEED_NOWHERE),
+      );
+  }
+
+  /** The steed's question closed: gone (the panel reads the list), refused by the combat (the reason stays under the actions), or backed out. */
+  protected asked(changed: boolean, refusal = ''): void {
+    const was = this.going();
+    this.going.set(null);
+    this.refusal.set(refusal);
+    if (changed) {
+      this.changed.emit('dismiss');
+      return;
+    }
+    const back = was === 'release' ? '.js-more' : '.js-dismiss';
+    afterNextRender(() => focusWithRing(this.host.nativeElement.querySelector<HTMLElement>(back)), {
+      injector: this.injector,
     });
   }
 

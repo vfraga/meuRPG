@@ -197,6 +197,10 @@ describe("the move page reads the server's options", () => {
 
   it('writes what is left of a part, and what was walked', () => {
     expect(plain(leftLine(300, 300, 0, 6))).toBe('Restam 9,0 m de 9,0 m (6 quadrados de 1,5 m).');
+    expect(plain(leftLine(600, 600, 0, 12, 'Cavalo de guerra'))).toBe(
+      'Restam 18,0 m de 18,0 m ao Cavalo de guerra (12 quadrados de 1,5 m).',
+    );
+    expect(plain(leftLine(600, 600, 0, null, 'Aranha'))).toBe('Restam 18,0 m de 18,0 m à Aranha.');
     expect(plain(leftLine(200, 300, 100, null))).toBe(
       'Restam 6,0 m de 9,0 m. Você já andou 3,0 m.',
     );

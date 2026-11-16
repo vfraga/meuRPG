@@ -34,8 +34,18 @@
   justify-content: space-between;
   gap: 12px;
   margin-bottom: calc(var(--mr-space-3) * -1);
-  padding-block: 12px;
-  border-bottom: 1px solid var(--mr-line);
+  padding-top: 12px;
+  padding-bottom: 12px;
+  border-bottom-width: 1px;
+  border-bottom-style: solid;
+  border-bottom-color: var(--mr-line);
+
+  // The pair card comes next on a phone (588-05): no divider between them, and only the column's 12 px gap.
+  &.econ--paired {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom-style: none;
+  }
 }
 
 .econ__move {
@@ -287,4 +297,19 @@ app-fold {
     flex: 1 1 140px;
     min-height: 44px;
   }
+}
+
+// The pair card's slot: under the economy row on a phone (588-05), first from 768 px (588-04).
+.groups > .groups__pair {
+  margin-right: 12px;
+  margin-left: 12px;
+
+  @media (min-width: 768px) {
+    order: -1;
+  }
+}
+
+// With a pair card above it (588-04), the row holds only "Mover": at the end of the line, where it is with the shapes.
+.groups > .econ--move {
+  justify-content: flex-end;
 }

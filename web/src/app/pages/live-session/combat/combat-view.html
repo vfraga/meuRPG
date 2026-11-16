@@ -111,11 +111,15 @@
             [moverId]="moves.moverId()"
             [jumps]="moves.jumps()"
             [canDisengage]="moves.canDisengage()"
+            [mounts]="moves.mount.options()"
+            [dismountBlocked]="moves.mount.blocked()"
             [start]="moves.dropStart()"
             (confirm)="moves.confirmMove($event)"
             (jump)="moves.confirmJump($event)"
             (readJump)="moves.jump.set($event)"
             (disengage)="moves.disengage()"
+            (mountOn)="moves.mount.mountOn($event)"
+            (dismountTo)="moves.mount.dismountTo($event)"
             (back)="moves.closeFullPage()"
           />
         } @else {
@@ -209,11 +213,15 @@
             [moverId]="moves.moverId()"
             [jumps]="moves.jumps()"
             [canDisengage]="moves.canDisengage()"
+            [mounts]="moves.mount.options()"
+            [dismountBlocked]="moves.mount.blocked()"
             [start]="moves.dropStart()"
             (confirm)="moves.confirmMove($event)"
             (jump)="moves.confirmJump($event)"
             (readJump)="moves.jump.set($event)"
             (disengage)="moves.disengage()"
+            (mountOn)="moves.mount.mountOn($event)"
+            (dismountTo)="moves.mount.dismountTo($event)"
             (back)="moves.closeFullPage()"
           />
         } @else {
@@ -519,10 +527,10 @@
                   (select)="tabId.set($event)"
                   (endPart)="endTab(ct)"
                 />
-              } @else if (showTabs() || (myTurn() && own() && !ownDown())) {
+              } @else if (showTabs() || ((myTurn() || pairLive()) && own() && !ownDown())) {
                 <app-turn-bar
                   class="player__bar"
-                  [own]="myTurn() && !ownDown() ? own() : null"
+                  [own]="(myTurn() || pairLive()) && !ownDown() ? own() : null"
                   [tabs]="tabs()"
                   [selected]="tab()?.id ?? ''"
                   [attacksLeft]="attacksLeft()"
@@ -798,6 +806,7 @@
       />
     }
     <app-roll-mode-queue [encounter]="e" [campaignId]="campaignId()" [state]="state()" />
+    <app-mount-save-wait [wait]="mountWait()" [busy]="busy()" (roll)="sheets.reactions.mountSave($event, true)" />
     <app-hidden-reveal-card
       [encounter]="e"
       [spellNames]="revealSpellNames()"
@@ -965,6 +974,7 @@
       [turnLabel]="turnLabel()"
       [turnSide]="turnSide()"
       (side)="setSide($event)"
+      (mount)="setMount($event)"
       (cover)="setCover($event)"
       (parryAsk)="setParryAsk($event)"
     />
@@ -1113,6 +1123,19 @@
   <ng-container *ngTemplateOutlet="actionsBody" />
 </ng-template>
 
+<!-- The mount the character directs: its three actions, one "Mover" and one "Encerrar turno" for the two (588-04). -->
+<ng-template #pairCard let-me>
+  @if (riding(); as ride) {
+    <app-pair-card
+      [rider]="me"
+      [mount]="ride"
+      [options]="creatureOptions.data().get(ride.id) ?? null"
+      [busy]="busy()"
+      (act)="takeActionFor(ride.id, $event)"
+    />
+  }
+</ng-template>
+
 <!-- What the actions rail holds: a creature's blocks, the death saves, the action tabs, or off turn the reaction. -->
 <ng-template #actionsBody>
   @if (encounter(); as e) {
@@ -1140,7 +1163,9 @@
       </div>
     } @else if (myTurn() && own(); as me) {
       @if (ownDown()) {
-        <div>
+        <div class="player__blocks">
+          <!-- A rider at 0 hit points: the three are dashed, the master leads the mount (588-10 card 5). -->
+          <ng-container *ngTemplateOutlet="pairCard; context: { $implicit: me }" />
           <app-death-saves
             [ownerOnly]="deathsHidden()"
             [own]="me"
@@ -1158,6 +1183,9 @@
         @if (opts.options; as turnOptions) {
           <div class="player__blocks">
             <app-action-groups
+              [shapesAside]="!!riding() && !phone()"
+              [paired]="!!riding() && phone()"
+              [withPair]="!!riding()"
               [options]="turnOptions"
               [gearFlow]="gearFlow"
               [choosing]="targeting.mode.session()?.key ?? ''"
@@ -1205,6 +1233,10 @@
               @if (targeting.mode.active() && laptop()) {
                 <app-target-bar pending variant="card" [mode]="targeting.mode" />
               }
+              <!-- The mount the character directs: under the economy row on a phone, first from 768 px (588-04, 588-05). -->
+              <ng-container ngProjectAs="[pair]">
+                <ng-container *ngTemplateOutlet="pairCard; context: { $implicit: me }" />
+              </ng-container>
             </app-action-groups>
             @if (beastBlock(); as block) {
               <app-beast-traits [creature]="block" [beast]="me.wildShapeBeastNamePt" />
@@ -1212,6 +1244,11 @@
           </div>
         }
       }
+    } @else if (pairLive() && own(); as me) {
+      <!-- The rider's own part ended (the master, or another tab) and the mount's is live: its card stays, to act and to end it. -->
+      <div class="player__blocks">
+        <ng-container *ngTemplateOutlet="pairCard; context: { $implicit: me }" />
+      </div>
     } @else if (offRail(); as me) {
       <!-- Off turn, from 1024px: the rail says what the player still has (C6-07). -->
       <div class="player__blocks">

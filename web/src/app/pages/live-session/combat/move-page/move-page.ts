@@ -2,7 +2,6 @@ import {
   ChangeDetectionStrategy,
   Component,
   ElementRef,
-  afterNextRender,
   computed,
   effect,
   input,
@@ -18,7 +17,7 @@ import {
   type Encounter,
   type GetMoveOptionsResponse,
 } from '../../../../../gen/meurpg/play/v1/combat_pb';
-import type { JumpLimits } from '../../../../../gen/meurpg/rules/v1/rules_pb';
+import { type JumpLimits, type MountOptions } from '../../../../../gen/meurpg/rules/v1/rules_pb';
 import type { Vision } from '../../../../core/maps/vision';
 import { type Square, stepSquare } from '../../../../core/combat/combat-grid';
 import {
@@ -43,17 +42,15 @@ import { LivePill } from '../../../../shared/live-pill/live-pill';
 import { MapLayersLegend } from '../../../../shared/map-layers/map-layers-legend';
 import { mediaQuery } from '../../../../shared/map-view/media-query';
 import { JumpPanel } from './jump-panel';
+import { MountPanel } from './mount-panel';
 import { MoveAdjust } from './move-adjust';
 import {
   type JumpScene,
-  type ScrollBox,
-  centreScroll,
   canMoveOf,
   errorShown,
   frameOf,
   goLabelOf,
   jumpSummary,
-  keepInViewScroll,
   KINDS,
   cappedMovement,
   goIconOf,
@@ -66,6 +63,8 @@ import {
   walkSummary,
 } from './move-page-view';
 import { MoveDrag } from './move-drag';
+import { MountRide } from './mount-ride';
+import { MoveScroll } from './move-scroll';
 import { MoveStatus, type MoveSummary } from './move-status';
 import { Segmented } from '../../../../shared/segmented/segmented';
 
@@ -100,6 +99,7 @@ export type { JumpRequest } from './move-page-view';
     MapLayersLegend,
     MatButtonModule,
     MatIconModule,
+    MountPanel,
     MoveAdjust,
     MoveStatus,
     Segmented,
@@ -134,6 +134,10 @@ export class MovePage {
   readonly canDisengage = input(false);
   /** Who moves: one of the player's creatures (E9-12); empty for the player's own character. */
   readonly moverId = input('');
+  /** What the mover can do about mounts (`TurnOptions.mount`); unset in a combat with no map, or when nothing is near. */
+  readonly mounts = input<MountOptions | undefined>(undefined);
+  /** "Desmontar aqui" found the square held by something the person does not see: the rider stays mounted. */
+  readonly dismountBlocked = input(false);
   /** A square to start with: where the player dropped their token on the main map (the drop never moves, the page asks). */
   readonly start = input<Square | null>(null);
 
@@ -145,10 +149,14 @@ export class MovePage {
   readonly disengage = output<void>();
   /** What the page reads from the server (`GetMoveOptions`): the squares of a long jump (`runningStart` as the limits say), or `null` for a walk. */
   readonly readJump = output<{ readonly runningStart: boolean } | null>();
+  /** "Montar" on a row of the "Montaria" panel: the mount's combatant. */
+  readonly mountOn = output<string>();
+  /** "Desmontar aqui": the square the rider lands on. */
+  readonly dismountTo = output<Square>();
   /** "Cancelar", or the back arrow. */
   readonly back = output<void>();
 
-  protected readonly chosen = signal<Square | null>(null);
+  readonly chosen = signal<Square | null>(null);
   protected readonly mode = signal<'walk' | 'jump'>('walk');
   protected readonly kind = signal<JumpMode>('long');
   protected readonly height = signal(0);
@@ -158,37 +166,39 @@ export class MovePage {
   /** The question about the known trap is open in the footer. */
   protected readonly trapAsk = signal(false);
   private readonly errorFor = signal<Square | null>(null);
-  private readonly scroller = viewChild<ElementRef<HTMLElement>>('scroller');
+  readonly scroller = viewChild<ElementRef<HTMLElement>>('scroller');
   private readonly safe = viewChild('safe', { read: ElementRef<HTMLButtonElement> });
   private readonly goButton = viewChild('goButton', { read: ElementRef<HTMLButtonElement> });
 
   /** From 1024px the map fits the left column and the controls sit beside it. */
-  protected readonly wide = mediaQuery('(min-width: 1024px)');
-  protected readonly cell = computed(() => ZOOMS[this.zoom()]);
+  readonly wide = mediaQuery('(min-width: 1024px)');
+  readonly cell = computed(() => ZOOMS[this.zoom()]);
   protected readonly round = computed(() => tieNumbers(roundLabel(this.encounter().round)));
   protected readonly sessionLabel = computed(() => tieNumbers(`Sessão ${this.sessionNumber()}`));
   /** The height of a high jump has no map: the page is one column, with the content where the eye starts. */
   protected readonly soloHeight = computed(() => this.jumping() && this.kind() === 'high');
-  protected readonly own = computed(() => {
+  readonly own = computed(() => {
     const e = this.encounter();
     const id = this.moverId();
     return (id ? e.combatants.find((c) => c.id === id) : null) ?? ownCombatant(e);
   });
-  protected readonly origin = computed<Square>(() => {
+  readonly origin = computed<Square>(() => {
     const own = this.own();
     return own ? { col: own.col, row: own.row } : { col: 0, row: 0 };
   });
   /** The server's answer for this origin, but never more than the combatant's live movement: after a move the options
    * are the old ones until they are fetched again, and the sheet would keep saying the distance from before. */
   protected readonly leftDft = computed(() =>
-    cappedMovement(this.options()?.movementLeftDft, this.own()?.movementLeftDft),
+    cappedMovement(this.options()?.movementLeftDft, this.ride.counter()?.movementLeftDft),
   );
-  protected readonly totalDft = computed(() => this.own()?.speedDft ?? 0);
-  protected readonly usedDft = computed(() => this.own()?.movementUsedDft ?? 0);
-  protected readonly jumping = computed(() => this.mode() === 'jump' && !!this.jumps());
+  protected readonly totalDft = computed(() => this.ride.counter()?.speedDft ?? 0);
+  protected readonly usedDft = computed(() => this.ride.counter()?.movementUsedDft ?? 0);
+  protected readonly jumping = computed(
+    () => this.mode() === 'jump' && !!this.jumps() && !this.ride.mountedOn(),
+  );
   protected readonly modes = MODES;
   protected readonly kinds = KINDS;
-
+  protected readonly ride = new MountRide(this);
   protected readonly index = computed(() => indexOptions(this.options()));
   protected readonly verdict = computed(() => {
     const to = this.chosen();
@@ -222,24 +232,30 @@ export class MovePage {
   });
 
   /** The reach the map draws: the walk's squares, or the circle of the jump. */
-  protected readonly reach = computed<Reach | null>(() =>
-    reachOf(
-      this.readOnly(),
-      this.jumping(),
-      this.kind(),
-      this.origin(),
-      this.cap(),
-      this.leftDft(),
-      this.options(),
-    ),
+  protected readonly reach = computed<Reach | null>(
+    () =>
+      this.ride.reach() ??
+      reachOf(
+        this.readOnly(),
+        this.jumping(),
+        this.kind(),
+        this.origin(),
+        this.cap(),
+        this.leftDft(),
+        this.options(),
+      ),
   );
 
   /** The move in words, from the options' cost. */
-  protected readonly summary = computed<MoveSummary>(() =>
-    this.jumping()
-      ? jumpSummary(this.jumpScene())
-      : walkSummary(this.chosen(), this.verdict(), this.leftDft(), this.encounter().combatants),
-  );
+  protected readonly summary = computed<MoveSummary>(() => {
+    if (this.jumping()) {
+      return jumpSummary(this.jumpScene());
+    }
+    return this.ride.rideCard(
+      walkSummary(this.chosen(), this.verdict(), this.leftDft(), this.encounter().combatants),
+      this.verdict(),
+    );
+  });
   private readonly jumpScene = computed<JumpScene>(() => ({
     kind: this.kind(),
     left: this.leftDft(),
@@ -256,15 +272,17 @@ export class MovePage {
   }));
   /** The frame on the chosen square: the cost beside it when the move can be made, the
    * refusal's title ("Sem caminho") when it cannot. */
-  protected readonly frame = computed(() =>
-    frameOf(
-      this.chosen(),
-      this.summary(),
-      this.jumping(),
-      this.kind(),
-      this.verdict(),
-      this.jumpCost(),
-    ),
+  protected readonly frame = computed(
+    () =>
+      this.ride.frame() ??
+      frameOf(
+        this.chosen(),
+        this.summary(),
+        this.jumping(),
+        this.kind(),
+        this.verdict(),
+        this.jumpCost(),
+      ),
   );
   /** A long jump that leaves an enemy's reach: Desengajar can be chosen and spent with it. */
   protected readonly jumpProvokes = computed(
@@ -277,16 +295,18 @@ export class MovePage {
   protected readonly disengaging = computed(
     () => this.disengageChoice() && this.jumpProvokes() && this.canDisengage(),
   );
-  protected readonly canMove = computed(() =>
-    canMoveOf(
-      this.busy(),
-      this.jumping(),
-      this.kind(),
-      this.height(),
-      this.chosen(),
-      this.summary().kind,
-      this.verdict(),
-    ),
+  protected readonly canMove = computed(
+    () =>
+      this.ride.canLand(this.busy()) ??
+      canMoveOf(
+        this.busy(),
+        this.jumping(),
+        this.kind(),
+        this.height(),
+        this.chosen(),
+        this.summary().kind,
+        this.verdict(),
+      ),
   );
   protected readonly visibleError = computed(() =>
     errorShown(this.serverError(), this.errorFor(), this.chosen()),
@@ -294,14 +314,27 @@ export class MovePage {
   protected readonly title = computed(
     () => `${this.jumping() ? 'Saltar' : 'Mover'} ${this.own()?.label ?? ''}`,
   );
-  protected readonly lead = computed(() =>
-    leadOf(this.jumping(), this.kind(), this.leftDft(), this.totalDft(), this.usedDft()),
+  protected readonly lead = computed(
+    () =>
+      this.ride.lead() ??
+      leadOf(
+        this.jumping(),
+        this.kind(),
+        this.leftDft(),
+        this.totalDft(),
+        this.usedDft(),
+        this.ride.carrier(),
+      ),
   );
   protected readonly leftText = computed(() => metersFixed(this.leftDft() / 10));
   protected readonly limitText = computed(() => metersFixed(this.cap() / 10));
-  protected readonly goIcon = computed(() => goIconOf(this.jumping(), this.kind()));
-  protected readonly goLabel = computed(() =>
-    goLabelOf(this.jumping(), this.kind(), this.disengaging(), this.height()),
+  protected readonly goIcon = computed(
+    () => this.ride.goIcon() ?? goIconOf(this.jumping(), this.kind()),
+  );
+  protected readonly goLabel = computed(
+    () =>
+      this.ride.goLabel() ??
+      goLabelOf(this.jumping(), this.kind(), this.disengaging(), this.height()),
   );
   /** What the footer's button says it is for when it cannot be pressed. */
   protected readonly trapName = computed(() =>
@@ -310,15 +343,7 @@ export class MovePage {
   protected readonly trapText = computed(() => trapQuestion(this.trapName()));
 
   constructor() {
-    // The map is bigger than the frame it scrolls in: open with the token in the middle of it.
-    afterNextRender(() => this.centreOn(this.origin()));
-    // A chosen square never scrolls out of sight (or under the app bar).
-    effect(() => {
-      const to = this.chosen();
-      if (to) {
-        untracked(() => this.keepInView(to));
-      }
-    });
+    new MoveScroll(this);
     // A drop on the main map starts here, on the square it was dropped on.
     effect(() => {
       const start = this.start();
@@ -363,32 +388,6 @@ export class MovePage {
     });
   }
 
-  /** Scrolls the map to where `target` says, given the part of it the scroller shows (nothing in the wide layout). */
-  private scrollTo(target: (box: ScrollBox) => { left: number; top: number }): void {
-    const el = this.scroller()?.nativeElement;
-    if (!el || this.wide()) {
-      return;
-    }
-    const to = target({
-      left: el.scrollLeft,
-      top: el.scrollTop,
-      width: el.clientWidth,
-      height: el.clientHeight,
-    });
-    el.scrollLeft = to.left;
-    el.scrollTop = to.top;
-  }
-
-  /** Scrolls the map so the square is in the middle of the visible part. */
-  private centreOn(sq: Square): void {
-    this.scrollTo((box) => centreScroll(sq, this.cell(), box));
-  }
-
-  /** Brings the square into view when it is not. */
-  private keepInView(sq: Square): void {
-    this.scrollTo((box) => keepInViewScroll(sq, this.cell(), box));
-  }
-
   /** "Voltar" on the trap question: the focus goes back to the button that asked. */
   protected closeTrapAsk(): void {
     this.trapAsk.set(false);
@@ -396,7 +395,7 @@ export class MovePage {
   }
 
   protected choose(square: Square): void {
-    if (this.jumping() && this.kind() === 'high') {
+    if ((this.jumping() && this.kind() === 'high') || !this.ride.allows(square)) {
       return;
     }
     this.chosen.set(square);
@@ -404,7 +403,10 @@ export class MovePage {
 
   protected nudge(key: string): void {
     const e = this.encounter();
-    this.choose(stepSquare(this.chosen() ?? this.origin(), key, e.gridColumns, e.gridRows));
+    // Getting off lands only on the squares the server lists: the arrows go to the nearest of them.
+    this.choose(
+      this.ride.aim(stepSquare(this.chosen() ?? this.origin(), key, e.gridColumns, e.gridRows)),
+    );
   }
 
   protected setMode(mode: 'walk' | 'jump'): void {
@@ -445,8 +447,13 @@ export class MovePage {
     if (!this.canMove()) {
       return;
     }
-    // A square inside a trap the character knows asks first, for a jump too.
-    if (this.trapName() && !this.trapAsk() && !(this.jumping() && this.kind() === 'high')) {
+    // A square inside a trap the character knows asks first, for a jump too (not when getting off a mount).
+    if (
+      this.trapName() &&
+      !this.ride.dismounting() &&
+      !this.trapAsk() &&
+      !(this.jumping() && this.kind() === 'high')
+    ) {
       this.trapAsk.set(true);
       return;
     }
@@ -459,9 +466,10 @@ export class MovePage {
       return;
     }
     const to = this.chosen();
-    if (!this.jumping()) {
+    const getting = this.ride.dismounting();
+    if (getting || !this.jumping()) {
       if (to) {
-        this.confirm.emit(to);
+        (getting ? this.dismountTo : this.confirm).emit(to);
       }
       return;
     }

@@ -23,8 +23,7 @@ import {
 import { CreaturesClient } from '../../../core/creatures/creatures-client';
 import { focusWithRing } from '../../../core/creatures/focus-ring';
 import { creaturesHidden } from '../../../core/creatures/creature-errors';
-import { castNotice, creaturesText } from '../../../core/creatures/summon-labels';
-import { tight } from '../../../core/format/text';
+import { castConfirmation, creaturesText } from '../../../core/creatures/summon-labels';
 import { OpenSessions } from '../../../core/play/open-sessions';
 import { openSheet } from '../../../shared/sheet/sheet-host';
 import { openWildShape } from '../../../shared/wild-shape/wild-shape-sheet';
@@ -32,7 +31,9 @@ import { combatErrorMessage } from '../../../core/combat/combat-errors';
 import { isUnlimited } from '../../../core/combat/unlimited-uses';
 import { ActionKey } from '../../../core/connect/idempotency';
 import { CreatureCard } from './creature-card';
-import { readWild, stayBeast } from './wild-read';
+import { SteedAway } from './steed-away';
+import { SteedCast, bondOf } from './steed-cast';
+import { readWild, stayBeast, wildLineOf } from './wild-read';
 import type { EditMode } from '../../../shared/creatures/creature-edit';
 import {
   SummonSheet,
@@ -64,7 +65,7 @@ type ListState = 'loading' | 'hidden' | 'ready' | 'failed';
  */
 @Component({
   selector: 'app-creatures-panel',
-  imports: [RelayEvents, CreatureCard, MatButtonModule, MatIconModule],
+  imports: [RelayEvents, CreatureCard, MatButtonModule, MatIconModule, SteedAway],
   templateUrl: './creatures-panel.html',
   styleUrl: './creatures-panel.scss',
 })
@@ -109,11 +110,19 @@ export class CreaturesPanel {
     this.openSessions.sessions().some((s) => s.campaignId === this.campaignId()),
   );
   protected readonly casts = computed(() => (this.isMaster() ? [] : this.spells()));
+  /** Convocar Montaria's cast button: off in a combat, and what the cast does for the bonded steed (#588). */
+  protected readonly steedCast = new SteedCast(this.injector);
+  /** The bonded steed that is not among the creatures (dismissed, or gone at 0 hit points): the dashed "Fora" row (#588). */
+  protected readonly away = computed(() => {
+    const steed = this.steedCast.bond();
+    return steed && !this.creatures().some((c) => c.id === steed.id) ? steed : null;
+  });
   protected readonly visible = computed(
     () =>
       this.state() === 'failed' ||
       (this.state() === 'ready' &&
         (this.creatures().length > 0 ||
+          this.away() !== null ||
           (!this.isMaster() && (this.casts().length > 0 || this.wildShape())))),
   );
   protected readonly countText = computed(() =>
@@ -161,24 +170,7 @@ export class CreaturesPanel {
   protected readonly leaving = signal(false);
   private readonly leaveKey = new ActionKey();
   /** "restam 2 de 2 usos · volta no descanso curto ou longo", or what stops it outside a session. */
-  protected readonly wildLine = computed(() => {
-    const u = this.uses();
-    if (!this.live()) {
-      return 'Só durante um combate ou uma sessão.';
-    }
-    if (!u) {
-      return '';
-    }
-    const back =
-      u.recharge === 'long_rest' ? 'volta no descanso longo' : 'volta no descanso curto ou longo';
-    return tight(
-      u.left === 0
-        ? `Sem usos · ${back}`
-        : isUnlimited(u.total)
-          ? `Usos ilimitados · ${back}`
-          : `Restam ${u.left} de ${u.total} ${u.total === 1 ? 'uso' : 'usos'} · ${back}`,
-    );
-  });
+  protected readonly wildLine = computed(() => wildLineOf(this.uses(), this.live()));
 
   private async loadWild(): Promise<void> {
     if (!this.wildShape() || this.isMaster()) {
@@ -311,11 +303,11 @@ export class CreaturesPanel {
 
   private async read(campaignId: string, characterId: string): Promise<CharacterCreature[] | null> {
     const seq = ++this.seq;
-    // The options are the player's (the master gives, in the campaign's list); a failed read of them only
-    // takes the buttons away.
+    // The options give the player's cast buttons and, to both, the bonded steed that is away; a failed read of
+    // them only takes those away.
     const [list, options] = await Promise.allSettled([
       this.client.list(campaignId, characterId),
-      this.isMaster() ? Promise.resolve(null) : this.client.summonOptions(campaignId, characterId),
+      this.client.summonOptions(campaignId, characterId),
     ]);
     if (seq !== this.seq) {
       return null; // a newer read started: its answer is the one that counts
@@ -332,8 +324,14 @@ export class CreaturesPanel {
       return null;
     }
     this.refreshFailed.set(false);
-    this.spells.set(
-      options.status === 'fulfilled' && options.value ? [...options.value.spells] : [],
+    const read = options.status === 'fulfilled' ? options.value : null;
+    this.spells.set(read ? [...read.spells] : []);
+    this.steedCast.bond.set(bondOf(read));
+    void this.steedCast.read(
+      this.spells(),
+      this.live() && !this.isMaster(),
+      campaignId,
+      characterId,
     );
     this.announceArrivals(list.value);
     this.creatures.set(list.value);
@@ -367,19 +365,8 @@ export class CreaturesPanel {
     );
   }
 
-  protected costText(spell: SummonSpellOptions): string {
-    const where = 'Só durante uma sessão, fora de combate.';
-    if (spell.grantedBy) {
-      return tight(`Gasta um uso, restam ${spell.usesLeft}. ${where}`);
-    }
-    if (spell.canRitual) {
-      return tight(`Ritual de ${spell.castingTimePt}: não gasta espaço de magia. ${where}`);
-    }
-    return tight(`Gasta um espaço de ${spell.level}º nível ou maior. ${where}`);
-  }
-
   protected cast(spell: SummonSpellOptions): void {
-    if (!this.live()) {
+    if (this.steedCast.why(spell, this.live())) {
       return;
     }
     this.notice.set('');
@@ -409,21 +396,11 @@ export class CreaturesPanel {
       void this.load(this.campaignId(), this.characterId());
       void this.lastLoad().then(() => {
         this.castInFlight = false;
-        this.notice.set([this.confirmation(result), this.heldGift].filter((t) => t).join(' '));
+        this.notice.set([castConfirmation(result), this.heldGift].filter((t) => t).join(' '));
         this.heldGift = '';
         this.focusAfterRender('.js-cast');
       });
     });
-  }
-
-  private confirmation(r: SummonSheetResult): string {
-    const arrived =
-      r.names.length === 1
-        ? `${r.names[0]} chegou.`
-        : r.count === 1
-          ? 'A criatura chegou.'
-          : `${creaturesText(r.count)} chegaram.`;
-    return castNotice(arrived, r.spellName, r.ritual, r.castingTime, r.dismissed);
   }
 
   /** A card's rename, dismissal or correction went through: read the list again and put the focus somewhere that exists. */
@@ -450,7 +427,7 @@ export class CreaturesPanel {
       () => {
         const all = this.host.nativeElement.querySelectorAll<HTMLElement>(selector);
         // A button shows its ring; a title (the last place left) takes the focus without one.
-        const target = all[Math.min(nth, all.length - 1)];
+        const target = all[Math.max(0, Math.min(nth, all.length - 1))];
         if (target?.tagName === 'BUTTON') {
           focusWithRing(target);
         } else {

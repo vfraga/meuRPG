@@ -15,11 +15,27 @@
     } @else {
       <h1 class="mr-page-title move__title">{{ title() }}</h1>
       <p class="move__lead">{{ lead() }}</p>
-      @if (jumps()) {
-        <app-segmented class="move__seg" label="Como se mover" [segments]="modes" [value]="mode()" (choose)="setMode($event)" />
-        @if (jumping()) {
-          <app-segmented class="move__seg" label="Tipo de salto" [segments]="kinds" [value]="kind()" (choose)="setKind($event)" />
+      <div class="move__ride">
+        @if (ride.mountedOn()) {
+          <app-segmented class="move__seg" label="Como se mover montado" [segments]="ride.modes()" [value]="ride.dismounting() ? 'dismount' : 'ride'" (choose)="ride.pick($event)" />
+        } @else if (jumps()) {
+          <app-segmented class="move__seg" label="Como se mover" [segments]="modes" [value]="mode()" (choose)="setMode($event)" />
         }
+        <!-- On the page before its text arrives, so a screen reader reads the notice when the rider mounts. -->
+        <div role="status" aria-live="polite" class="move__live move__ride-live">
+          @if (ride.riding() && ride.line(); as m) {
+            <div class="mr-notice" data-testid="mounted-notice">
+              <mat-icon aria-hidden="true">link</mat-icon>
+              <p><strong class="move__strong">{{ m.notice }}</strong> {{ m.detail }}</p>
+            </div>
+          }
+        </div>
+      </div>
+      @for (why of ride.why(); track why.id) {
+        <p class="move__why" [id]="why.id"><mat-icon aria-hidden="true">block</mat-icon>{{ why.text }}</p>
+      }
+      @if (!ride.mountedOn() && jumps() && jumping()) {
+        <app-segmented class="move__seg" label="Tipo de salto" [segments]="kinds" [value]="kind()" (choose)="setKind($event)" />
       }
     }
 
@@ -62,8 +78,12 @@
         <!-- The zoom sits beside the legend under the map, never over it. -->
         <div class="move__below">
         <app-map-layers-legend class="move__legend" [layers]="layers()">
-          <li><span class="mr-swatch mr-swatch--reach" aria-hidden="true"></span>{{ jumping() ? 'Alcance do salto' : 'Você alcança' }}</li>
-          <li><span class="mr-swatch mr-swatch--ring" aria-hidden="true"></span>Alcance de {{ jumping() ? limitText() : leftText() }}</li>
+          @if (ride.dismounting()) {
+            <li><span class="mr-swatch mr-swatch--reach" aria-hidden="true"></span>Dá para descer</li>
+          } @else {
+            <li><span class="mr-swatch mr-swatch--reach" aria-hidden="true"></span>{{ jumping() ? 'Alcance do salto' : ride.riding() ? 'O ' + ride.mountedOn()?.label + ' alcança' : 'Você alcança' }}</li>
+            <li><span class="mr-swatch mr-swatch--ring" aria-hidden="true"></span>Alcance de {{ jumping() ? limitText() : leftText() }}</li>
+          }
           @if (chosen()) {
             <li><span class="mr-swatch mr-swatch--chosen" aria-hidden="true"></span>Quadrado escolhido</li>
           }
@@ -82,7 +102,10 @@
           </div>
         }
         </div>
-        @if (!jumping()) {
+        @if (ride.rows().length > 0) {
+          <app-mount-panel [rows]="ride.rows()" [busy]="busy()" (mount)="mountOn.emit($event)" />
+        }
+        @if (!jumping() && !ride.dismounting()) {
           <p class="move__rule">
             <mat-icon aria-hidden="true">info</mat-icon>
             Dentro do círculo, o que fica sem cor não dá para alcançar: parede, inimigo ou custo a mais.
@@ -115,7 +138,19 @@
               <p><strong class="move__strong">A porta está trancada.</strong>O movimento para antes dela. Só o mestre a destranca.</p>
             </div>
           }
+          @if (ride.blockedShown() && ride.dismounting()) {
+            <div class="mr-notice mr-notice--warning" data-testid="dismount-blocked">
+              <mat-icon aria-hidden="true">block</mat-icon>
+              <p>Algo bloqueia o caminho: {{ own()?.label }} segue na montaria e nada foi gasto. Escolha outro quadrado.</p>
+            </div>
+          }
+          @if (ride.ignoredText(); as ignored) {
+            <p class="move__why" data-testid="dismount-ignored">{{ ignored }}</p>
+          }
         </div>
+        @if (summary().kind === 'idle' && ride.hint(); as hint) {
+          <p class="move__hint" data-testid="mount-hint"><mat-icon aria-hidden="true">info</mat-icon>{{ hint }}</p>
+        }
         @if (drag.line()) {
           <p class="move__drag" data-testid="drag-line">{{ drag.line() }}</p>
         }

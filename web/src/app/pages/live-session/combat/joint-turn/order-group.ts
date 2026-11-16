@@ -16,11 +16,13 @@ import { MatIconModule } from '@angular/material/icon';
     <div class="box" role="group" [attr.aria-label]="label()" [class.box--turn]="onTurn()">
       <p class="head">
         <mat-icon aria-hidden="true">link</mat-icon>
-        <b>Turno conjunto</b>
+        <b>{{ mounted() ? 'Montado' : 'Turno conjunto' }}</b>
         @if (names()) {
           <span>{{ names() }} ·</span>
         }
-        <span>iniciativa {{ total() }}</span>
+        @if (total() !== null) {
+          <span>{{ mounted() ? '· ' : '' }}iniciativa {{ total() }}</span>
+        }
         @if (onTurn()) {
           <span class="vez">Vez</span>
         } @else if (hint()) {
@@ -143,8 +145,11 @@ import { MatIconModule } from '@angular/material/icon';
   `,
 })
 export class OrderGroup {
-  readonly total = input.required<number>();
+  /** `null`: the viewer has no total for the box (an NPC pair, to a player), and the head says none. */
+  readonly total = input.required<number | null>();
   readonly onTurn = input(false);
+  /** A rider and the mount it rides: the head reads "Montado" and no hint (588-04). */
+  readonly mounted = input(false);
   /** For a screen reader: "Turno conjunto: Brisa e Toren, iniciativa 19". */
   readonly label = input('');
   /** Who is in it, when the box names them ("Lobos atrozes da Sálvia"). */

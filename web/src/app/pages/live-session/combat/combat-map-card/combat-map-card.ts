@@ -42,6 +42,7 @@ import {
   tileRects,
   visionLegend,
 } from '../../../../core/maps/vision';
+import { RiderMark } from '../../../../shared/combatant-token/rider-mark';
 
 /**
  * The map panel of a running combat or of its setup (E6-04, E6-05, E6-11):
@@ -62,6 +63,7 @@ const CROP_MAX_SHARE = 0.6;
 @Component({
   selector: 'app-combat-map-card',
   imports: [
+    RiderMark,
     AreaOverlay,
     CombatMap,
     CombatantToken,
@@ -311,6 +313,11 @@ export class CombatMapCard {
   }
   protected readonly emptyLayers = NO_LAYERS;
   protected readonly reachMeters = computed(() => metersFixed((this.reach()?.leftDft ?? 0) / 10));
+  /** A rider sits on a mount that is on the map: the legend names the pair's mark. */
+  protected readonly hasMounted = computed(() => {
+    const placed = this.encounter().combatants.filter((c) => c.placed);
+    return placed.some((c) => c.mountedOnId && placed.some((m) => m.id === c.mountedOnId));
+  });
   protected readonly hasHidden = computed(() => this.encounter().combatants.some((c) => c.hidden));
   /** A player's creature has a square on the map: the legend names the dashed round token. */
   protected readonly hasCreatures = computed(() =>

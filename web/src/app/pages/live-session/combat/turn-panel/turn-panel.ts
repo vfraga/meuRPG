@@ -1,3 +1,4 @@
+import { mountedOn } from '../../../../core/combat/mount-view';
 import { holdsReadied } from '../../../../core/combat/ready-card';
 import { ReadiedCard } from '../readied-card/readied-card';
 import { NgTemplateOutlet } from '@angular/common';
@@ -51,6 +52,7 @@ import { FavorChip } from '../../../../shared/favor-chip/favor-chip';
 import { FormChip } from '../../../../shared/wild-shape/form-chip';
 import type { FallNote } from '../../../../core/traps/trap-log';
 import { CombatantToken } from '../../../../shared/combatant-token/combatant-token';
+import { PairToken } from '../../../../shared/combatant-token/pair-token';
 import { EndPart } from '../joint-turn/end-part';
 import { JointOthers } from '../joint-turn/joint-others';
 import { JointPill } from '../joint-turn/joint-pill';
@@ -82,6 +84,7 @@ import { isMasterWait } from '../../../../core/combat/reactions';
   imports: [
     CombatantTags,
     CombatantToken,
+    PairToken,
     ConcentrationLine,
     EndPart,
     EndTurn,
@@ -306,6 +309,8 @@ export class TurnPanel {
       wasMine = mine;
     });
   }
+
+  protected readonly mountedOn = mountedOn;
 
   protected initial(c: Combatant): string {
     return combatantInitial(c.label);

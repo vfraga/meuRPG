@@ -67,6 +67,13 @@ function masterOffer(w: ReactionWindow): boolean {
   return w.prompt.case === 'parry' || w.prompt.case === 'legendaryResistance';
 }
 
+/** The kinds whose window has no prompt of its own and still opens a sheet for its player. */
+const PROMPTLESS_SHEETS: ReadonlySet<ReactionKind> = new Set([
+  ReactionKind.FEATURE,
+  ReactionKind.READIED,
+  ReactionKind.DISMOUNT,
+]);
+
 /** The window whose sheet opens by itself for a player: the first they answer that has a prompt of its own (the
  * master's check and the aggressor's saving throw are the master's cards). */
 export function sheetWindow(e: Encounter): ReactionWindow | undefined {
@@ -74,10 +81,9 @@ export function sheetWindow(e: Encounter): ReactionWindow | undefined {
     (w) =>
       w.forYou &&
       !masterOffer(w) &&
-      // A feature window and a readied action's have no prompt of their own: their sheets read the trigger and the row.
-      (w.prompt.case !== undefined ||
-        w.kind === ReactionKind.FEATURE ||
-        w.kind === ReactionKind.READIED) &&
+      // A feature window, a readied action's and a rider's dismount have no prompt of their own: their sheets read the
+      // trigger and the row.
+      (w.prompt.case !== undefined || PROMPTLESS_SHEETS.has(w.kind)) &&
       w.prompt.case !== 'masterCheck' &&
       w.prompt.case !== 'hellishRebukeSave',
   );

@@ -171,9 +171,9 @@ A mount carries one rider, and a combatant that rides is not a mount.
 | Opportunity attacks | A rider and its mount are not foes of each other: `couldReactTo` leaves the pair out whatever side each fights on. When the mount provokes, the reactor's `RollAttack` may name the mount or its rider (`offerTargets`); any other target is `INVALID_ARGUMENT`. A player who does not see the mount reads the offer as the rider's, and a hidden mount that carries a seen rider still provokes (`carriesSeenRider`). A hit on the rider does not take the mount back to the square it left. The offer's window and the wait line read the rider as the mover for a reactor that does not see the mount (`offerMoverFor`), and a player who names the hidden mount is refused as for any combatant they do not see |
 | Turn | A `controlled` mount that carries a rider takes the rider's initiative and sits right after it, so the two are one joint group; an `independent` mount keeps its own turn. A mount the master marks `controlled` while its rider's turn runs joins the rider's part of that turn at once, whatever made it join (`joinTurn`). See [Joint turn](combat.md#joint-turn) |
 | Actions | A `controlled` mount that carries a rider takes only Dash, Disengage and Dodge. Every other action of the combat is refused with `MOUNT_ACTION_LIMITED` (`mustActNow`; `TakeAction` lets the three through). The legendary attack and text options are refused too; a legendary move is a move and stays. `UseFeature` does not ask. Its reactions stay free: an opportunity attack, and a feature action of the reaction economy taken with `TakeAction`. The master answers for the mount's reaction attacks and rolls their damage, as for any creature of his. `GetTurnOptions` of the mount lists the other rows disabled, with the reason in Portuguese. A player who only drives the mount reads the three actions and the mount's economy, and none of its pending damage, contest state, effect notes or jump limits. A mount that carries nobody, or an independent one, acts as any creature |
-| Log | `combatant_mounted` and `combatant_dismounted` write the lines "Toren montou em Pônei" and "Toren desmontou de Pônei" (`COMBAT_LOG_KIND_MOUNTED`, `COMBAT_LOG_KIND_DISMOUNTED`). The line is the master's alone when either row is hidden |
-| Options | `GetTurnOptions` carries `mount`: the mounts the viewer sees with the cost and why not, or, when mounted, the mount, the cost of getting off, the refusal and the landing squares. `GetMoveOptions` answers as `MoveCombatant` does: the rider's player asks for the controlled mount they drive, in the rider's turn, and a rider gets `MOUNTED` |
-| Audience | The master reads every field. A player reads `mounted_on_id` and `rider_id` only when both rows are visible to them, so a hidden mount leaves its rider plain. A mount with a hidden rider, or a mount that rides a hidden mount, is answered to a player as no mount (`NOT_A_MOUNT`) and left out of the options, so no refusal names the hidden creature. `mount_kind` goes to the master and to the player who controls the combatant, and `mount_move_used` to whoever reads the combatant's economy |
+| Log | `combatant_mounted` and `combatant_dismounted` write the lines "Toren montou no Pônei" and "Toren desmontou do Pônei" (`COMBAT_LOG_KIND_MOUNTED`, `COMBAT_LOG_KIND_DISMOUNTED`). The line is the master's alone when either row is hidden |
+| Options | `GetTurnOptions` carries `mount`: the mounts the viewer sees with the cost, why not and how far each is (`distance_ft`, whole squares in feet: the measure that refuses `TOO_FAR`), or, when mounted, the mount, the cost of getting off, the refusal and the landing squares. `GetMoveOptions` answers as `MoveCombatant` does: the rider's player asks for the controlled mount they drive, in the rider's turn, and a rider gets `MOUNTED` |
+| Audience | The master reads every field. A player reads `mounted_on_id` and `rider_id` only when both rows are visible to them, so a hidden mount leaves its rider plain. A mount with a hidden rider, or a mount that rides a hidden mount, is answered to a player as no mount (`NOT_A_MOUNT`) and left out of the options, so no refusal names the hidden creature. `mount_kind` goes to the master, to the player who controls the combatant and to the player of the rider that sits on it (who has to know whether the mount obeys: a controlled mount is moved with the rider's own move, an independent one on its own turn), and `mount_move_used` to whoever reads the combatant's economy |
 
 ### The rider's save
 
@@ -189,6 +189,7 @@ There is one window for each rider, whatever opens it a second time.
 The roll is the rider's Dexterity saving throw through the save machinery (proficiency, advantage and disadvantage, auto-failure of a paralyzed, stunned, unconscious or petrified rider), and it goes through the held-roll gate (Lucky and a Bardic Inspiration die).
 The circumstances of the d20 take the effect as seen (`SaveScene.EffectVisible` is always true), because the window does not keep what the rider sees of the cause.
 The DC is the fixed 10, but a player reads it only when the table shows the DC of saves (`show_save_dc`, RN-24), in the prompt, the result, a retry and the log; the master always reads it.
+The prompt carries the rider's Dexterity save bonus as the roll will use it (`save_bonus`, with `bonus_known` false when the sheet has no number to read), so the screen writes "1d20 + 2" without computing it.
 A save that holds writes a log line and nothing else.
 A save that fails gives the rider the Prone condition, clears `mounted_on_id` and gives the mount its own initiative back (`settleMounts`).
 A rider at 0 hit points that is alive is unconscious and auto-fails the save, so it falls at once with no window, no prompt and no d20, and the log has the line of the fall.
@@ -224,7 +225,7 @@ A mount that was knocked prone and is then defeated keeps the window, and a moun
 The landing and the fall are told to the streams and the fog after the commit, as the fall of a failed save is (`riderLanded`).
 A fall from the window writes no save: its log line has cause unspecified, no d20, no DC and no automatic failure, and reads "caiu da montaria" for everyone who gets it.
 A surprised rider has no reaction (as an opportunity attack's reactor) and falls at once.
-The web has no prompt for this window: the master answers it, for a player's character too.
+The window is never passed by a clock: the master's auto-pass leaves it alone (`OPTIONAL_KINDS` in `core/combat/reaction-autopass.ts` does not list it), because passing it is a fall.
 The master's manual edit of a mount's conditions opens no window, like the rider's save.
 
 | Path | Asks the save |
@@ -255,6 +256,22 @@ The only length the browser measures is a long jump's line (`core/combat/jump-pl
 Opportunity offers (`Encounter.opportunity_offers`) become the player's `alertdialog` (`OpportunitySheet`, opened once per offer), the master's card (`OpportunityCard`) and the mover's wait (`core/combat/opportunity.ts`); "Atacar com <arma>" opens the `AttackSheet` with the offer, which makes `RollAttack` carry `opportunity_offer_id`.
 The offer reaches the player through `encounter_changed` without a revision, and the page reads the combat again at each of those; with a revision it reads only when newer.
 Each target's cover comes from `TargetInReach` (`core/combat/cover.ts`).
+
+The rider's save and the rider's dismount each have a sheet, opened from `ReactionSheets` (`pages/live-session/combat/reaction-sheets.ts`), and their words come from `core/combat/mount-save.ts` and `core/combat/reaction-dismount.ts`.
+
+| What the server sends | Who | What the screen does |
+|---|---|---|
+| `Encounter.mount_save` whose rider is the reader's | The rider's player | `MountSaveSheet` opens by itself as an `alertdialog` with no "Fechar" and is up while the combat carries the save. It says the cause, the roll and the bonus, and the DC only when `dc` is above 0 (the server sends 0 to a player on a table that hides the DC of saves). "Rolar no app" or "Digitar o resultado" call `RollMountSave`; `auto_fail` leaves one button, "Continuar" |
+| `Encounter.mount_save` | The master | The card "Esperando o teste de Tor" (`MountSaveWaitCard`) with the save, its DC and the cause, "Próximo turno" dashed with "Espera o teste de Tor", and "Rolar por Tor", which opens the same sheet with the rider read by name and a "Fechar" |
+| A held roll on the save (`held_roll_offer`) | Whoever rolled | The question (Lucky, a Bardic Inspiration die) takes the sheet before any result; a sheet opened while the rider's row already carries the offer starts on the question, never on a second roll |
+| `INVALID_ARGUMENT` for a missing extra die | Whoever typed | The sheet asks for the d4 and sends the faces in `extra_die_faces` |
+| The save leaves the combat without a roll from this sheet | Whoever has it open | The sheet says the save is no longer owed and only closes |
+| A window of kind `dismount` that is `for_you` | The rider's player | `DismountSheet` opens by itself as an `alertdialog`: "Cair derrubado" (PASS) and "Desmontar de pé" (USE), with the focus on the title, answered with `AnswerReaction`, with no countdown |
+| The same window | The master | The reaction queue's card, as for any reaction |
+| `reaction_wait` | The other players | The neutral wait card with the server's words |
+
+`MOUNT_SAVE_PENDING` reads "O cavaleiro precisa do teste de Destreza para ficar na montaria. Nada foi mudado." wherever a call is refused by it.
+The log line of a save has no ", CD 10" when the server sent no DC.
 
 ## Limits
 

@@ -16,8 +16,8 @@ import { CombatantToken } from '../../../../shared/combatant-token/combatant-tok
 import {
   type OrderItem,
   jointTurn,
-  listNames,
   orderItems,
+  groupAriaLabel,
 } from '../../../../core/combat/joint-turn';
 import { OrderGroup } from '../joint-turn/order-group';
 import { CombatantTags } from '../combatant-tags/combatant-tags';
@@ -41,7 +41,7 @@ import { FormTag } from '../combatant-tags/form-tag';
     @for (item of items(); track key(item)) {
       @if (item.kind === 'group') {
         <li class="group-item">
-          <app-order-group class="dense" [total]="item.total" [onTurn]="item.onTurn" [label]="groupLabel(item)">
+          <app-order-group class="dense" [total]="item.total" [onTurn]="item.onTurn" [mounted]="item.mounted" [label]="groupLabel(item)">
             <ol class="group__chips">
               @for (c of item.members; track c.id) {
                 <ng-container *ngTemplateOutlet="chipTpl; context: { $implicit: c }" />
@@ -217,9 +217,5 @@ export class OrderStrip {
     return item.kind === 'group' ? item.members.map((m) => m.id).join('+') : item.combatant.id;
   }
 
-  protected groupLabel(item: OrderItem): string {
-    return item.kind === 'group'
-      ? `Turno conjunto: ${listNames(item.members.map((m) => m.label))}, iniciativa ${item.total}`
-      : '';
-  }
+  protected readonly groupLabel = groupAriaLabel;
 }

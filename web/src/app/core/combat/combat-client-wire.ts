@@ -32,6 +32,7 @@ export function castExtrasBody(extras: CastExtras) {
       : {}),
     ...(extras.grantedBy ? { grantedBy: extras.grantedBy } : {}),
     ...(extras.spendFavor ? { spendFavor: true } : {}),
+    ...(extras.alsoSteed ? { alsoSteed: true } : {}),
   };
 }
 

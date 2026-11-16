@@ -39,3 +39,9 @@ export function vitalsPool(v: {
     ? { current: v.wildShape.hitPointsCurrent, max: v.wildShape.hitPointsMax }
     : { current: v.hitPointsCurrent, max: v.hitPointsMax };
 }
+
+/** How full the row's pool is, 0 to 100, for its bar; 0 with no pool to show. */
+export function poolPercent(c: Combatant): number {
+  const pool = combatPool(c);
+  return pool && pool.max > 0 ? Math.min(100, Math.round((pool.current / pool.max) * 100)) : 0;
+}

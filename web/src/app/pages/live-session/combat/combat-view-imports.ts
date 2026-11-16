@@ -33,6 +33,7 @@ import { OpportunityCard } from './opportunity/opportunity-card';
 import { HiddenRevealCard } from './hidden-reveal/hidden-reveal-card';
 import { NpcCard } from './npc-card/npc-card';
 import { DeathsBlock } from './deaths-block/deaths-block';
+import { MountSaveWaitCard } from './mount-save-wait/mount-save-wait';
 import { RollModeQueue } from './roll-mode/roll-mode-queue';
 import { OrderList } from './order-list/order-list';
 import { PlayerInitiative } from './player-initiative/player-initiative';
@@ -49,6 +50,7 @@ import { ActAsCard } from './master-acts/act-as-card';
 import { ActingBand } from './master-acts/acting-band';
 import { EconomyShapes } from '../../../shared/economy-shapes/economy-shapes';
 import { OwnNumbers } from './turn-panel/own-numbers';
+import { PairCard } from './pair-card/pair-card';
 import { TargetBar } from './target-mode/target-bar';
 import { TurnBar } from './turn-panel/turn-bar';
 import { TurnPanel } from './turn-panel/turn-panel';
@@ -69,6 +71,7 @@ export const COMBAT_VIEW_IMPORTS = [
   ActingBand,
   EconomyShapes,
   OwnNumbers,
+  PairCard,
   Fold,
   HeldQuestion,
   MapTab,
@@ -115,6 +118,7 @@ export const COMBAT_VIEW_IMPORTS = [
   OrderStrip,
   OrderList,
   PlayerInitiative,
+  MountSaveWaitCard,
   RollModeQueue,
   TheatreReaction,
   ReactionQueue,

@@ -91,6 +91,19 @@ describe('castSheetData', () => {
     expect(data.metamagic).toHaveLength(1);
   });
 
+  it('says whether the spell may reach the bonded steed too, as the server offers it (`also_steed`, #588)', () => {
+    const offered = { ...spellOption('spell:shield-of-faith'), alsoSteed: true };
+    expect(
+      castSheetData(request({ key: 'spell:shield-of-faith', turn: turn([offered]) })).alsoSteed,
+    ).toBe(true);
+    expect(
+      castSheetData(request({ key: 'spell:haste', turn: turn([spellOption('spell:haste')]) }))
+        .alsoSteed,
+    ).toBe(false);
+    // A spell that is not on the list (a cantrip by name) is never offered it.
+    expect(castSheetData(request({ key: 'spell:unknown', turn: turn([]) })).alsoSteed).toBe(false);
+  });
+
   it("falls back to the spell's English name, then to a cantrip's name and dice, then to the key", () => {
     const noPt = spellOption('spell:haste', {
       spell: { key: 'spell:haste', name: 'Haste', namePt: '' },

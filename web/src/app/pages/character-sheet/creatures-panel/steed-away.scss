@@ -1,0 +1,70 @@
+:host {
+  display: block;
+}
+
+// Dashed: the steed is not here. The same radius and padding as a creature's card.
+.away {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mr-space-1);
+  padding: var(--mr-space-3);
+  border-width: 1px;
+  border-style: dashed;
+  border-color: var(--mr-control-line);
+  border-radius: var(--mr-radius-md);
+}
+
+.away__head {
+  display: flex;
+  align-items: center;
+  gap: var(--mr-space-2);
+}
+
+// Muted: the steed is not at the table.
+.away__art {
+  --art-size: 44px;
+  flex: none;
+  opacity: 0.55;
+}
+
+.away__text {
+  flex: 1;
+  min-width: 0;
+}
+
+.away__name {
+  margin: 0;
+  font-family: var(--mr-font-display);
+  outline: none;
+  font-size: var(--mr-font-20);
+  font-weight: 800;
+  line-height: 26px;
+  overflow-wrap: anywhere;
+}
+
+.away__sub {
+  margin: 0;
+  font-size: var(--mr-font-14);
+  line-height: 20px;
+  color: var(--mr-ink-muted);
+}
+
+.away__tag {
+  border-style: dashed;
+}
+
+// "⋮": a 44 px square target at the row's right.
+.away__more {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  margin-right: -8px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--mr-ink);
+  cursor: pointer;
+}

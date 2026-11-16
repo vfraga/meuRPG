@@ -70,3 +70,39 @@ export function castNotice(
       : '';
   return tight(`${arrived} ${cost}${left}`);
 }
+
+/** Under a cast button of the "Criaturas" panel: what the cast spends, and that it needs a session and no combat. */
+export function castCostText(spell: {
+  readonly grantedBy: string;
+  readonly usesLeft: number;
+  readonly canRitual: boolean;
+  readonly castingTimePt: string;
+  readonly level: number;
+}): string {
+  const where = 'Só durante uma sessão, fora de combate.';
+  if (spell.grantedBy) {
+    return tight(`Gasta um uso, restam ${spell.usesLeft}. ${where}`);
+  }
+  if (spell.canRitual) {
+    return tight(`Ritual de ${spell.castingTimePt}: não gasta espaço de magia. ${where}`);
+  }
+  return tight(`Gasta um espaço de ${spell.level}º nível ou maior. ${where}`);
+}
+
+/** The live notice of a cast made from the panel: who arrived (by name, or by count), then what it cost. */
+export function castConfirmation(r: {
+  readonly names: readonly string[];
+  readonly count: number;
+  readonly spellName: string;
+  readonly ritual: boolean;
+  readonly castingTime: string;
+  readonly dismissed: number;
+}): string {
+  const arrived =
+    r.names.length === 1
+      ? `${r.names[0]} chegou.`
+      : r.count === 1
+        ? 'A criatura chegou.'
+        : `${creaturesText(r.count)} chegaram.`;
+  return castNotice(arrived, r.spellName, r.ritual, r.castingTime, r.dismissed);
+}

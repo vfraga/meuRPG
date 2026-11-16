@@ -99,6 +99,7 @@ import {
 } from './table-sheet-support';
 import { masterLog, openCombatPanel, openMap, openOrderRow, openTurn } from './combat-layout';
 import { waitForEncounterRevision } from './revision-support';
+import { mountedScreens } from './mounted-shots-support';
 import { goblinTrigger, moveOffText, openReadySheet, pensantusReadyKit, readyAttackRPC, readyRPC, readySpellRPC, shootReady, spellOffText } from './ready-support';
 import { WIDTHS, beginVrockFight, pagesFor, shoot, useCreatureActionRPC, viewportOf } from './recharge-support';
 import { chooseRow, openTvPanel, rollForTableRPC, tvRoute } from './table-screen-support';
@@ -15923,4 +15924,23 @@ for (const [scheme, width, label] of [['light', 390, 'no tema claro, no celular'
     test.setTimeout(240_000);
     await scanWeaponsList(browser, scheme, width, 600);
   });
+}
+
+// #588 (mounted combat and Convocar Montaria): the summon sheet of a steed, its card, questions and "fora da mesa" row, the
+// "Montaria" panel of "Mover", the pair's card and token, the master's "Montaria" select and the pair in the order, the save to
+// stay on, the dismount sheet and "também" on a spell of the rider's own.
+for (const [colorScheme, theme] of [
+  ['light', 'claro'],
+  ['dark', 'escuro'],
+] as const) {
+  for (const width of [390, 768, 1280]) {
+    test(
+      `o combate montado e Convocar Montaria passam no axe e nas conferências de layout no tema ${theme}, em ${width}`,
+      { tag: ['@a11y', '@588'] },
+      async ({ browser }) => {
+        test.setTimeout(420_000);
+        await mountedScreens(browser, colorScheme, width, expectScreenPasses);
+      },
+    );
+  }
 }

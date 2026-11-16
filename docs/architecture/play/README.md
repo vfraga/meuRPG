@@ -94,6 +94,7 @@ The package `play` itself is capped in size (`.github/play-cap`, [CI](../../ci.m
 | `play/advantage` | The roll modes as the database and the API spell them, the API's source kinds, and the sentence of each advantage source with the hiding of the ones a viewer may not know |
 | `play/consumable` | The dice and the healing of a potion, the resistance it gives, the text of a consumable with no effect and the payload and the answer of the use of a consumable |
 | `play/steed` | The rules of Find Steed over plain values: the spells that reach the steed with the caster, the notes of such a cast, and the Intelligence floor read by Hideous Laughter |
+| `play/mountsave` | The cause of a rider's saving throw when its mount is pushed or knocked prone: the word a reaction window and its event store, and the cause the API says |
 
 A function of `play` that takes no `context.Context`, reads no query and is no `Service` method (a rule, a text builder, a calculation over plain values) moves with its tests when a change edits it, or the PR says why it cannot. The candidates are advantage, the log's text, the contests' calculations and the pure part of the undo kinds. A move lowers the cap by the lines that left `play`.
 

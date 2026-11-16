@@ -1008,7 +1008,7 @@ type CharacterServiceClient interface {
 	// no full sheet lists nothing.
 	//
 	// The owner's player and the master read it; another player gets `not_found`,
-	// as for ListCharacterCreatures (RN-20). It carries no hit points.
+	// as for ListCharacterCreatures (RN-20). It carries no hit points but the bonded steed's, read by the owner and the master.
 	//
 	// Errors:
 	//   - `not_found`: the campaign or the character does not exist, or the
@@ -2385,7 +2385,7 @@ type CharacterServiceHandler interface {
 	// no full sheet lists nothing.
 	//
 	// The owner's player and the master read it; another player gets `not_found`,
-	// as for ListCharacterCreatures (RN-20). It carries no hit points.
+	// as for ListCharacterCreatures (RN-20). It carries no hit points but the bonded steed's, read by the owner and the master.
 	//
 	// Errors:
 	//   - `not_found`: the campaign or the character does not exist, or the

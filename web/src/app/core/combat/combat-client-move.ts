@@ -6,7 +6,13 @@ import {
   type GetTurnOptionsResponse,
   JumpKind,
 } from '../../../gen/meurpg/play/v1/combat_pb';
-import { type JoinSpec, type MoveResult, type SpendResult } from './combat-client-types';
+import {
+  type JoinSpec,
+  type MountSaveAnswer,
+  type MountSaveRoll,
+  type MoveResult,
+  type SpendResult,
+} from './combat-client-types';
 import { toParticipant, need } from './combat-client-wire';
 import { type CombatClientBase } from './combat-client-base';
 
@@ -73,6 +79,76 @@ export class CombatMoveCalls {
     };
   }
 
+  /** `MountCombatant`: the rider gets on a mount next to it (it pays half its speed). */
+  async mount(
+    campaignId: string,
+    encounterId: string,
+    riderId: string,
+    mountId: string,
+  ): Promise<Encounter> {
+    const res = await this.base.keyed(
+      ['mountCombatant', campaignId, encounterId, riderId, mountId],
+      (sent) =>
+        this.base.client.mountCombatant({
+          campaignId,
+          encounterId,
+          riderId,
+          mountId,
+          idempotencyKey: sent,
+        }),
+    );
+    return need(res.encounter, 'MountCombatant');
+  }
+
+  /** `DismountCombatant`: the rider lands on a square next to its mount. `stoppedEarly` is "something you did not see held
+   * that square": the rider stays on the mount and nothing was spent. */
+  async dismount(
+    campaignId: string,
+    encounterId: string,
+    riderId: string,
+    col: number,
+    row: number,
+  ): Promise<{ readonly encounter: Encounter; readonly stoppedEarly: boolean }> {
+    const res = await this.base.keyed(
+      ['dismountCombatant', campaignId, encounterId, riderId, col, row],
+      (sent) =>
+        this.base.client.dismountCombatant({
+          campaignId,
+          encounterId,
+          riderId,
+          col,
+          row,
+          idempotencyKey: sent,
+        }),
+    );
+    return { encounter: need(res.encounter, 'DismountCombatant'), stoppedEarly: res.stoppedEarly };
+  }
+
+  /** `RollMountSave`: the Dexterity saving throw of a rider to stay on its mount. The caller makes the key from the request. */
+  async rollMountSave(
+    campaignId: string,
+    encounterId: string,
+    riderId: string,
+    roll: MountSaveRoll,
+    key: string,
+  ): Promise<MountSaveAnswer> {
+    const typed = roll.kind === 'typed' ? roll : null;
+    const res = await this.base.client.rollMountSave({
+      campaignId,
+      encounterId,
+      riderId,
+      roll: typed ? { case: 'd20Face', value: typed.face } : { case: 'rollInApp', value: true },
+      secondD20Face: typed?.second,
+      extraDieFaces: [...(typed?.extra ?? [])],
+      idempotencyKey: key,
+    });
+    return {
+      encounter: need(res.encounter, 'RollMountSave'),
+      result: res.result,
+      held: res.heldRollOffer,
+    };
+  }
+
   /** "Colocar no mapa": the server picks the square of a combatant that has none
    * (free floor, away from the players), so the screen never guesses one. */
   async place(campaignId: string, encounterId: string, combatantId: string): Promise<Encounter> {
@@ -127,6 +203,27 @@ export class CombatMoveCalls {
         }),
     );
     return need(res.encounter, 'SetCombatantSide');
+  }
+
+  /** The master's "Montaria": marks an NPC or a creature a willing mount ("controlled", "independent"), or takes the mark off (`''`). */
+  async setMount(
+    campaignId: string,
+    encounterId: string,
+    combatantId: string,
+    kind: string,
+  ): Promise<Encounter> {
+    const res = await this.base.keyed(
+      ['setCombatantMount', campaignId, encounterId, combatantId, kind],
+      (sent) =>
+        this.base.client.setCombatantMount({
+          campaignId,
+          encounterId,
+          combatantId,
+          idempotencyKey: sent,
+          kind,
+        }),
+    );
+    return need(res.encounter, 'SetCombatantMount');
   }
 
   /** The master's "Marcar cobertura": the cover the map does not show. */

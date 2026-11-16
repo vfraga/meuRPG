@@ -31,7 +31,7 @@
         <p>Não deu para ler as criaturas agora.</p>
       </div>
       <button type="button" class="retry" (click)="retry()"><mat-icon aria-hidden="true">refresh</mat-icon>Tentar de novo</button>
-    } @else if (creatures().length === 0 && !form()) {
+    } @else if (creatures().length === 0 && !form() && !away()) {
       <p class="empty">{{ emptyText() }}</p>
     } @else {
       <ul class="cards">
@@ -44,7 +44,19 @@
               [creature]="c"
               [isMaster]="isMaster()"
               [live]="live()"
+              [tick]="formReload()"
               (changed)="changed(c.id, $event)"
+            />
+          </li>
+        }
+        @if (away(); as steed) {
+          <li>
+            <app-steed-away
+              [campaignId]="campaignId()"
+              [steed]="steed"
+              [ownerName]="characterName()"
+              [isMaster]="isMaster()"
+              (released)="changed(steed.id, 'dismiss')"
             />
           </li>
         }
@@ -57,8 +69,8 @@
           type="button"
           matButton="outlined"
           class="cast__btn js-cast"
-          [class.mr-button--off]="!live()"
-          [disabled]="!live()"
+          [class.mr-button--off]="!!steedCast.why(c, live())"
+          [disabled]="!!steedCast.why(c, live())"
           disabledInteractive
           [attr.aria-describedby]="'cast-cost-' + $index"
           (click)="cast(c)"
@@ -66,9 +78,9 @@
           <mat-icon aria-hidden="true">auto_awesome</mat-icon>{{ c.namePt }}
         </button>
         <p class="cast__cost" [id]="'cast-cost-' + $index">
-          {{ costText(c) }}
-          @if (!live()) {
-            <strong class="cast__why">Agora não há sessão aberta.</strong>
+          {{ steedCast.cost(c, creatures()) }}
+          @if (steedCast.why(c, live()); as why) {
+            <strong class="cast__why">{{ why }}</strong>
           }
         </p>
       </div>

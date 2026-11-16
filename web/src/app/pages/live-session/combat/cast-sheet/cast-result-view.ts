@@ -116,7 +116,7 @@ export function shieldLostText(
     : '';
 }
 
-/** What the cast leaves to say: the concentration, the metamagic spent and the action. */
+/** What the cast leaves to say: the concentration, the metamagic spent and the action. The steed it reached too (`steed_note`) is in the result. */
 export function castNotes(
   c: SpellCast | null,
   spell: {

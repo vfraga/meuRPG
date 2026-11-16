@@ -43,6 +43,11 @@ export function encounterBlocked(err: unknown): EncounterBlocked | null {
   return connectErr.findDetails(EncounterBlockedSchema)[0] ?? null;
 }
 
+/** The call was refused because a reaction window waits for its answer (`REACTION_PENDING`). */
+export function reactionPending(err: unknown): boolean {
+  return encounterBlocked(err)?.reason === EncounterBlockedReason.REACTION_PENDING;
+}
+
 /** The typed detail of a `failed_precondition` from `ContestService` (the grapple, the shove, Hide, Help, the group check), or
  * `null`. The reasons the combat already had keep coming as `EncounterBlocked`. Never read from the message. */
 export function contestBlocked(err: unknown): ContestBlocked | null {

@@ -41,13 +41,12 @@ import { FavorChip } from '../../../../shared/favor-chip/favor-chip';
 import { FavorState } from '../../../../core/play/favor-state';
 import { RowFavor } from './row-favor';
 import { NudgeButton } from '../../nudge-button/nudge-button';
-import { tieNumbers } from '../../../../core/format/text';
 import { joinDots } from '../../../../core/format/text';
 import { conditionTags } from '../../../../core/combat/conditions';
 import { holdsReadied } from '../../../../core/combat/ready-card';
-import { type Pool, combatPool } from '../../../../core/combat/form-pool';
+import { combatPool, poolPercent } from '../../../../core/combat/form-pool';
 import { labelTags } from '../../../../core/effects/effects';
-import { coverMark, coverText, sideTags } from '../../../../core/combat/cover';
+import { sideTags } from '../../../../core/combat/cover';
 import { article } from '../../../../core/combat/combat-log';
 import { combatantInitial, isPlayer } from '../../../../core/combat/combat-view';
 import {
@@ -59,8 +58,9 @@ import {
 import {
   type OrderItem,
   jointTurn,
-  listNames,
   orderItems,
+  groupAriaLabel,
+  orderItemKey,
 } from '../../../../core/combat/joint-turn';
 import { CombatantToken } from '../../../../shared/combatant-token/combatant-token';
 import type { CombatantInfo } from '../combat-info';
@@ -70,12 +70,17 @@ import { EndAidQuestion } from './end-aid-question';
 import { LoseQuestion } from './lose-question';
 import { OrderLegend } from './order-legend';
 import { RowCover } from './row-cover';
+import { coverLineOf, coverPictogramOf, hasCoverMark } from './row-cover-words';
+import { RowMount } from './row-mount';
+import { canMarkMount, mountMarkView } from '../../../../core/combat/mount-mark';
+import { SaddleIcon } from '../../../../shared/saddle-icon/saddle-icon';
 import { downText, isDown, isDying, rowDetail, rowFacts, rowState, stateWordOf } from './row-words';
 import { rowsBelow } from './rows-below';
 import { ShieldWatch } from './shield-watch';
 import { DeathRow } from '../death-saves/death-marks';
 import { OrderGroup } from '../joint-turn/order-group';
 import { PartState } from '../joint-turn/part-state';
+import { followsRider, mountLineOf } from '../../../../core/combat/mount-view';
 
 /** The spell a combatant concentrates on, as the question says it. */
 function concentrationOf(c: Combatant): string {
@@ -105,6 +110,8 @@ function concentrationOf(c: Combatant): string {
     CombatantToken,
     OrderLegend,
     RowCover,
+    RowMount,
+    SaddleIcon,
     DeathRow,
     MatButtonModule,
     MatIconModule,
@@ -157,6 +164,8 @@ export class OrderList {
   readonly cover = output<{ id: string; cover: CoverDegree }>();
   /** In a combat without a map the menu's "Marcar cobertura…" opens the theatre cover editor (the fallback for a joint or master turn). */
   readonly coverEdit = output<string>();
+  /** The master's "Montaria" mark: "controlled", "independent", or `''` to take it off. */
+  readonly mount = output<{ id: string; kind: string }>();
   /** The master's "Aparar: perguntar a cada golpe" switch of an NPC with a Parry: `ask` is the mode it is switched to. */
   readonly parryAsk = output<{ id: string; ask: boolean }>();
   /** The characters whose "Confirmar a morte" question the master put away. */
@@ -192,6 +201,8 @@ export class OrderList {
   private readonly shields = new ShieldWatch();
   /** The combatant whose cover mark is open. */
   protected readonly marking = signal<string | null>(null);
+  /** The combatant whose "Montaria" select is open. */
+  protected readonly mounting = signal<string | null>(null);
   protected readonly Party = CombatantSide.PARTY;
   protected readonly Enemy = CombatantSide.ENEMY;
   private readonly back = viewChild('back', { read: ElementRef<HTMLButtonElement> });
@@ -245,6 +256,7 @@ export class OrderList {
     return (
       this.openIds().has(c.id) ||
       this.marking() === c.id ||
+      this.mounting() === c.id ||
       this.losing() === c.id ||
       this.removing() === c.id ||
       this.endingAid() === c.id
@@ -276,8 +288,16 @@ export class OrderList {
     return [c.label, this.current(c) ? 'é a vez' : '', rowState(c), hp].filter(Boolean).join(', ');
   }
 
+  /** "Adestrada · leva Tor": the link first on the line, with its icon (588-08); a mount under its rider is indented. */
+  protected readonly ride = (c: Combatant): string => mountLineOf(this.encounter(), c, true);
+  protected readonly follows = (c: Combatant): boolean => followsRider(this.encounter(), c, true);
+
   /** The line under the name of a compact row: "Inic. 14 · CA 15", or the state word first ("Escondido · inic. 7"). */
   protected compactSub(c: Combatant, inGroup: boolean): string {
+    // A mount under its rider says the link alone (588-08): its numbers are in the opened row.
+    if (this.follows(c)) {
+      return '';
+    }
     const init = c.initiative !== undefined && !inGroup ? c.initiative : null;
     const state = rowState(c);
     if (state) {
@@ -393,14 +413,8 @@ export class OrderList {
   protected readonly article = article;
 
   /** The hit points the row shows: the beast's in a form, the character's otherwise; empty when the viewer has none (RN-20). */
-  protected pool(c: Combatant): Pool | null {
-    return combatPool(c);
-  }
-
-  protected percent(c: Combatant): number {
-    const pool = combatPool(c);
-    return pool && pool.max > 0 ? Math.min(100, Math.round((pool.current / pool.max) * 100)) : 0;
-  }
+  protected readonly pool = combatPool;
+  protected readonly percent = poolPercent;
 
   /** The row of the one on turn; in a joint turn the box is on turn instead. */
   protected current(c: Combatant): boolean {
@@ -412,44 +426,26 @@ export class OrderList {
     return !!this.joint()?.members.some((m) => m.id === c.id);
   }
 
-  protected key(item: OrderItem): string {
-    return item.kind === 'group' ? item.members.map((m) => m.id).join('+') : item.combatant.id;
-  }
+  protected readonly key = orderItemKey;
 
-  /** "Turno conjunto: Brisa e Toren, iniciativa 19", for a screen reader. */
-  protected groupLabel(item: OrderItem): string {
-    return item.kind === 'group'
-      ? `Turno conjunto: ${listNames(item.members.map((m) => m.label))}, iniciativa ${item.total}`
-      : '';
-  }
+  protected readonly groupLabel = groupAriaLabel;
 
-  /** "Três quartos (do mapa) contra o Pensantus", or `''` when there is none or nobody has the turn. */
   protected coverLine(c: Combatant): string {
-    const against = this.coverAgainst().get(c.id);
-    const text = against ? coverText(against.cover, against.source) : '';
-    const who = this.turnLabel();
-    const side = this.turnSide();
-    // Only against opponents: a combatant of the same side as whoever has the turn is no target of theirs.
-    return text && who && c.label !== who && (side === CombatantSide.UNSPECIFIED || c.side !== side)
-      ? tieNumbers(`${text} contra ${article(who)} ${who}`)
-      : '';
+    return coverLineOf(c, this.coverAgainst(), this.turnLabel(), this.turnSide());
   }
 
   protected coverPictogram(c: Combatant): 'half' | 'three' | null {
-    return coverMark(this.coverAgainst().get(c.id)?.cover ?? CoverDegree.NONE);
+    return coverPictogramOf(c, this.coverAgainst());
   }
 
   /** The text action shows where cover matters: a line, or a mark already there. */
   protected hasCover(c: Combatant): boolean {
-    return (
-      !!this.coverLine(c) ||
-      (c.coverMark !== CoverDegree.NONE && c.coverMark !== CoverDegree.UNSPECIFIED)
-    );
+    return !!this.coverLine(c) || hasCoverMark(c);
   }
 
-  protected pickCover(id: string, cover: CoverDegree): void {
-    this.cover.emit({ id, cover });
-  }
+  /** The master's "Montaria" select of a row; `null` for a player's character, which takes no mark. */
+  protected readonly canMount = canMarkMount;
+  protected readonly mountView = (c: Combatant) => mountMarkView(this.encounter(), c.id);
 
   protected canAdjust(c: Combatant): boolean {
     return isPlayer(c) && this.adjustable().has(c.characterId);

@@ -1,5 +1,5 @@
 import { combatant } from './combat-testing';
-import { combatPool, ownPool, vitalsPool } from './form-pool';
+import { combatPool, ownPool, poolPercent, vitalsPool } from './form-pool';
 
 describe('form pool (584-02, 584-04, 584-05)', () => {
   const druid = {
@@ -44,5 +44,14 @@ describe('form pool (584-02, 584-04, 584-05)', () => {
       max: 11,
     });
     expect(vitalsPool({ ...v, wildShape: null })).toEqual({ current: 27, max: 27 });
+  });
+});
+
+describe('poolPercent', () => {
+  it('is how full the pool is, capped at 100, and 0 with no pool or an empty one', () => {
+    expect(poolPercent({ hitPointsMax: 20, hitPointsCurrent: 5 } as never)).toBe(25);
+    expect(poolPercent({ hitPointsMax: 20, hitPointsCurrent: 30 } as never)).toBe(100);
+    expect(poolPercent({ hitPointsMax: 0, hitPointsCurrent: 0 } as never)).toBe(0);
+    expect(poolPercent({} as never)).toBe(0);
   });
 });

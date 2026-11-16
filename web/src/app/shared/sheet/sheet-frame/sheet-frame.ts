@@ -32,6 +32,8 @@ import { MatIconModule } from '@angular/material/icon';
         @if (icon()) {
           <mat-icon class="frame__icon" aria-hidden="true">{{ icon() }}</mat-icon>
         }
+        <!-- A glyph the icon font does not have (the mount's saddle), in the icon's place. -->
+        <ng-content select="[head-icon]" />
         <div class="frame__titles">
           <h2 class="frame__title" [class.frame__title--small]="small()" [id]="titleId()" tabindex="-1">{{ title() }}</h2>
         </div>
@@ -43,8 +45,8 @@ import { MatIconModule } from '@angular/material/icon';
           </button>
         }
       </div>
-      @if (subtitle()) {
-        <p class="frame__sub">{{ subtitle() }}</p>
+      @if (subtitle() || subtitleLead()) {
+        <p class="frame__sub"><ng-content select="[sub-mark]" />@if (subtitleLead()) {<b class="frame__lead">{{ subtitleLead() }}</b>}{{ subtitle() }}</p>
       }
       <div #body class="frame__body" [class.frame__body--scrolls]="scrolls()" [attr.tabindex]="focusableBody() && scrolls() ? 0 : null"><ng-content /></div>
       <div class="frame__foot"><ng-content select="[foot]" /></div>
@@ -56,6 +58,8 @@ import { MatIconModule } from '@angular/material/icon';
 export class SheetFrame {
   readonly title = input.required<string>();
   readonly subtitle = input('');
+  /** The subtitle's first words in bold, before `subtitle` ("Reação" of "■ Reação · desmontar · Rodada 4"); a `[sub-mark]` is drawn before them. */
+  readonly subtitleLead = input('');
   readonly titleId = input('sheet-t');
   /** A leading icon before the title (Escudo's shield). */
   readonly icon = input('');

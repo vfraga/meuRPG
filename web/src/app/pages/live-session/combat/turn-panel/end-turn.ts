@@ -131,7 +131,8 @@ export class EndTurn {
   private readonly injector = inject(Injector);
 
   readonly own = input.required<
-    Pick<Combatant, 'actionUsed' | 'bonusActionUsed'> & Partial<Pick<Combatant, 'conditions'>>
+    Pick<Combatant, 'actionUsed' | 'bonusActionUsed'> &
+      Partial<Pick<Combatant, 'conditions' | 'turnPartEnded'>>
   >();
   /** Extra Attack: the attacks left once the first spent the action. */
   readonly attacksLeft = input(0);
@@ -200,6 +201,8 @@ export class EndTurn {
     }
     if (
       this.surprised() ||
+      // The character's own part ended already: the button ends the part of the mount it directs, and asks nothing (588-04).
+      this.own().turnPartEnded ||
       cannotAct(this.own()) ||
       (this.own().actionUsed && this.attacksLeft() === 0)
     ) {

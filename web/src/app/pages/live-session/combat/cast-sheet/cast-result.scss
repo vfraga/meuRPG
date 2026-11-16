@@ -123,7 +123,16 @@
   font-size: var(--mr-font-16);
   line-height: 22px;
 
+  // A 24 px icon beside a 22 px line: 2 px up, so its middle is the capitals' (the layout check of the e2e screens).
   .mat-icon {
     flex: none;
+    margin-top: -2px;
   }
+}
+
+// The steed the cast reached too: part of what the cast did, in the result's own type.
+.steed {
+  margin: 0;
+  font-size: var(--mr-font-16);
+  line-height: 22px;
 }

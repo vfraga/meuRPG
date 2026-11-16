@@ -30,6 +30,14 @@ export class CastState {
   readonly picks = signal<MetamagicPicks>(NO_PICKS);
   /** Aprimorar Habilidade names the ability it is cast for; empty until picked, and for every other spell. */
   readonly ability = signal('');
+  /** "Estrela também" (#588): the cast reaches the steed the caster rides too; on until the caster takes it off. */
+  readonly alsoSteed = signal(true);
+  /** The steed's name, as the combat lists the combatant the caster rides; empty when it rides none. */
+  readonly steedName = computed(() => {
+    const all = this.data.state.encounter()?.combatants ?? [];
+    const on = all.find((c) => c.id === this.data.casterId)?.mountedOnId;
+    return all.find((c) => c.id === on)?.label ?? '';
+  });
   /** The picked damage type; the first of the spell's choices until the caster picks another. */
   readonly pickedType = signal('');
   readonly sculpted = signal<string[]>([]);

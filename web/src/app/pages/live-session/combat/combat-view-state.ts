@@ -33,14 +33,21 @@ import { CreaturesClient } from '../../../core/creatures/creatures-client';
 import { EncounterStatus } from '../../../../gen/meurpg/play/v1/combat_pb';
 import { isTheatre } from '../../../core/combat/theatre';
 import { CreatureOptionsState } from '../../../core/combat/creature-options-state';
-import { CHARACTER_TAB, type MineTab, mineTabs } from '../../../core/combat/mine';
+import { CHARACTER_TAB, type MineTab, mineTabs, tabsBesideRide } from '../../../core/combat/mine';
 import { offersToAnswer } from '../../../core/combat/opportunity';
 import { LayersState } from '../../../core/maps/layers-state';
 import { CombatLogState } from '../../../core/combat/combat-log-state';
 import { TurnOptionsState } from '../../../core/combat/turn-options-state';
-import { currentCombatant, isDown, isPlayer, ownCombatant } from '../../../core/combat/combat-view';
+import {
+  currentCombatant,
+  isDown,
+  isPlayer,
+  ownCombatant,
+  turnBanner,
+} from '../../../core/combat/combat-view';
 import { acts, jointTurn, masterActor } from '../../../core/combat/joint-turn';
 import { MasterAutoPass } from '../../../core/combat/auto-pass';
+import { mountSaveWait } from '../../../core/combat/mount-save';
 import { CombatCalls } from '../../../core/combat/combat-calls';
 import { removalsOf, spellSavesOf } from '../../../core/combat/group-take-out';
 import { CombatReads } from './combat-reads';
@@ -197,7 +204,11 @@ export abstract class CombatViewStateDirective {
   /** The tabs of the turn bar: the character, then each group of creatures (a casting's, in a joint turn, or one alone). */
   protected readonly tabs = computed<readonly MineTab[]>(() => {
     const e = this.encounter();
-    return !this.isMaster() && e && e.status === EncounterStatus.ACTIVE ? mineTabs(e) : [];
+    if (this.isMaster() || !e || e.status !== EncounterStatus.ACTIVE) {
+      return [];
+    }
+    // The mount the character directs is on the pair card, not on a tab of its own.
+    return tabsBesideRide(mineTabs(e), this.riding());
   });
   /** The tabs show only when the player plays more than one combatant. */
   protected readonly showTabs = computed(() => this.tabs().length > 1);
@@ -215,10 +226,29 @@ export abstract class CombatViewStateDirective {
   protected readonly creatureOptions = new CreatureOptionsState();
   /** The question to end a group's part is open: the tabs are inert until it is answered. */
   protected readonly partAsking = signal(false);
-  /** The joint turn that is running (a group of two or more), or `null`. */
+  /** The mount the player's character rides and directs on this turn (588-04): the pair card, and one turn with one "Encerrar turno". */
+  protected readonly riding = computed(() => {
+    const e = this.encounter();
+    return e && !this.isMaster() ? (turnBanner(e).riding ?? null) : null;
+  });
+  /** The joint turn that is running (a group of two or more), or `null`; a rider and the mount it directs, alone in the group, are one turn, not a joint one. */
   protected readonly joint = computed(() => {
     const e = this.encounter();
-    return e ? jointTurn(e) : null;
+    if (!e) {
+      return null;
+    }
+    // The pair alone is one turn; tied with others, the larger group is the joint turn (the banner says which).
+    return this.riding() ? turnBanner(e).joint : jointTurn(e);
+  });
+  /** The pair's turn is the player's to end: their own part, or the part of the mount they direct once theirs ended. */
+  protected readonly pairLive = computed(() => {
+    const e = this.encounter();
+    return !!e && !!this.riding() && turnBanner(e).mine;
+  });
+  /** The master's "Esperando o teste de Tor": a rider's save to stay mounted holds the table. */
+  protected readonly mountWait = computed(() => {
+    const e = this.encounter();
+    return e && this.isMaster() ? mountSaveWait(e) : null;
   });
   /** In a joint turn, who else must end their part, for the player's footer. */
   protected readonly jointOthers = computed(() => {
@@ -227,7 +257,8 @@ export abstract class CombatViewStateDirective {
       return null;
     }
     return [
-      ...joint.acting.filter((m) => !m.mine).map((m) => m.label),
+      // The mount the player directs ends with their own part: it is nobody else's to wait for.
+      ...joint.acting.filter((m) => !m.mine && m.id !== this.riding()?.id).map((m) => m.label),
       ...(joint.waitsForMaster ? ['o mestre'] : []),
     ];
   });

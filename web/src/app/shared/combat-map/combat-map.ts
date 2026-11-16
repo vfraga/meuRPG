@@ -11,16 +11,19 @@ import {
   stepSquare,
 } from '../../core/combat/combat-grid';
 import type { DoorSquare, MapLayers } from '../../core/maps/layers';
-import { conditionTags } from '../../core/combat/conditions';
 import { combatantInitial, isPlayer } from '../../core/combat/combat-view';
 import { isCreature } from '../../core/combat/creature-names';
 import { CombatantToken } from '../combatant-token/combatant-token';
+import { RiderMark } from '../combatant-token/rider-mark';
 import type { Vision } from '../../core/maps/vision';
 import { FogBase } from '../fog-map/fog-base';
 import { DoorPicks } from '../map-layers/door-picks';
 import { MapLayersOverlay } from '../map-layers/map-layers';
 import { gridPath, watchUnit } from './measure-unit';
 import { type PickMark, type PickNote, PickLayer } from './pick-layer';
+import { costAbove } from './cost-above';
+import { MapPairs } from './map-pairs';
+import { type TokenDrop, TokenDrag } from './token-drag';
 
 export type { PickMark, PickNote } from './pick-layer';
 
@@ -63,9 +66,7 @@ export interface DraggedMark {
   readonly initial: string;
 }
 
-export interface TokenDrop extends Square {
-  readonly id: string;
-}
+export type { TokenDrop } from './token-drag';
 
 /**
  * The battle map (RN-21; E6-02, E6-04, E6-05, E6-10, E6-11): the map's image,
@@ -93,7 +94,7 @@ export interface TokenDrop extends Square {
  */
 @Component({
   selector: 'app-combat-map',
-  imports: [CombatantToken, DoorPicks, FogBase, MapLayersOverlay, MatIconModule],
+  imports: [CombatantToken, DoorPicks, FogBase, MapLayersOverlay, MatIconModule, RiderMark],
   templateUrl: './combat-map.html',
   styleUrl: './combat-map.scss',
 })
@@ -150,16 +151,24 @@ export class CombatMap {
   private readonly surface = viewChild.required<ElementRef<HTMLElement>>('surface');
 
   /** The token under the pointer while it is dragged, and where. */
-  protected readonly drag = signal<TokenDrop | null>(null);
+  private readonly dragger = new TokenDrag({
+    surface: () => this.surface().nativeElement,
+    shown: () => this.shown(),
+    movable: (c) => this.movable(c),
+    grab: (id) => this.picked.set(id),
+    squareUnder: (e) => this.squareUnder(e),
+    drop: (d) => this.tokenDrop.emit(d),
+  });
+  protected readonly drag = this.dragger.drag;
   /** The token the keyboard moves (the master picks one with a click). */
   private readonly picked = signal<string | null>(null);
   /** The square the arrow keys moved to, outside `pickSquares` mode. */
   protected readonly cursor = signal<Square | null>(null);
-  private dragging: { id: string; moved: boolean; pointer: number } | null = null;
 
   protected readonly shown = computed(() =>
     this.combatants().filter((c) => c.placed && (this.isMaster() || !c.hidden)),
   );
+  protected readonly pair = new MapPairs(this.shown, this.currentId);
   /** The squares each token covers, for the "Vez" word: it goes where it covers none (a Large creature is drawn on 2 × 2). */
   private readonly occupied = computed(() => {
     const cells = new Set<string>();
@@ -252,12 +261,7 @@ export class CombatMap {
     };
   });
 
-  protected readonly listed = computed(() =>
-    this.shown().map((c) => ({
-      id: c.id,
-      text: `${c.label}, coluna ${c.col + 1}, linha ${c.row + 1}${c.conditions.length ? `, ${conditionTags(c).join(', ')}` : ''}`,
-    })),
-  );
+  protected readonly listed = this.pair.listed;
 
   protected readonly canMove = computed(
     () => this.masterMoves() || this.ownMoveId() !== null || this.pickSquares(),
@@ -265,11 +269,7 @@ export class CombatMap {
 
   /** Whether the cost pill of the chosen square goes above it: below by default, but never over a door (it would hide the mark), and above at the bottom edge. */
   protected costAbove(at: Square): boolean {
-    const door = (row: number) =>
-      (this.layers()?.doors ?? []).some((d) => d.col === at.col && d.row === row);
-    const belowFree = at.row + 2 < this.rows() && !door(at.row + 1);
-    const aboveFree = at.row > 0 && !door(at.row - 1);
-    return !belowFree && (aboveFree || at.row + 2 >= this.rows());
+    return costAbove(at, this.rows(), this.layers()?.doors ?? []);
   }
 
   protected initial(c: Combatant): string {
@@ -356,7 +356,9 @@ export class CombatMap {
   }
 
   protected movable(c: Combatant): boolean {
-    return this.masterMoves() || c.id === this.ownMoveId();
+    return (
+      this.masterMoves() || c.id === this.ownMoveId() || this.pair.carries(c, this.ownMoveId())
+    );
   }
 
   private tokenOf(id: string): Square | null {
@@ -382,36 +384,15 @@ export class CombatMap {
   }
 
   protected onPointerDown(event: PointerEvent): void {
-    const id = (event.target as HTMLElement).closest<HTMLElement>('[data-id]')?.dataset['id'];
-    const token = id ? this.shown().find((c) => c.id === id) : undefined;
-    if (!token || !this.movable(token) || event.button > 0) {
-      return;
-    }
-    this.picked.set(token.id);
-    this.dragging = { id: token.id, moved: false, pointer: event.pointerId };
-    this.surface().nativeElement.setPointerCapture?.(event.pointerId);
+    this.dragger.down(event);
   }
 
   protected onPointerMove(event: PointerEvent): void {
-    const d = this.dragging;
-    if (!d || d.pointer !== event.pointerId) {
-      return;
-    }
-    d.moved = true;
-    this.drag.set({ id: d.id, ...this.squareUnder(event) });
+    this.dragger.move(event);
   }
 
   protected onPointerUp(event: PointerEvent): void {
-    const d = this.dragging;
-    this.dragging = null;
-    if (!d || d.pointer !== event.pointerId) {
-      return;
-    }
-    const drop = this.drag();
-    this.drag.set(null);
-    if (event.type === 'pointerup' && d.moved && drop) {
-      this.tokenDrop.emit(drop);
-    }
+    this.dragger.up(event);
   }
 
   protected onClick(event: MouseEvent): void {

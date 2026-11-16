@@ -6,7 +6,11 @@
       <span class="banner__big">{{ round() }}</span>
     </div>
     <div class="banner__who">
-      <app-combatant-token [initial]="initial(banner().who!)" [npc]="false" [current]="true" [size]="44" />
+      @if (banner().riding; as m) {
+        <app-pair-token [mount]="initial(m)" [rider]="initial(banner().who!)" [npc]="npc(m)" [current]="true" [size]="44" />
+      } @else {
+        <app-combatant-token [initial]="initial(banner().who!)" [npc]="false" [current]="true" [size]="44" />
+      }
       <div class="banner__main">
         <div role="status" aria-live="polite">
           <h2 #hero class="banner__title" tabindex="-1">{{ banner().title }}</h2>
@@ -15,8 +19,11 @@
           <app-joint-pill [text]="text" />
         }
         <p class="banner__sub">
+          @if (banner().riding; as m) {
+            {{ mountedOn(m) }} ·
+          }
           @if (banner().after; as after) {
-            Em seguida: <b>{{ after.name }}</b>
+            {{ banner().riding ? 'em seguida' : 'Em seguida' }}: <b>{{ after.name }}</b>
           }
           @if (form(); as f) {
             <app-form-chip class="banner__chip" [beast]="f.name" [time]="formTime()" />
@@ -71,6 +78,8 @@
           <app-combatant-token [initial]="initial(m)" [creature]="true" [current]="true" [size]="30" />
         }
       </span>
+    } @else if (banner().riding; as m) {
+      <app-pair-token [mount]="initial(m)" [rider]="initial(banner().who!)" [npc]="npc(m)" [current]="true" />
     } @else if (banner().who; as who) {
       <app-combatant-token
         [initial]="initial(who)"
@@ -87,6 +96,9 @@
       @if (banner().mine && !down()) {
         <p class="turn__sub">
           {{ round() }} · {{ encounter().name }}
+          @if (banner().riding; as m) {
+            · {{ mountedOn(m) }}
+          }
           @if (banner().after; as after) {
             · em seguida: <b>{{ after.name }}</b>
           }

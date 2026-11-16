@@ -26,3 +26,25 @@ describe('CreatureChoiceList table creatures', () => {
     expect(book.querySelector('.row__sub')?.textContent?.trim()).toBe('Médio · ND 1/4');
   });
 });
+
+describe('CreatureChoiceList, a row with a warning (#588, board 588-21)', () => {
+  const rows: readonly ChoiceRow[] = [
+    {
+      key: 'monster:pony',
+      title: 'Pônei',
+      subtitle: 'Médio · 11 PV',
+      warning: 'Pequeno demais para você montar',
+    },
+    { key: 'monster:warhorse', title: 'Cavalo de guerra', subtitle: 'Grande · 19 PV' },
+  ];
+
+  it('says the warning under the numbers, with an icon, and the row stays pickable', () => {
+    const [pony, horse] = Array.from(render(rows).querySelectorAll('.row'));
+    const warn = pony.querySelector('.row__warn');
+    expect(warn?.textContent).toContain('Pequeno demais para você montar');
+    expect(warn?.querySelector('mat-icon')?.getAttribute('aria-hidden')).toBe('true');
+    expect(pony.querySelector('.row__sub')?.textContent?.trim()).toBe('Médio · 11 PV');
+    expect(pony.querySelector<HTMLInputElement>('input[type=radio]')?.disabled).toBe(false);
+    expect(horse.querySelector('.row__warn')).toBeNull();
+  });
+});

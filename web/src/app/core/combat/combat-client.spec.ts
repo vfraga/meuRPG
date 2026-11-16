@@ -130,6 +130,30 @@ describe('CombatClient area spells', () => {
     expect(requests[0]['area']).toEqual({ case: 'direction', value: { dx: 1, dy: -1 } });
   });
 
+  it('sends `also_steed` only when the cast asks for the steed too (#588)', async () => {
+    const { client, requests } = withRequests();
+    const cast = (extras: object) =>
+      client.casts.castSpell(
+        'c',
+        'e',
+        'lia',
+        'spell:shield-of-faith',
+        { level: 1, pact: false },
+        [],
+        null,
+        'k',
+        undefined,
+        '',
+        undefined,
+        [],
+        extras,
+      );
+    await cast({ alsoSteed: true });
+    await cast({});
+    expect(requests[0]['alsoSteed']).toBe(true);
+    expect('alsoSteed' in requests[1]).toBe(false);
+  });
+
   it('previews a sphere around the caster with no point, and answers a question with a key', async () => {
     const { client, requests } = withRequests();
     await client.casts.previewSpellArea('c', 'e', 'p', 'spell:x', null, null);
@@ -203,6 +227,90 @@ describe('CombatClient.moveOptions', () => {
       combatantId: 't',
       jump: JumpKind.LONG,
       jumpRunningStart: true,
+    });
+  });
+});
+
+describe('CombatClient, mounting', () => {
+  function clientMounting() {
+    TestBed.configureTestingModule({
+      providers: [CombatClient, { provide: CONNECT_TRANSPORT, useValue: {} }],
+    });
+    const client = TestBed.inject(CombatClient);
+    const sent: Record<string, unknown>[] = [];
+    (client as unknown as { base: { client: unknown } }).base.client = {
+      mountCombatant: (req: Record<string, unknown>) => {
+        sent.push({ call: 'mount', ...req });
+        return Promise.resolve({ encounter: {} });
+      },
+      dismountCombatant: (req: Record<string, unknown>) => {
+        sent.push({ call: 'dismount', ...req });
+        return Promise.resolve({ encounter: {}, stoppedEarly: true });
+      },
+      setCombatantMount: (req: Record<string, unknown>) => {
+        sent.push({ call: 'mark', ...req });
+        return Promise.resolve({ encounter: {} });
+      },
+      rollMountSave: (req: Record<string, unknown>) => {
+        sent.push({ call: 'save', ...req });
+        return Promise.resolve({ encounter: {}, result: { held: true }, heldRollOffer: undefined });
+      },
+    };
+    return { client, sent };
+  }
+
+  it("sends the master's mount mark, and the empty kind that takes it off, each under a key", async () => {
+    const { client, sent } = clientMounting();
+    await client.moves.setMount('c', 'e', 'cav', 'controlled');
+    await client.moves.setMount('c', 'e', 'cav', '');
+    expect(sent[0]).toMatchObject({
+      call: 'mark',
+      campaignId: 'c',
+      encounterId: 'e',
+      combatantId: 'cav',
+      kind: 'controlled',
+    });
+    expect(sent[1]).toMatchObject({ call: 'mark', combatantId: 'cav', kind: '' });
+    expect(sent[0]['idempotencyKey']).toBeTruthy();
+    expect(sent[1]['idempotencyKey']).not.toBe(sent[0]['idempotencyKey']);
+  });
+
+  it('puts the rider on the mount, and lets it land on a square, telling when something held it', async () => {
+    const { client, sent } = clientMounting();
+    await client.moves.mount('c', 'e', 'tor', 'cav');
+    const landed = await client.moves.dismount('c', 'e', 'tor', 6, 7);
+    expect(sent[0]).toMatchObject({ call: 'mount', riderId: 'tor', mountId: 'cav' });
+    expect(sent[1]).toMatchObject({ call: 'dismount', riderId: 'tor', col: 6, row: 7 });
+    expect(landed.stoppedEarly).toBe(true);
+  });
+
+  it("rolls the rider's save in the app, or sends the typed d20 with the second one and the extra dice, under the caller's key", async () => {
+    const { client, sent } = clientMounting();
+    const app = await client.moves.rollMountSave('c', 'e', 'tor', { kind: 'app' }, 'k1');
+    expect(sent[0]).toMatchObject({
+      call: 'save',
+      campaignId: 'c',
+      encounterId: 'e',
+      riderId: 'tor',
+      roll: { case: 'rollInApp', value: true },
+      extraDieFaces: [],
+      idempotencyKey: 'k1',
+    });
+    expect(sent[0]['secondD20Face']).toBeUndefined();
+    expect(app.result?.held).toBe(true);
+    expect(app.held).toBeUndefined();
+    await client.moves.rollMountSave(
+      'c',
+      'e',
+      'tor',
+      { kind: 'typed', face: 15, second: 4, extra: [3] },
+      'k2',
+    );
+    expect(sent[1]).toMatchObject({
+      roll: { case: 'd20Face', value: 15 },
+      secondD20Face: 4,
+      extraDieFaces: [3],
+      idempotencyKey: 'k2',
     });
   });
 });
