@@ -34,7 +34,10 @@ Two calls with different keys give one success: the one that gets the lock secon
 
 ## Spell scrolls
 
-The saving throw DC and the attack bonus of a spell scroll come from `effects/spell_scrolls.json`, by the scroll's spell level, through `Content.SpellScrollNumbers`.
+`Content.SpellScrollNumbers` looks a scroll up by its item key.
+It gives the scroll's spell level, its saving throw DC and its attack bonus.
+The numbers come from `effects/spell_scrolls.json`.
+A key that is no variant of the Spell Scroll gives no answer.
 
 ## Undo
 

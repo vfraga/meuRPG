@@ -19,6 +19,9 @@ func scrollsContent() *content {
 		"item:spell-scroll-1st":     {Key: "item:spell-scroll-1st", Category: "scroll", VariantOf: "item:spell-scroll"},
 		"item:spell-scroll-2nd":     {Key: "item:spell-scroll-2nd", Category: "scroll", VariantOf: "item:spell-scroll"},
 		"item:wand":                 {Key: "item:wand", Category: "wand"},
+		"item:spell-scroll-1rd":     {Key: "item:spell-scroll-1rd", Category: "scroll", VariantOf: "item:spell-scroll"},
+		"item:spell-scroll-1sth":    {Key: "item:spell-scroll-1sth", Category: "scroll", VariantOf: "item:spell-scroll"},
+		"item:spell-scroll-3st":     {Key: "item:spell-scroll-3st", Category: "scroll", VariantOf: "item:spell-scroll"},
 	}}
 }
 
@@ -69,6 +72,9 @@ func TestLoadSpellScrollsCharacterization(t *testing.T) {
 		"bad: a row of the family":                rows(cantrip, first, second, row("item:spell-scroll", 3, 15, 7)),
 		"bad: a row of an item that is no scroll": rows(cantrip, first, second, row("item:wand", 3, 15, 7)),
 		"bad: a level that is not the variant's":  rows(cantrip, first, row("item:spell-scroll-2nd", 3, 13, 5)),
+		"bad: a suffix that is no ordinal (1rd)":  rows(cantrip, first, second, row("item:spell-scroll-1rd", 1, 13, 5)),
+		"bad: a suffix that is no ordinal (1sth)": rows(cantrip, first, second, row("item:spell-scroll-1sth", 1, 13, 5)),
+		"bad: the wrong ordinal word (3st)":       rows(cantrip, first, second, row("item:spell-scroll-3st", 3, 15, 7)),
 		"bad: two variants of one level":          rows(cantrip, first, row("item:spell-scroll-2nd", 1, 13, 5)),
 		"bad: level below 0":                      rows(row("item:spell-scroll-cantrip", -1, 13, 5), first, second),
 		"bad: level above 9":                      rows(cantrip, first, row("item:spell-scroll-2nd", 10, 13, 5)),
@@ -89,10 +95,12 @@ func TestLoadSpellScrollsCharacterization(t *testing.T) {
 var (
 	scrollTableRow = regexp.MustCompile(`^\| (Cantrip|\d+)(?:st|nd|rd|th)? \| [A-Za-z ]+ \| (\d+) \| \+(\d+) \|$`)
 	scrollOwnText  = regexp.MustCompile(`saving throw is (\d+) and the attack bonus is \+(\d+)`)
+	scrollOwnPT    = regexp.MustCompile(`A CD de resistência da magia é (\d+) e o bônus de ataque é \+(\d+)`)
 )
 
 // The file holds the numbers of the family table of the Spell Scroll entry, for each of the ten variants, and each
-// variant's own text says the same, except the 6th level one: the snapshot's text for it says 18 and +10, the table 17 and +9.
+// variant's own Portuguese text says the same; the English text says the same too, except the 6th level one: the
+// snapshot's text for it says 18 and +10, the table 17 and +9.
 func TestSpellScrollNumbersMatchTheCatalog(t *testing.T) {
 	t.Parallel()
 	c := loadForTest(t)
@@ -135,6 +143,12 @@ func TestSpellScrollNumbersMatchTheCatalog(t *testing.T) {
 		}
 		dc, _ := strconv.Atoi(own[1])
 		bonus, _ := strconv.Atoi(own[2])
+		ownPT := scrollOwnPT.FindStringSubmatch(strings.Join(v.DescPT, " "))
+		if ownPT == nil {
+			t.Errorf("%s: no numbers in its Portuguese text", key)
+		} else if dcPT, bonusPT := atoi(ownPT[1]), atoi(ownPT[2]); dcPT != got.SaveDC || bonusPT != got.AttackBonus {
+			t.Errorf("%s: its Portuguese text says %d and +%d, the file %d and +%d", key, dcPT, bonusPT, got.SaveDC, got.AttackBonus)
+		}
 		same := dc == got.SaveDC && bonus == got.AttackBonus
 		if key == knownDifference {
 			if same || dc != 18 || bonus != 10 {
@@ -147,4 +161,9 @@ func TestSpellScrollNumbersMatchTheCatalog(t *testing.T) {
 	if got, _ := c.SpellScrollNumbers(knownDifference); got.SaveDC != 17 || got.AttackBonus != 9 || got.Level != 6 {
 		t.Errorf("6th level: %+v, want 17 and +9", got)
 	}
+}
+
+func atoi(s string) int {
+	n, _ := strconv.Atoi(s)
+	return n
 }

@@ -78,7 +78,7 @@ func (c *content) spellScrollOf(key string, e spellScrollFile) (SpellScrollNumbe
 	case e.AttackBonus != e.SaveDC-spellScrollDCOverBonus:
 		return SpellScrollNumbers{}, fmt.Errorf("attack_bonus is save_dc less %d", spellScrollDCOverBonus)
 	}
-	return SpellScrollNumbers(e), nil
+	return SpellScrollNumbers{Level: e.Level, SaveDC: e.SaveDC, AttackBonus: e.AttackBonus}, nil
 }
 
 // spellScrollLevelOf is the spell level a variant's key names ("item:spell-scroll-cantrip" is 0, "item:spell-scroll-3rd" is 3).
@@ -90,12 +90,25 @@ func spellScrollLevelOf(key string) (int, bool) {
 	if suffix == "cantrip" {
 		return 0, true
 	}
-	digits := strings.TrimRight(suffix, "strdnh")
-	n, err := strconv.Atoi(digits)
-	if err != nil || n < 1 || n > spellScrollMaxLevel {
-		return 0, false
+	for n := 1; n <= spellScrollMaxLevel; n++ {
+		if suffix == strconv.Itoa(n)+ordinalSuffix(n) {
+			return n, true
+		}
 	}
-	return n, true
+	return 0, false
+}
+
+// ordinalSuffix is the English suffix of the ordinal of a spell level from 1 to 9 ("st" for 1, "nd", "rd", "th").
+func ordinalSuffix(n int) string {
+	switch n {
+	case 1:
+		return "st"
+	case 2:
+		return "nd"
+	case 3:
+		return "rd"
+	}
+	return "th"
 }
 
 // SpellScrollNumbers is the spell level, saving throw DC and spell attack bonus of the scroll with that item key, and

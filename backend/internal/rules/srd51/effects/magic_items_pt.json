@@ -2684,7 +2684,7 @@
       "Pergaminho, muito rara",
       "Um pergaminho de magia traz as palavras de uma única magia, escritas em uma cifra mística. Se a magia estiver na lista de magias da sua classe, você pode ler o pergaminho e conjurar a magia sem fornecer nenhum componente material. Caso contrário, o pergaminho é ininteligível. Conjurar a magia lendo o pergaminho exige o tempo de conjuração normal da magia. Depois que a magia é conjurada, as palavras do pergaminho se apagam e ele se desfaz em pó. Se a conjuração for interrompida, o pergaminho não se perde.",
       "Se a magia estiver na lista de magias da sua classe, mas for de um nível mais alto do que você normalmente pode conjurar, você deve fazer um teste de habilidade usando sua habilidade de conjuração para determinar se a conjura com sucesso. A CD é igual a 10 + o nível da magia. Se falhar no teste, a magia desaparece do pergaminho sem nenhum outro efeito.",
-      "Este pergaminho contém uma magia de 6º nível. A CD de resistência da magia é 18 e o bônus de ataque é +10.",
+      "Este pergaminho contém uma magia de 6º nível. A CD de resistência da magia é 17 e o bônus de ataque é +9.",
       "Uma magia de mago em um pergaminho de magia pode ser copiada da mesma forma que as magias de grimórios. Quando uma magia é copiada de um pergaminho de magia, quem copia deve ser bem-sucedido em um teste de Inteligência (Arcanismo) com CD igual a 16. Se o teste tiver sucesso, a magia é copiada com sucesso. Tendo o teste sucesso ou falhando, o pergaminho de magia é destruído."
     ]
   },
