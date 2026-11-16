@@ -285,6 +285,7 @@ describe('CombatView, the reaction windows', () => {
     expect(player.opened[0].component).toBe(DismountSheet);
     expect(player.opened[0].config.role).toBe('alertdialog');
     expect(player.opened[0].config.disableClose).toBe(true);
+    expect((player.opened[0].config as { autoFocus?: string }).autoFocus).toBe('first-heading');
     expect((player.opened[0].config as { ariaLabel?: string }).ariaLabel).toBe(
       'A sua montaria caiu: usar a reação para desmontar de pé?',
     );

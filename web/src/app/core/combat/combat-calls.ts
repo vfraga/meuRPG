@@ -25,6 +25,27 @@ const STALE_CODES: ReadonlySet<Code> = new Set([
 ]);
 
 /**
+ * Reads the combat again after a failure that may mean the screen is stale (a sheet that keeps its own call does the same as the
+ * screen's calls); a failed read is left to the stream's next `ready`.
+ */
+export async function refreshIfStale(
+  err: unknown,
+  state: CombatState,
+  api: Pick<CombatClient, 'turn'>,
+  campaignId: string,
+): Promise<void> {
+  if (!STALE_CODES.has(ConnectError.from(err).code)) {
+    return;
+  }
+  const ticket = state.beginRead();
+  try {
+    state.applyRead(ticket, await api.turn.get(campaignId));
+  } catch {
+    // The stream's next `ready` reads it again.
+  }
+}
+
+/**
  * The calls of the combat screen that answer with the combat: one at a time (`busy`), the answer applied at once, a refusal
  * said in Portuguese (`error`), and the combat read again when the refusal means the screen is stale. The screen and the
  * parts it is made of (moving, the sheets) share this state, so a tap in one part waits for a call in another.
@@ -63,16 +84,7 @@ export class CombatCalls {
   }
 
   /** Reads the combat again after a failure that may mean the screen is stale; a failed read is left to the stream's next `ready`. */
-  async refreshAfter(err: unknown): Promise<void> {
-    if (!STALE_CODES.has(ConnectError.from(err).code)) {
-      return;
-    }
-    const state = this.ctx.state();
-    const ticket = state.beginRead();
-    try {
-      state.applyRead(ticket, await this.ctx.api.turn.get(this.ctx.campaignId()));
-    } catch {
-      // The stream's next `ready` reads it again.
-    }
+  refreshAfter(err: unknown): Promise<void> {
+    return refreshIfStale(err, this.ctx.state(), this.ctx.api, this.ctx.campaignId());
   }
 }

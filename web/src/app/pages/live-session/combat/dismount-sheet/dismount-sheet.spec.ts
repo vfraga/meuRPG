@@ -28,6 +28,7 @@ const riding = [
 
 describe('DismountSheet (#588, board 588-07)', () => {
   const answerReaction = vi.fn();
+  const get = vi.fn();
   const close = vi.fn();
 
   function setup() {
@@ -46,10 +47,11 @@ describe('DismountSheet (#588, board 588-07)', () => {
       providers: [
         { provide: MAT_DIALOG_DATA, useValue: data },
         { provide: MatDialogRef, useValue: { close, disableClose: false } },
-        { provide: CombatClient, useValue: fakeCombatClient({ answerReaction }) },
+        { provide: CombatClient, useValue: fakeCombatClient({ answerReaction, get }) },
       ],
     });
     const fixture = TestBed.createComponent(DismountSheet);
+    document.body.appendChild(fixture.nativeElement);
     fixture.detectChanges();
     const el = fixture.nativeElement as HTMLElement;
     const settle = async () => {
@@ -63,6 +65,9 @@ describe('DismountSheet (#588, board 588-07)', () => {
 
   beforeEach(() => {
     answerReaction.mockReset();
+    get.mockReset();
+    // By default the read after a refusal fails too: the screen keeps what it has.
+    get.mockRejectedValue(new Error('offline'));
     close.mockReset();
   });
   afterEach(() => vi.useRealTimers());
@@ -93,7 +98,9 @@ describe('DismountSheet (#588, board 588-07)', () => {
     ]);
     expect(answers[0].classList.contains('mat-mdc-outlined-button')).toBe(true);
     expect(answers[1].classList.contains('mat-mdc-unelevated-button')).toBe(true);
-    expect(answers[0].hasAttribute('data-initial-focus')).toBe(true);
+    // Neither answer is safe to take by a stray Enter on a sheet that opens by itself: the focus starts on the title.
+    expect(el.querySelector('.pair [data-initial-focus]')).toBeNull();
+    expect(document.activeElement).toBe(el.querySelector('h2'));
     // An answer is owed: the sheet has no "Fechar".
     expect(el.querySelector('.frame__close')).toBeNull();
   });
@@ -156,6 +163,21 @@ describe('DismountSheet (#588, board 588-07)', () => {
     await settle();
     expect(answerReaction.mock.calls[1][4]).toBe(answerReaction.mock.calls[0][4]);
     expect(close).toHaveBeenCalled();
+  });
+
+  it('reads the combat again after a refusal that may mean the screen is stale: the window was answered elsewhere', async () => {
+    answerReaction.mockRejectedValueOnce(new ConnectError('changed', Code.Aborted));
+    get.mockResolvedValue(
+      encounter({ revision: 9, round: 4, currentCombatantId: 'z1', combatants: riding } as never),
+    );
+    const { el, settle, button, state } = setup();
+    await settle();
+    button('Desmontar de pé').click();
+    await settle();
+    expect(get).toHaveBeenCalledWith('c');
+    expect(state.encounter()?.revision).toBe(9);
+    expect(el.querySelectorAll('.pair button')).toHaveLength(0);
+    expect(button('Fechar')).toBeTruthy();
   });
 
   it('says how it ended when the window left the combat without the answer, and only closes', async () => {

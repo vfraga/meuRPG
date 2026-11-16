@@ -60,6 +60,7 @@ const fell8 = create(MountSaveResultSchema, {
 
 describe('MountSaveSheet (#588, boards 588-06 and 588-10 card 6)', () => {
   const rollMountSave = vi.fn();
+  const get = vi.fn();
   const resources = { answerHeldRoll: vi.fn() };
   const closed: unknown[] = [];
 
@@ -80,7 +81,7 @@ describe('MountSaveSheet (#588, boards 588-06 and 588-10 card 6)', () => {
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       providers: [
-        { provide: CombatClient, useValue: fakeCombatClient({ rollMountSave }) },
+        { provide: CombatClient, useValue: fakeCombatClient({ rollMountSave, get }) },
         { provide: ResourceClient, useValue: resources },
         { provide: MAT_DIALOG_DATA, useValue: data },
         {
@@ -90,6 +91,7 @@ describe('MountSaveSheet (#588, boards 588-06 and 588-10 card 6)', () => {
       ],
     });
     const fixture = TestBed.createComponent(MountSaveSheet);
+    document.body.appendChild(fixture.nativeElement);
     fixture.detectChanges();
     return { fixture, el: fixture.nativeElement as HTMLElement, state };
   }
@@ -115,6 +117,9 @@ describe('MountSaveSheet (#588, boards 588-06 and 588-10 card 6)', () => {
 
   beforeEach(() => {
     rollMountSave.mockReset();
+    get.mockReset();
+    // By default the read after a refusal fails too: the screen keeps what it has.
+    get.mockRejectedValue(new Error('offline'));
     resources.answerHeldRoll.mockReset();
   });
 
@@ -189,8 +194,22 @@ describe('MountSaveSheet (#588, boards 588-06 and 588-10 card 6)', () => {
       '15 + 2 = 17: você continua montado.',
     );
     expect(plain(res.textContent)).not.toMatch(/\bCD\b/);
+    // The buttons that had the focus are gone: it goes to "Fechar", not to the page behind.
+    expect(document.activeElement).toBe(button(el, 'Fechar'));
     button(el, 'Fechar').click();
     expect(closed).toHaveLength(1);
+  });
+
+  it('reads the combat again after a refusal that may mean the screen is stale: the master rolled it meanwhile', async () => {
+    rollMountSave.mockRejectedValueOnce(new ConnectError('changed', Code.Aborted));
+    get.mockResolvedValue(fight(undefined, 9));
+    const { fixture, el, state } = setup();
+    button(el, 'Rolar no app').click();
+    await flush(fixture);
+    expect(get).toHaveBeenCalledWith('c');
+    expect(state.encounter()?.revision).toBe(9);
+    expect(button(el, 'Rolar no app')).toBeUndefined();
+    expect(plain(el.textContent)).toContain('Este teste não espera mais a sua rolagem');
   });
 
   it('tells a fall with the mount it fell from', async () => {

@@ -266,7 +266,7 @@ The rider's save and the rider's dismount each have a sheet, opened from `Reacti
 | A held roll on the save (`held_roll_offer`) | Whoever rolled | The question (Lucky, a Bardic Inspiration die) takes the sheet before any result; a sheet opened while the rider's row already carries the offer starts on the question, never on a second roll |
 | `INVALID_ARGUMENT` for a missing extra die | Whoever typed | The sheet asks for the d4 and sends the faces in `extra_die_faces` |
 | The save leaves the combat without a roll from this sheet | Whoever has it open | The sheet says the save is no longer owed and only closes |
-| A window of kind `dismount` that is `for_you` | The rider's player | `DismountSheet` opens by itself as an `alertdialog`: "Cair derrubado" (PASS, with the focus) and "Desmontar de pé" (USE), answered with `AnswerReaction`, with no countdown |
+| A window of kind `dismount` that is `for_you` | The rider's player | `DismountSheet` opens by itself as an `alertdialog`: "Cair derrubado" (PASS) and "Desmontar de pé" (USE), with the focus on the title, answered with `AnswerReaction`, with no countdown |
 | The same window | The master | The reaction queue's card, as for any reaction |
 | `reaction_wait` | The other players | The neutral wait card with the server's words |
 

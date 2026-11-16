@@ -1,8 +1,10 @@
 import {
+  afterNextRender,
   ChangeDetectionStrategy,
   Component,
   computed,
   effect,
+  ElementRef,
   inject,
   Injector,
   signal,
@@ -17,6 +19,7 @@ import type { MountSavePrompt, MountSaveResult } from '../../../../../gen/meurpg
 import type { AnswerHeldRollResponse } from '../../../../../gen/meurpg/play/v1/resources_pb';
 import { effectivePreference } from '../../../../core/campaigns/dice-labels';
 import { CombatClient } from '../../../../core/combat/combat-client';
+import { refreshIfStale } from '../../../../core/combat/combat-calls';
 import type { MountSaveRoll } from '../../../../core/combat/combat-client-types';
 import { combatErrorMessage } from '../../../../core/combat/combat-errors';
 import type { CombatState } from '../../../../core/combat/combat-state';
@@ -88,6 +91,7 @@ export class MountSaveSheet {
   /** Read when the player answers about the die: a sheet that never asks does not build the client. */
   private readonly lazyInjector = inject(Injector);
   private readonly animator = inject(RollAnimator);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly sheet = injectSheet<MountSaveSheetData, void>();
   protected readonly data = this.sheet.data;
   protected readonly inSheet = this.sheet.inSheet;
@@ -177,6 +181,21 @@ export class MountSaveSheet {
       }
     });
   }
+
+  /** The buttons that had the focus leave with the question: it goes to "Fechar", never to the page behind. */
+  protected readonly focusClose = effect(() => {
+    if (this.stage() !== 'ask') {
+      untracked(() =>
+        afterNextRender(
+          () =>
+            this.host.nativeElement
+              .querySelector<HTMLElement>('[data-initial-focus]')
+              ?.focus({ focusVisible: true } as FocusOptions),
+          { injector: this.lazyInjector },
+        ),
+      );
+    }
+  });
 
   private label(id: string): string {
     return (id && this.opened?.combatants.find((c) => c.id === id)?.label) || '';
@@ -284,6 +303,8 @@ export class MountSaveSheet {
       return;
     }
     this.error.set(combatErrorMessage(err, 'rolar o teste de resistência'));
+    // The save may have been rolled elsewhere: the combat read again says so.
+    void refreshIfStale(err, this.data.state, this.api, this.data.campaignId);
   }
 
   protected close(): void {

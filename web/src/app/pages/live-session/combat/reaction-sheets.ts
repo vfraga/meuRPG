@@ -229,7 +229,12 @@ export class ReactionSheets {
         this.ctx.dialog,
         this.ctx.bottomSheet,
         DismountSheet,
-        { data, ariaLabel: dismountView(e, window).ariaLabel, alert: true },
+        {
+          data,
+          ariaLabel: dismountView(e, window).ariaLabel,
+          alert: true,
+          focus: 'first-heading',
+        },
       ),
     );
   }

@@ -10,10 +10,12 @@ import {
   signal,
   untracked,
 } from '@angular/core';
+import { create } from '@bufbuild/protobuf';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 
-import type { ReactionWindow } from '../../../../../gen/meurpg/play/v1/combat_pb';
+import { EncounterSchema, type ReactionWindow } from '../../../../../gen/meurpg/play/v1/combat_pb';
+import { refreshIfStale } from '../../../../core/combat/combat-calls';
 import { CombatClient } from '../../../../core/combat/combat-client';
 import { combatErrorMessage } from '../../../../core/combat/combat-errors';
 import type { CombatState } from '../../../../core/combat/combat-state';
@@ -34,7 +36,7 @@ export interface DismountSheetData {
 /**
  * "O Cavalo de guerra caiu. Usar a reação para desmontar de pé?" (#588, board 588-07): the `alertdialog` of a rider whose mount
  * was knocked prone or dropped to 0 hit points, opened by itself for the rider's player and answered with `AnswerReaction`.
- * "Cair derrubado" (PASS) comes first and has the focus; "Desmontar de pé" (USE) is the filled one. Unlike the optional
+ * "Cair derrubado" (PASS) comes first and "Desmontar de pé" (USE) is the filled one; the focus starts on the title, on neither. Unlike the optional
  * reactions it has no countdown: nothing passes it, because passing is a fall. The master may answer too; if the window leaves
  * the combat meanwhile the sheet says how it ended and only closes. The server decides every refusal.
  */
@@ -84,7 +86,6 @@ export interface DismountSheetData {
               matButton="outlined"
               type="button"
               class="pair__btn"
-              data-initial-focus
               [disabled]="busy()"
               (click)="answer(false)"
             >
@@ -138,7 +139,7 @@ export class DismountSheet {
 
   /** The words as the combat was when the prompt opened: the mount is named from the rider's row, which the answer clears. */
   protected readonly view = dismountView(
-    this.data.state.encounter() ?? ({ combatants: [], round: 0 } as never),
+    this.data.state.encounter() ?? create(EncounterSchema),
     this.data.window,
   );
 
@@ -168,8 +169,11 @@ export class DismountSheet {
   });
 
   constructor() {
-    // The answer that keeps the reaction has the focus, and its ring: the sheet opens for a keyboard-style answer.
-    afterNextRender(() => this.focusInitial(), { injector: this.injector });
+    // The sheet opens by itself and neither answer is safe under a stray Enter (one spends the reaction, the other is a fall):
+    // the focus starts on the title, and the two answers are the next stops.
+    afterNextRender(() => this.host.nativeElement.querySelector<HTMLElement>('h2')?.focus(), {
+      injector: this.injector,
+    });
   }
 
   private focusInitial(): void {
@@ -200,6 +204,8 @@ export class DismountSheet {
       this.sheet.close();
     } catch (err) {
       this.error.set(combatErrorMessage(err, 'responder à reação'));
+      // The window may have been answered elsewhere: the combat read again says so.
+      await refreshIfStale(err, this.data.state, this.api, this.data.campaignId);
       this.busy.set(false);
     }
   }
