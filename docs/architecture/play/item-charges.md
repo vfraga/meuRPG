@@ -32,6 +32,10 @@ Any other face only ends the wait.
 Two calls with the same idempotency key give one roll: the second reads the first one's answer.
 Two calls with different keys give one success: the one that gets the lock second finds no wait and is refused with `invalid_argument` "the item has no last charge to roll", with no blocked reason, also when the first roll destroyed the item.
 
+## Spell scrolls
+
+The saving throw DC and the attack bonus of a spell scroll come from `effects/spell_scrolls.json`, by the scroll's spell level, through `Content.SpellScrollNumbers`.
+
 ## Undo
 
 A charge cannot be given back by the master's undo.

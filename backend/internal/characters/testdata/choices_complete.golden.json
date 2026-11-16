@@ -332,7 +332,7 @@
             "namePt": "Guerreiro"
           }
         ],
-        "contentVersion": "srd51@a8abc93b235c+fx.63",
+        "contentVersion": "srd51@a8abc93b235c+fx.67",
         "features": [
           {
             "key": "trait:darkvision",
@@ -795,7 +795,7 @@
             "namePt": "Guerreiro"
           }
         ],
-        "contentVersion": "srd51@a8abc93b235c+fx.63",
+        "contentVersion": "srd51@a8abc93b235c+fx.67",
         "features": [
           {
             "key": "trait:darkvision",
@@ -1264,7 +1264,7 @@
             "namePt": "Guerreiro"
           }
         ],
-        "contentVersion": "srd51@a8abc93b235c+fx.63",
+        "contentVersion": "srd51@a8abc93b235c+fx.67",
         "features": [
           {
             "key": "background-feature:shelter-of-the-faithful",
@@ -1736,7 +1736,7 @@
             "namePt": "Guerreiro"
           }
         ],
-        "contentVersion": "srd51@a8abc93b235c+fx.63",
+        "contentVersion": "srd51@a8abc93b235c+fx.67",
         "features": [
           {
             "key": "feature:fighter-fighting-style",

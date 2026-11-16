@@ -1,0 +1,12 @@
+{
+ "item:spell-scroll-cantrip": {"level": 0, "save_dc": 13, "attack_bonus": 5},
+ "item:spell-scroll-1st": {"level": 1, "save_dc": 13, "attack_bonus": 5},
+ "item:spell-scroll-2nd": {"level": 2, "save_dc": 13, "attack_bonus": 5},
+ "item:spell-scroll-3rd": {"level": 3, "save_dc": 15, "attack_bonus": 7},
+ "item:spell-scroll-4th": {"level": 4, "save_dc": 15, "attack_bonus": 7},
+ "item:spell-scroll-5th": {"level": 5, "save_dc": 17, "attack_bonus": 9},
+ "item:spell-scroll-6th": {"level": 6, "save_dc": 17, "attack_bonus": 9},
+ "item:spell-scroll-7th": {"level": 7, "save_dc": 18, "attack_bonus": 10},
+ "item:spell-scroll-8th": {"level": 8, "save_dc": 18, "attack_bonus": 10},
+ "item:spell-scroll-9th": {"level": 9, "save_dc": 19, "attack_bonus": 11}
+}
