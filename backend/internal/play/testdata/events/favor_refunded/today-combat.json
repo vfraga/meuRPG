@@ -1,0 +1,13 @@
+{
+  "prompt_id": "x",
+  "character_id": "x",
+  "encounter_id": "x",
+  "round": 1,
+  "combatant_id": "x",
+  "target_id": "x",
+  "secret": true,
+  "fogged": true,
+  "seen_by": [
+    "x"
+  ]
+}

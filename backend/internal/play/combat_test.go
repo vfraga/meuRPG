@@ -1182,6 +1182,7 @@ func TestSessionEventKindsMatchTheTable(t *testing.T) {
 		eventSpellCastOutside, eventSpellCastStarted, eventSpellCastFinished, eventSpellCastInterrupted, eventSpellCastEnded,
 		eventLastingAdded, eventLastingChanged, eventLastingEnded, eventLastingVisibility, eventLastingSaved, eventLastingTriggered, eventExhaustion, eventGameTimeAdvanced, eventFreeRoll,
 		eventZoneTriggered, eventZoneMoved, eventLegendarySpent, eventRechargeRolled, eventMonsterReactionSet, eventSunlightSet, eventGearSwapped, eventFeatureUsed, eventFavorGranted, eventFavorSpent, eventFavorPassed,
+		eventFavorPassAsked, eventFavorAskRefused, eventFavorPassCanceled, eventFavorRefundPrompted, eventFavorRefunded, eventFavorRefundKept,
 		eventItemChargeSpent, eventItemChargesRestored, eventItemDestroyed, eventDawnTaken, eventAmmunitionSpent, eventAmmunitionRecovered, eventConsumableUsed,
 		eventActionReadied, eventReadiedFired, eventReadiedLost,
 	}

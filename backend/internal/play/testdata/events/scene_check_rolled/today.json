@@ -15,6 +15,7 @@
   "counted": 1,
   "roll_mode": "x",
   "favor": true,
+  "favor_prompt": "x",
   "bonus_sides": 1,
   "bonus_face": 1,
   "counted_by": "x",

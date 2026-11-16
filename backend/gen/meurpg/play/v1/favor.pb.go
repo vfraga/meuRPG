@@ -38,8 +38,10 @@ const (
 	FavorBlockedReason_FAVOR_BLOCKED_REASON_NOT_THE_HOLDER FavorBlockedReason = 3
 	// The caller's character has none to spend.
 	FavorBlockedReason_FAVOR_BLOCKED_REASON_HAS_NONE FavorBlockedReason = 4
-	// What a pass tells its giver when the receiver cannot take it (it has one, it is in
-	// another campaign or it is an NPC). The server never sends the receiver's state.
+	// The character that would take the Inspiration cannot hold it now. Three answers give it, always to the master: the accept of a
+	// pass whose receiver has one already or is no player character of the table any more; the undo of a pass whose giver is in the
+	// reserve or is no player character any more; the refund ("Devolver") of a roller in the reserve or no player character any more.
+	// The server never sends a player the state of the receiver.
 	FavorBlockedReason_FAVOR_BLOCKED_REASON_CANNOT_RECEIVE FavorBlockedReason = 5
 	// The pass names the giver as the receiver.
 	FavorBlockedReason_FAVOR_BLOCKED_REASON_SELF FavorBlockedReason = 6
@@ -49,21 +51,31 @@ const (
 	FavorBlockedReason_FAVOR_BLOCKED_REASON_AFTER_THE_ROLL FavorBlockedReason = 8
 	// The spend was asked on a call that rolls no d20: nothing is spent.
 	FavorBlockedReason_FAVOR_BLOCKED_REASON_NOTHING_TO_ROLL FavorBlockedReason = 9
+	// The giver already asked to pass it and the master has not answered: the Inspiration cannot be spent or asked again until the
+	// ask is answered or canceled.
+	FavorBlockedReason_FAVOR_BLOCKED_REASON_PASS_PENDING FavorBlockedReason = 10
+	// The ask was already answered or canceled (on another screen, or by the master meanwhile).
+	FavorBlockedReason_FAVOR_BLOCKED_REASON_PASS_CLOSED FavorBlockedReason = 11
+	// The campaign has no open session: the master answers a pass at the table, so it is only asked in a session.
+	FavorBlockedReason_FAVOR_BLOCKED_REASON_NO_SESSION FavorBlockedReason = 12
 )
 
 // Enum value maps for FavorBlockedReason.
 var (
 	FavorBlockedReason_name = map[int32]string{
-		0: "FAVOR_BLOCKED_REASON_UNSPECIFIED",
-		1: "FAVOR_BLOCKED_REASON_ALREADY_HAS",
-		2: "FAVOR_BLOCKED_REASON_NOT_A_PLAYER_CHARACTER",
-		3: "FAVOR_BLOCKED_REASON_NOT_THE_HOLDER",
-		4: "FAVOR_BLOCKED_REASON_HAS_NONE",
-		5: "FAVOR_BLOCKED_REASON_CANNOT_RECEIVE",
-		6: "FAVOR_BLOCKED_REASON_SELF",
-		7: "FAVOR_BLOCKED_REASON_ADDS_NOTHING",
-		8: "FAVOR_BLOCKED_REASON_AFTER_THE_ROLL",
-		9: "FAVOR_BLOCKED_REASON_NOTHING_TO_ROLL",
+		0:  "FAVOR_BLOCKED_REASON_UNSPECIFIED",
+		1:  "FAVOR_BLOCKED_REASON_ALREADY_HAS",
+		2:  "FAVOR_BLOCKED_REASON_NOT_A_PLAYER_CHARACTER",
+		3:  "FAVOR_BLOCKED_REASON_NOT_THE_HOLDER",
+		4:  "FAVOR_BLOCKED_REASON_HAS_NONE",
+		5:  "FAVOR_BLOCKED_REASON_CANNOT_RECEIVE",
+		6:  "FAVOR_BLOCKED_REASON_SELF",
+		7:  "FAVOR_BLOCKED_REASON_ADDS_NOTHING",
+		8:  "FAVOR_BLOCKED_REASON_AFTER_THE_ROLL",
+		9:  "FAVOR_BLOCKED_REASON_NOTHING_TO_ROLL",
+		10: "FAVOR_BLOCKED_REASON_PASS_PENDING",
+		11: "FAVOR_BLOCKED_REASON_PASS_CLOSED",
+		12: "FAVOR_BLOCKED_REASON_NO_SESSION",
 	}
 	FavorBlockedReason_value = map[string]int32{
 		"FAVOR_BLOCKED_REASON_UNSPECIFIED":            0,
@@ -76,6 +88,9 @@ var (
 		"FAVOR_BLOCKED_REASON_ADDS_NOTHING":           7,
 		"FAVOR_BLOCKED_REASON_AFTER_THE_ROLL":         8,
 		"FAVOR_BLOCKED_REASON_NOTHING_TO_ROLL":        9,
+		"FAVOR_BLOCKED_REASON_PASS_PENDING":           10,
+		"FAVOR_BLOCKED_REASON_PASS_CLOSED":            11,
+		"FAVOR_BLOCKED_REASON_NO_SESSION":             12,
 	}
 )
 
@@ -104,6 +119,122 @@ func (x FavorBlockedReason) Number() protoreflect.EnumNumber {
 // Deprecated: Use FavorBlockedReason.Descriptor instead.
 func (FavorBlockedReason) EnumDescriptor() ([]byte, []int) {
 	return file_meurpg_play_v1_favor_proto_rawDescGZIP(), []int{0}
+}
+
+// FavorPassStatus is where a pass is.
+type FavorPassStatus int32
+
+const (
+	FavorPassStatus_FAVOR_PASS_STATUS_UNSPECIFIED FavorPassStatus = 0
+	// Waits for the master.
+	FavorPassStatus_FAVOR_PASS_STATUS_PENDING FavorPassStatus = 1
+	// The master accepted: the Inspiration moved.
+	FavorPassStatus_FAVOR_PASS_STATUS_ACCEPTED FavorPassStatus = 2
+	// The master refused: it stays with the giver.
+	FavorPassStatus_FAVOR_PASS_STATUS_REFUSED FavorPassStatus = 3
+	// The giver gave the ask up, or the session ended.
+	FavorPassStatus_FAVOR_PASS_STATUS_CANCELED FavorPassStatus = 4
+)
+
+// Enum value maps for FavorPassStatus.
+var (
+	FavorPassStatus_name = map[int32]string{
+		0: "FAVOR_PASS_STATUS_UNSPECIFIED",
+		1: "FAVOR_PASS_STATUS_PENDING",
+		2: "FAVOR_PASS_STATUS_ACCEPTED",
+		3: "FAVOR_PASS_STATUS_REFUSED",
+		4: "FAVOR_PASS_STATUS_CANCELED",
+	}
+	FavorPassStatus_value = map[string]int32{
+		"FAVOR_PASS_STATUS_UNSPECIFIED": 0,
+		"FAVOR_PASS_STATUS_PENDING":     1,
+		"FAVOR_PASS_STATUS_ACCEPTED":    2,
+		"FAVOR_PASS_STATUS_REFUSED":     3,
+		"FAVOR_PASS_STATUS_CANCELED":    4,
+	}
+)
+
+func (x FavorPassStatus) Enum() *FavorPassStatus {
+	p := new(FavorPassStatus)
+	*p = x
+	return p
+}
+
+func (x FavorPassStatus) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (FavorPassStatus) Descriptor() protoreflect.EnumDescriptor {
+	return file_meurpg_play_v1_favor_proto_enumTypes[1].Descriptor()
+}
+
+func (FavorPassStatus) Type() protoreflect.EnumType {
+	return &file_meurpg_play_v1_favor_proto_enumTypes[1]
+}
+
+func (x FavorPassStatus) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use FavorPassStatus.Descriptor instead.
+func (FavorPassStatus) EnumDescriptor() ([]byte, []int) {
+	return file_meurpg_play_v1_favor_proto_rawDescGZIP(), []int{1}
+}
+
+// FavorRefundStatus is where a refund prompt is.
+type FavorRefundStatus int32
+
+const (
+	FavorRefundStatus_FAVOR_REFUND_STATUS_UNSPECIFIED FavorRefundStatus = 0
+	// Waits for the master.
+	FavorRefundStatus_FAVOR_REFUND_STATUS_OPEN FavorRefundStatus = 1
+	// The master gave the Inspiration back.
+	FavorRefundStatus_FAVOR_REFUND_STATUS_RETURNED FavorRefundStatus = 2
+	// It stays spent: the master chose so, or the session ended without an answer.
+	FavorRefundStatus_FAVOR_REFUND_STATUS_KEPT FavorRefundStatus = 3
+)
+
+// Enum value maps for FavorRefundStatus.
+var (
+	FavorRefundStatus_name = map[int32]string{
+		0: "FAVOR_REFUND_STATUS_UNSPECIFIED",
+		1: "FAVOR_REFUND_STATUS_OPEN",
+		2: "FAVOR_REFUND_STATUS_RETURNED",
+		3: "FAVOR_REFUND_STATUS_KEPT",
+	}
+	FavorRefundStatus_value = map[string]int32{
+		"FAVOR_REFUND_STATUS_UNSPECIFIED": 0,
+		"FAVOR_REFUND_STATUS_OPEN":        1,
+		"FAVOR_REFUND_STATUS_RETURNED":    2,
+		"FAVOR_REFUND_STATUS_KEPT":        3,
+	}
+)
+
+func (x FavorRefundStatus) Enum() *FavorRefundStatus {
+	p := new(FavorRefundStatus)
+	*p = x
+	return p
+}
+
+func (x FavorRefundStatus) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (FavorRefundStatus) Descriptor() protoreflect.EnumDescriptor {
+	return file_meurpg_play_v1_favor_proto_enumTypes[2].Descriptor()
+}
+
+func (FavorRefundStatus) Type() protoreflect.EnumType {
+	return &file_meurpg_play_v1_favor_proto_enumTypes[2]
+}
+
+func (x FavorRefundStatus) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use FavorRefundStatus.Descriptor instead.
+func (FavorRefundStatus) EnumDescriptor() ([]byte, []int) {
+	return file_meurpg_play_v1_favor_proto_rawDescGZIP(), []int{2}
 }
 
 // FavorBlocked is the error detail of FavorService's `failed_precondition`.
@@ -347,7 +478,11 @@ func (x *GetFavorRequest) GetCampaignId() string {
 type GetFavorResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The master reads every holder of the campaign; a player reads only their own.
-	Holders       []*FavorHolder `protobuf:"bytes,1,rep,name=holders,proto3" json:"holders,omitempty"`
+	Holders []*FavorHolder `protobuf:"bytes,1,rep,name=holders,proto3" json:"holders,omitempty"`
+	// The passes that wait for the master: the master reads all of them; a player reads only the asks of their own characters.
+	Passes []*FavorPass `protobuf:"bytes,2,rep,name=passes,proto3" json:"passes,omitempty"`
+	// The master's questions about an Inspiration a roll spent for nothing. The master's alone.
+	RefundPrompts []*FavorRefundPrompt `protobuf:"bytes,3,rep,name=refund_prompts,json=refundPrompts,proto3" json:"refund_prompts,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -389,6 +524,202 @@ func (x *GetFavorResponse) GetHolders() []*FavorHolder {
 	return nil
 }
 
+func (x *GetFavorResponse) GetPasses() []*FavorPass {
+	if x != nil {
+		return x.Passes
+	}
+	return nil
+}
+
+func (x *GetFavorResponse) GetRefundPrompts() []*FavorRefundPrompt {
+	if x != nil {
+		return x.RefundPrompts
+	}
+	return nil
+}
+
+// FavorPass is a player's ask to pass the Inspiration of their character to another player character.
+type FavorPass struct {
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	Id              string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	FromCharacterId string                 `protobuf:"bytes,2,opt,name=from_character_id,json=fromCharacterId,proto3" json:"from_character_id,omitempty"`
+	FromName        string                 `protobuf:"bytes,3,opt,name=from_name,json=fromName,proto3" json:"from_name,omitempty"`
+	ToCharacterId   string                 `protobuf:"bytes,4,opt,name=to_character_id,json=toCharacterId,proto3" json:"to_character_id,omitempty"`
+	ToName          string                 `protobuf:"bytes,5,opt,name=to_name,json=toName,proto3" json:"to_name,omitempty"`
+	Status          FavorPassStatus        `protobuf:"varint,6,opt,name=status,proto3,enum=meurpg.play.v1.FavorPassStatus" json:"status,omitempty"`
+	// The master's alone: the receiver already has one, so the master's Aceitar is dashed with the reason. False for a player.
+	ReceiverHas   bool `protobuf:"varint,7,opt,name=receiver_has,json=receiverHas,proto3" json:"receiver_has,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *FavorPass) Reset() {
+	*x = FavorPass{}
+	mi := &file_meurpg_play_v1_favor_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *FavorPass) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*FavorPass) ProtoMessage() {}
+
+func (x *FavorPass) ProtoReflect() protoreflect.Message {
+	mi := &file_meurpg_play_v1_favor_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use FavorPass.ProtoReflect.Descriptor instead.
+func (*FavorPass) Descriptor() ([]byte, []int) {
+	return file_meurpg_play_v1_favor_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *FavorPass) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *FavorPass) GetFromCharacterId() string {
+	if x != nil {
+		return x.FromCharacterId
+	}
+	return ""
+}
+
+func (x *FavorPass) GetFromName() string {
+	if x != nil {
+		return x.FromName
+	}
+	return ""
+}
+
+func (x *FavorPass) GetToCharacterId() string {
+	if x != nil {
+		return x.ToCharacterId
+	}
+	return ""
+}
+
+func (x *FavorPass) GetToName() string {
+	if x != nil {
+		return x.ToName
+	}
+	return ""
+}
+
+func (x *FavorPass) GetStatus() FavorPassStatus {
+	if x != nil {
+		return x.Status
+	}
+	return FavorPassStatus_FAVOR_PASS_STATUS_UNSPECIFIED
+}
+
+func (x *FavorPass) GetReceiverHas() bool {
+	if x != nil {
+		return x.ReceiverHas
+	}
+	return false
+}
+
+// FavorRefundPrompt is the question the master gets when a roll spent the Inspiration and it added nothing over every source
+// of advantage. The master's alone: the player reads only the answer, when the master gives it back.
+type FavorRefundPrompt struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	CharacterId   string                 `protobuf:"bytes,2,opt,name=character_id,json=characterId,proto3" json:"character_id,omitempty"`
+	CharacterName string                 `protobuf:"bytes,3,opt,name=character_name,json=characterName,proto3" json:"character_name,omitempty"`
+	// The roll's name as the log reads it.
+	RollLabelPt string `protobuf:"bytes,4,opt,name=roll_label_pt,json=rollLabelPt,proto3" json:"roll_label_pt,omitempty"`
+	// The sources of advantage the roller could not read, the master's view.
+	HiddenSources []*AdvantageSource `protobuf:"bytes,5,rep,name=hidden_sources,json=hiddenSources,proto3" json:"hidden_sources,omitempty"`
+	Status        FavorRefundStatus  `protobuf:"varint,6,opt,name=status,proto3,enum=meurpg.play.v1.FavorRefundStatus" json:"status,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *FavorRefundPrompt) Reset() {
+	*x = FavorRefundPrompt{}
+	mi := &file_meurpg_play_v1_favor_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *FavorRefundPrompt) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*FavorRefundPrompt) ProtoMessage() {}
+
+func (x *FavorRefundPrompt) ProtoReflect() protoreflect.Message {
+	mi := &file_meurpg_play_v1_favor_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use FavorRefundPrompt.ProtoReflect.Descriptor instead.
+func (*FavorRefundPrompt) Descriptor() ([]byte, []int) {
+	return file_meurpg_play_v1_favor_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *FavorRefundPrompt) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *FavorRefundPrompt) GetCharacterId() string {
+	if x != nil {
+		return x.CharacterId
+	}
+	return ""
+}
+
+func (x *FavorRefundPrompt) GetCharacterName() string {
+	if x != nil {
+		return x.CharacterName
+	}
+	return ""
+}
+
+func (x *FavorRefundPrompt) GetRollLabelPt() string {
+	if x != nil {
+		return x.RollLabelPt
+	}
+	return ""
+}
+
+func (x *FavorRefundPrompt) GetHiddenSources() []*AdvantageSource {
+	if x != nil {
+		return x.HiddenSources
+	}
+	return nil
+}
+
+func (x *FavorRefundPrompt) GetStatus() FavorRefundStatus {
+	if x != nil {
+		return x.Status
+	}
+	return FavorRefundStatus_FAVOR_REFUND_STATUS_UNSPECIFIED
+}
+
 type PassFavorRequest struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
 	CampaignId      string                 `protobuf:"bytes,1,opt,name=campaign_id,json=campaignId,proto3" json:"campaign_id,omitempty"`
@@ -401,7 +732,7 @@ type PassFavorRequest struct {
 
 func (x *PassFavorRequest) Reset() {
 	*x = PassFavorRequest{}
-	mi := &file_meurpg_play_v1_favor_proto_msgTypes[6]
+	mi := &file_meurpg_play_v1_favor_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -413,7 +744,7 @@ func (x *PassFavorRequest) String() string {
 func (*PassFavorRequest) ProtoMessage() {}
 
 func (x *PassFavorRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_meurpg_play_v1_favor_proto_msgTypes[6]
+	mi := &file_meurpg_play_v1_favor_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -426,7 +757,7 @@ func (x *PassFavorRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PassFavorRequest.ProtoReflect.Descriptor instead.
 func (*PassFavorRequest) Descriptor() ([]byte, []int) {
-	return file_meurpg_play_v1_favor_proto_rawDescGZIP(), []int{6}
+	return file_meurpg_play_v1_favor_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *PassFavorRequest) GetCampaignId() string {
@@ -458,14 +789,16 @@ func (x *PassFavorRequest) GetIdempotencyKey() string {
 }
 
 type PassFavorResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The pending pass the ask made (the same one on a retry with the same key).
+	Pass          *FavorPass `protobuf:"bytes,1,opt,name=pass,proto3" json:"pass,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *PassFavorResponse) Reset() {
 	*x = PassFavorResponse{}
-	mi := &file_meurpg_play_v1_favor_proto_msgTypes[7]
+	mi := &file_meurpg_play_v1_favor_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -477,7 +810,7 @@ func (x *PassFavorResponse) String() string {
 func (*PassFavorResponse) ProtoMessage() {}
 
 func (x *PassFavorResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_meurpg_play_v1_favor_proto_msgTypes[7]
+	mi := &file_meurpg_play_v1_favor_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -490,14 +823,352 @@ func (x *PassFavorResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PassFavorResponse.ProtoReflect.Descriptor instead.
 func (*PassFavorResponse) Descriptor() ([]byte, []int) {
-	return file_meurpg_play_v1_favor_proto_rawDescGZIP(), []int{7}
+	return file_meurpg_play_v1_favor_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *PassFavorResponse) GetPass() *FavorPass {
+	if x != nil {
+		return x.Pass
+	}
+	return nil
+}
+
+type AnswerFavorPassRequest struct {
+	state      protoimpl.MessageState `protogen:"open.v1"`
+	CampaignId string                 `protobuf:"bytes,1,opt,name=campaign_id,json=campaignId,proto3" json:"campaign_id,omitempty"`
+	PassId     string                 `protobuf:"bytes,2,opt,name=pass_id,json=passId,proto3" json:"pass_id,omitempty"`
+	// True accepts: the Inspiration moves. False refuses: it stays with the giver.
+	Accept         bool   `protobuf:"varint,3,opt,name=accept,proto3" json:"accept,omitempty"`
+	IdempotencyKey string `protobuf:"bytes,4,opt,name=idempotency_key,json=idempotencyKey,proto3" json:"idempotency_key,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *AnswerFavorPassRequest) Reset() {
+	*x = AnswerFavorPassRequest{}
+	mi := &file_meurpg_play_v1_favor_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AnswerFavorPassRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AnswerFavorPassRequest) ProtoMessage() {}
+
+func (x *AnswerFavorPassRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_meurpg_play_v1_favor_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AnswerFavorPassRequest.ProtoReflect.Descriptor instead.
+func (*AnswerFavorPassRequest) Descriptor() ([]byte, []int) {
+	return file_meurpg_play_v1_favor_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *AnswerFavorPassRequest) GetCampaignId() string {
+	if x != nil {
+		return x.CampaignId
+	}
+	return ""
+}
+
+func (x *AnswerFavorPassRequest) GetPassId() string {
+	if x != nil {
+		return x.PassId
+	}
+	return ""
+}
+
+func (x *AnswerFavorPassRequest) GetAccept() bool {
+	if x != nil {
+		return x.Accept
+	}
+	return false
+}
+
+func (x *AnswerFavorPassRequest) GetIdempotencyKey() string {
+	if x != nil {
+		return x.IdempotencyKey
+	}
+	return ""
+}
+
+type AnswerFavorPassResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The pass as it is after the answer.
+	Pass          *FavorPass `protobuf:"bytes,1,opt,name=pass,proto3" json:"pass,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AnswerFavorPassResponse) Reset() {
+	*x = AnswerFavorPassResponse{}
+	mi := &file_meurpg_play_v1_favor_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AnswerFavorPassResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AnswerFavorPassResponse) ProtoMessage() {}
+
+func (x *AnswerFavorPassResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_meurpg_play_v1_favor_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AnswerFavorPassResponse.ProtoReflect.Descriptor instead.
+func (*AnswerFavorPassResponse) Descriptor() ([]byte, []int) {
+	return file_meurpg_play_v1_favor_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *AnswerFavorPassResponse) GetPass() *FavorPass {
+	if x != nil {
+		return x.Pass
+	}
+	return nil
+}
+
+type CancelFavorPassRequest struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	CampaignId     string                 `protobuf:"bytes,1,opt,name=campaign_id,json=campaignId,proto3" json:"campaign_id,omitempty"`
+	PassId         string                 `protobuf:"bytes,2,opt,name=pass_id,json=passId,proto3" json:"pass_id,omitempty"`
+	IdempotencyKey string                 `protobuf:"bytes,3,opt,name=idempotency_key,json=idempotencyKey,proto3" json:"idempotency_key,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *CancelFavorPassRequest) Reset() {
+	*x = CancelFavorPassRequest{}
+	mi := &file_meurpg_play_v1_favor_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CancelFavorPassRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CancelFavorPassRequest) ProtoMessage() {}
+
+func (x *CancelFavorPassRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_meurpg_play_v1_favor_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CancelFavorPassRequest.ProtoReflect.Descriptor instead.
+func (*CancelFavorPassRequest) Descriptor() ([]byte, []int) {
+	return file_meurpg_play_v1_favor_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *CancelFavorPassRequest) GetCampaignId() string {
+	if x != nil {
+		return x.CampaignId
+	}
+	return ""
+}
+
+func (x *CancelFavorPassRequest) GetPassId() string {
+	if x != nil {
+		return x.PassId
+	}
+	return ""
+}
+
+func (x *CancelFavorPassRequest) GetIdempotencyKey() string {
+	if x != nil {
+		return x.IdempotencyKey
+	}
+	return ""
+}
+
+type CancelFavorPassResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Pass          *FavorPass             `protobuf:"bytes,1,opt,name=pass,proto3" json:"pass,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CancelFavorPassResponse) Reset() {
+	*x = CancelFavorPassResponse{}
+	mi := &file_meurpg_play_v1_favor_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CancelFavorPassResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CancelFavorPassResponse) ProtoMessage() {}
+
+func (x *CancelFavorPassResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_meurpg_play_v1_favor_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CancelFavorPassResponse.ProtoReflect.Descriptor instead.
+func (*CancelFavorPassResponse) Descriptor() ([]byte, []int) {
+	return file_meurpg_play_v1_favor_proto_rawDescGZIP(), []int{13}
+}
+
+func (x *CancelFavorPassResponse) GetPass() *FavorPass {
+	if x != nil {
+		return x.Pass
+	}
+	return nil
+}
+
+type AnswerFavorRefundRequest struct {
+	state      protoimpl.MessageState `protogen:"open.v1"`
+	CampaignId string                 `protobuf:"bytes,1,opt,name=campaign_id,json=campaignId,proto3" json:"campaign_id,omitempty"`
+	PromptId   string                 `protobuf:"bytes,2,opt,name=prompt_id,json=promptId,proto3" json:"prompt_id,omitempty"`
+	// True gives the Inspiration back; false keeps it spent.
+	GiveBack       bool   `protobuf:"varint,3,opt,name=give_back,json=giveBack,proto3" json:"give_back,omitempty"`
+	IdempotencyKey string `protobuf:"bytes,4,opt,name=idempotency_key,json=idempotencyKey,proto3" json:"idempotency_key,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *AnswerFavorRefundRequest) Reset() {
+	*x = AnswerFavorRefundRequest{}
+	mi := &file_meurpg_play_v1_favor_proto_msgTypes[14]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AnswerFavorRefundRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AnswerFavorRefundRequest) ProtoMessage() {}
+
+func (x *AnswerFavorRefundRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_meurpg_play_v1_favor_proto_msgTypes[14]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AnswerFavorRefundRequest.ProtoReflect.Descriptor instead.
+func (*AnswerFavorRefundRequest) Descriptor() ([]byte, []int) {
+	return file_meurpg_play_v1_favor_proto_rawDescGZIP(), []int{14}
+}
+
+func (x *AnswerFavorRefundRequest) GetCampaignId() string {
+	if x != nil {
+		return x.CampaignId
+	}
+	return ""
+}
+
+func (x *AnswerFavorRefundRequest) GetPromptId() string {
+	if x != nil {
+		return x.PromptId
+	}
+	return ""
+}
+
+func (x *AnswerFavorRefundRequest) GetGiveBack() bool {
+	if x != nil {
+		return x.GiveBack
+	}
+	return false
+}
+
+func (x *AnswerFavorRefundRequest) GetIdempotencyKey() string {
+	if x != nil {
+		return x.IdempotencyKey
+	}
+	return ""
+}
+
+type AnswerFavorRefundResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Prompt        *FavorRefundPrompt     `protobuf:"bytes,1,opt,name=prompt,proto3" json:"prompt,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AnswerFavorRefundResponse) Reset() {
+	*x = AnswerFavorRefundResponse{}
+	mi := &file_meurpg_play_v1_favor_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AnswerFavorRefundResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AnswerFavorRefundResponse) ProtoMessage() {}
+
+func (x *AnswerFavorRefundResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_meurpg_play_v1_favor_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AnswerFavorRefundResponse.ProtoReflect.Descriptor instead.
+func (*AnswerFavorRefundResponse) Descriptor() ([]byte, []int) {
+	return file_meurpg_play_v1_favor_proto_rawDescGZIP(), []int{15}
+}
+
+func (x *AnswerFavorRefundResponse) GetPrompt() *FavorRefundPrompt {
+	if x != nil {
+		return x.Prompt
+	}
+	return nil
 }
 
 var File_meurpg_play_v1_favor_proto protoreflect.FileDescriptor
 
 const file_meurpg_play_v1_favor_proto_rawDesc = "" +
 	"\n" +
-	"\x1ameurpg/play/v1/favor.proto\x12\x0emeurpg.play.v1\"J\n" +
+	"\x1ameurpg/play/v1/favor.proto\x12\x0emeurpg.play.v1\x1a!meurpg/play/v1/combat_rolls.proto\"J\n" +
 	"\fFavorBlocked\x12:\n" +
 	"\x06reason\x18\x01 \x01(\x0e2\".meurpg.play.v1.FavorBlockedReasonR\x06reason\"W\n" +
 	"\vFavorHolder\x12!\n" +
@@ -511,16 +1182,57 @@ const file_meurpg_play_v1_favor_proto_rawDesc = "" +
 	"\x12GrantFavorResponse\"2\n" +
 	"\x0fGetFavorRequest\x12\x1f\n" +
 	"\vcampaign_id\x18\x01 \x01(\tR\n" +
-	"campaignId\"I\n" +
+	"campaignId\"\xc6\x01\n" +
 	"\x10GetFavorResponse\x125\n" +
-	"\aholders\x18\x01 \x03(\v2\x1b.meurpg.play.v1.FavorHolderR\aholders\"\xb0\x01\n" +
+	"\aholders\x18\x01 \x03(\v2\x1b.meurpg.play.v1.FavorHolderR\aholders\x121\n" +
+	"\x06passes\x18\x02 \x03(\v2\x19.meurpg.play.v1.FavorPassR\x06passes\x12H\n" +
+	"\x0erefund_prompts\x18\x03 \x03(\v2!.meurpg.play.v1.FavorRefundPromptR\rrefundPrompts\"\x81\x02\n" +
+	"\tFavorPass\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12*\n" +
+	"\x11from_character_id\x18\x02 \x01(\tR\x0ffromCharacterId\x12\x1b\n" +
+	"\tfrom_name\x18\x03 \x01(\tR\bfromName\x12&\n" +
+	"\x0fto_character_id\x18\x04 \x01(\tR\rtoCharacterId\x12\x17\n" +
+	"\ato_name\x18\x05 \x01(\tR\x06toName\x127\n" +
+	"\x06status\x18\x06 \x01(\x0e2\x1f.meurpg.play.v1.FavorPassStatusR\x06status\x12!\n" +
+	"\freceiver_has\x18\a \x01(\bR\vreceiverHas\"\x94\x02\n" +
+	"\x11FavorRefundPrompt\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12!\n" +
+	"\fcharacter_id\x18\x02 \x01(\tR\vcharacterId\x12%\n" +
+	"\x0echaracter_name\x18\x03 \x01(\tR\rcharacterName\x12\"\n" +
+	"\rroll_label_pt\x18\x04 \x01(\tR\vrollLabelPt\x12F\n" +
+	"\x0ehidden_sources\x18\x05 \x03(\v2\x1f.meurpg.play.v1.AdvantageSourceR\rhiddenSources\x129\n" +
+	"\x06status\x18\x06 \x01(\x0e2!.meurpg.play.v1.FavorRefundStatusR\x06status\"\xb0\x01\n" +
 	"\x10PassFavorRequest\x12\x1f\n" +
 	"\vcampaign_id\x18\x01 \x01(\tR\n" +
 	"campaignId\x12*\n" +
 	"\x11from_character_id\x18\x02 \x01(\tR\x0ffromCharacterId\x12&\n" +
 	"\x0fto_character_id\x18\x03 \x01(\tR\rtoCharacterId\x12'\n" +
-	"\x0fidempotency_key\x18\x04 \x01(\tR\x0eidempotencyKey\"\x13\n" +
-	"\x11PassFavorResponse*\x9f\x03\n" +
+	"\x0fidempotency_key\x18\x04 \x01(\tR\x0eidempotencyKey\"B\n" +
+	"\x11PassFavorResponse\x12-\n" +
+	"\x04pass\x18\x01 \x01(\v2\x19.meurpg.play.v1.FavorPassR\x04pass\"\x93\x01\n" +
+	"\x16AnswerFavorPassRequest\x12\x1f\n" +
+	"\vcampaign_id\x18\x01 \x01(\tR\n" +
+	"campaignId\x12\x17\n" +
+	"\apass_id\x18\x02 \x01(\tR\x06passId\x12\x16\n" +
+	"\x06accept\x18\x03 \x01(\bR\x06accept\x12'\n" +
+	"\x0fidempotency_key\x18\x04 \x01(\tR\x0eidempotencyKey\"H\n" +
+	"\x17AnswerFavorPassResponse\x12-\n" +
+	"\x04pass\x18\x01 \x01(\v2\x19.meurpg.play.v1.FavorPassR\x04pass\"{\n" +
+	"\x16CancelFavorPassRequest\x12\x1f\n" +
+	"\vcampaign_id\x18\x01 \x01(\tR\n" +
+	"campaignId\x12\x17\n" +
+	"\apass_id\x18\x02 \x01(\tR\x06passId\x12'\n" +
+	"\x0fidempotency_key\x18\x03 \x01(\tR\x0eidempotencyKey\"H\n" +
+	"\x17CancelFavorPassResponse\x12-\n" +
+	"\x04pass\x18\x01 \x01(\v2\x19.meurpg.play.v1.FavorPassR\x04pass\"\x9e\x01\n" +
+	"\x18AnswerFavorRefundRequest\x12\x1f\n" +
+	"\vcampaign_id\x18\x01 \x01(\tR\n" +
+	"campaignId\x12\x1b\n" +
+	"\tprompt_id\x18\x02 \x01(\tR\bpromptId\x12\x1b\n" +
+	"\tgive_back\x18\x03 \x01(\bR\bgiveBack\x12'\n" +
+	"\x0fidempotency_key\x18\x04 \x01(\tR\x0eidempotencyKey\"V\n" +
+	"\x19AnswerFavorRefundResponse\x129\n" +
+	"\x06prompt\x18\x01 \x01(\v2!.meurpg.play.v1.FavorRefundPromptR\x06prompt*\x91\x04\n" +
 	"\x12FavorBlockedReason\x12$\n" +
 	" FAVOR_BLOCKED_REASON_UNSPECIFIED\x10\x00\x12$\n" +
 	" FAVOR_BLOCKED_REASON_ALREADY_HAS\x10\x01\x12/\n" +
@@ -531,12 +1243,30 @@ const file_meurpg_play_v1_favor_proto_rawDesc = "" +
 	"\x19FAVOR_BLOCKED_REASON_SELF\x10\x06\x12%\n" +
 	"!FAVOR_BLOCKED_REASON_ADDS_NOTHING\x10\a\x12'\n" +
 	"#FAVOR_BLOCKED_REASON_AFTER_THE_ROLL\x10\b\x12(\n" +
-	"$FAVOR_BLOCKED_REASON_NOTHING_TO_ROLL\x10\t2\x89\x02\n" +
+	"$FAVOR_BLOCKED_REASON_NOTHING_TO_ROLL\x10\t\x12%\n" +
+	"!FAVOR_BLOCKED_REASON_PASS_PENDING\x10\n" +
+	"\x12$\n" +
+	" FAVOR_BLOCKED_REASON_PASS_CLOSED\x10\v\x12#\n" +
+	"\x1fFAVOR_BLOCKED_REASON_NO_SESSION\x10\f*\xb2\x01\n" +
+	"\x0fFavorPassStatus\x12!\n" +
+	"\x1dFAVOR_PASS_STATUS_UNSPECIFIED\x10\x00\x12\x1d\n" +
+	"\x19FAVOR_PASS_STATUS_PENDING\x10\x01\x12\x1e\n" +
+	"\x1aFAVOR_PASS_STATUS_ACCEPTED\x10\x02\x12\x1d\n" +
+	"\x19FAVOR_PASS_STATUS_REFUSED\x10\x03\x12\x1e\n" +
+	"\x1aFAVOR_PASS_STATUS_CANCELED\x10\x04*\x96\x01\n" +
+	"\x11FavorRefundStatus\x12#\n" +
+	"\x1fFAVOR_REFUND_STATUS_UNSPECIFIED\x10\x00\x12\x1c\n" +
+	"\x18FAVOR_REFUND_STATUS_OPEN\x10\x01\x12 \n" +
+	"\x1cFAVOR_REFUND_STATUS_RETURNED\x10\x02\x12\x1c\n" +
+	"\x18FAVOR_REFUND_STATUS_KEPT\x10\x032\xbb\x04\n" +
 	"\fFavorService\x12S\n" +
 	"\n" +
 	"GrantFavor\x12!.meurpg.play.v1.GrantFavorRequest\x1a\".meurpg.play.v1.GrantFavorResponse\x12R\n" +
 	"\bGetFavor\x12\x1f.meurpg.play.v1.GetFavorRequest\x1a .meurpg.play.v1.GetFavorResponse\"\x03\x90\x02\x02\x12P\n" +
-	"\tPassFavor\x12 .meurpg.play.v1.PassFavorRequest\x1a!.meurpg.play.v1.PassFavorResponseB\xb8\x01\n" +
+	"\tPassFavor\x12 .meurpg.play.v1.PassFavorRequest\x1a!.meurpg.play.v1.PassFavorResponse\x12b\n" +
+	"\x0fAnswerFavorPass\x12&.meurpg.play.v1.AnswerFavorPassRequest\x1a'.meurpg.play.v1.AnswerFavorPassResponse\x12b\n" +
+	"\x0fCancelFavorPass\x12&.meurpg.play.v1.CancelFavorPassRequest\x1a'.meurpg.play.v1.CancelFavorPassResponse\x12h\n" +
+	"\x11AnswerFavorRefund\x12(.meurpg.play.v1.AnswerFavorRefundRequest\x1a).meurpg.play.v1.AnswerFavorRefundResponseB\xb8\x01\n" +
 	"\x12com.meurpg.play.v1B\n" +
 	"FavorProtoP\x01Z<github.com/PuraFome/meuRPG/backend/gen/meurpg/play/v1;playv1\xa2\x02\x03MPX\xaa\x02\x0eMeurpg.Play.V1\xca\x02\x0eMeurpg\\Play\\V1\xe2\x02\x1aMeurpg\\Play\\V1\\GPBMetadata\xea\x02\x10Meurpg::Play::V1b\x06proto3"
 
@@ -552,33 +1282,59 @@ func file_meurpg_play_v1_favor_proto_rawDescGZIP() []byte {
 	return file_meurpg_play_v1_favor_proto_rawDescData
 }
 
-var file_meurpg_play_v1_favor_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_meurpg_play_v1_favor_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
+var file_meurpg_play_v1_favor_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
+var file_meurpg_play_v1_favor_proto_msgTypes = make([]protoimpl.MessageInfo, 16)
 var file_meurpg_play_v1_favor_proto_goTypes = []any{
-	(FavorBlockedReason)(0),    // 0: meurpg.play.v1.FavorBlockedReason
-	(*FavorBlocked)(nil),       // 1: meurpg.play.v1.FavorBlocked
-	(*FavorHolder)(nil),        // 2: meurpg.play.v1.FavorHolder
-	(*GrantFavorRequest)(nil),  // 3: meurpg.play.v1.GrantFavorRequest
-	(*GrantFavorResponse)(nil), // 4: meurpg.play.v1.GrantFavorResponse
-	(*GetFavorRequest)(nil),    // 5: meurpg.play.v1.GetFavorRequest
-	(*GetFavorResponse)(nil),   // 6: meurpg.play.v1.GetFavorResponse
-	(*PassFavorRequest)(nil),   // 7: meurpg.play.v1.PassFavorRequest
-	(*PassFavorResponse)(nil),  // 8: meurpg.play.v1.PassFavorResponse
+	(FavorBlockedReason)(0),           // 0: meurpg.play.v1.FavorBlockedReason
+	(FavorPassStatus)(0),              // 1: meurpg.play.v1.FavorPassStatus
+	(FavorRefundStatus)(0),            // 2: meurpg.play.v1.FavorRefundStatus
+	(*FavorBlocked)(nil),              // 3: meurpg.play.v1.FavorBlocked
+	(*FavorHolder)(nil),               // 4: meurpg.play.v1.FavorHolder
+	(*GrantFavorRequest)(nil),         // 5: meurpg.play.v1.GrantFavorRequest
+	(*GrantFavorResponse)(nil),        // 6: meurpg.play.v1.GrantFavorResponse
+	(*GetFavorRequest)(nil),           // 7: meurpg.play.v1.GetFavorRequest
+	(*GetFavorResponse)(nil),          // 8: meurpg.play.v1.GetFavorResponse
+	(*FavorPass)(nil),                 // 9: meurpg.play.v1.FavorPass
+	(*FavorRefundPrompt)(nil),         // 10: meurpg.play.v1.FavorRefundPrompt
+	(*PassFavorRequest)(nil),          // 11: meurpg.play.v1.PassFavorRequest
+	(*PassFavorResponse)(nil),         // 12: meurpg.play.v1.PassFavorResponse
+	(*AnswerFavorPassRequest)(nil),    // 13: meurpg.play.v1.AnswerFavorPassRequest
+	(*AnswerFavorPassResponse)(nil),   // 14: meurpg.play.v1.AnswerFavorPassResponse
+	(*CancelFavorPassRequest)(nil),    // 15: meurpg.play.v1.CancelFavorPassRequest
+	(*CancelFavorPassResponse)(nil),   // 16: meurpg.play.v1.CancelFavorPassResponse
+	(*AnswerFavorRefundRequest)(nil),  // 17: meurpg.play.v1.AnswerFavorRefundRequest
+	(*AnswerFavorRefundResponse)(nil), // 18: meurpg.play.v1.AnswerFavorRefundResponse
+	(*AdvantageSource)(nil),           // 19: meurpg.play.v1.AdvantageSource
 }
 var file_meurpg_play_v1_favor_proto_depIdxs = []int32{
-	0, // 0: meurpg.play.v1.FavorBlocked.reason:type_name -> meurpg.play.v1.FavorBlockedReason
-	2, // 1: meurpg.play.v1.GetFavorResponse.holders:type_name -> meurpg.play.v1.FavorHolder
-	3, // 2: meurpg.play.v1.FavorService.GrantFavor:input_type -> meurpg.play.v1.GrantFavorRequest
-	5, // 3: meurpg.play.v1.FavorService.GetFavor:input_type -> meurpg.play.v1.GetFavorRequest
-	7, // 4: meurpg.play.v1.FavorService.PassFavor:input_type -> meurpg.play.v1.PassFavorRequest
-	4, // 5: meurpg.play.v1.FavorService.GrantFavor:output_type -> meurpg.play.v1.GrantFavorResponse
-	6, // 6: meurpg.play.v1.FavorService.GetFavor:output_type -> meurpg.play.v1.GetFavorResponse
-	8, // 7: meurpg.play.v1.FavorService.PassFavor:output_type -> meurpg.play.v1.PassFavorResponse
-	5, // [5:8] is the sub-list for method output_type
-	2, // [2:5] is the sub-list for method input_type
-	2, // [2:2] is the sub-list for extension type_name
-	2, // [2:2] is the sub-list for extension extendee
-	0, // [0:2] is the sub-list for field type_name
+	0,  // 0: meurpg.play.v1.FavorBlocked.reason:type_name -> meurpg.play.v1.FavorBlockedReason
+	4,  // 1: meurpg.play.v1.GetFavorResponse.holders:type_name -> meurpg.play.v1.FavorHolder
+	9,  // 2: meurpg.play.v1.GetFavorResponse.passes:type_name -> meurpg.play.v1.FavorPass
+	10, // 3: meurpg.play.v1.GetFavorResponse.refund_prompts:type_name -> meurpg.play.v1.FavorRefundPrompt
+	1,  // 4: meurpg.play.v1.FavorPass.status:type_name -> meurpg.play.v1.FavorPassStatus
+	19, // 5: meurpg.play.v1.FavorRefundPrompt.hidden_sources:type_name -> meurpg.play.v1.AdvantageSource
+	2,  // 6: meurpg.play.v1.FavorRefundPrompt.status:type_name -> meurpg.play.v1.FavorRefundStatus
+	9,  // 7: meurpg.play.v1.PassFavorResponse.pass:type_name -> meurpg.play.v1.FavorPass
+	9,  // 8: meurpg.play.v1.AnswerFavorPassResponse.pass:type_name -> meurpg.play.v1.FavorPass
+	9,  // 9: meurpg.play.v1.CancelFavorPassResponse.pass:type_name -> meurpg.play.v1.FavorPass
+	10, // 10: meurpg.play.v1.AnswerFavorRefundResponse.prompt:type_name -> meurpg.play.v1.FavorRefundPrompt
+	5,  // 11: meurpg.play.v1.FavorService.GrantFavor:input_type -> meurpg.play.v1.GrantFavorRequest
+	7,  // 12: meurpg.play.v1.FavorService.GetFavor:input_type -> meurpg.play.v1.GetFavorRequest
+	11, // 13: meurpg.play.v1.FavorService.PassFavor:input_type -> meurpg.play.v1.PassFavorRequest
+	13, // 14: meurpg.play.v1.FavorService.AnswerFavorPass:input_type -> meurpg.play.v1.AnswerFavorPassRequest
+	15, // 15: meurpg.play.v1.FavorService.CancelFavorPass:input_type -> meurpg.play.v1.CancelFavorPassRequest
+	17, // 16: meurpg.play.v1.FavorService.AnswerFavorRefund:input_type -> meurpg.play.v1.AnswerFavorRefundRequest
+	6,  // 17: meurpg.play.v1.FavorService.GrantFavor:output_type -> meurpg.play.v1.GrantFavorResponse
+	8,  // 18: meurpg.play.v1.FavorService.GetFavor:output_type -> meurpg.play.v1.GetFavorResponse
+	12, // 19: meurpg.play.v1.FavorService.PassFavor:output_type -> meurpg.play.v1.PassFavorResponse
+	14, // 20: meurpg.play.v1.FavorService.AnswerFavorPass:output_type -> meurpg.play.v1.AnswerFavorPassResponse
+	16, // 21: meurpg.play.v1.FavorService.CancelFavorPass:output_type -> meurpg.play.v1.CancelFavorPassResponse
+	18, // 22: meurpg.play.v1.FavorService.AnswerFavorRefund:output_type -> meurpg.play.v1.AnswerFavorRefundResponse
+	17, // [17:23] is the sub-list for method output_type
+	11, // [11:17] is the sub-list for method input_type
+	11, // [11:11] is the sub-list for extension type_name
+	11, // [11:11] is the sub-list for extension extendee
+	0,  // [0:11] is the sub-list for field type_name
 }
 
 func init() { file_meurpg_play_v1_favor_proto_init() }
@@ -586,13 +1342,14 @@ func file_meurpg_play_v1_favor_proto_init() {
 	if File_meurpg_play_v1_favor_proto != nil {
 		return
 	}
+	file_meurpg_play_v1_combat_rolls_proto_init()
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_meurpg_play_v1_favor_proto_rawDesc), len(file_meurpg_play_v1_favor_proto_rawDesc)),
-			NumEnums:      1,
-			NumMessages:   8,
+			NumEnums:      3,
+			NumMessages:   16,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

@@ -110,7 +110,7 @@ func (s *Service) savingRider(ctx context.Context, c *combatTx, m authz.Membersh
 		return err
 	}
 	sv, sp := plan.Save, spellOfPlan(plan)
-	modes, err := s.spellModes(ctx, c, m, c.viewer(m, cs), cs, attacker, &playv1.CastSpellRequest{})
+	modes, err := s.spellModes(ctx, c, m, c.viewer(m, cs), cs, attacker, &playv1.CastSpellRequest{}, "")
 	if err != nil {
 		return err
 	}

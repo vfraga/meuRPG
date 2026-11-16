@@ -96,6 +96,8 @@ type logEntry struct {
 	// partHidden says the part is one the other players read as "Outra fonte".
 	partHidden bool
 	rolls      *logRolls
+	// favor is the variant of a line about the Inspiration (combat_log_favor.go).
+	favor string
 }
 
 // damageLog is what became of one pending damage of a spell: where it is, the
@@ -531,7 +533,13 @@ func buildLog(events []playdb.ListEncounterEventsRow) []*logEntry {
 	}
 	var out []*logEntry
 	for _, e := range events {
-		if undone[e.ID] || e.Kind == eventActionUndone {
+		if e.Kind == eventActionUndone {
+			if entry := favorUndoneLine(e); entry != nil {
+				out = append(out, entry)
+			}
+			continue
+		}
+		if undone[e.ID] {
 			continue
 		}
 		if entry := b.entry(e); entry != nil {
@@ -616,6 +624,11 @@ var logHandlers = map[string]logHandler{
 	eventLastingVisibility:       effectLine,
 	eventExhaustion:              effectLine,
 	eventHitRider:                (*logBuilder).hitRider,
+	eventFavorGranted:            favorLogLine(playv1.CombatLogKind_COMBAT_LOG_KIND_FAVOR_PASSED, favorLineGranted),
+	eventFavorPassed:             favorLogLine(playv1.CombatLogKind_COMBAT_LOG_KIND_FAVOR_PASSED, favorLineMoved),
+	eventFavorAskRefused:         favorLogLine(playv1.CombatLogKind_COMBAT_LOG_KIND_FAVOR_PASS_ANSWERED, favorLineRefused),
+	eventFavorPassCanceled:       favorLogLine(playv1.CombatLogKind_COMBAT_LOG_KIND_FAVOR_PASS_ANSWERED, favorLineCanceled),
+	eventFavorRefunded:           favorLogLine(playv1.CombatLogKind_COMBAT_LOG_KIND_FAVOR_REFUNDED, favorLineRefunded),
 	eventStateChanged:            plainLine(playv1.CombatLogKind_COMBAT_LOG_KIND_STATE_CHANGED),
 	eventDamagePartRemoved:       (*logBuilder).partRemoved,
 	eventTrapSearched:            (*logBuilder).trapSearched,
@@ -1276,6 +1289,9 @@ var logFillers = map[playv1.CombatLogKind]logFiller{
 	playv1.CombatLogKind_COMBAT_LOG_KIND_ITEM_CHARGE_SPENT:       (*logEntry).fillItemUse,
 	playv1.CombatLogKind_COMBAT_LOG_KIND_ITEM_LAST_CHARGE_ROLLED: (*logEntry).fillItemUse,
 	playv1.CombatLogKind_COMBAT_LOG_KIND_AMMUNITION_SPENT:        (*logEntry).fillItemUse,
+	playv1.CombatLogKind_COMBAT_LOG_KIND_FAVOR_PASSED:            (*logEntry).fillFavor,
+	playv1.CombatLogKind_COMBAT_LOG_KIND_FAVOR_PASS_ANSWERED:     (*logEntry).fillFavor,
+	playv1.CombatLogKind_COMBAT_LOG_KIND_FAVOR_REFUNDED:          (*logEntry).fillFavor,
 	playv1.CombatLogKind_COMBAT_LOG_KIND_CONSUMABLE_USED:         (*logEntry).fillConsumableUse,
 }
 

@@ -1028,6 +1028,9 @@ func TestEveryMethodNeedsASession(t *testing.T) {
 	_, favor["GrantFavor"] = fc.GrantFavor(ctx, connect.NewRequest(&playv1.GrantFavorRequest{CampaignId: id, CharacterId: id, IdempotencyKey: id}))
 	_, favor["GetFavor"] = fc.GetFavor(ctx, connect.NewRequest(&playv1.GetFavorRequest{CampaignId: id}))
 	_, favor["PassFavor"] = fc.PassFavor(ctx, connect.NewRequest(&playv1.PassFavorRequest{CampaignId: id, FromCharacterId: id, ToCharacterId: id, IdempotencyKey: id}))
+	_, favor["AnswerFavorPass"] = fc.AnswerFavorPass(ctx, connect.NewRequest(&playv1.AnswerFavorPassRequest{CampaignId: id, PassId: id, IdempotencyKey: id}))
+	_, favor["CancelFavorPass"] = fc.CancelFavorPass(ctx, connect.NewRequest(&playv1.CancelFavorPassRequest{CampaignId: id, PassId: id, IdempotencyKey: id}))
+	_, favor["AnswerFavorRefund"] = fc.AnswerFavorRefund(ctx, connect.NewRequest(&playv1.AnswerFavorRefundRequest{CampaignId: id, PromptId: id, IdempotencyKey: id}))
 	favorMethods := playv1.File_meurpg_play_v1_favor_proto.Services().ByName("FavorService").Methods()
 	if len(favor) != favorMethods.Len() {
 		t.Errorf("called %d favor methods, the service has %d", len(favor), favorMethods.Len())

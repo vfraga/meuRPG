@@ -5,6 +5,8 @@ syntax = "proto3";
 // Inspiration in the code; the app says "Inspiração".
 package meurpg.play.v1;
 
+import "meurpg/play/v1/combat_rolls.proto";
+
 // FavorBlockedReason is why a favor call was refused with `failed_precondition`.
 enum FavorBlockedReason {
   FAVOR_BLOCKED_REASON_UNSPECIFIED = 0;
@@ -16,8 +18,10 @@ enum FavorBlockedReason {
   FAVOR_BLOCKED_REASON_NOT_THE_HOLDER = 3;
   // The caller's character has none to spend.
   FAVOR_BLOCKED_REASON_HAS_NONE = 4;
-  // What a pass tells its giver when the receiver cannot take it (it has one, it is in
-  // another campaign or it is an NPC). The server never sends the receiver's state.
+  // The character that would take the Inspiration cannot hold it now. Three answers give it, always to the master: the accept of a
+  // pass whose receiver has one already or is no player character of the table any more; the undo of a pass whose giver is in the
+  // reserve or is no player character any more; the refund ("Devolver") of a roller in the reserve or no player character any more.
+  // The server never sends a player the state of the receiver.
   FAVOR_BLOCKED_REASON_CANNOT_RECEIVE = 5;
   // The pass names the giver as the receiver.
   FAVOR_BLOCKED_REASON_SELF = 6;
@@ -27,6 +31,13 @@ enum FavorBlockedReason {
   FAVOR_BLOCKED_REASON_AFTER_THE_ROLL = 8;
   // The spend was asked on a call that rolls no d20: nothing is spent.
   FAVOR_BLOCKED_REASON_NOTHING_TO_ROLL = 9;
+  // The giver already asked to pass it and the master has not answered: the Inspiration cannot be spent or asked again until the
+  // ask is answered or canceled.
+  FAVOR_BLOCKED_REASON_PASS_PENDING = 10;
+  // The ask was already answered or canceled (on another screen, or by the master meanwhile).
+  FAVOR_BLOCKED_REASON_PASS_CLOSED = 11;
+  // The campaign has no open session: the master answers a pass at the table, so it is only asked in a session.
+  FAVOR_BLOCKED_REASON_NO_SESSION = 12;
 }
 
 // FavorBlocked is the error detail of FavorService's `failed_precondition`.
@@ -55,6 +66,59 @@ message GetFavorRequest {
 message GetFavorResponse {
   // The master reads every holder of the campaign; a player reads only their own.
   repeated FavorHolder holders = 1;
+  // The passes that wait for the master: the master reads all of them; a player reads only the asks of their own characters.
+  repeated FavorPass passes = 2;
+  // The master's questions about an Inspiration a roll spent for nothing. The master's alone.
+  repeated FavorRefundPrompt refund_prompts = 3;
+}
+
+// FavorPassStatus is where a pass is.
+enum FavorPassStatus {
+  FAVOR_PASS_STATUS_UNSPECIFIED = 0;
+  // Waits for the master.
+  FAVOR_PASS_STATUS_PENDING = 1;
+  // The master accepted: the Inspiration moved.
+  FAVOR_PASS_STATUS_ACCEPTED = 2;
+  // The master refused: it stays with the giver.
+  FAVOR_PASS_STATUS_REFUSED = 3;
+  // The giver gave the ask up, or the session ended.
+  FAVOR_PASS_STATUS_CANCELED = 4;
+}
+
+// FavorPass is a player's ask to pass the Inspiration of their character to another player character.
+message FavorPass {
+  string id = 1;
+  string from_character_id = 2;
+  string from_name = 3;
+  string to_character_id = 4;
+  string to_name = 5;
+  FavorPassStatus status = 6;
+  // The master's alone: the receiver already has one, so the master's Aceitar is dashed with the reason. False for a player.
+  bool receiver_has = 7;
+}
+
+// FavorRefundStatus is where a refund prompt is.
+enum FavorRefundStatus {
+  FAVOR_REFUND_STATUS_UNSPECIFIED = 0;
+  // Waits for the master.
+  FAVOR_REFUND_STATUS_OPEN = 1;
+  // The master gave the Inspiration back.
+  FAVOR_REFUND_STATUS_RETURNED = 2;
+  // It stays spent: the master chose so, or the session ended without an answer.
+  FAVOR_REFUND_STATUS_KEPT = 3;
+}
+
+// FavorRefundPrompt is the question the master gets when a roll spent the Inspiration and it added nothing over every source
+// of advantage. The master's alone: the player reads only the answer, when the master gives it back.
+message FavorRefundPrompt {
+  string id = 1;
+  string character_id = 2;
+  string character_name = 3;
+  // The roll's name as the log reads it.
+  string roll_label_pt = 4;
+  // The sources of advantage the roller could not read, the master's view.
+  repeated AdvantageSource hidden_sources = 5;
+  FavorRefundStatus status = 6;
 }
 
 message PassFavorRequest {
@@ -64,10 +128,49 @@ message PassFavorRequest {
   string idempotency_key = 4;
 }
 
-message PassFavorResponse {}
+message PassFavorResponse {
+  // The pending pass the ask made (the same one on a retry with the same key).
+  FavorPass pass = 1;
+}
+
+message AnswerFavorPassRequest {
+  string campaign_id = 1;
+  string pass_id = 2;
+  // True accepts: the Inspiration moves. False refuses: it stays with the giver.
+  bool accept = 3;
+  string idempotency_key = 4;
+}
+
+message AnswerFavorPassResponse {
+  // The pass as it is after the answer.
+  FavorPass pass = 1;
+}
+
+message CancelFavorPassRequest {
+  string campaign_id = 1;
+  string pass_id = 2;
+  string idempotency_key = 3;
+}
+
+message CancelFavorPassResponse {
+  FavorPass pass = 1;
+}
+
+message AnswerFavorRefundRequest {
+  string campaign_id = 1;
+  string prompt_id = 2;
+  // True gives the Inspiration back; false keeps it spent.
+  bool give_back = 3;
+  string idempotency_key = 4;
+}
+
+message AnswerFavorRefundResponse {
+  FavorRefundPrompt prompt = 1;
+}
 
 // FavorService is the Inspiration of the player characters: the master grants it, the
-// holder passes it on. A character has it or not and it never stacks.
+// holder asks to pass it on and the master accepts or refuses. A character has it or not and it
+// never stacks.
 //
 // Errors:
 //   - `not_found`: the campaign does not exist, or the caller is not a member of it.
@@ -84,7 +187,23 @@ service FavorService {
     option idempotency_level = IDEMPOTENT;
   }
 
-  // PassFavor hands the holder's Inspiration to another player character. Not built yet:
-  // it answers `unimplemented`.
+  // PassFavor asks to pass the holder's Inspiration to another player character: it stores a
+  // pending pass and nothing moves until the master answers. Only in an open session. A retry
+  // with the same key answers the same pass.
   rpc PassFavor(PassFavorRequest) returns (PassFavorResponse);
+
+  // AnswerFavorPass is the master's answer to a pending pass: accept moves the Inspiration, refuse keeps it with the giver. Only
+  // the master. The refusals (failed_precondition, FavorBlocked): PASS_CLOSED when the ask was answered or canceled already (a refuse
+  // gives no other); and, for an accept, CANNOT_RECEIVE when the receiver has one already or can no longer hold it, and
+  // NOT_THE_HOLDER when the giver is in the reserve or no longer has it. A refused accept leaves the ask pending.
+  rpc AnswerFavorPass(AnswerFavorPassRequest) returns (AnswerFavorPassResponse);
+
+  // CancelFavorPass gives a pending ask up. Only the giver's owner.
+  rpc CancelFavorPass(CancelFavorPassRequest) returns (CancelFavorPassResponse);
+
+  // AnswerFavorRefund is the master's answer to a refund prompt: give back the Inspiration a roll spent for nothing, or keep it
+  // spent. Only the master. The refusals (failed_precondition, FavorBlocked): PASS_CLOSED when the question was answered or ended
+  // already (keeping gives no other); and, for a give back, ALREADY_HAS when the roller has one now and CANNOT_RECEIVE when the
+  // roller is in the reserve or no player character any more. A refused give back leaves the question open, so it can be kept.
+  rpc AnswerFavorRefund(AnswerFavorRefundRequest) returns (AnswerFavorRefundResponse);
 }

@@ -36,6 +36,7 @@
     "to": 1
   },
   "favor": true,
+  "favor_prompt": "x",
   "favor_lost": "x",
   "d20_reroll": {
     "resource": "x",

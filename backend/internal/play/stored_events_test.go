@@ -96,6 +96,12 @@ var otherWriters = map[string][]storedShape{
 	"favor_granted":             {storedShapeOf[favorGrantedEvent]("today.json")},
 	"favor_spent":               {storedShapeOf[favorSpentEvent]("today.json")},
 	"favor_passed":              {storedShapeOf[favorPassedEvent]("today.json")},
+	"favor_pass_asked":          {storedShapeOf[favorPassEvent]("today.json")},
+	"favor_pass_refused":        {storedShapeOf[favorPassEvent]("today.json")},
+	"favor_pass_canceled":       {storedShapeOf[favorPassEvent]("today.json")},
+	"favor_refund_prompted":     {storedShapeOf[favorRefundEvent]("today.json")},
+	"favor_refunded":            {storedShapeOf[favorRefundEvent]("today.json")},
+	"favor_refund_kept":         {storedShapeOf[favorRefundEvent]("today.json")},
 	"item_charge_spent":         {storedShapeOf[itemUseEvent]("today.json")},
 	"item_charges_restored":     {storedShapeOf[itemUseEvent]("today.json")},
 	"item_destroyed":            {storedShapeOf[itemUseEvent]("today.json")},
@@ -115,6 +121,11 @@ type vitalsEvent struct {
 var extraShapes = map[string][]storedShape{
 	"lasting_effect_added": {storedShapeOf[charEffectEvent]("today-character.json")}, // out of a combat: lasting_effects_charadd.go
 	"lasting_effect_ended": {storedShapeOf[gameTimeEvent]("today-character.json")},   // out of a combat: lasting_effects_chars.go
+	"favor_granted":        {storedShapeOf[favorGrantedCombatEvent]("today-combat.json")},
+	"favor_passed":         {storedShapeOf[favorPassedCombatEvent]("today-combat.json")},
+	"favor_pass_refused":   {storedShapeOf[favorPassCombatEvent]("today-combat.json")},
+	"favor_pass_canceled":  {storedShapeOf[favorPassCombatEvent]("today-combat.json")},
+	"favor_refunded":       {storedShapeOf[favorRefundCombatEvent]("today-combat.json")},
 }
 
 // externalKinds are the kinds that only another module writes. Their payloads are copied by hand.
@@ -599,7 +610,9 @@ func fillPayload(v reflect.Value, seen map[reflect.Type]int) {
 		seen[t]++
 		defer func() { seen[t]-- }()
 		for i := range t.NumField() {
-			if f := t.Field(i); f.IsExported() && f.Tag.Get("json") != "-" {
+			// The payloads of the favor events written in a combat embed their ids and the combat's fields as unexported types, whose exported
+			// fields json writes: they are filled too (the other embedded types keep the shapes their fixtures have).
+			if f := t.Field(i); (f.IsExported() || (f.Anonymous && strings.HasPrefix(f.Type.Name(), "favor"))) && f.Tag.Get("json") != "-" {
 				fillPayload(v.Field(i), seen)
 			}
 		}

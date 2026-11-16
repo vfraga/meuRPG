@@ -8,13 +8,15 @@
 
 import type { GenEnum, GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
 import { enumDesc, fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv2";
+import type { AdvantageSource } from "./combat_rolls_pb";
+import { file_meurpg_play_v1_combat_rolls } from "./combat_rolls_pb";
 import type { Message } from "@bufbuild/protobuf";
 
 /**
  * Describes the file meurpg/play/v1/favor.proto.
  */
 export const file_meurpg_play_v1_favor: GenFile = /*@__PURE__*/
-  fileDesc("ChptZXVycGcvcGxheS92MS9mYXZvci5wcm90bxIObWV1cnBnLnBsYXkudjEiQgoMRmF2b3JCbG9ja2VkEjIKBnJlYXNvbhgBIAEoDjIiLm1ldXJwZy5wbGF5LnYxLkZhdm9yQmxvY2tlZFJlYXNvbiI7CgtGYXZvckhvbGRlchIUCgxjaGFyYWN0ZXJfaWQYASABKAkSFgoOY2hhcmFjdGVyX25hbWUYAiABKAkiVwoRR3JhbnRGYXZvclJlcXVlc3QSEwoLY2FtcGFpZ25faWQYASABKAkSFAoMY2hhcmFjdGVyX2lkGAIgASgJEhcKD2lkZW1wb3RlbmN5X2tleRgDIAEoCSIUChJHcmFudEZhdm9yUmVzcG9uc2UiJgoPR2V0RmF2b3JSZXF1ZXN0EhMKC2NhbXBhaWduX2lkGAEgASgJIkAKEEdldEZhdm9yUmVzcG9uc2USLAoHaG9sZGVycxgBIAMoCzIbLm1ldXJwZy5wbGF5LnYxLkZhdm9ySG9sZGVyInQKEFBhc3NGYXZvclJlcXVlc3QSEwoLY2FtcGFpZ25faWQYASABKAkSGQoRZnJvbV9jaGFyYWN0ZXJfaWQYAiABKAkSFwoPdG9fY2hhcmFjdGVyX2lkGAMgASgJEhcKD2lkZW1wb3RlbmN5X2tleRgEIAEoCSITChFQYXNzRmF2b3JSZXNwb25zZSqfAwoSRmF2b3JCbG9ja2VkUmVhc29uEiQKIEZBVk9SX0JMT0NLRURfUkVBU09OX1VOU1BFQ0lGSUVEEAASJAogRkFWT1JfQkxPQ0tFRF9SRUFTT05fQUxSRUFEWV9IQVMQARIvCitGQVZPUl9CTE9DS0VEX1JFQVNPTl9OT1RfQV9QTEFZRVJfQ0hBUkFDVEVSEAISJwojRkFWT1JfQkxPQ0tFRF9SRUFTT05fTk9UX1RIRV9IT0xERVIQAxIhCh1GQVZPUl9CTE9DS0VEX1JFQVNPTl9IQVNfTk9ORRAEEicKI0ZBVk9SX0JMT0NLRURfUkVBU09OX0NBTk5PVF9SRUNFSVZFEAUSHQoZRkFWT1JfQkxPQ0tFRF9SRUFTT05fU0VMRhAGEiUKIUZBVk9SX0JMT0NLRURfUkVBU09OX0FERFNfTk9USElORxAHEicKI0ZBVk9SX0JMT0NLRURfUkVBU09OX0FGVEVSX1RIRV9ST0xMEAgSKAokRkFWT1JfQkxPQ0tFRF9SRUFTT05fTk9USElOR19UT19ST0xMEAkyiQIKDEZhdm9yU2VydmljZRJTCgpHcmFudEZhdm9yEiEubWV1cnBnLnBsYXkudjEuR3JhbnRGYXZvclJlcXVlc3QaIi5tZXVycGcucGxheS52MS5HcmFudEZhdm9yUmVzcG9uc2USUgoIR2V0RmF2b3ISHy5tZXVycGcucGxheS52MS5HZXRGYXZvclJlcXVlc3QaIC5tZXVycGcucGxheS52MS5HZXRGYXZvclJlc3BvbnNlIgOQAgISUAoJUGFzc0Zhdm9yEiAubWV1cnBnLnBsYXkudjEuUGFzc0Zhdm9yUmVxdWVzdBohLm1ldXJwZy5wbGF5LnYxLlBhc3NGYXZvclJlc3BvbnNlQrgBChJjb20ubWV1cnBnLnBsYXkudjFCCkZhdm9yUHJvdG9QAVo8Z2l0aHViLmNvbS9QdXJhRm9tZS9tZXVSUEcvYmFja2VuZC9nZW4vbWV1cnBnL3BsYXkvdjE7cGxheXYxogIDTVBYqgIOTWV1cnBnLlBsYXkuVjHKAg5NZXVycGdcUGxheVxWMeICGk1ldXJwZ1xQbGF5XFYxXEdQQk1ldGFkYXRh6gIQTWV1cnBnOjpQbGF5OjpWMWIGcHJvdG8z");
+  fileDesc("ChptZXVycGcvcGxheS92MS9mYXZvci5wcm90bxIObWV1cnBnLnBsYXkudjEiQgoMRmF2b3JCbG9ja2VkEjIKBnJlYXNvbhgBIAEoDjIiLm1ldXJwZy5wbGF5LnYxLkZhdm9yQmxvY2tlZFJlYXNvbiI7CgtGYXZvckhvbGRlchIUCgxjaGFyYWN0ZXJfaWQYASABKAkSFgoOY2hhcmFjdGVyX25hbWUYAiABKAkiVwoRR3JhbnRGYXZvclJlcXVlc3QSEwoLY2FtcGFpZ25faWQYASABKAkSFAoMY2hhcmFjdGVyX2lkGAIgASgJEhcKD2lkZW1wb3RlbmN5X2tleRgDIAEoCSIUChJHcmFudEZhdm9yUmVzcG9uc2UiJgoPR2V0RmF2b3JSZXF1ZXN0EhMKC2NhbXBhaWduX2lkGAEgASgJIqYBChBHZXRGYXZvclJlc3BvbnNlEiwKB2hvbGRlcnMYASADKAsyGy5tZXVycGcucGxheS52MS5GYXZvckhvbGRlchIpCgZwYXNzZXMYAiADKAsyGS5tZXVycGcucGxheS52MS5GYXZvclBhc3MSOQoOcmVmdW5kX3Byb21wdHMYAyADKAsyIS5tZXVycGcucGxheS52MS5GYXZvclJlZnVuZFByb21wdCK2AQoJRmF2b3JQYXNzEgoKAmlkGAEgASgJEhkKEWZyb21fY2hhcmFjdGVyX2lkGAIgASgJEhEKCWZyb21fbmFtZRgDIAEoCRIXCg90b19jaGFyYWN0ZXJfaWQYBCABKAkSDwoHdG9fbmFtZRgFIAEoCRIvCgZzdGF0dXMYBiABKA4yHy5tZXVycGcucGxheS52MS5GYXZvclBhc3NTdGF0dXMSFAoMcmVjZWl2ZXJfaGFzGAcgASgIItABChFGYXZvclJlZnVuZFByb21wdBIKCgJpZBgBIAEoCRIUCgxjaGFyYWN0ZXJfaWQYAiABKAkSFgoOY2hhcmFjdGVyX25hbWUYAyABKAkSFQoNcm9sbF9sYWJlbF9wdBgEIAEoCRI3Cg5oaWRkZW5fc291cmNlcxgFIAMoCzIfLm1ldXJwZy5wbGF5LnYxLkFkdmFudGFnZVNvdXJjZRIxCgZzdGF0dXMYBiABKA4yIS5tZXVycGcucGxheS52MS5GYXZvclJlZnVuZFN0YXR1cyJ0ChBQYXNzRmF2b3JSZXF1ZXN0EhMKC2NhbXBhaWduX2lkGAEgASgJEhkKEWZyb21fY2hhcmFjdGVyX2lkGAIgASgJEhcKD3RvX2NoYXJhY3Rlcl9pZBgDIAEoCRIXCg9pZGVtcG90ZW5jeV9rZXkYBCABKAkiPAoRUGFzc0Zhdm9yUmVzcG9uc2USJwoEcGFzcxgBIAEoCzIZLm1ldXJwZy5wbGF5LnYxLkZhdm9yUGFzcyJnChZBbnN3ZXJGYXZvclBhc3NSZXF1ZXN0EhMKC2NhbXBhaWduX2lkGAEgASgJEg8KB3Bhc3NfaWQYAiABKAkSDgoGYWNjZXB0GAMgASgIEhcKD2lkZW1wb3RlbmN5X2tleRgEIAEoCSJCChdBbnN3ZXJGYXZvclBhc3NSZXNwb25zZRInCgRwYXNzGAEgASgLMhkubWV1cnBnLnBsYXkudjEuRmF2b3JQYXNzIlcKFkNhbmNlbEZhdm9yUGFzc1JlcXVlc3QSEwoLY2FtcGFpZ25faWQYASABKAkSDwoHcGFzc19pZBgCIAEoCRIXCg9pZGVtcG90ZW5jeV9rZXkYAyABKAkiQgoXQ2FuY2VsRmF2b3JQYXNzUmVzcG9uc2USJwoEcGFzcxgBIAEoCzIZLm1ldXJwZy5wbGF5LnYxLkZhdm9yUGFzcyJuChhBbnN3ZXJGYXZvclJlZnVuZFJlcXVlc3QSEwoLY2FtcGFpZ25faWQYASABKAkSEQoJcHJvbXB0X2lkGAIgASgJEhEKCWdpdmVfYmFjaxgDIAEoCBIXCg9pZGVtcG90ZW5jeV9rZXkYBCABKAkiTgoZQW5zd2VyRmF2b3JSZWZ1bmRSZXNwb25zZRIxCgZwcm9tcHQYASABKAsyIS5tZXVycGcucGxheS52MS5GYXZvclJlZnVuZFByb21wdCqRBAoSRmF2b3JCbG9ja2VkUmVhc29uEiQKIEZBVk9SX0JMT0NLRURfUkVBU09OX1VOU1BFQ0lGSUVEEAASJAogRkFWT1JfQkxPQ0tFRF9SRUFTT05fQUxSRUFEWV9IQVMQARIvCitGQVZPUl9CTE9DS0VEX1JFQVNPTl9OT1RfQV9QTEFZRVJfQ0hBUkFDVEVSEAISJwojRkFWT1JfQkxPQ0tFRF9SRUFTT05fTk9UX1RIRV9IT0xERVIQAxIhCh1GQVZPUl9CTE9DS0VEX1JFQVNPTl9IQVNfTk9ORRAEEicKI0ZBVk9SX0JMT0NLRURfUkVBU09OX0NBTk5PVF9SRUNFSVZFEAUSHQoZRkFWT1JfQkxPQ0tFRF9SRUFTT05fU0VMRhAGEiUKIUZBVk9SX0JMT0NLRURfUkVBU09OX0FERFNfTk9USElORxAHEicKI0ZBVk9SX0JMT0NLRURfUkVBU09OX0FGVEVSX1RIRV9ST0xMEAgSKAokRkFWT1JfQkxPQ0tFRF9SRUFTT05fTk9USElOR19UT19ST0xMEAkSJQohRkFWT1JfQkxPQ0tFRF9SRUFTT05fUEFTU19QRU5ESU5HEAoSJAogRkFWT1JfQkxPQ0tFRF9SRUFTT05fUEFTU19DTE9TRUQQCxIjCh9GQVZPUl9CTE9DS0VEX1JFQVNPTl9OT19TRVNTSU9OEAwqsgEKD0Zhdm9yUGFzc1N0YXR1cxIhCh1GQVZPUl9QQVNTX1NUQVRVU19VTlNQRUNJRklFRBAAEh0KGUZBVk9SX1BBU1NfU1RBVFVTX1BFTkRJTkcQARIeChpGQVZPUl9QQVNTX1NUQVRVU19BQ0NFUFRFRBACEh0KGUZBVk9SX1BBU1NfU1RBVFVTX1JFRlVTRUQQAxIeChpGQVZPUl9QQVNTX1NUQVRVU19DQU5DRUxFRBAEKpYBChFGYXZvclJlZnVuZFN0YXR1cxIjCh9GQVZPUl9SRUZVTkRfU1RBVFVTX1VOU1BFQ0lGSUVEEAASHAoYRkFWT1JfUkVGVU5EX1NUQVRVU19PUEVOEAESIAocRkFWT1JfUkVGVU5EX1NUQVRVU19SRVRVUk5FRBACEhwKGEZBVk9SX1JFRlVORF9TVEFUVVNfS0VQVBADMrsECgxGYXZvclNlcnZpY2USUwoKR3JhbnRGYXZvchIhLm1ldXJwZy5wbGF5LnYxLkdyYW50RmF2b3JSZXF1ZXN0GiIubWV1cnBnLnBsYXkudjEuR3JhbnRGYXZvclJlc3BvbnNlElIKCEdldEZhdm9yEh8ubWV1cnBnLnBsYXkudjEuR2V0RmF2b3JSZXF1ZXN0GiAubWV1cnBnLnBsYXkudjEuR2V0RmF2b3JSZXNwb25zZSIDkAICElAKCVBhc3NGYXZvchIgLm1ldXJwZy5wbGF5LnYxLlBhc3NGYXZvclJlcXVlc3QaIS5tZXVycGcucGxheS52MS5QYXNzRmF2b3JSZXNwb25zZRJiCg9BbnN3ZXJGYXZvclBhc3MSJi5tZXVycGcucGxheS52MS5BbnN3ZXJGYXZvclBhc3NSZXF1ZXN0GicubWV1cnBnLnBsYXkudjEuQW5zd2VyRmF2b3JQYXNzUmVzcG9uc2USYgoPQ2FuY2VsRmF2b3JQYXNzEiYubWV1cnBnLnBsYXkudjEuQ2FuY2VsRmF2b3JQYXNzUmVxdWVzdBonLm1ldXJwZy5wbGF5LnYxLkNhbmNlbEZhdm9yUGFzc1Jlc3BvbnNlEmgKEUFuc3dlckZhdm9yUmVmdW5kEigubWV1cnBnLnBsYXkudjEuQW5zd2VyRmF2b3JSZWZ1bmRSZXF1ZXN0GikubWV1cnBnLnBsYXkudjEuQW5zd2VyRmF2b3JSZWZ1bmRSZXNwb25zZUK4AQoSY29tLm1ldXJwZy5wbGF5LnYxQgpGYXZvclByb3RvUAFaPGdpdGh1Yi5jb20vUHVyYUZvbWUvbWV1UlBHL2JhY2tlbmQvZ2VuL21ldXJwZy9wbGF5L3YxO3BsYXl2MaICA01QWKoCDk1ldXJwZy5QbGF5LlYxygIOTWV1cnBnXFBsYXlcVjHiAhpNZXVycGdcUGxheVxWMVxHUEJNZXRhZGF0YeoCEE1ldXJwZzo6UGxheTo6VjFiBnByb3RvMw", [file_meurpg_play_v1_combat_rolls]);
 
 /**
  * FavorBlocked is the error detail of FavorService's `failed_precondition`.
@@ -126,6 +128,20 @@ export type GetFavorResponse = Message<"meurpg.play.v1.GetFavorResponse"> & {
    * @generated from field: repeated meurpg.play.v1.FavorHolder holders = 1;
    */
   holders: FavorHolder[];
+
+  /**
+   * The passes that wait for the master: the master reads all of them; a player reads only the asks of their own characters.
+   *
+   * @generated from field: repeated meurpg.play.v1.FavorPass passes = 2;
+   */
+  passes: FavorPass[];
+
+  /**
+   * The master's questions about an Inspiration a roll spent for nothing. The master's alone.
+   *
+   * @generated from field: repeated meurpg.play.v1.FavorRefundPrompt refund_prompts = 3;
+   */
+  refundPrompts: FavorRefundPrompt[];
 };
 
 /**
@@ -134,6 +150,106 @@ export type GetFavorResponse = Message<"meurpg.play.v1.GetFavorResponse"> & {
  */
 export const GetFavorResponseSchema: GenMessage<GetFavorResponse> = /*@__PURE__*/
   messageDesc(file_meurpg_play_v1_favor, 5);
+
+/**
+ * FavorPass is a player's ask to pass the Inspiration of their character to another player character.
+ *
+ * @generated from message meurpg.play.v1.FavorPass
+ */
+export type FavorPass = Message<"meurpg.play.v1.FavorPass"> & {
+  /**
+   * @generated from field: string id = 1;
+   */
+  id: string;
+
+  /**
+   * @generated from field: string from_character_id = 2;
+   */
+  fromCharacterId: string;
+
+  /**
+   * @generated from field: string from_name = 3;
+   */
+  fromName: string;
+
+  /**
+   * @generated from field: string to_character_id = 4;
+   */
+  toCharacterId: string;
+
+  /**
+   * @generated from field: string to_name = 5;
+   */
+  toName: string;
+
+  /**
+   * @generated from field: meurpg.play.v1.FavorPassStatus status = 6;
+   */
+  status: FavorPassStatus;
+
+  /**
+   * The master's alone: the receiver already has one, so the master's Aceitar is dashed with the reason. False for a player.
+   *
+   * @generated from field: bool receiver_has = 7;
+   */
+  receiverHas: boolean;
+};
+
+/**
+ * Describes the message meurpg.play.v1.FavorPass.
+ * Use `create(FavorPassSchema)` to create a new message.
+ */
+export const FavorPassSchema: GenMessage<FavorPass> = /*@__PURE__*/
+  messageDesc(file_meurpg_play_v1_favor, 6);
+
+/**
+ * FavorRefundPrompt is the question the master gets when a roll spent the Inspiration and it added nothing over every source
+ * of advantage. The master's alone: the player reads only the answer, when the master gives it back.
+ *
+ * @generated from message meurpg.play.v1.FavorRefundPrompt
+ */
+export type FavorRefundPrompt = Message<"meurpg.play.v1.FavorRefundPrompt"> & {
+  /**
+   * @generated from field: string id = 1;
+   */
+  id: string;
+
+  /**
+   * @generated from field: string character_id = 2;
+   */
+  characterId: string;
+
+  /**
+   * @generated from field: string character_name = 3;
+   */
+  characterName: string;
+
+  /**
+   * The roll's name as the log reads it.
+   *
+   * @generated from field: string roll_label_pt = 4;
+   */
+  rollLabelPt: string;
+
+  /**
+   * The sources of advantage the roller could not read, the master's view.
+   *
+   * @generated from field: repeated meurpg.play.v1.AdvantageSource hidden_sources = 5;
+   */
+  hiddenSources: AdvantageSource[];
+
+  /**
+   * @generated from field: meurpg.play.v1.FavorRefundStatus status = 6;
+   */
+  status: FavorRefundStatus;
+};
+
+/**
+ * Describes the message meurpg.play.v1.FavorRefundPrompt.
+ * Use `create(FavorRefundPromptSchema)` to create a new message.
+ */
+export const FavorRefundPromptSchema: GenMessage<FavorRefundPrompt> = /*@__PURE__*/
+  messageDesc(file_meurpg_play_v1_favor, 7);
 
 /**
  * @generated from message meurpg.play.v1.PassFavorRequest
@@ -165,12 +281,18 @@ export type PassFavorRequest = Message<"meurpg.play.v1.PassFavorRequest"> & {
  * Use `create(PassFavorRequestSchema)` to create a new message.
  */
 export const PassFavorRequestSchema: GenMessage<PassFavorRequest> = /*@__PURE__*/
-  messageDesc(file_meurpg_play_v1_favor, 6);
+  messageDesc(file_meurpg_play_v1_favor, 8);
 
 /**
  * @generated from message meurpg.play.v1.PassFavorResponse
  */
 export type PassFavorResponse = Message<"meurpg.play.v1.PassFavorResponse"> & {
+  /**
+   * The pending pass the ask made (the same one on a retry with the same key).
+   *
+   * @generated from field: meurpg.play.v1.FavorPass pass = 1;
+   */
+  pass?: FavorPass | undefined;
 };
 
 /**
@@ -178,7 +300,155 @@ export type PassFavorResponse = Message<"meurpg.play.v1.PassFavorResponse"> & {
  * Use `create(PassFavorResponseSchema)` to create a new message.
  */
 export const PassFavorResponseSchema: GenMessage<PassFavorResponse> = /*@__PURE__*/
-  messageDesc(file_meurpg_play_v1_favor, 7);
+  messageDesc(file_meurpg_play_v1_favor, 9);
+
+/**
+ * @generated from message meurpg.play.v1.AnswerFavorPassRequest
+ */
+export type AnswerFavorPassRequest = Message<"meurpg.play.v1.AnswerFavorPassRequest"> & {
+  /**
+   * @generated from field: string campaign_id = 1;
+   */
+  campaignId: string;
+
+  /**
+   * @generated from field: string pass_id = 2;
+   */
+  passId: string;
+
+  /**
+   * True accepts: the Inspiration moves. False refuses: it stays with the giver.
+   *
+   * @generated from field: bool accept = 3;
+   */
+  accept: boolean;
+
+  /**
+   * @generated from field: string idempotency_key = 4;
+   */
+  idempotencyKey: string;
+};
+
+/**
+ * Describes the message meurpg.play.v1.AnswerFavorPassRequest.
+ * Use `create(AnswerFavorPassRequestSchema)` to create a new message.
+ */
+export const AnswerFavorPassRequestSchema: GenMessage<AnswerFavorPassRequest> = /*@__PURE__*/
+  messageDesc(file_meurpg_play_v1_favor, 10);
+
+/**
+ * @generated from message meurpg.play.v1.AnswerFavorPassResponse
+ */
+export type AnswerFavorPassResponse = Message<"meurpg.play.v1.AnswerFavorPassResponse"> & {
+  /**
+   * The pass as it is after the answer.
+   *
+   * @generated from field: meurpg.play.v1.FavorPass pass = 1;
+   */
+  pass?: FavorPass | undefined;
+};
+
+/**
+ * Describes the message meurpg.play.v1.AnswerFavorPassResponse.
+ * Use `create(AnswerFavorPassResponseSchema)` to create a new message.
+ */
+export const AnswerFavorPassResponseSchema: GenMessage<AnswerFavorPassResponse> = /*@__PURE__*/
+  messageDesc(file_meurpg_play_v1_favor, 11);
+
+/**
+ * @generated from message meurpg.play.v1.CancelFavorPassRequest
+ */
+export type CancelFavorPassRequest = Message<"meurpg.play.v1.CancelFavorPassRequest"> & {
+  /**
+   * @generated from field: string campaign_id = 1;
+   */
+  campaignId: string;
+
+  /**
+   * @generated from field: string pass_id = 2;
+   */
+  passId: string;
+
+  /**
+   * @generated from field: string idempotency_key = 3;
+   */
+  idempotencyKey: string;
+};
+
+/**
+ * Describes the message meurpg.play.v1.CancelFavorPassRequest.
+ * Use `create(CancelFavorPassRequestSchema)` to create a new message.
+ */
+export const CancelFavorPassRequestSchema: GenMessage<CancelFavorPassRequest> = /*@__PURE__*/
+  messageDesc(file_meurpg_play_v1_favor, 12);
+
+/**
+ * @generated from message meurpg.play.v1.CancelFavorPassResponse
+ */
+export type CancelFavorPassResponse = Message<"meurpg.play.v1.CancelFavorPassResponse"> & {
+  /**
+   * @generated from field: meurpg.play.v1.FavorPass pass = 1;
+   */
+  pass?: FavorPass | undefined;
+};
+
+/**
+ * Describes the message meurpg.play.v1.CancelFavorPassResponse.
+ * Use `create(CancelFavorPassResponseSchema)` to create a new message.
+ */
+export const CancelFavorPassResponseSchema: GenMessage<CancelFavorPassResponse> = /*@__PURE__*/
+  messageDesc(file_meurpg_play_v1_favor, 13);
+
+/**
+ * @generated from message meurpg.play.v1.AnswerFavorRefundRequest
+ */
+export type AnswerFavorRefundRequest = Message<"meurpg.play.v1.AnswerFavorRefundRequest"> & {
+  /**
+   * @generated from field: string campaign_id = 1;
+   */
+  campaignId: string;
+
+  /**
+   * @generated from field: string prompt_id = 2;
+   */
+  promptId: string;
+
+  /**
+   * True gives the Inspiration back; false keeps it spent.
+   *
+   * @generated from field: bool give_back = 3;
+   */
+  giveBack: boolean;
+
+  /**
+   * @generated from field: string idempotency_key = 4;
+   */
+  idempotencyKey: string;
+};
+
+/**
+ * Describes the message meurpg.play.v1.AnswerFavorRefundRequest.
+ * Use `create(AnswerFavorRefundRequestSchema)` to create a new message.
+ */
+export const AnswerFavorRefundRequestSchema: GenMessage<AnswerFavorRefundRequest> = /*@__PURE__*/
+  messageDesc(file_meurpg_play_v1_favor, 14);
+
+/**
+ * @generated from message meurpg.play.v1.AnswerFavorRefundResponse
+ */
+export type AnswerFavorRefundResponse = Message<"meurpg.play.v1.AnswerFavorRefundResponse"> & {
+  /**
+   * @generated from field: meurpg.play.v1.FavorRefundPrompt prompt = 1;
+   */
+  prompt?: FavorRefundPrompt | undefined;
+};
+
+/**
+ * Describes the message meurpg.play.v1.AnswerFavorRefundResponse.
+ * Use `create(AnswerFavorRefundResponseSchema)` to create a new message.
+ */
+export const AnswerFavorRefundResponseSchema: GenMessage<AnswerFavorRefundResponse> = /*@__PURE__*/
+  messageDesc(file_meurpg_play_v1_favor, 15);
 
 /**
  * FavorBlockedReason is why a favor call was refused with `failed_precondition`.
@@ -220,8 +490,10 @@ export enum FavorBlockedReason {
   HAS_NONE = 4,
 
   /**
-   * What a pass tells its giver when the receiver cannot take it (it has one, it is in
-   * another campaign or it is an NPC). The server never sends the receiver's state.
+   * The character that would take the Inspiration cannot hold it now. Three answers give it, always to the master: the accept of a
+   * pass whose receiver has one already or is no player character of the table any more; the undo of a pass whose giver is in the
+   * reserve or is no player character any more; the refund ("Devolver") of a roller in the reserve or no player character any more.
+   * The server never sends a player the state of the receiver.
    *
    * @generated from enum value: FAVOR_BLOCKED_REASON_CANNOT_RECEIVE = 5;
    */
@@ -254,6 +526,28 @@ export enum FavorBlockedReason {
    * @generated from enum value: FAVOR_BLOCKED_REASON_NOTHING_TO_ROLL = 9;
    */
   NOTHING_TO_ROLL = 9,
+
+  /**
+   * The giver already asked to pass it and the master has not answered: the Inspiration cannot be spent or asked again until the
+   * ask is answered or canceled.
+   *
+   * @generated from enum value: FAVOR_BLOCKED_REASON_PASS_PENDING = 10;
+   */
+  PASS_PENDING = 10,
+
+  /**
+   * The ask was already answered or canceled (on another screen, or by the master meanwhile).
+   *
+   * @generated from enum value: FAVOR_BLOCKED_REASON_PASS_CLOSED = 11;
+   */
+  PASS_CLOSED = 11,
+
+  /**
+   * The campaign has no open session: the master answers a pass at the table, so it is only asked in a session.
+   *
+   * @generated from enum value: FAVOR_BLOCKED_REASON_NO_SESSION = 12;
+   */
+  NO_SESSION = 12,
 }
 
 /**
@@ -263,8 +557,94 @@ export const FavorBlockedReasonSchema: GenEnum<FavorBlockedReason> = /*@__PURE__
   enumDesc(file_meurpg_play_v1_favor, 0);
 
 /**
+ * FavorPassStatus is where a pass is.
+ *
+ * @generated from enum meurpg.play.v1.FavorPassStatus
+ */
+export enum FavorPassStatus {
+  /**
+   * @generated from enum value: FAVOR_PASS_STATUS_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * Waits for the master.
+   *
+   * @generated from enum value: FAVOR_PASS_STATUS_PENDING = 1;
+   */
+  PENDING = 1,
+
+  /**
+   * The master accepted: the Inspiration moved.
+   *
+   * @generated from enum value: FAVOR_PASS_STATUS_ACCEPTED = 2;
+   */
+  ACCEPTED = 2,
+
+  /**
+   * The master refused: it stays with the giver.
+   *
+   * @generated from enum value: FAVOR_PASS_STATUS_REFUSED = 3;
+   */
+  REFUSED = 3,
+
+  /**
+   * The giver gave the ask up, or the session ended.
+   *
+   * @generated from enum value: FAVOR_PASS_STATUS_CANCELED = 4;
+   */
+  CANCELED = 4,
+}
+
+/**
+ * Describes the enum meurpg.play.v1.FavorPassStatus.
+ */
+export const FavorPassStatusSchema: GenEnum<FavorPassStatus> = /*@__PURE__*/
+  enumDesc(file_meurpg_play_v1_favor, 1);
+
+/**
+ * FavorRefundStatus is where a refund prompt is.
+ *
+ * @generated from enum meurpg.play.v1.FavorRefundStatus
+ */
+export enum FavorRefundStatus {
+  /**
+   * @generated from enum value: FAVOR_REFUND_STATUS_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * Waits for the master.
+   *
+   * @generated from enum value: FAVOR_REFUND_STATUS_OPEN = 1;
+   */
+  OPEN = 1,
+
+  /**
+   * The master gave the Inspiration back.
+   *
+   * @generated from enum value: FAVOR_REFUND_STATUS_RETURNED = 2;
+   */
+  RETURNED = 2,
+
+  /**
+   * It stays spent: the master chose so, or the session ended without an answer.
+   *
+   * @generated from enum value: FAVOR_REFUND_STATUS_KEPT = 3;
+   */
+  KEPT = 3,
+}
+
+/**
+ * Describes the enum meurpg.play.v1.FavorRefundStatus.
+ */
+export const FavorRefundStatusSchema: GenEnum<FavorRefundStatus> = /*@__PURE__*/
+  enumDesc(file_meurpg_play_v1_favor, 2);
+
+/**
  * FavorService is the Inspiration of the player characters: the master grants it, the
- * holder passes it on. A character has it or not and it never stacks.
+ * holder asks to pass it on and the master accepts or refuses. A character has it or not and it
+ * never stacks.
  *
  * Errors:
  *   - `not_found`: the campaign does not exist, or the caller is not a member of it.
@@ -297,8 +677,9 @@ export const FavorService: GenService<{
     output: typeof GetFavorResponseSchema;
   },
   /**
-   * PassFavor hands the holder's Inspiration to another player character. Not built yet:
-   * it answers `unimplemented`.
+   * PassFavor asks to pass the holder's Inspiration to another player character: it stores a
+   * pending pass and nothing moves until the master answers. Only in an open session. A retry
+   * with the same key answers the same pass.
    *
    * @generated from rpc meurpg.play.v1.FavorService.PassFavor
    */
@@ -306,6 +687,42 @@ export const FavorService: GenService<{
     methodKind: "unary";
     input: typeof PassFavorRequestSchema;
     output: typeof PassFavorResponseSchema;
+  },
+  /**
+   * AnswerFavorPass is the master's answer to a pending pass: accept moves the Inspiration, refuse keeps it with the giver. Only
+   * the master. The refusals (failed_precondition, FavorBlocked): PASS_CLOSED when the ask was answered or canceled already (a refuse
+   * gives no other); and, for an accept, CANNOT_RECEIVE when the receiver has one already or can no longer hold it, and
+   * NOT_THE_HOLDER when the giver is in the reserve or no longer has it. A refused accept leaves the ask pending.
+   *
+   * @generated from rpc meurpg.play.v1.FavorService.AnswerFavorPass
+   */
+  answerFavorPass: {
+    methodKind: "unary";
+    input: typeof AnswerFavorPassRequestSchema;
+    output: typeof AnswerFavorPassResponseSchema;
+  },
+  /**
+   * CancelFavorPass gives a pending ask up. Only the giver's owner.
+   *
+   * @generated from rpc meurpg.play.v1.FavorService.CancelFavorPass
+   */
+  cancelFavorPass: {
+    methodKind: "unary";
+    input: typeof CancelFavorPassRequestSchema;
+    output: typeof CancelFavorPassResponseSchema;
+  },
+  /**
+   * AnswerFavorRefund is the master's answer to a refund prompt: give back the Inspiration a roll spent for nothing, or keep it
+   * spent. Only the master. The refusals (failed_precondition, FavorBlocked): PASS_CLOSED when the question was answered or ended
+   * already (keeping gives no other); and, for a give back, ALREADY_HAS when the roller has one now and CANNOT_RECEIVE when the
+   * roller is in the reserve or no player character any more. A refused give back leaves the question open, so it can be kept.
+   *
+   * @generated from rpc meurpg.play.v1.FavorService.AnswerFavorRefund
+   */
+  answerFavorRefund: {
+    methodKind: "unary";
+    input: typeof AnswerFavorRefundRequestSchema;
+    output: typeof AnswerFavorRefundResponseSchema;
   },
 }> = /*@__PURE__*/
   serviceDesc(file_meurpg_play_v1_favor, 0);

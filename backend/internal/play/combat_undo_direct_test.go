@@ -151,9 +151,10 @@ func TestTakeBackOfADiscardFromAnUnknownStatus(t *testing.T) {
 	}
 }
 
-// TestUndoTakesBackTheAttackPastAnInspirationGrant: the master grants the Inspiration after an
-// attack, the grant is no action of the combat, so the undo takes the attack back and the grant stays.
-func TestUndoTakesBackTheAttackPastAnInspirationGrant(t *testing.T) {
+// TestUndoTakesBackAnInspirationGrantBeforeTheAttack: the master grants the Inspiration in the combat after an attack. The grant is the
+// combat's last action (decision: a grant written in a combat carries it), so the undo takes the grant back first (the row is gone, the
+// attack stays) and the next undo takes the attack.
+func TestUndoTakesBackAnInspirationGrantBeforeTheAttack(t *testing.T) {
 	t.Parallel()
 	a := newCasters(t)
 	e := a.castersFight(t, 1)
@@ -164,11 +165,9 @@ func TestUndoTakesBackTheAttackPastAnInspirationGrant(t *testing.T) {
 	if _, err := a.master.favor.GrantFavor(t.Context(), connect.NewRequest(&playv1.GrantFavorRequest{CampaignId: a.campaignID, CharacterId: a.toren.GetId(), IdempotencyKey: newKey()})); err != nil {
 		t.Fatalf("GrantFavor() error = %v", err)
 	}
-	if got := a.lastEventID(t, e); got != attack {
-		t.Fatalf("the undoable event after the grant = %q, want the attack %q", got, attack)
-	}
-	if err := a.undo(t, a.master, e, attack); err != nil {
-		t.Fatalf("UndoLastAction() error = %v", err)
+	grant := a.lastEventID(t, e)
+	if grant == attack {
+		t.Fatalf("the undoable event after the grant is still the attack %q, want the grant", attack)
 	}
 	count := func(query string) int {
 		var n int
@@ -177,10 +176,19 @@ func TestUndoTakesBackTheAttackPastAnInspirationGrant(t *testing.T) {
 		}
 		return n
 	}
-	if n := count(`SELECT count(*) FROM character_favor WHERE campaign_id = $1`); n != 1 {
-		t.Errorf("character_favor rows after the undo = %d, want 1: the grant stays", n)
+	if err := a.undo(t, a.master, e, grant); err != nil {
+		t.Fatalf("UndoLastAction(the grant) error = %v", err)
 	}
-	if n := count(`SELECT count(*) FROM session_events WHERE kind = 'favor_granted' AND game_session_id IN (SELECT id FROM game_sessions WHERE campaign_id = $1)`); n != 1 {
-		t.Errorf("favor_granted events after the undo = %d, want 1: the grant stays", n)
+	if n := count(`SELECT count(*) FROM character_favor WHERE campaign_id = $1`); n != 0 {
+		t.Errorf("character_favor rows after the undo of the grant = %d, want 0", n)
+	}
+	if got := a.lastEventID(t, e); got != attack {
+		t.Fatalf("the undoable event after the undo of the grant = %q, want the attack %q", got, attack)
+	}
+	if err := a.undo(t, a.master, e, attack); err != nil {
+		t.Fatalf("UndoLastAction(the attack) error = %v", err)
+	}
+	if n := count(`SELECT count(*) FROM character_favor WHERE campaign_id = $1`); n != 0 {
+		t.Errorf("character_favor rows after the undo of the attack = %d, want 0: the grant stays undone", n)
 	}
 }

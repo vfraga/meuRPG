@@ -198,6 +198,8 @@ type rollSpec struct {
 	MayAsk bool
 	// FavorSpent says the roll was made with the roller's Inspiration (favor_spend.go), which the hold remembers.
 	FavorSpent bool
+	// FavorPrompt is the refund prompt that spend opened (favorUse.Prompt), which the hold remembers: empty when it opened none.
+	FavorPrompt string
 }
 
 // gateResult is what the gate gives back.
@@ -466,7 +468,7 @@ func (ae answering) newRoll(body []byte, roll d20Roll, luckyAt *int32) heldRoll 
 	h := heldRoll{
 		CampaignID: r.CampaignID, CharacterID: r.CharacterID, UserID: r.UserID, Key: spec.Key, Kind: spec.Kind, Window: spec.Window,
 		Physical: roll.Physical, Request: body, Faces: roll.Faces, Counted: roll.Index, Modifier: spec.Modifier, Total: roll.Total, CountedBy: roll.CountedBy,
-		LuckyIndex: luckyAt, FavorSpent: spec.FavorSpent,
+		LuckyIndex: luckyAt, FavorSpent: spec.FavorSpent, FavorPrompt: spec.FavorPrompt,
 	}
 	h.IndomAsk, h.IndomFailed = ae.asksAtOnce(roll, luckyAt)
 	h.StrokeAsk, h.StrokeFailed = ae.asksStrokeAtOnce(roll, luckyAt)

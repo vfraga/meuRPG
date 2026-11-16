@@ -43,9 +43,7 @@ const (
 
 // unbuilt are the procedures that answer `unimplemented` for now. The probe does not take that answer (HTTP 501) for the server
 // failing; a procedure leaves this list when it is built.
-var unbuilt = map[string]bool{
-	playv1connect.FavorServicePassFavorProcedure: true,
-}
+var unbuilt = map[string]bool{}
 
 type classified struct {
 	class class
@@ -168,7 +166,10 @@ var notReads = map[string]classified{
 	playv1connect.ChargesServiceSpendChargesProcedure:                           {playerAction, "a player spends the charges of an item of their own character; the master any"},
 	playv1connect.ChargesServiceUseConsumableProcedure:                          {playerAction, "a player uses up a consumable of their own character, for itself or for another character; the master any"},
 	playv1connect.FavorServiceGrantFavorProcedure:                               {masterWrite, masterOnlyWhy},
-	playv1connect.FavorServicePassFavorProcedure:                                {playerAction, "the holder's player passes the Inspiration of their own character to another player character; not built yet, it answers unimplemented (see unbuilt)"},
+	playv1connect.FavorServiceAnswerFavorPassProcedure:                          {masterWrite, masterOnlyWhy},
+	playv1connect.FavorServiceCancelFavorPassProcedure:                          {playerAction, "the giver's player gives up the pending ask of their own character (the master and another player get not_found)"},
+	playv1connect.FavorServiceAnswerFavorRefundProcedure:                        {masterWrite, masterOnlyWhy},
+	playv1connect.FavorServicePassFavorProcedure:                                {playerAction, "the holder's player asks to pass the Inspiration of their own character to another player character (the master answers it)"},
 	playv1connect.LastingEffectServiceAdvanceGameTimeProcedure:                  {masterWrite, masterOnlyWhy},
 	playv1connect.LastingEffectServiceAddCharacterEffectProcedure:               {masterWrite, masterOnlyWhy},
 	playv1connect.LastingEffectServiceAddLastingEffectProcedure:                 {masterWrite, masterOnlyWhy},

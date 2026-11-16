@@ -207,3 +207,34 @@ func TestFavorReachesOnlyTheMasterAndTheOwner(t *testing.T) {
 	}}
 	w.runRead(t, summary, answers)
 }
+
+// The master's grant to a character that is in the combat (a combatant, Toren) is a line of its log, there so that the master can undo it
+// as the combat's last action (RN-43): the line is his alone, so the holder's own player (Caio) and the other players read nothing of it,
+// and they read the log as they read it before.
+func TestFavorGrantLineInACombatIsTheMastersAlone(t *testing.T) {
+	w := newWorld(t)
+	defer func() {
+		if r := recover(); r != nil {
+			t.Fatalf("the test: %v", r)
+		}
+	}()
+	line := &canary{needle: "O mestre deu a Inspiração a", kind: "favor-grant-line", readers: names(nil)}
+	w.secrets.add(line)
+	combatLog := read{
+		procedure: playv1connect.CombatServiceListCombatLogProcedure, allow: members,
+		req: func(w *world) proto.Message {
+			return &playv1.ListCombatLogRequest{CampaignId: w.campaign, EncounterId: w.encounter.GetId()}
+		},
+	}
+	answers := newAnswers()
+	w.grantFavor(w.toren.GetId())
+	w.runRead(t, combatLog, answers)
+	if !answers.holds(w.master, line) {
+		t.Errorf("the master reads %s in no answer: the control that the line is there is missing", line)
+	}
+	for _, p := range []*person{w.caio, w.ana, w.pending, w.stranger} {
+		if answers.holds(p, line) {
+			t.Errorf("%s reads %s", p.name, line)
+		}
+	}
+}

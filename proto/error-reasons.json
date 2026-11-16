@@ -468,11 +468,12 @@
             "HAS_NONE",
             "ADDS_NOTHING",
             "AFTER_THE_ROLL",
-            "NOTHING_TO_ROLL"
-          ],
-          "unsent": [
+            "NOTHING_TO_ROLL",
             "CANNOT_RECEIVE",
-            "SELF"
+            "SELF",
+            "PASS_PENDING",
+            "PASS_CLOSED",
+            "NO_SESSION"
           ]
         }
       ]

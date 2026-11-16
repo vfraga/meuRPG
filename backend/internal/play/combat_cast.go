@@ -586,7 +586,7 @@ func (f *castFlow) checkPool(ctx context.Context) error {
 // readModes reads the combat for the d20 rolls of the cast.
 func (f *castFlow) readModes(ctx context.Context) error {
 	var err error
-	f.out.modes, err = f.s.spellModes(ctx, f.c, f.m, f.v, f.cs, f.caster, f.req)
+	f.out.modes, err = f.s.spellModes(ctx, f.c, f.m, f.v, f.cs, f.caster, f.req, f.call.key)
 	if err == nil {
 		f.sp.ToHit += bonusTotal(rollBonusesOf(f.out.modes.in.states, f.caster.ID, rules.RollAppliesAttack))
 	}

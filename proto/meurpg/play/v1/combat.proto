@@ -6203,6 +6203,23 @@ enum CombatLogKind {
   COMBAT_LOG_KIND_MOUNT_SAVE = 109;
   // A rider fell off its mount ("Toren caiu da montaria"): the same audience as MOUNT_SAVE, with no number for anyone.
   COMBAT_LOG_KIND_RIDER_THROWN = 110;
+  // The Inspiration moved: the master accepted a pass ("Brisa passou a Inspiração para Tor."). The master reads the giver and the
+  // receiver; the giver's owner the same; the receiver's owner reads who gave it ("Brisa passou a Inspiração para você."). No other
+  // player has the line (RN-10, RN-43). `favor` has the text.
+  COMBAT_LOG_KIND_FAVOR_PASSED = 116;
+  // The master gave back the Inspiration a roll spent for nothing ("O mestre devolveu a Inspiração de Tor."). The master and the
+  // roller's owner read it; no other player has the line. `favor` has the text.
+  COMBAT_LOG_KIND_FAVOR_REFUNDED = 117;
+  // A pass was refused by the master or given up by the giver. The master and the giver's owner read it, and nobody else. `favor`
+  // has the text.
+  COMBAT_LOG_KIND_FAVOR_PASS_ANSWERED = 118;
+}
+
+// CombatLogFavor is a line about the Inspiration (FAVOR_PASSED, FAVOR_REFUNDED and FAVOR_PASS_ANSWERED): the sentence is built for the
+// reader, so each one gets only what RN-10 lets them read.
+message CombatLogFavor {
+  // The line in Portuguese, as this reader may read it.
+  string text_pt = 1;
 }
 
 // CombatLogStateChange is a state that began or ended.
@@ -6436,6 +6453,8 @@ message CombatLogEntry {
   // the roll was made with the roller's Inspiration. Only the master and the roller's own player get it, like the roll's dice; empty for
   // anyone else and when the roll used none.
   string favor_text_pt = 129;
+  // FAVOR_PASSED, FAVOR_REFUNDED and FAVOR_PASS_ANSWERED: the line about the Inspiration, in the words this reader may read.
+  CombatLogFavor favor = 131;
   // ATTACK: the power attack the roll made, when it made one. The feature and the numbers are the master's and the
   // attacker's player's; another player reads that a trade was made (`CombatLogPowerAttack`).
   CombatLogPowerAttack power_attack = 122;

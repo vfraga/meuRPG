@@ -98,7 +98,7 @@ func (s *Service) gateCheck(ctx context.Context, c *combatTx, p preparedCheck, h
 	return s.heldGate(ctx, s.inspirationGate(c), rollSpec{
 		Kind: h.kind, Key: h.key, Request: h.req, Window: c.replay != nil, Roller: attackRoller(h.m, h.who, c.enc.Round),
 		In: rollInput{inApp: h.in.inApp, typedFaces: h.in.faces}, Modifier: p.n.Bonus - cutOf(c), Mode: rollModeOfCheck(p.mode), Floor: p.floor,
-		Lucky: lucky, MayAsk: mayAsk, Stroke: opposedStrokeRule(), FavorSpent: p.favor.Used,
+		Lucky: lucky, MayAsk: mayAsk, Stroke: opposedStrokeRule(), FavorSpent: p.favor.Used, FavorPrompt: p.favor.Prompt,
 	})
 }
 
@@ -110,7 +110,7 @@ func (s *Service) finishCheck(ctx context.Context, c *combatTx, who playdb.Comba
 		roll = contestRoll{
 			Skill: p.skill, Faces: faces32(gate.Roll.Faces), Modifier: conv.Int32(p.n.Bonus),
 			Total: conv.Int32(gate.Roll.Total), Physical: gate.Roll.Physical, Mode: checkModeKey(p.mode), Notes: p.notes, Unknown: !p.n.Known, Lucky: gate.Lucky, Stroke: gate.Stroke,
-			countedRoll: countedOf(gate.Roll), Favor: p.favor.Used,
+			countedRoll: countedOf(gate.Roll), Favor: p.favor.Used, FavorPrompt: p.favor.Prompt,
 		}
 		if gate.Bonus != nil {
 			roll.BonusSides, roll.BonusFace = gate.Bonus.Sides, gate.Bonus.Face
@@ -121,7 +121,7 @@ func (s *Service) finishCheck(ctx context.Context, c *combatTx, who playdb.Comba
 		if roll, err = s.rollCheck(in, p.mode, p.n.Bonus, p.skill, p.notes, !p.n.Known, p.floor); err != nil {
 			return contestRoll{}, err
 		}
-		roll.Favor = p.favor.Used
+		roll.Favor, roll.FavorPrompt = p.favor.Used, p.favor.Prompt
 		roll = cutRoll(c, roll)
 	}
 	if err := s.consumeCheckHelp(ctx, c, who, p.skill, cs); err != nil {

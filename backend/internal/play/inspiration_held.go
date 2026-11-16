@@ -73,7 +73,7 @@ func (s *Service) holdSpellAttack(
 	if err != nil {
 		return nil, err
 	}
-	spec.FavorSpent = modes.favor.Used
+	spec.FavorSpent, spec.FavorPrompt = modes.favor.Used, modes.favor.Prompt
 	if spec.Modifier, err = s.spellToHit(ctx, env, spec, forced); err != nil {
 		return nil, err
 	}

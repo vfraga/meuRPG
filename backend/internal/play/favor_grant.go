@@ -101,7 +101,18 @@ func (s *Service) grantFavorIn(ctx context.Context, tx pgx.Tx, h *hints, g favor
 		return fmt.Errorf("insert the character's inspiration: %w", err)
 	}
 	event := keyedEvent{sessionID: session.ID, kind: eventFavorGranted, userID: g.m.UserID, key: g.key, hash: g.hash, characterID: &g.characterID}
-	if err := s.appendKeyedEvent(ctx, q, event, favorGrantedEvent{CharacterID: g.characterID}); err != nil {
+	payload := any(favorGrantedEvent{CharacterID: g.characterID})
+	st, inCombat, err := s.favorStage(ctx, q, session.ID, g.characterID)
+	if err != nil {
+		return err
+	}
+	if inCombat { // a grant in a combat is the combat's last action, which the master's undo takes back: its line is the master's alone
+		st.SeenBy = nil
+		event.encounterID = &st.EncounterID
+		payload = favorGrantedCombatEvent{favorGrantedEvent{CharacterID: g.characterID}, st}
+		tellFavorLog(h, g.m.CampaignID, st)
+	}
+	if err := s.appendKeyedEvent(ctx, q, event, payload); err != nil {
 		return err
 	}
 	return s.tellFavor(ctx, tx, h, g.m.CampaignID, receiver)

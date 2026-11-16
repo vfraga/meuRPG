@@ -196,6 +196,8 @@ type contestRoll struct {
 	Deferred bool `json:"deferred,omitempty"`
 	// Favor says the roll was made with the roller's Inspiration (favor_spend.go); its note is among Notes.
 	Favor bool `json:"favor,omitempty"`
+	// FavorPrompt is the id of the refund prompt the spend opened (favorUse.Prompt), empty when it opened none.
+	FavorPrompt string `json:"favor_prompt,omitempty"`
 	// The Bardic Inspiration die the player added after the d20 (already in Total).
 	BonusSides int32 `json:"bonus_sides,omitempty"`
 	BonusFace  int32 `json:"bonus_face,omitempty"`

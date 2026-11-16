@@ -32,7 +32,7 @@ export function favorBlockedMessage(reason: FavorBlockedReason): string {
     case FavorBlockedReason.HAS_NONE:
       return 'Você não tem Inspiração.';
     case FavorBlockedReason.CANNOT_RECEIVE:
-      return 'Essa personagem não pode receber agora.';
+      return 'Essa personagem não pode ficar com a Inspiração agora.';
     case FavorBlockedReason.SELF:
       return 'Você não pode passar a Inspiração a si mesmo.';
     case FavorBlockedReason.ADDS_NOTHING:
@@ -41,6 +41,12 @@ export function favorBlockedMessage(reason: FavorBlockedReason): string {
       return 'O d20 já foi rolado: a Inspiração não pode mais ser usada.';
     case FavorBlockedReason.NOTHING_TO_ROLL:
       return 'Esta ação não rola um d20: a Inspiração não pode ser usada.';
+    case FavorBlockedReason.PASS_PENDING:
+      return 'Você pediu para passar a Inspiração. Cancele o pedido para usar.';
+    case FavorBlockedReason.PASS_CLOSED:
+      return 'Esse pedido já foi respondido em outra tela.';
+    case FavorBlockedReason.NO_SESSION:
+      return 'Só numa sessão aberta.';
     default:
       return 'A Inspiração não pode ser usada agora.';
   }

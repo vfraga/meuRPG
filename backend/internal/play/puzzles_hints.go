@@ -338,7 +338,7 @@ func (h *hintTryTx) skill(ctx context.Context, plan *hintTryPlan) error {
 func (h *hintTryTx) roll(ctx context.Context, plan hintTryPlan) (gateResult, error) {
 	return h.s.heldGate(ctx, h.s.outsideGate(h.tx, h.q, h.hs), rollSpec{
 		Kind: heldHintTry, Key: h.key, Request: h.raw, Roller: heldRoller{CampaignID: h.m.CampaignID, CharacterID: plan.who.ID, UserID: h.m.UserID},
-		In: h.in, Modifier: plan.bonus, Mode: plan.cm.Mode, Floor: plan.floor, Lucky: plan.option.Lucky, MayAsk: true, FavorSpent: plan.favor.Used,
+		In: h.in, Modifier: plan.bonus, Mode: plan.cm.Mode, Floor: plan.floor, Lucky: plan.option.Lucky, MayAsk: true, FavorSpent: plan.favor.Used, FavorPrompt: plan.favor.Prompt,
 	})
 }
 

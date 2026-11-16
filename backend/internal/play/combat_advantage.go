@@ -561,7 +561,7 @@ type spellModes struct {
 	// pre is the d20 of a spell attack settled before the cast spent anything, when the caster's
 	// player held a Bardic Inspiration die (inspiration_held.go); nil otherwise.
 	pre *spellAttackPre
-	// spend and key are the request's spend_favor and idempotency key; favor is what the Inspiration did to the cast's spell attack
+	// spend and key are the request's spend_favor and its idempotency key as parsed (parseKey: the one every hold, event and prompt keeps); favor is what the Inspiration did to the cast's spell attack
 	// (favor_spend.go), decided in the first of the two places that work the attack's mode out.
 	spend bool
 	key   string
@@ -569,7 +569,7 @@ type spellModes struct {
 }
 
 // spellModes reads the combat for the d20 rolls of a cast.
-func (s *Service) spellModes(ctx context.Context, c *combatTx, m authz.Membership, v combatViewer, cs []playdb.Combatant, caster playdb.Combatant, req *playv1.CastSpellRequest) (*spellModes, error) {
+func (s *Service) spellModes(ctx context.Context, c *combatTx, m authz.Membership, v combatViewer, cs []playdb.Combatant, caster playdb.Combatant, req *playv1.CastSpellRequest, key string) (*spellModes, error) {
 	in, err := s.readModeInputs(ctx, c, cs, &v)
 	if err != nil {
 		return nil, err
@@ -588,7 +588,7 @@ func (s *Service) spellModes(ctx context.Context, c *combatTx, m authz.Membershi
 	}
 	return &spellModes{
 		in: in, v: v, reader: reader, names: names, traits: sheet.Traits, ask: modeAsk{want: req.GetRollMode(), reason: req.GetModeReason()},
-		spend: req.GetSpendFavor(), key: req.GetIdempotencyKey(),
+		spend: req.GetSpendFavor(), key: key,
 		attack: map[string][]*playv1.AdvantageSource{}, save: map[string][]*playv1.AdvantageSource{},
 	}, nil
 }

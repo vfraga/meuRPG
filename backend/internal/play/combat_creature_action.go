@@ -261,7 +261,7 @@ func (f *creatureFlow) findTargets(context.Context) error {
 // readModes reads the combat for the d20 rolls of the saves.
 func (f *creatureFlow) readModes(ctx context.Context) error {
 	var err error
-	f.modes, err = f.s.spellModes(ctx, f.c, f.m, f.v, f.cs, f.actor, &playv1.CastSpellRequest{})
+	f.modes, err = f.s.spellModes(ctx, f.c, f.m, f.v, f.cs, f.actor, &playv1.CastSpellRequest{}, "")
 	return err
 }
 

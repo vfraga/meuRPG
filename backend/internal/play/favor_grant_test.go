@@ -483,7 +483,7 @@ type favorTable struct {
 }
 
 // checkFavorAuthorization is the rows of FavorService in TestAuthorizationMatrix: every method, asked of each kind of caller.
-// The campaign has an open session. PassFavor is not built yet: a member of the campaign gets unimplemented, a stranger not_found.
+// The campaign has an open session. The calls name an id that is no pass and a giver that is its own receiver: PassFavor refuses SELF to a member, AnswerFavorPass and CancelFavorPass find no pass (a pass is never told to a caller who may not read it), and a stranger gets not_found.
 func checkFavorAuthorization(t *testing.T, f favorTable) {
 	t.Helper()
 	type client = playv1connect.FavorServiceClient
@@ -504,7 +504,19 @@ func checkFavorAuthorization(t *testing.T, f favorTable) {
 		{"PassFavor", func(ctx context.Context, c client) error {
 			_, err := c.PassFavor(ctx, connect.NewRequest(&playv1.PassFavorRequest{CampaignId: f.campaign, FromCharacterId: f.character, ToCharacterId: f.character, IdempotencyKey: newKey()}))
 			return err
-		}, [4]connect.Code{connect.CodeUnimplemented, connect.CodeUnimplemented, connect.CodeUnimplemented, connect.CodeNotFound}},
+		}, [4]connect.Code{connect.CodeFailedPrecondition, connect.CodeFailedPrecondition, connect.CodeFailedPrecondition, connect.CodeNotFound}},
+		{"AnswerFavorPass", func(ctx context.Context, c client) error {
+			_, err := c.AnswerFavorPass(ctx, connect.NewRequest(&playv1.AnswerFavorPassRequest{CampaignId: f.campaign, PassId: f.character, Accept: true, IdempotencyKey: newKey()}))
+			return err
+		}, [4]connect.Code{connect.CodeNotFound, connect.CodePermissionDenied, connect.CodePermissionDenied, connect.CodeNotFound}},
+		{"CancelFavorPass", func(ctx context.Context, c client) error {
+			_, err := c.CancelFavorPass(ctx, connect.NewRequest(&playv1.CancelFavorPassRequest{CampaignId: f.campaign, PassId: f.character, IdempotencyKey: newKey()}))
+			return err
+		}, [4]connect.Code{connect.CodeNotFound, connect.CodeNotFound, connect.CodeNotFound, connect.CodeNotFound}},
+		{"AnswerFavorRefund", func(ctx context.Context, c client) error {
+			_, err := c.AnswerFavorRefund(ctx, connect.NewRequest(&playv1.AnswerFavorRefundRequest{CampaignId: f.campaign, PromptId: f.character, GiveBack: true, IdempotencyKey: newKey()}))
+			return err
+		}, [4]connect.Code{connect.CodeNotFound, connect.CodePermissionDenied, connect.CodePermissionDenied, connect.CodeNotFound}},
 	}
 	covered := map[string]bool{}
 	for _, r := range rows {

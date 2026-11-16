@@ -663,6 +663,7 @@ func (f *attackFlow) favorAsk() favorAsk {
 	return favorAsk{
 		Want: f.req.GetSpendFavor(), CampaignID: f.m.CampaignID, CharacterID: f.attacker.CharacterID, Own: ownsCharacter(f.v, f.attacker),
 		Key: f.call.key, Kind: heldWeaponAttack, Sources: f.truth.Sources, Hide: f.truth.Hide, Rolls: true,
+		Asked: f.req.GetRollMode(), AskedRequest: f.req.GetRollModeRequestId(),
 	}
 }
 
@@ -676,7 +677,7 @@ func (f *attackFlow) applyFavor(ctx context.Context) error {
 	if err := favorAgainst(fv, f.req.GetRollMode(), f.req.GetRollModeRequestId()); err != nil {
 		return err
 	}
-	f.truth, f.favor, f.spec.FavorSpent = f.truth.withFavor(fv, f.names), fv, fv.Used
+	f.truth, f.favor, f.spec.FavorSpent, f.spec.FavorPrompt = f.truth.withFavor(fv, f.names), fv, fv.Used, fv.Prompt
 	return nil
 }
 
@@ -798,7 +799,7 @@ func (f *attackFlow) attackEvent(run int32) actionEvent {
 		// shows it, a player's never does.
 		TargetAC: clamp32(f.targetAC, 0, math.MaxInt32),
 		Cover:    cover.key(), CoverSource: cover.sourceKey(), CoverBonus: clamp32(cover.bonus(), 0, 5),
-		CoverRestricted: f.cp.restricted, CoverSeenBy: f.cp.seenBy, Favor: f.favor.Used, FavorLost: f.favor.Lost,
+		CoverRestricted: f.cp.restricted, CoverSeenBy: f.cp.seenBy, Favor: f.favor.Used, FavorPrompt: f.favor.Prompt, FavorLost: f.favor.Lost,
 	}
 	if b := f.rolled.Bonus; b != nil {
 		made.Res = &resourceEvent{Kind: resBardicUse, Sides: b.Sides, Face: b.Face, FromID: b.From, ExpiresRound: b.ExpiresRound}

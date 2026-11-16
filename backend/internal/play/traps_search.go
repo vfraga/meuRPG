@@ -367,7 +367,7 @@ func (s *Service) askSearchGate(ctx context.Context, ts *trapSearch, r *searchTu
 	}
 	step, err := s.heldGate(ctx, env, rollSpec{
 		Kind: heldTrapSearch, Key: ts.key, Request: ts.req, Roller: roller,
-		In: held, Modifier: r.bonus, Mode: r.cm.Mode, Floor: r.floor, Lucky: r.opt.Lucky, MayAsk: true, FavorSpent: r.favor.Used,
+		In: held, Modifier: r.bonus, Mode: r.cm.Mode, Floor: r.floor, Lucky: r.opt.Lucky, MayAsk: true, FavorSpent: r.favor.Used, FavorPrompt: r.favor.Prompt,
 	})
 	if err != nil {
 		return false, err
@@ -472,7 +472,7 @@ func trapSearchEvent(ts *trapSearch, r *searchTurn, d searchDice, found maplink.
 		Round: r.c.enc.Round, Actor: ts.place.combatantID, Key: ts.skill, D20: conv.Int32(d.face), Modifier: conv.Int32(r.bonus + r.dieFace), Total: conv.Int32(d.roll.Total),
 		Physical: d.roll.Physical, Found: found.Found, OnTurn: ts.place.spent, D20B: conv.Int32(d.face2), Floor: conv.Int32(r.floor.Value), FloorBy: r.floor.Source,
 		Lucky: r.step.Lucky, // the held d20 Lucky rolled again: the first of a Perception search's two
-		Favor: r.favor.Used,
+		Favor: r.favor.Used, FavorPrompt: r.favor.Prompt,
 	}
 	if r.cm.Mode != combat.ModeNormal {
 		ev.RollMode, ev.Counted = advantage.ModeKey(r.cm.Mode), conv.Int32(d.counted)

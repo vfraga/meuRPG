@@ -35,6 +35,7 @@ var undoableKinds = []string{
 	eventHideResolved, // only the master's reveal of a hider (undoableHideResolved)
 	eventLegendarySpent, eventGearSwapped, eventFeatureUsed, eventCombatantMounted, eventCombatantDismounted,
 	eventActionReadied, eventReadiedFired,
+	eventFavorGranted, eventFavorPassed, eventFavorAskRefused, eventFavorPassCanceled,
 }
 
 // leavesHPAlone are the undoable kinds whose undo never writes hit points: they keep no holds.
@@ -42,6 +43,7 @@ var leavesHPAlone = []string{
 	eventAttackRolled, eventDamageDiscarded, eventReactionDeclined, eventConditionsSet,
 	eventCombatantMoved, eventFamiliarSight, eventHideResolved, eventLegendarySpent, eventGearSwapped, eventCombatantMounted, eventCombatantDismounted,
 	eventActionReadied, eventReadiedFired,
+	eventFavorGranted, eventFavorPassed, eventFavorAskRefused, eventFavorPassCanceled,
 }
 
 // recentEvents is how many of the session's latest events the search for the
@@ -237,11 +239,13 @@ func chainPuzzle(c chainEvent) chainVerdict {
 	return chainGoOn
 }
 
-// chainFavor: a grant or a pass of the Inspiration is no action of the combat, as a puzzle isn't.
-// It never closes the chain.
-// Later slices decide how the spend sits in the chain and how the master's undo of a grant works.
+// chainFavor: a favor event written outside this combat (or one that is no answer: the ask, the prompt) is no action of the combat, as
+// a puzzle isn't, and never closes the chain. A grant, an accepted pass or an answer to one written in this combat is its action.
 func chainFavor(c chainEvent) chainVerdict {
 	if strings.HasPrefix(c.row.Kind, "favor_") {
+		if slices.Contains(favorUndoKinds, c.row.Kind) && c.row.EncounterID != nil && *c.row.EncounterID == c.encounterID {
+			return chainGoOn
+		}
 		return chainSkip
 	}
 	return chainGoOn
@@ -530,17 +534,24 @@ func (s *Service) takeBackAction(ctx context.Context, c *combatTx, run *undoRun,
 			return err
 		}
 	}
-	if last.Kind == eventGearSwapped { // the swap is the characters module's too: the sheet goes back with the economy
-		if err := s.takeBackGearSwap(ctx, c, run, last.Payload); err != nil {
-			return err
-		}
-	} else if run.vitals, err = s.takeBack(ctx, c, last.Kind, ev); err != nil {
+	if run.vitals, err = s.takeBackOf(ctx, c, run, last, ev); err != nil {
 		return err
 	}
 	// What the action ended or revealed is as it was (takeBack): the lines it wrote
 	// about it go too.
 	run.alsoUndone = append(run.alsoUndone, ev.linesBefore()...)
 	return s.takeBackAround(ctx, c, run, recent, last, ev)
+}
+
+// takeBackOf takes the action back by its kind: a favor event and a gear swap have their own, the others go through takeBack.
+func (s *Service) takeBackOf(ctx context.Context, c *combatTx, run *undoRun, last playdb.ListRecentSessionEventsRow, ev actionEvent) ([]*playv1.CharacterVitals, error) {
+	switch {
+	case slices.Contains(favorUndoKinds, last.Kind):
+		return s.takeBackFavor(ctx, c, last.Kind, last.Payload, ev)
+	case last.Kind == eventGearSwapped: // the swap is the characters module's too: the sheet goes back with the economy
+		return nil, s.takeBackGearSwap(ctx, c, run, last.Payload)
+	}
+	return s.takeBack(ctx, c, last.Kind, ev)
 }
 
 // creatureToPutBack is the creature whose square the undo of ev changes behind the mover's
@@ -664,6 +675,13 @@ func (s *Service) takeBackOlder(ctx context.Context, c *combatTx, run *undoRun, 
 // publishUndoRun tells what the undo changed after the commit: the combat, the log, the
 // fog around the combatants that went back, the vitals put back and the trap armed again.
 func (s *Service) publishUndoRun(ctx context.Context, campaignID string, d *encounterData, ev actionEvent, run *undoRun) {
+	if slices.Contains(favorUndoKinds, ev.UndoneKind) { // told to the master and the owners of the Inspiration alone
+		s.publishFavorUndo(ctx, campaignID, d.enc, ev)
+		for _, vit := range run.vitals {
+			s.publishVitals(ctx, campaignID, vit)
+		}
+		return
+	}
 	s.publishUndone(ctx, campaignID, d, ev)
 	// The undo rewrote the log: full.
 	s.publishLogChange(ctx, campaignID, d.enc.ID, !ev.Secret, true)

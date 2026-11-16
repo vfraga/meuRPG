@@ -37,15 +37,13 @@ var heldSaveKinds = []struct {
 
 // holdOf reads the one unanswered hold of the kind and, when the case spent the Inspiration, writes the spend the way the paths that take
 // it write it: the hold's favor_spent and the character's row gone.
-func (h *savedHold) keep(t *testing.T, _ string, character string) {
+func (h *savedHold) keep(t *testing.T, _ string, _ string) {
 	t.Helper()
 	if err := h.f.h.pool.QueryRow(t.Context(), `SELECT id FROM inspiration_holds WHERE kind = $1`, h.kind).Scan(&h.id); err != nil {
 		t.Fatalf("the question the save kept: %v", err)
 	}
 	if h.spent {
-		if err := h.f.grant(character); err != nil {
-			t.Fatalf("GrantFavor() error = %v", err)
-		}
+		// The row was spent: it is not there. (A grant here would be the combat's last action, and the undo this test makes would take it.)
 		h.f.execSQL(t, `DELETE FROM character_favor WHERE campaign_id = $1`, h.f.campaignID)
 		h.f.execSQL(t, `UPDATE inspiration_holds SET favor_spent = true WHERE id = $1`, h.id)
 		if h.f.favorHolds(t) || !h.f.holdFavorOf(t, h.id) {

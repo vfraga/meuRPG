@@ -279,3 +279,94 @@ func TestTheHoldForgetChecksSeeAViolation(t *testing.T) {
 		t.Errorf("a combatant deleted after the forget = %v, want none", got)
 	}
 }
+
+// favorRowFiles are the only files that put a spent Inspiration back: the master's undo of a roll (favor_spend.go, and the undo of a zone's catch in zones_save.go) and the refund path
+// (hold_forget.go). The row is one per character and never stacks, so every give-back goes through favorGiveBack and its one-row rule.
+var favorRowFiles = []string{"internal/play/favor_spend.go", "internal/play/hold_forget.go", "internal/play/zones_save.go"}
+
+// favorInsertFiles are the only files that insert the character's row of Inspiration (character_favor): the grant, the pass, the undo of
+// either and the refund paths. Every other path goes through favorGiveBack, which never stacks a second one.
+var favorInsertFiles = []string{
+	"internal/play/favor_grant.go", "internal/play/favor_pass.go", "internal/play/combat_undo_favor.go", "internal/play/favor_spend.go", "internal/play/hold_forget.go",
+}
+
+// TestFavorGiveBackIsCalledOnlyFromTheRefundPaths fails for a non-test Go file that calls favorGiveBack or favorGiveBackIf outside the files
+// that own the refund of a spent Inspiration.
+func TestFavorGiveBackIsCalledOnlyFromTheRefundPaths(t *testing.T) {
+	failProblems(t, favorFileProblems(t, favorRowFiles, func(path string, src []byte) []string {
+		return plainCallsOf(path, src, []string{"favorGiveBack", "favorGiveBackIf"})
+	}))
+}
+
+// TestInsertCharacterFavorIsCalledOnlyFromTheFavorFiles fails for a non-test Go file that inserts the row of the Inspiration with the raw
+// query outside the files that own it.
+func TestInsertCharacterFavorIsCalledOnlyFromTheFavorFiles(t *testing.T) {
+	failProblems(t, favorFileProblems(t, favorInsertFiles, callsOfRawFavorInsert))
+}
+
+// callsOfRawFavorInsert lists the calls of InsertCharacterFavor in the source.
+func callsOfRawFavorInsert(path string, src []byte) []string {
+	return callsOf(path, src, []string{"InsertCharacterFavor"}, "the character's Inspiration is inserted only by the grant, the pass, the undo of either and the refund paths "+
+		"(favor_grant.go, favor_pass.go, combat_undo_favor.go, favor_spend.go, hold_forget.go): use favorGiveBack for a give-back")
+}
+
+// TestFavorRowChecksSeeAViolation shows that the two checks above fail for a call outside their files.
+func TestFavorRowChecksSeeAViolation(t *testing.T) {
+	if got := callsOfRawFavorInsert("x.go", []byte("package x\nfunc f() { q.InsertCharacterFavor(ctx, p) }\n")); len(got) != 1 {
+		t.Errorf("a raw insert of the Inspiration = %v, want one problem", got)
+	}
+	if got := callsOfRawFavorInsert("x.go", []byte("package x\nfunc f() { q.SpendCharacterFavor(ctx, p) }\n")); len(got) != 0 {
+		t.Errorf("a spend = %v, want none", got)
+	}
+	if got := plainCallsOf("x.go", []byte("package x\nfunc f() { favorGiveBackIf(ctx, q, true, a, b, c) }\n"), []string{"favorGiveBack", "favorGiveBackIf"}); len(got) != 1 {
+		t.Errorf("a give-back outside its files = %v, want one problem", got)
+	}
+	problems := favorFileProblems(t, []string{"internal/play/none.go"}, func(path string, _ []byte) []string { return []string{path} })
+	if len(problems) == 0 {
+		t.Error("the walk of the play package found no file outside the allowed ones")
+	}
+}
+
+// favorFileProblems runs check on every non-test Go file of the play package that is not one of the allowed files.
+func favorFileProblems(t *testing.T, allowed []string, check func(path string, src []byte) []string) []string {
+	t.Helper()
+	root := os.DirFS(backendRoot)
+	var problems []string
+	err := fs.WalkDir(root, "internal/play", func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() || !strings.HasSuffix(path, ".go") || strings.HasSuffix(path, "_test.go") || slices.Contains(allowed, path) || strings.Contains(path, "/playdb/") {
+			return nil
+		}
+		src, err := fs.ReadFile(root, path)
+		if err != nil {
+			return err
+		}
+		problems = append(problems, check(path, src)...)
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	return problems
+}
+
+// plainCallsOf lists the calls of the package-level functions by name (f(...), which callsOf does not read: it reads x.f(...)).
+func plainCallsOf(file string, src []byte, funcs []string) []string {
+	var out []string
+	fset := token.NewFileSet()
+	f, err := parser.ParseFile(fset, file, src, 0)
+	if err != nil {
+		return []string{file + ": " + err.Error()}
+	}
+	ast.Inspect(f, func(n ast.Node) bool {
+		if call, ok := n.(*ast.CallExpr); ok {
+			if id, ok := call.Fun.(*ast.Ident); ok && slices.Contains(funcs, id.Name) {
+				out = append(out, file+":"+strconv.Itoa(fset.Position(id.Pos()).Line)+" calls "+id.Name+": an Inspiration spent is given back only through hold_forget.go (refundSpentFavor, forgetHoldsOf) or the undo of its roll")
+			}
+		}
+		return true
+	})
+	return out
+}

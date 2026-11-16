@@ -327,6 +327,10 @@ type actionEvent struct {
 	// Favor says the roll was made with the roller's Inspiration (favor_spend.go): the undo of the roll gives it back, and the
 	// log says so to the master and the roller's player. The spend is part of this event, never an event of its own.
 	Favor bool `json:"favor,omitempty"`
+	// FavorPrompt is the id of the refund prompt the spend opened (favorUse.Prompt), empty when it opened none. The undo of the roll reads it
+	// from here and closes that prompt and no other: a key finds none reliably (the key the event is written under is not the spend's, since a
+	// window's replay writes none and the answer to a question writes its own, and two spends of one character can share a key).
+	FavorPrompt string `json:"favor_prompt,omitempty"`
 	// FavorLost says why the Inspiration the roller asked for was not spent (a favorLost* value): the replay of a roll a reaction window held
 	// found it gone or adding nothing, and the roll was made without it. The log says so to the master and the roller's player.
 	FavorLost string `json:"favor_lost,omitempty"`

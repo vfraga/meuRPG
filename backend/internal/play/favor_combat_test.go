@@ -358,14 +358,20 @@ func TestFavorUndoOfACombatRoll(t *testing.T) {
 			if got, err := p.send(t, f, u, newKey(), true, nil); err != nil || !got.hasFavorSource() {
 				t.Errorf("the spend after the undo = %v, %v, want it to work", got, err)
 			}
-			// Spend, receive another, undo: the master's undo does not stack the two.
+			// Spend, receive another: the grant is the combat's last action, so the first undo takes the grant back, and the second takes the
+			// roll and gives the spend back: one row, never two.
 			f.give(t, who)
-			id = f.log(t, f.master, f.e).GetUndoableEventId()
-			if err := f.undo(t, f.master, f.e, id); err != nil {
-				t.Fatalf("UndoLastAction() after a new grant error = %v", err)
+			if err := f.undo(t, f.master, f.e, f.undoableLine(t).GetId()); err != nil {
+				t.Fatalf("UndoLastAction(the grant) error = %v", err)
+			}
+			if got := f.rows(t); got != 0 {
+				t.Errorf("character_favor has %d rows after the undo of the grant, want 0", got)
+			}
+			if err := f.undo(t, f.master, f.e, f.log(t, f.master, f.e).GetUndoableEventId()); err != nil {
+				t.Fatalf("UndoLastAction(the roll) error = %v", err)
 			}
 			if got := f.rows(t); got != 1 {
-				t.Errorf("character_favor has %d rows after the undo of a spend that a grant followed, want 1", got)
+				t.Errorf("character_favor has %d rows after the undo of the roll, want 1", got)
 			}
 		})
 	}
@@ -906,7 +912,8 @@ func TestFavorOnTheSaveOfAZoneAtTheCast(t *testing.T) {
 	if w == nil {
 		t.Fatal("Toren's player has no question: the wall caught his character at the cast")
 	}
-	f.give(t, c.toren)
+	// The row is put in the table, not granted: a grant in the combat is the last action of its chain, and the undo below is the cast's.
+	f.execSQL(t, `INSERT INTO character_favor (character_id, campaign_id) SELECT $1, campaign_id FROM characters WHERE id = $1`, c.toren.GetId())
 	c.h.roller.queue(4, 4, 4, 4, 4, 4, 4)
 	res, err := c.rollEffectSave(t, c.caio, e, w.GetId(), func(r *playv1.RollEffectSaveRequest) {
 		r.Roll, r.SpendFavor = &playv1.RollEffectSaveRequest_RollInApp{RollInApp: true}, true

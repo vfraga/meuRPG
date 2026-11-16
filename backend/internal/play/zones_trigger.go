@@ -185,7 +185,7 @@ func (s *Service) applyZone(ctx context.Context, c *combatTx, cs []playdb.Combat
 // zoneSave makes the creature's saving throw against the zone's spell, as a cast does for a target.
 func (s *Service) zoneSave(ctx context.Context, c *combatTx, cs []playdb.Combatant, z *zone, owner, who playdb.Combatant) (castHit, error) {
 	m := authz.Membership{CampaignID: c.session.CampaignID, Role: authz.RoleMaster}
-	modes, err := s.spellModes(ctx, c, m, combatViewer{master: true}, cs, owner, nil)
+	modes, err := s.spellModes(ctx, c, m, combatViewer{master: true}, cs, owner, nil, "")
 	if err != nil {
 		return castHit{}, err
 	}

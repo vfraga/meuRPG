@@ -641,7 +641,7 @@ LIMIT $2;
 
 -- name: ListRecentSessionEvents :many
 -- The session's latest events, newest first (the undo looks for the last action).
-SELECT id, seq, kind, encounter_id, payload FROM session_events
+SELECT id, seq, kind, encounter_id, payload, idempotency_key FROM session_events
 WHERE game_session_id = $1
 ORDER BY seq DESC
 LIMIT $2;
@@ -2055,9 +2055,10 @@ DELETE FROM character_inspiration WHERE campaign_id = $1;
 -- combatant and its combat, which own the hold (00255); window_hold says a reaction window held the
 -- request first and the roll is the one its replay held (the weapon attack, a contest start or answer,
 -- or a Hide), so the hold has a key of its own.
--- favor_spent says the roll was made with the roller's Inspiration, which a retry or the answer reads.
-INSERT INTO inspiration_holds (campaign_id, character_id, user_id, kind, idempotency_key, request, faces, modifier, total, counted, physical, created_at, round, lucky_index, combatant_id, encounter_id, window_hold, indomitable_ask, indomitable_failed, stroke_ask, stroke_failed, reroll_ask, reroll_index, reroll_at_most, reroll_resource, reroll_cost, reroll_source, counted_by, favor_spent)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, sqlc.narg(combatant_id), sqlc.narg(encounter_id), $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27)
+-- favor_spent says the roll was made with the roller's Inspiration, which a retry or the answer reads; favor_prompt_id is the refund prompt
+-- that spend opened (NULL when it opened none), which dropping the hold closes.
+INSERT INTO inspiration_holds (campaign_id, character_id, user_id, kind, idempotency_key, request, faces, modifier, total, counted, physical, created_at, round, lucky_index, combatant_id, encounter_id, window_hold, indomitable_ask, indomitable_failed, stroke_ask, stroke_failed, reroll_ask, reroll_index, reroll_at_most, reroll_resource, reroll_cost, reroll_source, counted_by, favor_spent, favor_prompt_id)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, sqlc.narg(combatant_id), sqlc.narg(encounter_id), $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, sqlc.narg(favor_prompt_id))
 RETURNING *;
 
 -- name: GetInspirationHoldByKey :one
@@ -2104,9 +2105,9 @@ SELECT * FROM inspiration_holds WHERE encounter_id = $1 AND kind = 'weapon_attac
 WITH changed AS (
 DELETE FROM inspiration_holds
 WHERE id = $1
-RETURNING id, campaign_id, character_id, favor_spent, answer_key
+RETURNING id, campaign_id, character_id, favor_spent, favor_prompt_id, answer_key
 )
-SELECT campaign_id, character_id, (favor_spent AND answer_key IS NULL)::boolean AS unsettled_favor FROM changed ORDER BY id;
+SELECT campaign_id, character_id, (favor_spent AND answer_key IS NULL)::boolean AS unsettled_favor, favor_prompt_id FROM changed ORDER BY id;
 
 -- name: DeleteInspirationHoldsOf :many
 -- Every hold a roller owns, answered or not (ListOpenInspirationHolds says who owns what). Says which of them spent the
@@ -2117,9 +2118,9 @@ WITH changed AS (
 DELETE FROM inspiration_holds
 WHERE (encounter_id = sqlc.narg(encounter_id) AND combatant_id = sqlc.narg(combatant_id))
    OR (combatant_id IS NULL AND character_id = sqlc.narg(character_id))
-RETURNING id, campaign_id, character_id, favor_spent, answer_key
+RETURNING id, campaign_id, character_id, favor_spent, favor_prompt_id, answer_key
 )
-SELECT campaign_id, character_id, (favor_spent AND answer_key IS NULL)::boolean AS unsettled_favor FROM changed ORDER BY id;
+SELECT campaign_id, character_id, (favor_spent AND answer_key IS NULL)::boolean AS unsettled_favor, favor_prompt_id FROM changed ORDER BY id;
 
 -- name: AnswerInspirationHold :exec
 UPDATE inspiration_holds SET answer_key = $2 WHERE id = $1;
@@ -2171,9 +2172,9 @@ WHERE h.campaign_id = $1 AND h.answer_key IS NULL AND h.round IS NULL
   AND NOT h.stroke_ask
   AND NOT h.reroll_ask
   AND NOT EXISTS (SELECT 1 FROM character_inspiration d WHERE d.character_id = h.character_id)
-RETURNING h.id, h.campaign_id, h.character_id, h.favor_spent, h.answer_key
+RETURNING h.id, h.campaign_id, h.character_id, h.favor_spent, h.favor_prompt_id, h.answer_key
 )
-SELECT campaign_id, character_id, (favor_spent AND answer_key IS NULL)::boolean AS unsettled_favor FROM changed ORDER BY id;
+SELECT campaign_id, character_id, (favor_spent AND answer_key IS NULL)::boolean AS unsettled_favor, favor_prompt_id FROM changed ORDER BY id;
 
 -- name: InsertHitRider :one
 -- A rider a monk's hit offers (combat_riders.go).
@@ -2269,6 +2270,85 @@ DELETE FROM character_favor WHERE character_id = $1 AND campaign_id = $2 RETURNI
 -- name: HasCharacterFavor :one
 -- Says the character has the Inspiration, without taking it: a roll a reaction window holds is checked against it, and the replay spends it.
 SELECT EXISTS (SELECT 1 FROM character_favor WHERE character_id = $1 AND campaign_id = $2);
+
+-- name: InsertFavorPass :one
+-- No row comes back when the giver already has a pending pass (the partial unique index): the ask is refused PASS_PENDING. A retry of
+-- the same key finds its row with GetFavorPassByAskKey first.
+INSERT INTO favor_passes (campaign_id, game_session_id, from_character_id, to_character_id, asked_by_user_id, ask_key)
+VALUES ($1, $2, $3, $4, $5, $6)
+ON CONFLICT DO NOTHING
+RETURNING *;
+
+-- name: GetFavorPass :one
+SELECT * FROM favor_passes WHERE id = $1 AND campaign_id = $2;
+
+-- name: GetFavorPassByAskKey :one
+SELECT * FROM favor_passes WHERE campaign_id = $1 AND ask_key = $2;
+
+-- name: GetFavorPassByClosedKey :one
+SELECT * FROM favor_passes WHERE campaign_id = $1 AND closed_key = $2;
+
+-- name: ListPendingFavorPasses :many
+-- Every pending pass of the campaign, oldest first: the master's list.
+SELECT * FROM favor_passes WHERE campaign_id = $1 AND status = 'pending' ORDER BY created_at, id;
+
+-- name: ListPendingFavorPassesOfGivers :many
+-- The pending passes asked from these characters: a player reads their own asks.
+SELECT * FROM favor_passes WHERE campaign_id = $1 AND status = 'pending' AND from_character_id = ANY(sqlc.arg(from_character_ids)::uuid[]) ORDER BY created_at, id;
+
+-- name: GetPendingFavorPassOfGiver :one
+SELECT * FROM favor_passes WHERE from_character_id = $1 AND status = 'pending';
+
+-- name: CloseFavorPass :one
+-- Closes a pass that is still pending; no row comes back when another call closed it first, so of two answers only one wins.
+UPDATE favor_passes SET status = sqlc.arg(status), closed_key = sqlc.arg(closed_key), closed_at = now()
+WHERE id = sqlc.arg(id) AND campaign_id = sqlc.arg(campaign_id) AND status = 'pending'
+RETURNING *;
+
+-- name: CloseFavorPassesOfSession :many
+-- The end of a session cancels every pass still pending in it. The closed rows come back for the events.
+WITH changed AS (
+    UPDATE favor_passes SET status = 'canceled', closed_at = now()
+    WHERE game_session_id = $1 AND status = 'pending'
+    RETURNING *
+)
+SELECT * FROM changed ORDER BY created_at, id;
+
+-- name: InsertFavorRefundPrompt :one
+INSERT INTO favor_refund_prompts (campaign_id, game_session_id, character_id, roll_label_pt, hidden_sources)
+VALUES ($1, $2, $3, $4, $5)
+RETURNING *;
+
+-- name: GetFavorRefundPrompt :one
+SELECT * FROM favor_refund_prompts WHERE id = $1 AND campaign_id = $2;
+
+-- name: GetFavorRefundPromptByAnswerKey :one
+SELECT * FROM favor_refund_prompts WHERE campaign_id = $1 AND answer_key = $2;
+
+-- name: ListOpenFavorRefundPrompts :many
+-- The master's questions that wait, oldest first.
+SELECT * FROM favor_refund_prompts WHERE campaign_id = $1 AND status = 'open' ORDER BY created_at, id;
+
+-- name: AnswerFavorRefundPrompt :one
+-- Answers a prompt that is still open; no row comes back when another call answered it first.
+UPDATE favor_refund_prompts SET status = sqlc.arg(status), answer_key = sqlc.arg(answer_key), answered_at = now()
+WHERE id = sqlc.arg(id) AND campaign_id = sqlc.arg(campaign_id) AND status = 'open'
+RETURNING *;
+
+-- name: KeepFavorRefundPrompt :execrows
+-- The roll a prompt belongs to is gone (undone, or its held roll forgotten): the Inspiration it spent went back, so the prompt closes as kept.
+-- Only that prompt, by its id: a prompt that is not open any more (answered, or closed with its session) stays as it is.
+UPDATE favor_refund_prompts SET status = 'kept', answered_at = now()
+WHERE id = $1 AND campaign_id = $2 AND status = 'open';
+
+-- name: CloseFavorRefundPromptsOfSession :many
+-- The end of a session keeps spent the Inspiration of every prompt still open in it.
+WITH changed AS (
+    UPDATE favor_refund_prompts SET status = 'kept', answered_at = now()
+    WHERE game_session_id = $1 AND status = 'open'
+    RETURNING *
+)
+SELECT * FROM changed ORDER BY created_at, id;
 
 -- name: EncounterHasRiders :one
 -- Whether any combatant of the combat sits on a mount: the cheap check before the scans that look for a mount's rider.

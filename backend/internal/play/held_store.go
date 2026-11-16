@@ -81,6 +81,8 @@ type heldRoll struct {
 	StrokeFrom              *int32
 	// FavorSpent says the roll was made with the roller's Inspiration (favor_spend.go): a retry and the answer read it.
 	FavorSpent bool
+	// FavorPrompt is the id of the refund prompt that spend opened, empty when it opened none (favorUse.Prompt).
+	FavorPrompt string
 	// The reroll's question (held_reroll.go): asked, the die that showed the low face, the rule it was asked for (its limit,
 	// the resource and cost it spends, the feature that gives it), its answer's key and the d20 that counted before and
 	// after the new roll.
@@ -236,7 +238,7 @@ func heldOfInspirationHold(row playdb.InspirationHold) heldRoll {
 		StrokeAsk: row.StrokeAsk, StrokeFailed: row.StrokeFailed, StrokeAnswerKey: row.StrokeAnswerKey, StrokeFrom: row.StrokeFrom,
 		RerollAsk: row.RerollAsk, RerollIndex: row.RerollIndex, RerollAtMost: row.RerollAtMost, RerollResource: row.RerollResource,
 		RerollCost: row.RerollCost, RerollSource: row.RerollSource, RerollAnswerKey: row.RerollAnswerKey, RerollFrom: row.RerollFrom, RerollTo: row.RerollTo,
-		FavorSpent: row.FavorSpent,
+		FavorSpent: row.FavorSpent, FavorPrompt: deref(row.FavorPromptID),
 	}
 }
 
@@ -321,7 +323,7 @@ func (st inspirationHoldStore) insert(ctx context.Context, env gateEnv, h heldRo
 		CombatantID: nilIfEmpty(h.CombatantID), EncounterID: nilIfEmpty(h.EncounterID), WindowHold: h.Window,
 		IndomitableAsk: h.IndomAsk, IndomitableFailed: h.IndomFailed, StrokeAsk: h.StrokeAsk, StrokeFailed: h.StrokeFailed,
 		RerollAsk: h.RerollAsk, RerollIndex: h.RerollIndex, RerollAtMost: h.RerollAtMost, RerollResource: h.RerollResource,
-		RerollCost: h.RerollCost, RerollSource: h.RerollSource, CountedBy: h.CountedBy, FavorSpent: h.FavorSpent,
+		RerollCost: h.RerollCost, RerollSource: h.RerollSource, CountedBy: h.CountedBy, FavorSpent: h.FavorSpent, FavorPromptID: nilIfEmpty(h.FavorPrompt),
 	})
 	if err != nil {
 		return heldRoll{}, fmt.Errorf("hold the roll: %w", err)

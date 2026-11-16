@@ -452,12 +452,12 @@ func (s *Service) rollEffectSaveD20(ctx context.Context, c *combatTx, x *effectS
 	if err != nil {
 		return false, false, err
 	}
-	f.mode, x.ev.Favor = fv.Mode, fv.Used
+	f.mode, x.ev.Favor, x.ev.FavorPrompt = fv.Mode, fv.Used, fv.Prompt
 	// A player's character that holds a Bardic Inspiration die has the d20 kept until the player
 	// answers (no result is written yet, only the held row, which moves the number once); the answer brings it back with the die added. So
 	// has a halfling's d20 that shows a 1, for the Lucky question first.
 	spec := saveSpec(x.call.m, heldEffectSave, x.reactor, x.call.key, x.msg, x.call.in, f.save.Bonus, f.mode, f.sheet.Traits)
-	spec.FavorSpent = fv.Used
+	spec.FavorSpent, spec.FavorPrompt = fv.Used, fv.Prompt
 	// Indomitable (held_indomitable.go): the dice an effect adds after the gate move the total, so the roller may not
 	// know the result yet, as when the table hides the DC.
 	extras := len(effectDiceFor(f.states, x.reactor.ID, rules.RollAppliesSave)) > 0 || x.msg.GetManeuverKey() != ""

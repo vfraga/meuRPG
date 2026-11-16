@@ -34,9 +34,6 @@ type bonusUse struct {
 	ExpiresRound int32
 }
 
-// windowHoldSuffix marks the key of a held roll that a reaction window held before it was rolled.
-const windowHoldSuffix = "#window"
-
 // d20Sides is the d20 the held roll was made with.
 const d20Sides = 20
 
