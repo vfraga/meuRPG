@@ -226,6 +226,41 @@ describe('OrderColumn', () => {
     expect(getComputedStyle(mount!).paddingLeft).toBe('22px');
   });
 
+  it('names the rider once when the mount is the rider\'s own creature: "Montaria de Tor · Ileso"', () => {
+    const fixture = TestBed.createComponent(OrderColumn);
+    fixture.componentRef.setInput(
+      'encounter',
+      encounter({
+        currentCombatantId: 'tor',
+        combatants: [
+          combatant({
+            id: 'tor',
+            label: 'Tor',
+            kind: CombatantKind.PLAYER,
+            characterId: 'ch-tor',
+            mine: true,
+            initiative: 17,
+            mountedOnId: 'h',
+          }),
+          combatant({
+            id: 'h',
+            label: 'Cavalo de guerra',
+            kind: CombatantKind.CREATURE,
+            ownerCharacterId: 'ch-tor',
+            riderId: 'tor',
+            mountKind: 'controlled',
+            state: CombatantState.UNHURT,
+          }),
+        ],
+      }),
+    );
+    fixture.detectChanges();
+    const mount = (fixture.nativeElement as HTMLElement).querySelector('.row--mount');
+    const text = mount?.textContent?.replace(/\s+/g, ' ') ?? '';
+    expect(text).toContain('Montaria de Tor · Ileso');
+    expect(text).not.toContain('do Tor');
+  });
+
   it('boxes an NPC pair without a number: a player has no total of theirs (RN-20)', () => {
     const fixture = TestBed.createComponent(OrderColumn);
     fixture.componentRef.setInput(

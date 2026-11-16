@@ -11,7 +11,7 @@ import {
   playerWord,
   stateWord,
 } from '../../../../core/combat/combat-view';
-import { isCreature, ofOwner } from '../../../../core/combat/creature-names';
+import { isCreature, ofOwner, ownerOf } from '../../../../core/combat/creature-names';
 import {
   type OrderItem,
   jointTurn,
@@ -167,7 +167,10 @@ export class OrderColumn {
     const word = isPlayer(c) ? playerWord(c) : stateWord(c.state);
     if (isCreature(c)) {
       // "da Sálvia · Ileso": whose it is and how hurt, in a word (RN-20: never its hit points).
-      return [ofOwner(this.encounter(), c), word].filter(Boolean).join(' · ');
+      // A mount under its owner already names them: "Montaria de Tor · Ileso".
+      const owner =
+        ownerOf(this.encounter(), c)?.id === c.riderId ? '' : ofOwner(this.encounter(), c);
+      return [owner, word].filter(Boolean).join(' · ');
     }
     return sideTags(c).length > 0 ? `${word} · Aliado` : word;
   }
