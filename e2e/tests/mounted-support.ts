@@ -26,7 +26,7 @@ export const isolda: CharacterBuild = {
   extraSkills: [],
   scores: { for: 16, des: 10, con: 14, int: 8, sab: 10, car: 15 },
 };
-export const isoldaSheet = { weaponKeys: ['equipment:longsword'], armorKey: 'equipment:chain-mail', preparedSpellKeys: ['spell:find-steed', 'spell:bless'] };
+export const isoldaSheet = { weaponKeys: ['equipment:longsword'], armorKey: 'equipment:chain-mail', preparedSpellKeys: ['spell:find-steed', 'spell:bless', 'spell:divine-favor'] };
 
 /** The name the app gives the steed of these specs: the form's. */
 export const STEED = 'Cavalo de guerra';
