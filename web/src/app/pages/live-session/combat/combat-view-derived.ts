@@ -5,10 +5,10 @@ import {
   CombatantSide,
   EncounterStatus,
 } from '../../../../gen/meurpg/play/v1/combat_pb';
-import { formTimesOf, stayView } from './stay-form';
-import { ActionKey } from '../../../core/connect/idempotency';
+import { CombatForm } from './combat-form';
+import { formTimesOf } from './stay-form';
 import { ResourceClient } from '../../../core/resources/resources-client';
-import { EncounterBlockedReason, HeldRollKind } from '../../../../gen/meurpg/play/v1/combat_pb';
+import { HeldRollKind } from '../../../../gen/meurpg/play/v1/combat_pb';
 import {
   asksLucky,
   asksReroll,
@@ -18,7 +18,6 @@ import {
   rerollFace,
   weaponHold,
 } from '../../../core/held-rolls/held-roll-offer';
-import { combatErrorMessage, encounterBlocked } from '../../../core/combat/combat-errors';
 import { wildActionLine } from '../../../core/combat/combat-notices';
 import { coverTargets, everyoneStanding } from '../../../core/combat/theatre';
 import { offersHolding, waitingText } from '../../../core/combat/opportunity';
@@ -116,8 +115,6 @@ export abstract class CombatViewDerivedDirective extends CombatViewStateDirectiv
   protected readonly resumeInitiativeQuestion = effect(() =>
     this.initiative.resume(this.ownInitiativeQuestion()),
   );
-  protected readonly leaveFormKey = new ActionKey();
-  protected readonly stayFormKey = new ActionKey();
   /** "Combate atualizado agora." (PM-02c 9c): said once when the page comes up with the turn on hold, that is, after a reload;
    * it goes when the wait is over. Nothing here is kept in the browser: the combat says what waits. */
   protected readonly refreshed = signal('');
@@ -174,42 +171,18 @@ export abstract class CombatViewDerivedDirective extends CombatViewStateDirectiv
   });
   /** The time each druid's form has left, by character: the master reads all, a player their own (the server sends no other). */
   protected readonly formTimes = computed(() => formTimesOf(this.vitals()));
-  /** "A forma já acabou" came back for "Permanecer": the row says so until the form changes (nothing was spent). */
-  protected readonly stayEnded = signal(false);
-  /** "Permanecer na forma" (the Druida tab, after "Voltar"): what it costs and why it cannot be pressed. `null` outside a form. */
-  protected readonly stay = computed(() =>
-    stayView(this.own(), this.ownVitals(), this.stayEnded()),
-  );
-  /** "Permanecer na forma": the same beast, one use, no action; the time starts over. */
-  protected async stayForm(): Promise<void> {
-    const own = this.own();
-    if (!own?.wildShapeBeastKey || this.busy()) {
-      return;
-    }
-    this.busy.set(true);
-    this.error.set('');
-    try {
-      const res = await this.creaturesApi.assumeWildShape(
-        this.campaignId(),
-        own.characterId,
-        own.wildShapeBeastKey,
-        this.stayFormKey.keyFor(own.characterId),
-        true,
-      );
-      this.stayFormKey.renew();
-      if (res.encounter) {
-        this.state().apply(res.encounter);
-      }
-    } catch (err) {
-      if (encounterBlocked(err)?.reason === EncounterBlockedReason.WILD_SHAPE_ENDED) {
-        this.stayEnded.set(true);
-      }
-      this.error.set(combatErrorMessage(err, 'permanecer na forma'));
-      await this.calls.refreshAfter(err);
-    } finally {
-      this.busy.set(false);
-    }
-  }
+  /** The druid's calls on a form: "Permanecer na forma" and "Voltar à forma normal" (`CombatForm`). */
+  protected readonly form = new CombatForm({
+    creaturesApi: this.creaturesApi,
+    calls: this.calls,
+    campaignId: this.campaignId,
+    own: this.own,
+    ownVitals: this.ownVitals,
+    state: this.state,
+  });
+  protected readonly stay = this.form.stay;
+  protected readonly stayForm = () => this.form.stayForm();
+  protected readonly leaveForm = () => this.form.leaveForm();
   /** The notices of a form or a concentration that ended on its own (`CombatNotices`). */
   protected readonly notices = new CombatNotices({
     api: this.api,
@@ -318,31 +291,6 @@ export abstract class CombatViewDerivedDirective extends CombatViewStateDirectiv
   protected readonly turnLabel = computed(() =>
     this.isMaster() ? (this.subject()?.label ?? '') : '',
   );
-  /** "Voltar à forma normal": a bonus action. The druid knows it came back: the log's line says "left", and no notice comes of it. */
-  protected async leaveForm(): Promise<void> {
-    const own = this.own();
-    if (!own || this.busy()) {
-      return;
-    }
-    this.busy.set(true);
-    this.error.set('');
-    try {
-      const res = await this.creaturesApi.leaveWildShape(
-        this.campaignId(),
-        own.characterId,
-        this.leaveFormKey.keyFor(own.characterId),
-      );
-      this.leaveFormKey.renew();
-      if (res.encounter) {
-        this.state().apply(res.encounter);
-      }
-    } catch (err) {
-      this.error.set(combatErrorMessage(err, 'voltar à forma normal'));
-      await this.calls.refreshAfter(err);
-    } finally {
-      this.busy.set(false);
-    }
-  }
   /** The contest facts of the player's turn (hidden, surprised, grappled) and the special attacks, from `GetTurnOptions`. */
   protected readonly contestFacts = computed(() => this.options()?.contestState);
   protected readonly contestAttacks = computed(() => this.options()?.contestAttackOptions ?? []);
