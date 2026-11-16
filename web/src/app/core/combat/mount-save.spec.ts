@@ -192,6 +192,16 @@ describe("the rider's save to stay on the mount (#588, boards 588-06, 588-08 and
     );
   });
 
+  it('writes the bare d20 when nothing is added to it: no "4 = 4"', () => {
+    const bare = result({
+      held: false,
+      save: { diceCount: 1, diceSides: 20, faces: [4], modifier: 0, total: 4 },
+    });
+    expect(
+      mountSaveResultView(bare, true, { rider: 'Isolda', mount: 'Cavalo de guerra' }).line,
+    ).toBe('4: você caiu Derrubado ao lado do Cavalo de guerra.');
+  });
+
   it('sums the d20 that counted of a pair, and a die added after it as one more term', () => {
     const pair = result({
       save: {

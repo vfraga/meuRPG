@@ -47,7 +47,7 @@ function theRider(c: Combatant): string {
   return isPlayer(c) ? c.label : `${article(c.label) === 'a' ? 'A' : 'O'} ${c.label}`;
 }
 
-/** The sum of the d20 that counted: "15 + 2 = 17", with what a die added after it (a Bardic Inspiration die) as one more term. */
+/** The sum of the d20 that counted: "15 + 2 = 17", with what a die added after it (a Bardic Inspiration die) as one more term; the bare d20 when nothing is added. */
 function sumOf(r: MountSaveResult): string {
   const roll = r.save;
   if (!roll) {
@@ -55,7 +55,8 @@ function sumOf(r: MountSaveResult): string {
   }
   const kept = roll.faces[roll.countedIndex] ?? roll.faces[0] ?? 0;
   const dice = roll.total - kept - roll.modifier;
-  return `${kept}${modifierText(roll.modifier)}${modifierText(dice)} = ${roll.total}`;
+  const added = `${modifierText(roll.modifier)}${modifierText(dice)}`;
+  return added ? `${kept}${added} = ${roll.total}` : `${kept}`;
 }
 
 /** "empurrado" or "empurrada", by the name. */
