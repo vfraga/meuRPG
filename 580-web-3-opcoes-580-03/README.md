@@ -18,3 +18,20 @@ Sufixos: `-claro` / `-escuro`. Larguras 768 e 1280 (editor). O editor de subclas
 - No 768 o painel "Como os jogadores veem" fica abaixo do editor (a coluna lateral só aparece a partir de 1100px).
 - A recusa do servidor usa o texto genérico "Este valor não é aceito. Confira o campo."; o texto do board é mais específico e depende de mensagem do servidor.
 - A lista "Outras opções" usa o select nativo, não um menu desenhado.
+
+## Rodada 1 de revisão
+Editor de subclasse "Guarda do Vale" e de classe "Guardião do Vale", 768 e 1280, claro e escuro (sufixo `-{768,1280}-{claro,escuro}`), deviceScaleFactor 2. Os recortes de elemento podem mostrar a barra "Salvar" fixa por cima.
+
+| Arquivo | Estado |
+| --- | --- |
+| 580-03-board-1280-claro.png | O board 580-03 (a exportação do board, para comparar) |
+| 580-web-3-r1-editor-de-classe-preview-aberto-* / -recorte-* | Editor de classe com uma característica aberta: o painel "Como os jogadores veem" (sem ele não há marco "Como os jogadores veem") |
+| 580-03-r1-chip-opcao-n-* / -recorte-* | "Outras opções" com a irmã escolhida: o chip "Asa Partida" com a etiqueta "Opção 2" a 8 px do nome |
+| 580-03-r1-recusa-irma-com-motivo-* / -recorte-* | Depois do "Salvar subclasse" recusado: a opção 1 aberta com a frase "Esta opção e a que ela pede esperam uma pela outra: nenhuma das duas poderia ser escolhida. Tire um dos pedidos." no campo, e as linhas 1 e 2 com "Precisa de ajuste" |
+| 580-03-r1-linha-recusada-cabeca-* | A cabeça da linha 1 recusada: setas e "⋮" com o tamanho das demais, o ponto depois do resumo e a etiqueta fora dele |
+| 580-03-r1-linha-recusada-setas-ponto-* | A linha 2 recusada inteira (em 768 o ponto fecha a primeira linha e a etiqueta desce) |
+| 580-03-r1-recusa-segue-a-opcao-* | Depois de "Descer a opção Asa Partida": a marca vai com a opção |
+
+## Diferenças em relação ao board (não fechadas)
+- O servidor marca as duas opções do par (cada uma pede a outra); o board marca uma.
+- Em 390 não há editor de subclasse nem de classe.

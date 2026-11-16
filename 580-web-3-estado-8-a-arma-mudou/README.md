@@ -17,3 +17,14 @@ Branch `feat/table-prereq-580-web-3`. Mesa com o "Machado de Lenhador" (simples,
 
 ## O que foi corrigido
 - O botão ficava a 16 px da última linha da lista; o board tem 8 px (o espaço da coluna, sem margem a mais). Retirada a margem do botão.
+
+## Rodada 1 de revisão: a ficha travada lida pelo dono
+Mesma mesa, com a sessão iniciada (a ficha do dono está travada: "Travada: equipar e guardar continuam valendo"). Shots com deviceScaleFactor 2, em 390, 768 e 1280, claro e escuro.
+
+| Arquivo (prefixo 580-web-3-estado-8-r1-) | Estado |
+| --- | --- |
+| ficha-travada-dono-{390,768,1280}-{claro,escuro}.png | A ficha travada lida pelo dono, com o aviso "A arma mudou." |
+| aviso-travada-dono-{390,768,1280}-{claro,escuro}.png | Só o aviso, recortado |
+| ver-o-que-mudou-travada-dono-{390,768,1280}-{claro,escuro}.png | "Ver o que mudou" (folha de baixo em 390, janela de 560 px a partir de 768): a frase da arma e "Quem ajusta: o dono da ficha, guardando o escudo ou a arma. O aviso some quando um dos dois deixa de estar em uso." |
+
+A CA é a real de Toren (13 → 11), não a do board (18 → 16).
