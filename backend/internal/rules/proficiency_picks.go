@@ -214,19 +214,27 @@ func (cb *choiceBuilder) toolChoice(g *groupBuild, owner string) {
 	if picks > 1 {
 		title, hint = "Ferramentas", fmt.Sprintf("%d proficiências com ferramentas à escolha.", picks)
 	}
-	ch := cb.addChoice(g, &Choice{Key: key, FeatureKey: owner, Kind: ChoiceKindOptions, TitlePT: title, HintPT: hint + " As que o personagem já tem não entram.", Picks: picks, family: familyToolPick, Advisory: true})
 	from = c.toolsOffered(from, open)
 	slices.SortFunc(from, func(a, b string) int {
 		return strings.Compare(foldPT(c.proficiencyNamePT(a)), foldPT(c.proficiencyNamePT(b)))
 	})
 	had := cb.toolsHad()
+	var options []ChoiceOption
+	var pickable, held []string
 	for _, k := range from {
 		o := ChoiceOption{Key: k, Stored: ScopedChoice(key, k), NamePT: c.proficiencyNamePT(k)}
 		if had[k] {
 			blockOption(&o, "Você já tem esta proficiência.")
+		} else {
+			pickable = append(pickable, k)
 		}
-		ch.Options = append(ch.Options, o)
+		if slices.Contains(cb.scoped[key], k) {
+			held = append(held, k)
+		}
+		options = append(options, o)
 	}
+	// The choice asks for no more than the sheet can make: the proficiencies it does not have, and the picks it holds.
+	ch := cb.addChoice(g, &Choice{Key: key, FeatureKey: owner, Kind: ChoiceKindOptions, TitlePT: title, HintPT: hint + " As que o personagem já tem não entram.", Picks: requiredPicks(picks, pickable, held), family: familyToolPick, Advisory: true, Options: options})
 	cb.takeScoped(ch)
 	unmeetBlockedPicks(ch)
 	cb.answerWithTyped(ch, len(cb.b.ToolProficiencies), &cb.typedTools)

@@ -106,6 +106,13 @@ var tideWays = []string{"the source is switched off", "the source is archived", 
 
 func newTides(t *testing.T, way string) *tides {
 	t.Helper()
+	return newTidesAsking(t, way, 1, false)
+}
+
+// newTidesAsking is newTides where the asking choice picks count options, and the source is lean when it lists only the
+// option the table keeps on (the live one) besides the one it keeps out.
+func newTidesAsking(t *testing.T, way string, count int32, lean bool) *tides {
+	t.Helper()
 	p := newChoicesProbe(t)
 	w := p.w
 	must(w.master.campaigns.SetCampaignXpMode(t.Context(), rq(&campaignsv1.SetCampaignXpModeRequest{CampaignId: w.campaign, XpMode: campaignsv1.XpMode_XP_MODE_ENEMIES})))
@@ -116,6 +123,9 @@ func newTides(t *testing.T, way string) *tides {
 		NamePt: "Marés", DescPt: []string{"Texto de teste."},
 		Effects: []*rulesv1.TableEffect{{Type: "choice", Choice: "feature", Count: 1}},
 		Options: []*rulesv1.TableFeature{option("Maré Baixa"), option("Maré Alta")},
+	}
+	if lean {
+		feature.Options = feature.Options[:1]
 	}
 	if way != tideWays[2] {
 		feature.Options = append(feature.Options, option("Maré Cheia"))
@@ -156,7 +166,7 @@ func newTides(t *testing.T, way string) *tides {
 	asking.SubclassLevel = 5 // the level-ups of the rows stop short of it
 	asking.Levels[1].Features = []*rulesv1.TableFeature{{
 		NamePt: "Eco das marés", DescPt: []string{"Texto de teste."},
-		Effects: []*rulesv1.TableEffect{{Type: "choice", Choice: "feature", Count: 1, FromFeature: td.feature}},
+		Effects: []*rulesv1.TableEffect{{Type: "choice", Choice: "feature", Count: count, FromFeature: td.feature}},
 	}}
 	made2 := p.createEntry(t, asking)
 	td.asking, td.ask = made2.GetKey(), made2.GetTableClass().GetLevels()[1].GetFeatures()[0].GetKey()

@@ -1759,6 +1759,12 @@ message ListTableEntriesResponse {
   // TableContentViolation. The entry itself is still in `entries`, so the master
   // can edit or archive it. Filled for the master only; always empty for a player.
   repeated TableContentViolation left_out = 4;
+  // The entries that load, with a part of them left out of the campaign's content: a
+  // key in the list of a choice of tools that no choice of tools offers is dropped
+  // from the pool. Each violation's `key`, `field` and `reason` are as in left_out,
+  // and the master clears it by fixing the field. Filled for the master only;
+  // always empty for a player.
+  repeated TableContentViolation loaded_with_issues = 5;
 }
 
 // CreateTableEntryRequest adds an entry.

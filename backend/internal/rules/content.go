@@ -188,7 +188,9 @@ type content struct {
 	// is no owner of it: it lends its pool, not its place in the table.
 	fromFeature map[string]string
 	askedBy     map[string][]string
-	archived    map[string]bool
+	// kept are the things a stored entry holds that the content leaves out, though the entry loads (Content.StoredIssues).
+	kept     []*OverlayError
+	archived map[string]bool
 	// off are the keys (the SRD's and the table's) the master switched off for the
 	// players ("Opções para os jogadores", RN-23); empty without a table layer.
 	off          map[string]bool

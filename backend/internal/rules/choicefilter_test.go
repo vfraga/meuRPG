@@ -162,8 +162,9 @@ func TestAFilterThatDoesNotFitItsChoiceIsRefused(t *testing.T) {
 	}
 }
 
-// An explicit list of a choice of tools names proficiencies of the kinds tool, weapon and other alone.
-func TestAToolListRefusesAProficiencyOfAnotherKind(t *testing.T) {
+// An explicit list of a choice of tools names proficiencies of the kinds tool, weapon and other alone: the master's write
+// is refused for any other key, and a stored entry that holds one loads as it always did.
+func TestAToolListRefusesAProficiencyOfAnotherKindInAWrite(t *testing.T) {
 	t.Parallel()
 	base := loadForTest(t)
 	for _, key := range []string{"proficiency:light-armor", "proficiency:heavy-armor", "proficiency:shields"} {
@@ -174,10 +175,35 @@ func TestAToolListRefusesAProficiencyOfAnotherKind(t *testing.T) {
 	for _, key := range []string{"skill:athletics", "language:common", "proficiency:light-armor", "saving-throw:strength", "proficiency:nenhuma"} {
 		t.Run(key, func(t *testing.T) {
 			t.Parallel()
-			_, err := base.With(filterBackgroundWith(Effect{Type: "choice", Choice: "tool", Count: 1, From: []string{"proficiency:smiths-tools", key}}))
+			o := filterBackgroundWith(Effect{Type: "choice", Choice: "tool", Count: 1, From: []string{"proficiency:smiths-tools", key}})
+			o.Strict = []string{filterBackground}
+			_, err := base.With(o)
 			var oe *OverlayError
 			if !errors.As(err, &oe) || !slices.ContainsFunc(oe.Violations(), func(v *OverlayError) bool { return strings.HasSuffix(v.Field, ".from") }) {
 				t.Errorf("With: %v, want %s refused at from", err, key)
+			}
+		})
+	}
+}
+
+// An entry stored with a key of another kind in a tool choice's list loads, as it did before the list was checked by kind:
+// the pool leaves the key out and the content says so for the master.
+func TestAStoredToolListThatNamesAKeyOfAnotherKindLoads(t *testing.T) {
+	t.Parallel()
+	base := loadForTest(t)
+	for _, key := range []string{"skill:athletics", "language:common", "proficiency:light-armor"} {
+		t.Run(key, func(t *testing.T) {
+			t.Parallel()
+			c, err := base.With(filterBackgroundWith(Effect{Type: "choice", Choice: "tool", Count: 1, From: []string{"proficiency:smiths-tools", key}}))
+			if err != nil {
+				t.Fatalf("With: %v, want the stored entry to load", err)
+			}
+			if got := optionKeys(choiceOf(t, c.Choices(filterBuild()), filterPickKey())); !slices.Equal(got, []string{"proficiency:smiths-tools"}) {
+				t.Errorf("the pool is %v, want the listed tool alone", got)
+			}
+			issues := c.StoredIssues()
+			if len(issues) != 1 || !strings.HasSuffix(issues[0].Field, ".effects[0].from") || issues[0].Reason != ReasonValue {
+				t.Errorf("issues = %+v, want one at the list", issues)
 			}
 		})
 	}

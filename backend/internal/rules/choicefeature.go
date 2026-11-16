@@ -154,3 +154,37 @@ func (c *content) keptOutPicks(b Build, owner string, options []string) []string
 	}
 	return slices.DeleteFunc(slices.Clone(options), func(o string) bool { return !out(o) || !slices.Contains(b.FeatureChoices, o) })
 }
+
+// requiredPicks is how many picks a choice asks of a sheet, the one number every check of completeness reads, for a
+// player and for the master alike: the count the choice asks, or fewer when a player has fewer picks to make today. A
+// player may make the picks the sheet already holds (held) and one for each option a player may pick now that the sheet
+// does not hold (pickable). The master may still pick an entry that is only switched off, but is never asked to.
+func requiredPicks(count int, pickable, held []string) int {
+	n := len(held)
+	for _, o := range pickable {
+		if !slices.Contains(held, o) {
+			n++
+		}
+	}
+	return min(count, n)
+}
+
+// requiredOptionPicks is requiredPicks for the choice that owner makes, whose pool lists options: the options a player's
+// view of the table keeps out are no pick to make, whoever reads the choice. A pool the table keeps nothing out of asks
+// for its count.
+func (c *content) requiredOptionPicks(b Build, owner string, count int, options []string) int {
+	out := c.asPlayer().optionFilter(b, owner)
+	if out == nil {
+		return count
+	}
+	var pickable, held []string
+	for _, o := range options {
+		switch {
+		case slices.Contains(b.FeatureChoices, o):
+			held = append(held, o)
+		case !out(o):
+			pickable = append(pickable, o)
+		}
+	}
+	return requiredPicks(count, pickable, held)
+}

@@ -468,11 +468,9 @@ func (cb *choiceBuilder) labelOf(g *groupBuild, ch *Choice) string {
 // picks of its pool.
 func (cb *choiceBuilder) optionChoice(g *groupBuild, featureKey string, choose int, options []string) *optionEntry {
 	title := choiceTitle(cb.c, featureKey)
-	if shown := cb.c.visibleOptions(cb.b, featureKey, options); len(shown) < len(options) {
-		// The pool lists what the sheet may pick, and asks for no more than that: the answer says nothing of the rest. A
-		// pool with no option left asks nothing of the sheet, as no pick could answer it.
-		options, choose = shown, min(choose, len(shown))
-	}
+	// The pool lists what the reader may pick, and asks for no more than a player may pick today: the answer says nothing
+	// of the rest. A pool with no option left asks nothing of the sheet, as no pick could answer it.
+	choose, options = cb.c.requiredOptionPicks(cb.b, featureKey, choose, options), cb.c.visibleOptions(cb.b, featureKey, options)
 	cb.keptOut = append(cb.keptOut, cb.c.keptOutPicks(cb.b, featureKey, options)...)
 	ch := cb.addChoice(g, &Choice{Key: featureKey, FeatureKey: featureKey, Kind: ChoiceKindOptions, TitlePT: title, Picks: choose, plain: true, Advisory: len(options) == 0 && cb.c.fromFeature[featureKey] != ""})
 	cb.order++

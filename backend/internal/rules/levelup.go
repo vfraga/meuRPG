@@ -927,11 +927,8 @@ func (c *content) namedChoices(b Build, due []dueChoice) []LevelUpFeatureChoice 
 	}
 	for _, d := range due {
 		fc := LevelUpFeatureChoice{Feature: NamedKey{Key: d.feature, NamePT: c.namePT(d.feature)}, Subclass: d.subclass, Choose: d.choose}
-		shown := c.visibleOptions(b, d.feature, d.options)
-		if len(shown) < len(d.options) {
-			fc.Choose = min(d.choose, len(shown)) // the offer lists what the sheet may pick, and asks for no more
-		}
-		for _, o := range shown {
+		fc.Choose = c.requiredOptionPicks(b, d.feature, d.choose, d.options) // the offer asks for no more than a player may pick
+		for _, o := range c.visibleOptions(b, d.feature, d.options) {
 			if f := c.features[o]; f != nil && taken[f.Name] {
 				continue
 			}
