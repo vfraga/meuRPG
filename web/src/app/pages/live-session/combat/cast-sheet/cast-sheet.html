@@ -51,6 +51,9 @@
       @if (ch.asksAbility) {
         <app-ability-picker [chosen]="s.ability()" (pick)="ch.pickAbility($event)" />
       }
+      @if (s.data.alsoSteed) {
+        <app-steed-also [name]="s.steedName() || 'O corcel'" [checked]="s.alsoSteed()" (flip)="s.alsoSteed.set(!s.alsoSteed())" />
+      }
       @if (ch.damageChoices().length) {
         <app-damage-type-picker
           [choices]="ch.damageChoices()"

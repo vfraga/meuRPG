@@ -71,6 +71,7 @@ import { CastTexts } from './cast-texts';
 import { DamageTypePicker } from './damage-type-picker';
 import { MetamagicPicker } from './metamagic-picker';
 import { SculptPicker } from './sculpt-picker';
+import { SteedAlso } from './steed-also';
 import { TableOptionPicker } from './table-option-picker';
 
 export type { CastMapData, CastSheetData } from './cast-sheet-types';
@@ -117,6 +118,7 @@ export type { CastMapData, CastSheetData } from './cast-sheet-types';
     SheetFrame,
     SlotPicker,
     SpellHelp,
+    SteedAlso,
     TableOptionPicker,
     TeleportMap,
   ],

@@ -552,6 +552,20 @@ describe('the result of the cast', () => {
     expect(castNotes(create(SpellCastSchema, {}), spell).length).toBe(1);
   });
 
+  it("says the steed's line first when the cast reached the steed too (#588, `steed_note`)", () => {
+    const spell = { name: 'Escudo da Fé', economy: 1, metaOptions: [], sorceryPoints: null };
+    const notes = castNotes(
+      create(SpellCastSchema, {
+        concentrating: true,
+        steedNote: 'Estrela também recebe Escudo da Fé.',
+      }),
+      spell,
+    );
+    expect(notes[0]).toBe('Estrela também recebe Escudo da Fé.');
+    expect(notes[1]).toBe('Você está concentrado em Escudo da Fé.');
+    expect(castNotes(create(SpellCastSchema, {}), spell)).not.toContain('');
+  });
+
   it('knows a plain cast: nothing to roll, hit or save', () => {
     expect(isPlainCast(create(SpellCastSchema, { targets: [{ combatantId: 'a' }] }), 'plain')).toBe(
       true,

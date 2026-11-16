@@ -60,6 +60,8 @@ export interface CastSheetData {
   /** The grant the spell is cast through (`SpellOption.grant`): no slot unless it allows one, a use of its resource, its own
    * attack bonus and save DC; `null` for a spell of the classes. */
   readonly grant?: SpellGrantOption | null;
+  /** The spell reaches only the caster, who rides its bonded steed in this combat (`SpellOption.also_steed`): the check "Estrela também". */
+  readonly alsoSteed?: boolean;
   /** The spell attack bonus, for the typed d20's total. */
   readonly attackBonus: number;
   readonly diceMode: DiceMode;

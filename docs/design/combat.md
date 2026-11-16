@@ -35,6 +35,10 @@ The browser draws what the server sends (reach from `GetMoveOptions`, totals, ve
   While the mount carries a rider "Nenhuma" is off, with "Nenhuma: só depois que Tor desmontar." under the line.
   A player's character has no item.
   The words are in `core/combat/mount-mark.ts`.
+- **"Estrela também" (588-26 card 6)** (`cast-sheet/steed-also`): when the server says a self-only spell may reach the bonded steed the caster rides (`SpellOption.also_steed`), the cast sheet has a check under the slot, "Estrela também" with "O corcel que você monta. Um efeito que dura cai nos dois.".
+  It is on by default, and the cast sends `also_steed` while it is on.
+  The steed's name is the label of the combatant the caster rides.
+  The result's notes start with the line the server wrote about the steed (`SpellCast.steed_note`).
 - **The pair card (588-04, 588-05):** on the rider's turn, the rider's player gets one turn, theirs ("Sua vez, Tor", "Montado no Cavalo de guerra"), not a joint one: a card in the `accent` frame with three outlined buttons, "Disparada", "Desengajar", "Esquivar" (`TakeAction` with the mount's id; each is named as the mount's, "Disparada do Cavalo de guerra"), then one line.
   The three sit in one row, each as wide as its words and sharing what is left, with a 13 px label, so "Desengajar" is whole at 390 px and in the 368 px rail.
   From 768 px the card comes first in the actions and has its head ("Tor e Cavalo de guerra · turno conjunto"), the rider's line with its Ação, Bônus and Reação, and the mount's line (its Ação and metres, from the mount's own options, "Carregando…" until they are read); the economy row under it keeps only "Mover", and the last line is "Montaria adestrada: só estas três ações; a reação fica livre…".

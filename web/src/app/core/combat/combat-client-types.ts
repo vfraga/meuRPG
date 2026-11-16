@@ -211,6 +211,8 @@ export interface CastExtras {
   readonly grantedBy?: string;
   /** The caster spends the master's Inspiração on the spell attack's d20 (`CastSpellRequest.spend_favor`); no `rollMode` goes with it. */
   readonly spendFavor?: boolean;
+  /** A self-only spell reaches the bonded steed the caster rides too (`CastSpellRequest.also_steed`, #588). */
+  readonly alsoSteed?: boolean;
 }
 
 /** What a summoning spell brings (`SummonChoice`): the option, a content key per creature and, optionally, a name each. */

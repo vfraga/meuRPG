@@ -116,7 +116,7 @@ export function shieldLostText(
     : '';
 }
 
-/** What the cast leaves to say: the concentration, the metamagic spent and the action. */
+/** What the cast leaves to say: the steed it reached too (`steed_note`), the concentration, the metamagic spent and the action. */
 export function castNotes(
   c: SpellCast | null,
   spell: {
@@ -129,7 +129,8 @@ export function castNotes(
   if (!c) {
     return [];
   }
-  const out: string[] = [];
+  // The steed first: who the spell reached comes before what it costs.
+  const out: string[] = c.steedNote ? [c.steedNote] : [];
   if (c.concentrating) {
     out.push(`Você está concentrado em ${spell.name}.`);
   }

@@ -122,6 +122,7 @@ export function castSheetData(req: CastSheetRequest): CastSheetData {
     round: e.round,
     spellKey: key,
     grant: spell?.grant ?? null,
+    alsoSteed: spell?.alsoSteed ?? false,
     name: castName(spell, cantrip, key),
     ...spellFacts(spell),
     ...optionFacts(spell, cantrip),

@@ -130,6 +130,30 @@ describe('CombatClient area spells', () => {
     expect(requests[0]['area']).toEqual({ case: 'direction', value: { dx: 1, dy: -1 } });
   });
 
+  it('sends `also_steed` only when the cast asks for the steed too (#588)', async () => {
+    const { client, requests } = withRequests();
+    const cast = (extras: object) =>
+      client.casts.castSpell(
+        'c',
+        'e',
+        'lia',
+        'spell:shield-of-faith',
+        { level: 1, pact: false },
+        [],
+        null,
+        'k',
+        undefined,
+        '',
+        undefined,
+        [],
+        extras,
+      );
+    await cast({ alsoSteed: true });
+    await cast({});
+    expect(requests[0]['alsoSteed']).toBe(true);
+    expect('alsoSteed' in requests[1]).toBe(false);
+  });
+
   it('previews a sphere around the caster with no point, and answers a question with a key', async () => {
     const { client, requests } = withRequests();
     await client.casts.previewSpellArea('c', 'e', 'p', 'spell:x', null, null);
