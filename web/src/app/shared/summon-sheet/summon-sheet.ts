@@ -15,7 +15,6 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 
-import { DiceMode, DicePreference } from '../../../gen/meurpg/campaigns/v1/campaigns_pb';
 import {
   type GetSummonOptionsResponse,
   GetSummonOptionsResponseSchema,
@@ -26,7 +25,6 @@ import type { Combatant } from '../../../gen/meurpg/play/v1/combat_pb';
 import type { SlotRow } from '../../core/combat/cast-flow';
 import { CombatClient } from '../../core/combat/combat-client';
 import { combatErrorMessage } from '../../core/combat/combat-errors';
-import type { CombatState } from '../../core/combat/combat-state';
 import { stateWord } from '../../core/combat/combat-view';
 import { CreatureArt } from '../creatures/creature-art';
 import { newKey } from '../../core/connect/idempotency';
@@ -63,27 +61,9 @@ import {
 
 export type { SummonSheetResult };
 
-/** The sheet opened in a combat (Conjurar Animais, MR-037, E9-12): the cast goes through the combat. */
-export interface SummonCombat {
-  readonly encounterId: string;
-  /** The caster's combatant (a UUID). */
-  readonly casterId: string;
-  readonly diceMode: DiceMode;
-  readonly preference: DicePreference;
-  /** The page's copy of the combat: the answer's combat goes there. */
-  readonly state: CombatState;
-  /** The spell the caster concentrates on now ("Teia"); empty when none: casting this ends it. */
-  readonly concentrating: string;
-}
+import type { SummonSheetData } from './summon-sheet-data';
 
-/** What the panel (or the combat) hands the sheet. */
-export interface SummonSheetData {
-  readonly campaignId: string;
-  readonly characterId: string;
-  readonly spellKey: string;
-  /** Set in a combat: the group's initiative roll and the result stage. */
-  readonly combat?: SummonCombat;
-}
+export type { SummonCombat, SummonSheetData } from './summon-sheet-data';
 
 /**
  * Casting a summoning spell outside a combat (E9-10, quadro 2). The sheet reads what the character

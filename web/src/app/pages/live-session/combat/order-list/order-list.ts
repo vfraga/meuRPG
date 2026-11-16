@@ -44,7 +44,7 @@ import { NudgeButton } from '../../nudge-button/nudge-button';
 import { joinDots } from '../../../../core/format/text';
 import { conditionTags } from '../../../../core/combat/conditions';
 import { holdsReadied } from '../../../../core/combat/ready-card';
-import { type Pool, combatPool } from '../../../../core/combat/form-pool';
+import { combatPool, poolPercent } from '../../../../core/combat/form-pool';
 import { labelTags } from '../../../../core/effects/effects';
 import { sideTags } from '../../../../core/combat/cover';
 import { article } from '../../../../core/combat/combat-log';
@@ -60,6 +60,7 @@ import {
   jointTurn,
   orderItems,
   groupAriaLabel,
+  orderItemKey,
 } from '../../../../core/combat/joint-turn';
 import { CombatantToken } from '../../../../shared/combatant-token/combatant-token';
 import type { CombatantInfo } from '../combat-info';
@@ -408,14 +409,8 @@ export class OrderList {
   protected readonly article = article;
 
   /** The hit points the row shows: the beast's in a form, the character's otherwise; empty when the viewer has none (RN-20). */
-  protected pool(c: Combatant): Pool | null {
-    return combatPool(c);
-  }
-
-  protected percent(c: Combatant): number {
-    const pool = combatPool(c);
-    return pool && pool.max > 0 ? Math.min(100, Math.round((pool.current / pool.max) * 100)) : 0;
-  }
+  protected readonly pool = combatPool;
+  protected readonly percent = poolPercent;
 
   /** The row of the one on turn; in a joint turn the box is on turn instead. */
   protected current(c: Combatant): boolean {
@@ -427,9 +422,7 @@ export class OrderList {
     return !!this.joint()?.members.some((m) => m.id === c.id);
   }
 
-  protected key(item: OrderItem): string {
-    return item.kind === 'group' ? item.members.map((m) => m.id).join('+') : item.combatant.id;
-  }
+  protected readonly key = orderItemKey;
 
   protected readonly groupLabel = groupAriaLabel;
 

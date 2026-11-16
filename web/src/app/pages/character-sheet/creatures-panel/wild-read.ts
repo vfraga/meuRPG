@@ -1,4 +1,5 @@
-import { hoursText } from '../../../core/format/text';
+import { isUnlimited } from '../../../core/combat/unlimited-uses';
+import { hoursText, tight } from '../../../core/format/text';
 import type { CharacterVitals } from '../../../../gen/meurpg/play/v1/play_pb';
 
 /** What the sheet reads of the druid's Wild Shape in the vitals: the uses, and the form with its time and its pool. */
@@ -47,4 +48,23 @@ export function stayBeast(
   }
   const clock = totalSeconds > 0 ? `volta a ${hoursText(totalSeconds)}` : 'recomeça';
   return `: o ${form} fica com ${hp.current} PV e o tempo ${clock}`;
+}
+
+/** "Restam 2 de 2 usos · volta no descanso curto ou longo", or what stops Wild Shape outside a session. */
+export function wildLineOf(u: WildRead['uses'], live: boolean): string {
+  if (!live) {
+    return 'Só durante um combate ou uma sessão.';
+  }
+  if (!u) {
+    return '';
+  }
+  const back =
+    u.recharge === 'long_rest' ? 'volta no descanso longo' : 'volta no descanso curto ou longo';
+  return tight(
+    u.left === 0
+      ? `Sem usos · ${back}`
+      : isUnlimited(u.total)
+        ? `Usos ilimitados · ${back}`
+        : `Restam ${u.left} de ${u.total} ${u.total === 1 ? 'uso' : 'usos'} · ${back}`,
+  );
 }

@@ -13,6 +13,7 @@ import {
   masterActor,
   missingLine,
   npcPlural,
+  orderItemKey,
   orderItems,
   passNote,
   playsBefore,
@@ -293,5 +294,14 @@ describe('joint turns (MR-013)', () => {
       ).toBeNull();
       expect(masterActor(mixed({ turnGroupIds: ['j'] }))).toBeNull();
     });
+  });
+});
+
+describe('orderItemKey', () => {
+  it("is the combatant's id for a row and the members' ids for a box", () => {
+    expect(orderItemKey({ kind: 'single', combatant: { id: 'a' } } as never)).toBe('a');
+    expect(orderItemKey({ kind: 'group', members: [{ id: 'a' }, { id: 'b' }] } as never)).toBe(
+      'a+b',
+    );
   });
 });

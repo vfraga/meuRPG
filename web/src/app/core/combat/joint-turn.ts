@@ -366,6 +366,11 @@ export function passNote(others: readonly string[], masterToo: boolean): string 
 }
 
 /** "Turno conjunto: Brisa e Toren, iniciativa 19" or "Montado: Tor e Cavalo de guerra, iniciativa 17", for a screen reader. */
+/** A stable key of a row or a box of the order: the combatant, or the box's members. */
+export function orderItemKey(item: OrderItem): string {
+  return item.kind === 'group' ? item.members.map((m) => m.id).join('+') : item.combatant.id;
+}
+
 export function groupAriaLabel(item: OrderItem): string {
   return item.kind === 'group'
     ? `${item.mounted ? 'Montado' : 'Turno conjunto'}: ${listNames(item.members.map((m) => m.label))}${item.total === null ? '' : `, iniciativa ${item.total}`}`

@@ -24,7 +24,6 @@ import { CreaturesClient } from '../../../core/creatures/creatures-client';
 import { focusWithRing } from '../../../core/creatures/focus-ring';
 import { creaturesHidden } from '../../../core/creatures/creature-errors';
 import { castConfirmation, creaturesText } from '../../../core/creatures/summon-labels';
-import { tight } from '../../../core/format/text';
 import { OpenSessions } from '../../../core/play/open-sessions';
 import { openSheet } from '../../../shared/sheet/sheet-host';
 import { openWildShape } from '../../../shared/wild-shape/wild-shape-sheet';
@@ -34,7 +33,7 @@ import { ActionKey } from '../../../core/connect/idempotency';
 import { CreatureCard } from './creature-card';
 import { SteedAway } from './steed-away';
 import { SteedCast, bondOf } from './steed-cast';
-import { readWild, stayBeast } from './wild-read';
+import { readWild, stayBeast, wildLineOf } from './wild-read';
 import type { EditMode } from '../../../shared/creatures/creature-edit';
 import {
   SummonSheet,
@@ -171,24 +170,7 @@ export class CreaturesPanel {
   protected readonly leaving = signal(false);
   private readonly leaveKey = new ActionKey();
   /** "restam 2 de 2 usos · volta no descanso curto ou longo", or what stops it outside a session. */
-  protected readonly wildLine = computed(() => {
-    const u = this.uses();
-    if (!this.live()) {
-      return 'Só durante um combate ou uma sessão.';
-    }
-    if (!u) {
-      return '';
-    }
-    const back =
-      u.recharge === 'long_rest' ? 'volta no descanso longo' : 'volta no descanso curto ou longo';
-    return tight(
-      u.left === 0
-        ? `Sem usos · ${back}`
-        : isUnlimited(u.total)
-          ? `Usos ilimitados · ${back}`
-          : `Restam ${u.left} de ${u.total} ${u.total === 1 ? 'uso' : 'usos'} · ${back}`,
-    );
-  });
+  protected readonly wildLine = computed(() => wildLineOf(this.uses(), this.live()));
 
   private async loadWild(): Promise<void> {
     if (!this.wildShape() || this.isMaster()) {
