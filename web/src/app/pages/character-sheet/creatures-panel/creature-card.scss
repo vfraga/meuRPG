@@ -137,3 +137,53 @@
     font-size: var(--mr-font-12);
   }
 }
+
+// A bonded steed (#588). The tag sits under the name, before the subtitle.
+.head__text .mr-tag {
+  margin: 2px 0;
+}
+
+// "⋮": a square target with no words.
+.act--more {
+  justify-content: center;
+  min-width: 44px;
+  color: var(--mr-ink);
+}
+
+// Off after the combat refused: muted, with the block icon and the word; the reason is the line under the actions.
+.act--off {
+  color: var(--mr-ink-muted);
+  cursor: default;
+}
+
+.act__off {
+  font-weight: 400;
+}
+
+.acts__why {
+  margin: 0;
+  font-size: var(--mr-font-14);
+  line-height: 20px;
+  color: var(--mr-ink);
+}
+
+// "Libertar Estrela" in the menu: the words in danger, and what it does under them at 13 px.
+.release {
+  height: auto;
+  min-height: 56px;
+  padding-block: 8px;
+}
+
+.release__t {
+  display: block;
+  font-weight: 700;
+  color: var(--mr-danger-ink);
+}
+
+.release__line {
+  display: block;
+  font-size: var(--mr-font-13);
+  line-height: 18px;
+  color: var(--mr-ink-muted);
+  white-space: normal;
+}

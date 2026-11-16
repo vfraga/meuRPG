@@ -4,6 +4,9 @@
     <app-creature-art class="head__art" [monsterKey]="c.monsterKey" />
     <div class="head__text">
       <h3 class="name" tabindex="-1" [id]="'creature-' + c.id">{{ c.name }}</h3>
+      @if (c.bonded) {
+        <span class="mr-tag"><mat-icon aria-hidden="true">link</mat-icon>Montaria vinculada</span>
+      }
       <p class="sub">{{ subtitle() }}</p>
     </div>
   </header>
@@ -35,6 +38,17 @@
       [ownerName]="ownerName()"
       (closed)="close($event)"
     />
+  } @else if (going(); as g) {
+    <app-steed-ask
+      [campaignId]="campaignId()"
+      [creature]="c"
+      [mode]="g"
+      [ownerView]="!isMaster()"
+      [ownerName]="ownerName()"
+      [spendsAction]="spendsAction()"
+      (closed)="asked($event)"
+      (refused)="asked(false, $event)"
+    />
   } @else {
     <a matButton="outlined" class="see" [routerLink]="link()" [attr.aria-label]="'Ver a ficha de ' + c.name">
       <mat-icon aria-hidden="true">menu_book</mat-icon>Ver a ficha
@@ -57,9 +71,38 @@
           <mat-icon aria-hidden="true">favorite</mat-icon>Corrigir PV
         </button>
       }
-      <button type="button" class="act act--danger js-dismiss" (click)="open('dismiss')">
-        <mat-icon aria-hidden="true">close</mat-icon>Dispensar
-      </button>
+      @if (c.bonded) {
+        <!-- A bonded steed goes two ways: "Dispensar" keeps the bond, "⋮" › "Libertar" ends it. Off after the combat refused, with why under the actions. -->
+        <button
+          type="button"
+          class="act act--danger js-dismiss"
+          [class.act--off]="!!refusal()"
+          [attr.aria-disabled]="refusal() ? 'true' : null"
+          [attr.aria-describedby]="refusal() ? 'steed-why-' + c.id : null"
+          (click)="ask('dismiss')"
+        >
+          <mat-icon aria-hidden="true">{{ refusal() ? 'block' : 'close' }}</mat-icon>Dispensar
+          @if (refusal()) {
+            <span class="act__off">desligado</span>
+          }
+        </button>
+        <button type="button" class="act act--more js-more" [matMenuTriggerFor]="more" [attr.aria-label]="'Mais ações de ' + c.name">
+          <mat-icon aria-hidden="true">more_vert</mat-icon>
+        </button>
+        <mat-menu #more="matMenu">
+          <button type="button" mat-menu-item class="release" (click)="ask('release')">
+            <span class="release__t">Libertar {{ c.name }}</span>
+            <span class="release__line">{{ releaseLine }}</span>
+          </button>
+        </mat-menu>
+      } @else {
+        <button type="button" class="act act--danger js-dismiss" (click)="open('dismiss')">
+          <mat-icon aria-hidden="true">close</mat-icon>Dispensar
+        </button>
+      }
     </div>
+    @if (refusal()) {
+      <p class="acts__why" [id]="'steed-why-' + c.id">{{ refusal() }}</p>
+    }
   }
 </article>
