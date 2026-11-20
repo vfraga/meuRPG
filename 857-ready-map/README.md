@@ -1,4 +1,4 @@
-# #857 ready-map screens (branch feat/ready-spells-857-web, head ee42f9bff)
+# #857 ready-map screens (branch feat/ready-spells-857-web, head 174442427)
 
 Each screen is a PNG at 390, 768 and 1280 px, light (`claro`) and dark (`escuro`), deviceScaleFactor 2. Name: `857-ready-map-<screen>-<width>-<theme>.png`.
 
@@ -17,9 +17,15 @@ Each screen is a PNG at 390, 768 and 1280 px, light (`claro`) and dark (`escuro`
 | `janela-mover-agarrado` | "Mover agora" dashed, speed 0 (Agarrado) | 857-09 card 6 |
 | `janela-outro-aparelho` | window read on the player's second device | 857-09 |
 | `mover-desfeito` | the master undid the trigger with the map open | 857-09 |
+| `mapa-muralha` | the held Muralha de Fogo released on the map, the start square marked | 857-09 card 3 |
+| `mapa-direcao` | the held Mãos Flamejantes released on the map, the direction set | 857-09 card 4 |
+| `folha-desfeita` | the release cast sheet after the master undid the trigger | 857-09 card 1 |
+| `mestre-fechou` | the master's release dialog after the window closed | 857-09 |
+| `dado-digitado` | the release cast sheet's typed-dice step | 857-09 cards 12-13 |
+| `resultado` | the release cast sheet's result, "Voltar à sessão" | 857-09 |
+| `janela-passou-sozinha` | the window that passed by itself, "Passou sozinho" | 857-09 |
 | `mover-bloqueado` | zero-length "Algo bloqueia o caminho" notice | 857-09 |
 
-`mover-bloqueado` is from head 5e924e571, before the Mover page layout changes from 1024 px: its notice text is unchanged, and no spec takes this shot.
-Every other screen was retaken on ee42f9bff by the a11y scan with `E2E_SHOTS_DIR`.
+Every screen was retaken on 174442427 by the a11y scan with `E2E_SHOTS_DIR`.
 
-`janela-foco/` holds the readied windows of the earlier slices, retaken on ee42f9bff: each window now opens with the focus on its title, not on "Deixar passar".
+`janela-foco/` holds the readied windows of the earlier slices, retaken on 174442427: each window opens with the focus on "Deixar passar", and Chromium draws its focus ring there.
