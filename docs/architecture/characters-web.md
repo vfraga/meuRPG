@@ -47,7 +47,9 @@ What a page or a list shows is a pure function of the catalogue and the form, ea
 The server says which skills the sheet's sources allow, and which skills expertise may go on.
 The step offers those, and every skill the sheet holds, is given, or held when the editor opened.
 A held skill that no list allows stays ticked and can be taken off; the step says nothing of it.
-After a class change `PreviewChoices` answers the new class's lists and counts, and does not refuse the picks that no longer fit (it still refuses an unknown key, a kept-out or a closed entry); they stay ticked and removable, and the save refuses them, at their field, with the server's sentence (`pickRefusalAt`).
+After a class change `PreviewChoices` answers the new class's lists and counts, and does not refuse the picks that no longer fit (it still refuses an unknown key, a kept-out or a closed entry).
+They stay ticked and removable.
+The save refuses them, at their field, with the server's sentence.
 Until the first answer, or when a source takes any skill, nothing is cut.
 The browser works out no rule of this.
 A save the server refuses for a pick that cannot be placed shows the server's sentence as the error of that pick's own field, for a skill, an expertise or a tool.
