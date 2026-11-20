@@ -95,6 +95,7 @@
       <button
         type="button"
         class="row__head"
+        [class.row__head--ride]="!!ride(c)"
         [attr.aria-expanded]="isOpen(c)"
         [attr.aria-controls]="'row-' + c.id"
         [attr.aria-describedby]="'rowsay-' + c.id"

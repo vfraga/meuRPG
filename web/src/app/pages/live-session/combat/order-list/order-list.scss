@@ -224,6 +224,47 @@
   padding-left: 22px;
 }
 
+// A row that says its link ("Adestrada · leva Isolda"): the name and the hit points share the first line and the detail has the
+// whole second one, so the hit points never cut it.
+.row__head--ride {
+  grid-template-rows: auto auto;
+  row-gap: 0;
+
+  .row__text {
+    display: contents;
+  }
+
+  .row__token {
+    grid-column: 1;
+    grid-row: 1 / span 2;
+  }
+
+  .row__name {
+    grid-column: 2;
+    grid-row: 1;
+    align-self: center;
+  }
+
+  .row__hp {
+    grid-column: 3;
+    grid-row: 1;
+  }
+
+  .row__chev {
+    grid-column: 4;
+    grid-row: 1;
+  }
+
+  .row__meta {
+    grid-column: 2 / -1;
+    grid-row: 2;
+    min-width: 0;
+    font-size: var(--mr-font-14);
+    line-height: 19px;
+    color: var(--mr-ink-muted);
+  }
+}
+
 .row__ride .mat-icon {
   width: 14px;
   height: 14px;

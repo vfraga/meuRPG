@@ -52,6 +52,20 @@ describe('OrderList with a rider and its mount', () => {
     expect(text(box?.querySelector('.row--mount .row__sub'))).toBe('linkAdestrada · leva Tor');
   });
 
+  it('gives the link of the mount its own full-width line under the name, past the hit points', () => {
+    const el = setup('controlled');
+    const row = el.querySelector('[data-combatant="h"]')!;
+    const cell = (sel: string) => getComputedStyle(row.querySelector(sel)!);
+    expect(cell('.row__text').display).toBe('contents');
+    expect([cell('.row__name').gridRow, cell('.row__name').gridColumn]).toEqual(['1', '2']);
+    expect([cell('.row__hp').gridRow, cell('.row__hp').gridColumn]).toEqual(['1', '3']);
+    expect([cell('.row__meta').gridRow, cell('.row__meta').gridColumn]).toEqual(['2', '2/-1']);
+    // A row with no link keeps its name and detail in one column.
+    expect(getComputedStyle(el.querySelector('[data-combatant="tor"] .row__text')!).display).not.toBe(
+      'contents',
+    );
+  });
+
   it('indents the mount under its rider, in the rendered row, past the box padding of the master list', () => {
     const el = setup('controlled');
     expect(indent(el, 'h')).toBe('22px');

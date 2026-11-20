@@ -42,6 +42,7 @@ The browser draws what the server sends (reach from `GetMoveOptions`, totals, ve
   The head has no hint, and no number when the viewer has none (an NPC pair, to a player).
   The mount row is indented under its rider, with the link icon.
   It reads "Montaria de Tor · Ileso" to a player and "Adestrada · leva Tor" to the master.
+  The link has its own full-width line under the name, and the hit points sit beside the name, so they never cut it.
   An independent mount keeps its own row, with the link line on both ("Cavalgando o Esqueleto", "Leva o Wight · independente").
   A pair that ties with others stays together inside the "Turno conjunto" box.
   Every viewer who sees both rows reads the mount's kind while it is ridden.
