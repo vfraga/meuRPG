@@ -4225,8 +4225,9 @@ type SheetMagicItem struct {
 	EffectPt string `protobuf:"bytes,14,opt,name=effect_pt,json=effectPt,proto3" json:"effect_pt,omitempty"`
 	// The spell on a Spell Scroll (the catalog's key, "spell:fireball"), set by SetScrollSpell and stored on the entry. A save
 	// keeps the stored key and drops the one the client sends. Empty for a scroll with no spell and for every other item. The
-	// character's player never reads the key of a spell the master switched off or archived after it was set (RN-23): it is
-	// empty for them then, and spell_gone_pt says why; the master reads it with spell_off.
+	// character's player reads it empty in two more cases: when the master switched the spell off or archived it after it was set
+	// (RN-23; spell_gone_pt says why), and when the stored spell's level is no longer the scroll's (the scroll reads as having
+	// none, with no words). The master reads the key in both, with spell_off or spell_level_changed.
 	SpellKey string `protobuf:"bytes,15,opt,name=spell_key,json=spellKey,proto3" json:"spell_key,omitempty"`
 	// The name of that spell in Portuguese. Filled by the server on every read; a save ignores it. Empty whenever spell_key is.
 	SpellNamePt string `protobuf:"bytes,16,opt,name=spell_name_pt,json=spellNamePt,proto3" json:"spell_name_pt,omitempty"`
@@ -4241,9 +4242,13 @@ type SheetMagicItem struct {
 	SpellGonePt string `protobuf:"bytes,18,opt,name=spell_gone_pt,json=spellGonePt,proto3" json:"spell_gone_pt,omitempty"`
 	// The scroll's spell is switched off or archived at the table. Only the master reads it, together with the key and the name.
 	// Filled by the server on every read; a save ignores it.
-	SpellOff      bool `protobuf:"varint,19,opt,name=spell_off,json=spellOff,proto3" json:"spell_off,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	SpellOff bool `protobuf:"varint,19,opt,name=spell_off,json=spellOff,proto3" json:"spell_off,omitempty"`
+	// The stored spell's level is no longer the scroll's (the spell changed level at the table). Only the master reads it, together
+	// with the key and the name; the character's player reads the scroll as having no spell. Filled by the server on every read; a
+	// save ignores it.
+	SpellLevelChanged bool `protobuf:"varint,20,opt,name=spell_level_changed,json=spellLevelChanged,proto3" json:"spell_level_changed,omitempty"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
 }
 
 func (x *SheetMagicItem) Reset() {
@@ -4405,6 +4410,13 @@ func (x *SheetMagicItem) GetSpellGonePt() string {
 func (x *SheetMagicItem) GetSpellOff() bool {
 	if x != nil {
 		return x.SpellOff
+	}
+	return false
+}
+
+func (x *SheetMagicItem) GetSpellLevelChanged() bool {
+	if x != nil {
+		return x.SpellLevelChanged
 	}
 	return false
 }
@@ -15187,7 +15199,7 @@ const file_meurpg_characters_v1_characters_proto_rawDesc = "" +
 	"\x03key\x18\x02 \x01(\tR\x03key\x129\n" +
 	"\n" +
 	"until_rest\x18\x03 \x01(\x0e2\x1a.meurpg.rules.v1.RestBoundR\tuntilRest\x12\x1c\n" +
-	"\tsignature\x18\x04 \x01(\tR\tsignature\"\x82\x06\n" +
+	"\tsignature\x18\x04 \x01(\tR\tsignature\"\xb2\x06\n" +
 	"\x0eSheetMagicItem\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x18\n" +
 	"\aattuned\x18\x02 \x01(\bR\aattuned\x12/\n" +
@@ -15211,7 +15223,8 @@ const file_meurpg_characters_v1_characters_proto_rawDesc = "" +
 	"consumable\x18\x11 \x01(\v2%.meurpg.characters.v1.SheetConsumableR\n" +
 	"consumable\x12\"\n" +
 	"\rspell_gone_pt\x18\x12 \x01(\tR\vspellGonePt\x12\x1b\n" +
-	"\tspell_off\x18\x13 \x01(\bR\bspellOff\"\xe5\x04\n" +
+	"\tspell_off\x18\x13 \x01(\bR\bspellOff\x12.\n" +
+	"\x13spell_level_changed\x18\x14 \x01(\bR\x11spellLevelChanged\"\xe5\x04\n" +
 	"\x0fSheetConsumable\x128\n" +
 	"\x04kind\x18\x01 \x01(\x0e2$.meurpg.characters.v1.ConsumableKindR\x04kind\x12!\n" +
 	"\fcosts_action\x18\x02 \x01(\bR\vcostsAction\x12&\n" +

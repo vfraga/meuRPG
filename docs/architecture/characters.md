@@ -446,7 +446,8 @@ A check is owed when the spell's level is above the highest level of the charact
 Its DC is 10 plus the spell's level, and its ability is the spellcasting ability of the class whose list has the spell.
 The economy is the existing `ActionEconomy`.
 A casting of a minute or longer spends none of the turn and reads unspecified.
-A stored spell whose level is no longer the scroll's reads as no spell, with no scroll field.
+A stored spell whose level is no longer the scroll's reads as no spell to the owner and with `spell_level_changed` to the master, with no scroll field for either.
+A read of the scroll's spell for use goes through the same level and table filter.
 `fillItemCharges` keeps the consumable `fillScrollSpells` made, and makes the others.
 
 ## Class and race choices

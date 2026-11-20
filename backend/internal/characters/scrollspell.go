@@ -163,7 +163,9 @@ func (s *Service) writeScrollSpell(ctx context.Context, q *charactersdb.Queries,
 // fillScrollSpells fills, on every read, the spell of each Spell Scroll entry and what reading it comes to for the character
 // (derived is the character's): the spell's name and the consumable's scroll fields. A spell the master switched off or
 // archived after it was set is never named to the character's player (RN-23): the key and the name are empty and
-// spell_gone_pt says why; the master reads the key and the name with spell_off.
+// spell_gone_pt says why; the master reads the key and the name with spell_off. A stored spell whose level is no longer the
+// scroll's reads as no spell to the player and, to the master, as the key and the name with spell_level_changed. The scroll
+// fields of the consumable are filled only for a spell that is on and of the scroll's level.
 func fillScrollSpells(content *rules.Content, f *charactersv1.FullSheet, derived rules.Derived, master bool) {
 	for _, it := range f.GetMagicItems() {
 		key := it.GetSpellKey()
@@ -176,23 +178,27 @@ func fillScrollSpells(content *rules.Content, f *charactersv1.FullSheet, derived
 			continue
 		}
 		it.Consumable = sheetConsumableOf(content, it.GetKey())
-		if det, exists := content.SpellDetails(key); exists && det.Spell.Level != scroll.Level {
-			it.SpellKey = "" // the spell is no longer of the scroll's level: the scroll reads as having none
-			continue
+		det, exists := content.SpellDetails(key)
+		off := !exists || content.Hidden(key)
+		moved := exists && det.Spell.Level != scroll.Level
+		switch {
+		case !master && moved:
+			it.SpellKey = "" // the scroll reads as having no spell
+		case !master && off:
+			it.SpellKey, it.SpellGonePt = "", scrollSpellGonePT
+		case master && (off || moved):
+			it.SpellNamePt, it.SpellOff, it.SpellLevelChanged = content.NamePT(key), off, moved
+		default:
+			it.SpellNamePt = content.NamePT(key)
+			fillScrollRead(it.Consumable, content, derived, key)
 		}
-		if _, exists := content.SpellDetails(key); !exists || content.Hidden(key) {
-			if !master {
-				it.SpellKey, it.SpellGonePt = "", scrollSpellGonePT
-				continue
-			}
-			it.SpellOff, it.SpellNamePt = true, content.NamePT(key)
-			continue
-		}
-		it.SpellNamePt = content.NamePT(key)
-		read, _ := content.ReadScrollSpell(derived, key)
-		c := it.Consumable
-		c.ScrollSpellLevel, c.ReadsScrollSpell, c.ScrollUnreadablePt = conv.Int32(read.Level), read.Reads, read.UnreadablePT
-		c.ScrollCheckNeeded, c.ScrollCheckDc = read.CheckNeeded, conv.Int32(read.CheckDC)
-		c.ScrollCheckAbility, c.ScrollCastingEconomy = abilityToProto[read.Ability], economyToProto[read.Economy]
 	}
+}
+
+// fillScrollRead fills the scroll fields of a consumable with what reading the spell comes to for the character.
+func fillScrollRead(c *charactersv1.SheetConsumable, content *rules.Content, derived rules.Derived, key string) {
+	read, _ := content.ReadScrollSpell(derived, key)
+	c.ScrollSpellLevel, c.ReadsScrollSpell, c.ScrollUnreadablePt = conv.Int32(read.Level), read.Reads, read.UnreadablePT
+	c.ScrollCheckNeeded, c.ScrollCheckDc = read.CheckNeeded, conv.Int32(read.CheckDC)
+	c.ScrollCheckAbility, c.ScrollCastingEconomy = abilityToProto[read.Ability], economyToProto[read.Economy]
 }

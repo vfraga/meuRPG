@@ -489,7 +489,7 @@ func TestSaveThatChangesTheKeyOfAScrollDropsItsSpell(t *testing.T) {
 }
 
 // A stored spell whose level is no longer the scroll's reads as no spell, with no scroll field.
-func TestAStoredScrollSpellOfAnotherLevelReadsAsNone(t *testing.T) {
+func TestAStoredScrollSpellOfAnotherLevelReadsAsNoneToTheOwnerAndFlaggedToTheMaster(t *testing.T) {
 	t.Parallel()
 	et, pc := scrollTable(t, scrollThird)
 	id := entryOf(t, pc, scrollThird).GetId()
@@ -518,12 +518,22 @@ func TestAStoredScrollSpellOfAnotherLevelReadsAsNone(t *testing.T) {
 	if err != nil {
 		t.Fatalf("store the spell: %v", err)
 	}
-	for who, u := range map[string]*user{"the owner": et.dona, "the master": et.master} {
-		read := et.read(t, u, pc.GetId())
-		it := entryOf(t, read, scrollThird)
-		if it.GetSpellKey() != "" || it.GetSpellNamePt() != "" || it.GetSpellGonePt() != "" || it.GetSpellOff() {
-			t.Errorf("%s reads %q/%q/%q", who, it.GetSpellKey(), it.GetSpellNamePt(), it.GetSpellGonePt())
+	check := func(label string, wantOff bool) {
+		t.Helper()
+		owner := et.read(t, et.dona, pc.GetId())
+		it := entryOf(t, owner, scrollThird)
+		if it.GetSpellKey() != "" || it.GetSpellNamePt() != "" || it.GetSpellGonePt() != "" || it.GetSpellOff() || it.GetSpellLevelChanged() {
+			t.Errorf("%s: the owner reads %q/%q/%q off %v changed %v, want no spell", label, it.GetSpellKey(), it.GetSpellNamePt(), it.GetSpellGonePt(), it.GetSpellOff(), it.GetSpellLevelChanged())
 		}
-		wantScrollFields(t, who, read, scrollThird, scroll(func(*charactersv1.SheetConsumable) {}))
+		wantScrollFields(t, label+", the owner", owner, scrollThird, scroll(func(*charactersv1.SheetConsumable) {}))
+		master := et.read(t, et.master, pc.GetId())
+		mit := entryOf(t, master, scrollThird)
+		if mit.GetSpellKey() != "spell:magic-missile" || mit.GetSpellNamePt() != "Mísseis Mágicos" || mit.GetSpellGonePt() != "" || mit.GetSpellOff() != wantOff || !mit.GetSpellLevelChanged() {
+			t.Errorf("%s: the master reads %q/%q off %v changed %v, want the key and the name, off %v and the level flag", label, mit.GetSpellKey(), mit.GetSpellNamePt(), mit.GetSpellOff(), mit.GetSpellLevelChanged(), wantOff)
+		}
+		wantScrollFields(t, label+", the master", master, scrollThird, scroll(func(*charactersv1.SheetConsumable) {}))
 	}
+	check("another level", false)
+	et.master.setOff(t, et.campaign, true, "spell:magic-missile")
+	check("another level and switched off", true)
 }

@@ -91,7 +91,7 @@ func keepMagicItems(stored, saved *charactersv1.FullSheet) {
 		it.RequiresAttunement, it.RestrictionPt, it.Restriction, it.SameItemAttuned, it.NamePt = false, "", charactersv1.AttunementRestriction_ATTUNEMENT_RESTRICTION_UNSPECIFIED, false, ""
 		it.ChargesMax, it.ChargesLeft, it.Lost, it.LastRollPending = 0, 0, charactersv1.ItemLoss_ITEM_LOSS_UNSPECIFIED, false
 		it.Consumable = nil
-		it.SpellNamePt, it.SpellGonePt, it.SpellOff = "", "", false
+		it.SpellNamePt, it.SpellGonePt, it.SpellOff, it.SpellLevelChanged = "", "", false, false
 	}
 }
 
