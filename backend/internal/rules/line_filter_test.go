@@ -121,37 +121,45 @@ func TestPactMarkAlsoMarksTheMagicFilterOnlyWhenMagical(t *testing.T) {
 	}
 }
 
+// refusedWith is refusedAt that also checks the reason code of the refusal at the field.
+func refusedWith(t *testing.T, o Overlay, field, reason string) {
+	t.Helper()
+	o.Strict = []string{stateSubclass}
+	_, err := loadForTest(t).With(o)
+	var oe *OverlayError
+	if !errors.As(err, &oe) {
+		t.Fatalf("want an OverlayError, got %v", err)
+	}
+	if !slices.ContainsFunc(oe.Violations(), func(v *OverlayError) bool { return strings.HasSuffix(v.Field, field) && v.Reason == reason }) {
+		t.Errorf("violations = %+v, want one at %s with reason %s", oe.Violations(), field, reason)
+	}
+}
+
 func TestLineRefusalsNameTheField(t *testing.T) {
 	t.Parallel()
 	for _, tc := range []struct {
-		name string
-		e    Effect
+		name, field, reason string
+		e                   Effect
 	}{
-		{"a name no line has", Effect{Type: "weapon_rule", Weapon: WeaponAny, AttackBonus: 1, Line: "Sem Linha"}},
-		{"a key that is no weapon", Effect{Type: "weapon_rule", Weapon: WeaponAny, AttackBonus: 1, Line: "equipment:backpack"}},
-		{"a weapon the content lacks", Effect{Type: "weapon_rule", Weapon: WeaponAny, AttackBonus: 1, Line: "equipment:espada-que-nao-existe"}},
-		{"a line key of an effect the entry lacks", Effect{Type: "weapon_rule", Weapon: WeaponAny, AttackBonus: 1, Line: PseudoWeaponKey(stateFeature, 3)}},
-		{"extra_damage naming nothing", Effect{Type: "extra_damage", Applies: ExtraDamageAnyTarget, Value: "1", Line: "Sem Linha"}},
+		{"a name no line has", "effects[0].line", ReasonReference, Effect{Type: "weapon_rule", Weapon: WeaponAny, AttackBonus: 1, Line: "Sem Linha"}},
+		{"a key that is no weapon", "effects[0].line", ReasonReference, Effect{Type: "weapon_rule", Weapon: WeaponAny, AttackBonus: 1, Line: "equipment:backpack"}},
+		{"a weapon the content lacks", "effects[0].line", ReasonReference, Effect{Type: "weapon_rule", Weapon: WeaponAny, AttackBonus: 1, Line: "equipment:espada-que-nao-existe"}},
+		{"a line key of an effect the entry lacks", "effects[0].line", ReasonReference, Effect{Type: "weapon_rule", Weapon: WeaponAny, AttackBonus: 1, Line: PseudoWeaponKey(stateFeature, 3)}},
+		{"extra_damage naming nothing", "effects[0].line", ReasonReference, Effect{Type: "extra_damage", Applies: ExtraDamageAnyTarget, Value: "1", Line: "Sem Linha"}},
+		{"a line on a note", "effects[0].line", ReasonValue, Effect{Type: "note", TextPT: "x", Line: ruleRapier}},
+		{"a line on a pseudo_weapon", "effects[0].line", ReasonValue, Effect{Type: "pseudo_weapon", AttackName: "Raio", Weapon: WeaponRanged, DamageDice: "1d6", DamageType: "damage-type:force", Ability: "int", RangeFt: 30, Line: ruleRapier}},
 	} {
-		refusedAt(t, tc.e, ".line")
-		_ = tc.name
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			refusedWith(t, stateOverlay([]Effect{tc.e}), tc.field, tc.reason)
+		})
 	}
-	// A line belongs to weapon_rule and extra_damage alone.
-	refusedAt(t, Effect{Type: "note", TextPT: "x", Line: ruleRapier}, ".line")
-	refusedAt(t, Effect{Type: "pseudo_weapon", AttackName: "Raio", Weapon: WeaponRanged, DamageDice: "1d6", DamageType: "damage-type:force", Ability: "int", RangeFt: 30, Line: ruleRapier}, ".line")
 }
 
 func TestLineNamingTwoLinesIsAmbiguous(t *testing.T) {
 	t.Parallel()
-	refusedAt(t, Effect{Type: "weapon_rule", Weapon: WeaponAny, AttackBonus: 1, Line: "Lançador de Teste"}, ".line")
-	// (the same overlay with one launcher is accepted by TestWeaponRuleLineChoosesOneAttackLine)
 	o := stateOverlay([]Effect{launcherLine(), launcherLine(), {Type: "weapon_rule", Weapon: WeaponAny, AttackBonus: 1, Line: "Lançador de Teste"}})
-	o.Strict = []string{stateSubclass}
-	_, err := loadForTest(t).With(o)
-	var oe *OverlayError
-	if !errors.As(err, &oe) || !slices.ContainsFunc(oe.Violations(), func(v *OverlayError) bool { return strings.HasSuffix(v.Field, "effects[2].line") }) {
-		t.Errorf("two launchers with the same name: err = %v, want a refusal at effects[2].line", err)
-	}
+	refusedWith(t, o, "effects[2].line", ReasonValue)
 }
 
 func TestLineOfAnotherEntryIsRefused(t *testing.T) {
@@ -164,10 +172,7 @@ func TestLineOfAnotherEntryIsRefused(t *testing.T) {
 			tf("passo-firme", "Passo Firme", launcherLine()),
 		}}}},
 	}}
-	other.Strict = []string{stateSubclass}
-	if _, err := loadForTest(t).With(other); err == nil {
-		t.Error("a line of another entry's pseudo_weapon was accepted")
-	}
+	refusedWith(t, other, "effects[0].line", ReasonReference)
 }
 
 func TestExtraDamageLineIsDerivedAsTheResolvedLine(t *testing.T) {

@@ -113,7 +113,7 @@ O mestre também pode corrigir à mão, a qualquer momento da sessão, PV, PV te
     As marcas são definidas pela API da ficha e pelas regras de arma; o formulário da ficha não as edita.
     A ficha também pode marcar uma arma como a arma do pacto, nunca mais de uma, e a marca segue a mesma trava.
     Uma característica da mesa que escreve "pact" como linha de ataque vale só para essa arma: uma regra de arma muda só ela, e um dano extra é oferecido só nos acertos dela.
-    A mesma linha pode nomear um ataque da entrada da característica (a arma de uma característica ou um ataque natural, pelo nome) ou uma arma pela chave, de modo que uma regra ou um dano extra não vale mais para toda arma de um tipo.
+    A mesma linha pode nomear um ataque da entrada da característica (a arma de uma característica ou um ataque natural, pelo nome) ou uma arma pela chave, de modo que uma regra ou um dano extra pode valer só para uma arma.
     Uma linha que não nomeia nada que a entrada tenha é recusada no campo.
     O registro do mestre diz o motivo ("Resistência a perfurante de ataque não mágico nem prateado"). O jogador vê só o dano.
   - Num personagem de jogador, o dano rolado **espera o mestre**, que o aplica ("Aplicar 5 de dano") ou o descarta ("Não aplicar"). O mestre pode aplicar um valor diferente (uma resistência que o app não aplica). O registro guarda os dois números para o mestre, e o jogador vê só o que sofreu.

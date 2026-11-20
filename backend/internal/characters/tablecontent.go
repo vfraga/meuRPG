@@ -474,7 +474,7 @@ func tableEffectsOf(in []*rulesv1.TableEffect) []rules.Effect {
 			Cost: e.GetCost(), CostMax: e.GetCostMax(), ValuePerPoint: e.GetValuePerPoint(), Heal: e.GetHeal(), TempHP: e.GetTempHp(),
 			Event: e.GetEvent(), Restore: e.GetRestore(), HealPercentMax: int(e.GetHealPercentMax()),
 			StateName: e.GetStateName(), DurationRounds: e.GetDurationRounds(), EndsOn: e.GetEndsOn(),
-			WeaponName: e.GetWeaponName(), AttackAbility: e.GetAttackAbility(), DamageAbility: e.GetDamageAbility(),
+			WeaponName: e.GetWeaponName(), Line: e.GetLine(), AttackAbility: e.GetAttackAbility(), DamageAbility: e.GetDamageAbility(),
 			AttackBonus: int(e.GetAttackBonus()), DamageBonus: int(e.GetDamageBonus()), ReachFt: int(e.GetReachFt()),
 			AttackName: e.GetAttackName(), DamageDice: e.GetDamageDice(),
 			Magical: e.GetMagical(), Silvered: e.GetSilvered(), Adamantine: e.GetAdamantine(),

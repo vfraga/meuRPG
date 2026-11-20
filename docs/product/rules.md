@@ -113,7 +113,7 @@ The master can also correct hit points, temporary hit points, spell slots (and p
     The marks are set through the sheet API and weapon rules; the sheet form does not edit them.
     The sheet can also mark one weapon as the pact weapon, never more than one, and the mark follows the same lock.
     A table feature that names "pact" as its line of attack goes with that weapon alone: a weapon rule changes only it, and an extra damage is offered only on its hits.
-    The same line can name one attack line of the feature's entry (a feature's weapon or a natural attack, by its name) or a weapon by key, so a rule or an extra damage no longer goes with every weapon of a kind.
+    The same line can name one attack line of the feature's entry (a feature's weapon or a natural attack, by its name) or a weapon by key, so a rule or an extra damage can go with one weapon only.
     A line that names nothing the entry has is refused at its field.
     The master's log names the reason ("Resistência a perfurante de ataque não mágico nem prateado"). The player sees only the damage.
   - On a player character the rolled damage **waits for the master**, who applies it ("Aplicar 5 de dano") or discards it ("Não aplicar"). The master may apply a different amount (a resistance the app does not apply). The log keeps both numbers for the master, and the player sees only what they took.

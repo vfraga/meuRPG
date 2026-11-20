@@ -539,9 +539,13 @@ Its value is one of:
 - the key of a weapon of the content (an SRD or table weapon) or the unarmed strike (`attack:unarmed-strike`);
 - the `attack_name` of a `pseudo_weapon` or `natural_attack` of the same entry, ignoring case and accents, or that line's key (`pseudo:<feature key>`, `natural:<feature key>`, with the `#n` suffix of a feature's further lines).
 
-A value that names none of these is refused at `.line` (`bad_reference`); a name that two lines of the entry share is refused at `.line` (`bad_value`); `line` on any other effect type is refused.
-The table's content replaces the value with the line's key on the effect it compiles, and `rules.LineMatches(line, key, pact)` is the one comparison: the sheet reads it for `weapon_rule` (through `weaponFacts`), and play reads it for `extra_damage` through `link.ExtraDamage.Line` and `link.Attack.Key` and `link.Attack.Pact`.
+A value that names none of these is refused at `.line` (`dangling_reference`).
+A name that two lines of the entry share is refused at `.line` (`bad_value`).
+`pact`, a weapon key and the unarmed strike key win over an attack named the same; that attack is named by its line key.
+`line` on another effect type is refused for an entry being written (`bad_value`), and dropped from a stored entry.
+One comparison, `rules.LineMatches(line, key, pact)`, decides for the sheet and for the combat.
 An `extra_damage` whose line is not the hit's is listed on the hit card as off, with the reason.
+The improvised melee line of a ranged weapon (`<weapon key>:melee`) matches no line.
 
 The sheet marks the pact weapon with `FullSheet.weapon_marks[].pact_weapon` (`WeaponMark.PactWeapon`).
 At most one mark has it (`full.weapon_marks[n].pact_weapon` is refused for a second), a mark that sets only `pact_weapon` is valid, and it follows the lock of the other marks (`full.weapon_marks`).
