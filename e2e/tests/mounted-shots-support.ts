@@ -87,6 +87,13 @@ async function steedScreens(t: MountedTable, l: Look): Promise<void> {
   await cast.getByRole('button', { name: 'Escolher a criatura' }).click();
   const summon = summonSheet(p);
   await expect(summon.getByText('Escolha a forma e o tipo do corcel.')).toBeVisible();
+  // The required fields fit without scrolling: the forms list is no scroller of its own, and "Tipo do corcel" ends above the pinned footer.
+  const forms = summon.getByRole('radiogroup', { name: 'Criatura' });
+  const scrolls = await forms.evaluate((el) => el.scrollHeight - el.clientHeight);
+  expect(scrolls, `Forma rola por dentro em ${scrolls}px (${l.scheme}, ${l.width}px)`).toBeLessThanOrEqual(1);
+  const typeBottom = await summon.getByRole('radiogroup', { name: 'Tipo do corcel' }).evaluate((el) => el.getBoundingClientRect().bottom);
+  const footTop = await summon.getByText('Escolha a forma e o tipo do corcel.').evaluate((el) => el.getBoundingClientRect().top);
+  expect(typeBottom, `"Tipo do corcel" fica sob o rodapé (${l.scheme}, ${l.width}px)`).toBeLessThanOrEqual(footTop);
   await see(p, 'convocar-vazio', l);
   await summon.locator('label', { hasText: STEED }).click();
   await summon.getByRole('radiogroup', { name: 'Tipo do corcel' }).getByText('Celestial').click();
@@ -262,6 +269,8 @@ async function rideScreens(t: MountedTable, l: Look): Promise<void> {
   await shoveSteedRPC(t, enc, 'SHOVE_OUTCOME_PUSH', l.width >= 768);
   const save = p.getByRole('alertdialog', { name: /Você cai da montaria\?/ });
   await expect(save.getByText(`O ${STEED} sofreu um empurrão.`)).toBeVisible();
+  // One dialog at a time: the shove's own sheet is gone before the question is on screen.
+  await expect(p.getByRole('dialog', { name: /Goblin 1 tenta empurrar/ })).toBeHidden();
   await see(p, 'teste', l);
   const wait = m.getByTestId('mount-save-wait');
   await expect(wait).toBeVisible();
@@ -273,12 +282,6 @@ async function rideScreens(t: MountedTable, l: Look): Promise<void> {
   await expect(save.locator('.res')).toContainText('4: você caiu da montaria (Derrubado)');
   await see(p, 'teste-resultado', l);
   await closeSheet(save);
-  // From a tablet up the shove's own sheet is under it (the horse is the player's); a phone holds one sheet at a time.
-  if (l.width >= 768) {
-    const shove = p.getByRole('dialog', { name: /Goblin 1 tenta empurrar/ });
-    await expect(shove).toBeVisible();
-    await closeSheet(shove);
-  }
   await expect(p.getByText('Derrubado').first()).toBeVisible();
   const log = await openCombatLog(p);
   await expect(log.getByText(/caiu/).first()).toBeVisible();
@@ -325,24 +328,22 @@ async function riderScreens(t: MountedTable, l: Look): Promise<void> {
   // The master answers for her: a new d20 of 15 keeps her on the horse, and her sheet says the save is no longer hers to roll.
   const wait = m.getByTestId('mount-save-wait');
   await expect(wait).toBeVisible();
+  // The master's sheet reads the kept d20 when it opens, so the master's table has to hold the player's question first.
+  await expect(m.getByText(/Tirou 1: rolar de novo/).first()).toBeVisible({ timeout: 40_000 });
   await wait.getByRole('button', { name: 'Rolar por Isolda' }).click();
   const answer = m.locator('app-mount-save-sheet');
   // The server lets the master answer only after the player's first seconds: the sheet counts them down ("responde primeiro")
   // and keeps the answer buttons off, so the test waits for the countdown line to go and for the confirm button to be on.
   await expect(answer.getByText('responde primeiro')).toBeHidden({ timeout: 20_000 });
   await answer.getByRole('button', { name: 'Digitar o resultado' }).click();
-  await answer.getByLabel(/Role 1d20 de novo/).fill('15');
-  const confirm = answer.getByRole('button', { name: 'Confirmar 15' });
+  await answer.getByLabel('Role 1d20 de novo').fill('15');
+  const confirm = answer.getByRole('button', { name: /^Confirmar/ });
   await expect(confirm).toBeEnabled();
   await confirm.click();
   await expect(held.getByText('Este teste não espera mais a sua rolagem: o mestre rolou, ou ele deixou de ser preciso.')).toBeVisible();
   await see(p, 'teste-encerrado', l);
   await closeSheet(held);
   await closeSheet(answer);
-  if (l.width >= 768) {
-    // The shove's own sheet is under it from a tablet up.
-    await closeSheet(p.getByRole('dialog', { name: /Goblin 1 tenta empurrar/ }));
-  }
   await passTurnsToAndWait(m, campaignId, 'Isolda', [m, p]);
   await expect(p.getByRole('heading', { name: 'Sua vez, Isolda' })).toBeVisible();
 

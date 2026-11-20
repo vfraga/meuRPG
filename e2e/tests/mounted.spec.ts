@@ -68,13 +68,13 @@ test(
 
       const save = p.getByRole('alertdialog', { name: /Você cai da montaria\?/ });
       await expect(save.getByText(`O ${STEED} sofreu um empurrão.`)).toBeVisible();
+      // One dialog at a time: the shove's own sheet is gone before the question is on screen.
+      await expect(p.getByRole('dialog', { name: /Goblin 1 tenta empurrar/ })).toBeHidden();
       await save.getByRole('button', { name: 'Digitar o resultado' }).click();
       await save.getByLabel('Face do d20 (1 a 20)').fill('4');
       await save.getByRole('button', { name: /^Confirmar/ }).click();
       await expect(save.locator('.res')).toContainText('4: você caiu da montaria (Derrubado) ao lado do Cavalo de guerra.');
       await closeSheet(save);
-      // Under it, the shove's own sheet (the horse is hers, so the contest came to her screen).
-      await closeSheet(p.getByRole('dialog', { name: /Goblin 1 tenta empurrar/ }));
 
       // She lies prone on a square beside the horse, and rides nothing.
       const after = await getEncounterRPC(m, campaignId);

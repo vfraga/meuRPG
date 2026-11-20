@@ -63,7 +63,9 @@ export class MoveRow {
 
   readonly move = output<void>();
 
-  protected readonly line = computed(() => moveLine(this.own(), this.grappled(), this.mount() ?? undefined));
+  protected readonly line = computed(() =>
+    moveLine(this.own(), this.grappled(), this.mount() ?? undefined),
+  );
   protected readonly whyId = 'move-why';
   protected readonly waitNoteId = MASTER_WAIT_NOTE_ID;
   /** The wait is the master's: the turn card says it once, and the button points to it. */

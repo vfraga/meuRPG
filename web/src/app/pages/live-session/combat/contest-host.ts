@@ -23,7 +23,10 @@ import type { ContestClient } from '../../../core/combat/contest-client';
 import { ContestState } from '../../../core/combat/contest-state';
 import { isSettled } from '../../../core/combat/contest-view';
 import { helpAllies, helpTargets } from '../../../core/combat/help-view';
-import { ContestAnswerSheet, openContestAnswerSheet } from './contest-answer-sheet/contest-answer-sheet';
+import {
+  ContestAnswerSheet,
+  openContestAnswerSheet,
+} from './contest-answer-sheet/contest-answer-sheet';
 import { ContestSheet, openContestSheet } from './contest-sheet/contest-sheet';
 import { openHelpSheet } from './help-sheet/help-sheet';
 import { openHideSheet } from './hide-sheet/hide-sheet';

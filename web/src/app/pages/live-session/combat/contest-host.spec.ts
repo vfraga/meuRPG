@@ -289,9 +289,7 @@ describe('ContestHost', () => {
     const s = setup();
     await s.read(
       contestState({
-        contests: [
-          contestView({ id: 'ct1', defenderId: 't', initiatorId: 'h', youAnswer: true }),
-        ],
+        contests: [contestView({ id: 'ct1', defenderId: 't', initiatorId: 'h', youAnswer: true })],
       }),
       2,
     );

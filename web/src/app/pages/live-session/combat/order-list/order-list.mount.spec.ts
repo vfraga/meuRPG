@@ -61,9 +61,9 @@ describe('OrderList with a rider and its mount', () => {
     expect([cell('.row__hp').gridRow, cell('.row__hp').gridColumn]).toEqual(['1', '3']);
     expect([cell('.row__meta').gridRow, cell('.row__meta').gridColumn]).toEqual(['2', '2/-1']);
     // A row with no link keeps its name and detail in one column.
-    expect(getComputedStyle(el.querySelector('[data-combatant="tor"] .row__text')!).display).not.toBe(
-      'contents',
-    );
+    expect(
+      getComputedStyle(el.querySelector('[data-combatant="tor"] .row__text')!).display,
+    ).not.toBe('contents');
   });
 
   it('indents the mount under its rider, in the rendered row, past the box padding of the master list', () => {
