@@ -14,7 +14,8 @@ The browser draws what the server sends (reach from `GetMoveOptions`, totals, ve
   The pair is one token, the mount's.
   `CombatantToken.ridden` moves the mount's own initial to the lower left.
   The rider's small disc sits inside it, top right, on an ink saddle crescent (`app-rider-mark`).
-  A Large mount keeps its 2 × 2 footprint while ridden, with the rider's disc and saddle in the top right corner, the size they have on one square.
+  A Large mount keeps its 2 × 2 footprint while ridden, with the rider's disc and saddle inside the mount's circle at the top right (45°), the size they have on one square.
+  The rider's initial and the mount's are never under 10 px, so both stay readable on a 22 px token.
   The mount's initial is never under 10 px, so it stays readable on a 22 px token.
   On a pair the hidden seal sits top left, clear of the rider.
   The turn ring and "Vez" go around the pair when the rider or the mount has the turn.

@@ -176,7 +176,7 @@
         />
         @if (pair.riderOf(c); as r) {
           <!-- The rider rides on the mount's token: its small disc top right, on the saddle. -->
-          <app-rider-mark class="cm__rider" [initial]="initial(r)" [npc]="npc(r)" [creature]="creature(r)" [defeated]="r.defeated" [onMap]="true" size="var(--cm-tk)" />
+          <app-rider-mark class="cm__rider" [initial]="initial(r)" [npc]="npc(r)" [creature]="creature(r)" [defeated]="r.defeated" [onMap]="true" size="var(--cm-tk)" [footprint]="span(c)" />
         }
       </span>
      }

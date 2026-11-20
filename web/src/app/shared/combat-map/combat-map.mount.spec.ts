@@ -40,8 +40,21 @@ describe('CombatMap: a rider on its mount', () => {
     expect(tk.style.getPropertyValue('--span')).toBe('2');
     const corner = el.querySelector<HTMLElement>('app-rider-mark .rm__corner')!;
     expect(corner.style.getPropertyValue('--rm-side')).toBe('var(--cm-tk)');
+    // On 2 × 2 the corner moves in, so the disc sits inside the mount's circle at 45°, not on the bounding box's corner.
+    expect(corner.classList).toContain('rm__corner--in');
+    expect(corner.style.getPropertyValue('--rm-n')).toBe('2');
+    expect(getComputedStyle(corner).top).toContain('var(--rm-d)');
+    expect(getComputedStyle(corner).right).toContain('var(--rm-d)');
+  });
+
+  it('keeps the rider’s corner at the box’s corner for a mount of one square, and its initial readable', () => {
+    const el = map();
+    const corner = el.querySelector<HTMLElement>('app-rider-mark .rm__corner')!;
+    expect(corner.classList).not.toContain('rm__corner--in');
     expect(getComputedStyle(corner).top).toBe('0px');
-    expect(getComputedStyle(corner).right).toBe('0px');
+    const disc = el.querySelector<HTMLElement>('app-rider-mark .rm__disc')!;
+    expect(getComputedStyle(disc).fontSize).toBe('max(var(--rm-side) * 0.2, 10px)');
+    expect(disc.style.getPropertyValue('--tk')).toBe('max(calc(var(--cm-tk) * 0.42), 13px)');
   });
 
   it('keeps the mount’s initial readable on a 22 px token', () => {

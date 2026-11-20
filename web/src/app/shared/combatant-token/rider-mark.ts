@@ -12,7 +12,7 @@ import { CombatantToken } from './combatant-token';
   imports: [CombatantToken],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <span class="rm__corner" [style.--rm-side]="size()">
+    <span class="rm__corner" [class.rm__corner--in]="footprint() > 1" [style.--rm-side]="size()" [style.--rm-n]="footprint()">
       <svg class="rm__saddle" viewBox="0 0 100 100" focusable="false">
         <path d="M33 37 Q60 108 97 41 Q63 80 33 37 Z" />
       </svg>
@@ -23,7 +23,7 @@ import { CombatantToken } from './combatant-token';
         [creature]="creature()"
         [defeated]="defeated()"
         [onMap]="onMap()"
-        [size]="'calc(' + size() + ' * 0.42)'"
+        [size]="'max(calc(' + size() + ' * 0.42), 13px)'"
       />
     </span>
   `,
@@ -42,6 +42,15 @@ import { CombatantToken } from './combatant-token';
       right: 0;
       width: var(--rm-side);
       height: var(--rm-side);
+    }
+
+    // A mount drawn on 2 × 2 or more: the corner box moves in, so the rider's disc sits inside the mount's circle, at 45°, not
+    // on a corner of the bounding box that the circle does not reach.
+    .rm__corner--in {
+      --rm-d: calc(var(--rm-n) * var(--rm-side));
+      --rm-k: calc((var(--rm-d) / 2 - 0.25 * var(--rm-side)) * 0.7071);
+      top: calc(var(--rm-d) / 2 - var(--rm-k) - 0.33 * var(--rm-side));
+      right: calc(var(--rm-d) / 2 - var(--rm-k) - 0.3 * var(--rm-side));
     }
 
     .rm__saddle {
@@ -68,6 +77,8 @@ import { CombatantToken } from './combatant-token';
       right: 9%;
       // The small disc keeps a thin edge, whatever the size of the token under it.
       border-width: 1px;
+      // The rider's initial is readable on a 22 px token too: never under 10 px.
+      font-size: max(calc(var(--rm-side) * 0.2), 10px);
     }
   `,
   host: { 'aria-hidden': 'true', '[class.rm--map]': 'onMap()' },
@@ -82,4 +93,6 @@ export class RiderMark {
   readonly onMap = input(false);
   /** The side of one square's token, as a CSS length: the corner the saddle and the disc fill (a mount on 2 × 2 has the same corner). */
   readonly size = input.required<string>();
+  /** How many squares a side of the mount's token covers (`2` for a Large mount): the disc moves inside its circle. */
+  readonly footprint = input(1);
 }
