@@ -703,3 +703,38 @@ func TestSpellLimited(t *testing.T) {
 		}
 	}
 }
+
+// The reasons a scroll's spell could not be cast this turn are those of a spell option: the economy of its casting time, then the
+// limit of a bonus action spell; a longer casting spends none of the turn.
+func TestScrollReadReason(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name    string
+		turn    TurnState
+		economy string
+		level   int
+		want    string
+	}{
+		{name: "a free turn", economy: rules.EconomyAction, level: 3},
+		{name: "the action is used", turn: TurnState{ActionUsed: true}, economy: rules.EconomyAction, level: 3, want: ReasonActionUsed},
+		{name: "the bonus action is used", turn: TurnState{BonusActionUsed: true}, economy: rules.EconomyBonusAction, level: 2, want: ReasonBonusActionUsed},
+		{name: "the reaction is used", turn: TurnState{ReactionUsed: true}, economy: rules.EconomyReaction, level: 1, want: ReasonReactionUsed},
+		{name: "another economy used does not matter", turn: TurnState{ActionUsed: true}, economy: rules.EconomyBonusAction, level: 2},
+		{name: "a bonus action spell after another spell", turn: TurnState{SpellCast: true}, economy: rules.EconomyBonusAction, level: 2, want: ReasonBonusActionSpellLimit},
+		{name: "a spell after a bonus action spell", turn: TurnState{BonusSpellCast: true}, economy: rules.EconomyAction, level: 3, want: ReasonBonusActionSpellLimit},
+		{name: "a cantrip of 1 action after a bonus action spell", turn: TurnState{BonusSpellCast: true}, economy: rules.EconomyAction, level: 0},
+		{name: "a longer casting spends none", turn: TurnState{ActionUsed: true, BonusActionUsed: true, ReactionUsed: true}, economy: "", level: 1},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			var got string
+			if r := ScrollReadReason(tt.turn, tt.economy, tt.level); r != nil {
+				got = r.Code
+			}
+			if got != tt.want {
+				t.Errorf("reason %q, want %q", got, tt.want)
+			}
+		})
+	}
+}

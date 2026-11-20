@@ -15,5 +15,12 @@
   "use_total": 1,
   "use_healed": 1,
   "use_physical": true,
-  "use_damage_type": "x"
+  "use_damage_type": "x",
+  "scroll_reader": "x",
+  "scroll_spell": "x",
+  "scroll_level": 1,
+  "scroll_checked": true,
+  "scroll_dc": 1,
+  "scroll_d20": 1,
+  "scroll_modifier": 1
 }

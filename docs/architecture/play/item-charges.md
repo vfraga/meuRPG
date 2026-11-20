@@ -38,6 +38,64 @@ Two calls with different keys give one success: the one that gets the lock secon
 It gives the scroll's spell level, its saving throw DC and its attack bonus.
 The numbers come from `effects/spell_scrolls.json`.
 A key that is no variant of the Spell Scroll gives no answer.
+`Content.ScrollSpellOf` says which spell a scroll gives.
+It is the one filter of the sheet's read and of the reading, so they never differ.
+A spell of another level, one that is off or archived and one that is gone give no spell.
+
+### Reading a scroll
+
+`ChargesService.ReadScroll` reads the scroll of an entry for its character.
+The character's player or the master may call it, with an idempotency key.
+The check is d20 + the spellcasting modifier against 10 + the spell's level.
+A spell of a level the reader casts, a cantrip included, needs no check.
+The d20 is the app's or typed per the table's dice rule.
+The master may use either.
+The answer is a `ScrollReading` with the outcome, the spell, the numbers and whether the entry is gone.
+
+The read is refused, and nothing is spent, when:
+
+- the entry is not a spell scroll;
+- the scroll gives no spell (none on it, a spell of another level, one that is off or archived);
+- the spell is not on the list of a class the reader casts from;
+- the combat is running and it is not the reader's turn, or the economy of the spell's casting time is spent.
+
+The refusal for a spell that is off never names it to a player (RN-23).
+A combat in setup has no turn and no economy.
+The master is bound by the turn and not by the economy.
+
+A read that needs no check, or whose check passes, keeps the unit.
+It writes a `scroll_read` session event, the pass of the cast.
+It is no line of the combat log and no undoable kind, so it closes the undo chain.
+
+A failed check spends the unit and writes `consumable_used` with the outcome `scroll_failed`.
+In a running combat it also spends the action, the bonus action or the reaction the casting time costs.
+The unit and the economy go in one transaction.
+Out of a combat nothing of a turn is spent.
+`consumable_used` is no undoable kind either, so a failure closes the undo chain as every use of a consumable does.
+
+A retry of the key answers the stored event and spends nothing again.
+A key used for another call is refused.
+
+### The pass
+
+`consumable.LatestPass` finds the pass in the session's latest events.
+It is the reader's latest read, when that read passed.
+It lapses when:
+
+- the reader reads again, whatever the result;
+- the reader's turn ends, or the combat ends, after a read in a combat;
+- the read is older than the window of the latest events.
+
+A pass read out of a combat has no turn to end and stands until the next read.
+
+### The log line
+
+The read of a failure is a `consumable_used` line with the outcome `SCROLL_FAILED`.
+The master and the owner of the reader read the spell, the DC, the d20, the modifier and the total.
+Another player reads that the scroll came apart, with no spell and no number.
+A spell that is off is named to the owner by neither name nor key.
+The master reads it still.
+A hidden creature's line is read by no player.
 
 ## Undo
 

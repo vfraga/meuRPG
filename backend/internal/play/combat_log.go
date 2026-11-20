@@ -1338,7 +1338,11 @@ func (e *logEntry) fillItemUse(_ *logViewing, out *playv1.CombatLogEntry) bool {
 // dice, the roll and the hit points regained are the master's and the owners' of the user and of the receiver (RN-10). A line whose
 // user or receiver is hidden never reaches another player (visibleToTable), so the receiver is never named past the fog.
 func (e *logEntry) fillConsumableUse(c *logViewing, out *playv1.CombatLogEntry) bool {
-	out.ConsumableUse = consumable.Line(e.consumable, c.names.contentName(c.ctx, e.consumable.DamageType), c.target.Label, c.v.master || c.v.owns(c.actor) || c.v.owns(c.target))
+	numbers := c.v.master || c.v.owns(c.actor) || c.v.owns(c.target)
+	out.ConsumableUse = consumable.Line(e.consumable, c.names.contentName(c.ctx, e.consumable.DamageType), c.target.Label, numbers)
+	if numbers {
+		out.ConsumableUse.Scroll = consumable.ScrollLine(e.consumable, c.names.spellName(c.ctx, c.v.master, e.consumable.Spell))
+	}
 	return true
 }
 
@@ -1906,6 +1910,7 @@ type keyNames struct {
 	byCharacter map[string]link.Sheet
 	traps       map[string]string       // the names of the traps that fired, by point
 	content     func(key string) string // the names of the content, from the campaign's content
+	source      func(key string) string // the same without what the master switched off or retired
 }
 
 // of returns the name of the key on the combatant's sheet, or "" when the
@@ -1977,6 +1982,21 @@ func (n *keyNames) contentName(ctx context.Context, key string) string {
 		n.content = n.s.namesFor(ctx, n.campaignID)
 	}
 	return n.content(key)
+}
+
+// spellName is a spell's name as the viewer may read it: the master's is the content's, a player's is blank for a spell the master
+// switched off or retired (RN-23).
+func (n *keyNames) spellName(ctx context.Context, master bool, key string) string {
+	if master || key == "" {
+		return n.contentName(ctx, key)
+	}
+	if n.source == nil {
+		var err error
+		if n.source, err = n.s.roster.SourceNames(ctx, nil, n.campaignID); err != nil {
+			n.source = func(string) string { return "" }
+		}
+	}
+	return n.source(key)
 }
 
 // wildShapeEndReasonProto reads the reason a wild_shape_ended event gives.

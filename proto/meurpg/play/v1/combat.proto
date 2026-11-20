@@ -2251,6 +2251,22 @@ enum EncounterBlockedReason {
   // answer does not: a point or a direction on a map, an ability, a damage type, the creatures of a summon, or the dead creature of a
   // revival. Held, it could only be let pass. Nothing is spent.
   ENCOUNTER_BLOCKED_REASON_READY_SPELL_NOT_RELEASABLE = 148;
+
+  // ChargesService.ReadScroll: the spell on the Spell Scroll is not on the list of any class the reader casts from, or the reader
+  // casts nothing. The refusal says why in words ("Não é da lista de Mago."). Nothing is spent.
+  ENCOUNTER_BLOCKED_REASON_SCROLL_SPELL_NOT_ON_LIST = 149;
+
+  // ChargesService.ReadScroll: the table has switched off or archived the spell on the scroll. The refusal never names it to a
+  // player (RN-23); the master is told it is not on. Nothing is spent.
+  ENCOUNTER_BLOCKED_REASON_SCROLL_SPELL_OFF = 150;
+
+  // ChargesService.ReadScroll: the scroll holds no spell, or holds one that is not of its level (the sheet reads it as none).
+  // Nothing is spent.
+  ENCOUNTER_BLOCKED_REASON_SCROLL_NO_SPELL = 151;
+
+  // The cast of a Spell Scroll's spell above what the caster casts, with no passed check of this turn (the read of the scroll
+  // owes one). Nothing is spent.
+  ENCOUNTER_BLOCKED_REASON_SCROLL_CHECK_OWED = 152;
 }
 
 // FamiliarSightBlockedReason says why "Ver pelos olhos do familiar" was refused
@@ -6657,6 +6673,12 @@ enum ConsumableUseOutcome {
   CONSUMABLE_USE_OUTCOME_RESISTANCE = 2;
   // The unit was spent and the table applies the text: the app carries out no effect for this consumable.
   CONSUMABLE_USE_OUTCOME_TEXT_ONLY = 3;
+  // The spell on a Spell Scroll was read (ChargesService.ReadScroll) with no check, or with a check that passed: the unit stays on
+  // the sheet until the spell is cast.
+  CONSUMABLE_USE_OUTCOME_SCROLL_READ = 4;
+  // The check of a Spell Scroll's reading failed: the unit was spent and the casting time paid, with no effect. The line carries
+  // `scroll`.
+  CONSUMABLE_USE_OUTCOME_SCROLL_FAILED = 5;
 }
 
 // ConsumableUseLogLine is the line of a consumable used in a combat, for the master, the user's owner and the receiver's owner.
@@ -6676,6 +6698,24 @@ message ConsumableUseLogLine {
   string damage_type_name_pt = 8;
   // The name of the receiver when it is not the user (a potion given to another creature); empty for the user.
   string target_label = 9;
+  // SCROLL_FAILED: the spell and the check, for the master and the user's owner only. Any other player reads the outcome and the
+  // scroll's own name, and nothing of what was on it.
+  ScrollReadLogLine scroll = 11;
+}
+
+// ScrollReadLogLine is what the master and the owner read of a Spell Scroll's failed reading in the log: the spell and the check.
+// A spell the table switched off or archived since is named to the master only.
+message ScrollReadLogLine {
+  // The spell the scroll held (its catalog key) and its name in Portuguese.
+  string spell_key = 1;
+  string spell_name_pt = 2;
+  // The scroll's level (the spell's, 0 for a cantrip).
+  int32 scroll_level = 3;
+  // The check's DC (10 plus the spell's level), the d20, the spellcasting modifier and the total.
+  int32 check_dc = 4;
+  int32 d20 = 5;
+  int32 modifier = 6;
+  int32 total = 7;
 }
 
 // CombatLogReadied is a readied action in a line of the log, for the master and the readier's owner.

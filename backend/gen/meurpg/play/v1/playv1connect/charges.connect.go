@@ -64,6 +64,9 @@ const (
 	// ChargesServiceListConsumableTargetsProcedure is the fully-qualified name of the ChargesService's
 	// ListConsumableTargets RPC.
 	ChargesServiceListConsumableTargetsProcedure = "/meurpg.play.v1.ChargesService/ListConsumableTargets"
+	// ChargesServiceReadScrollProcedure is the fully-qualified name of the ChargesService's ReadScroll
+	// RPC.
+	ChargesServiceReadScrollProcedure = "/meurpg.play.v1.ChargesService/ReadScroll"
 )
 
 // ChargesServiceClient is a client for the meurpg.play.v1.ChargesService service.
@@ -169,6 +172,29 @@ type ChargesServiceClient interface {
 	// is not there; `invalid_argument` for an entry that is no consumable; `failed_precondition` with EncounterBlocked
 	// ITEM_GONE for an entry that is no longer on the sheet and CharacterBlocked CHARACTER_DEAD for a dead user.
 	ListConsumableTargets(context.Context, *connect.Request[v1.ListConsumableTargetsRequest]) (*connect.Response[v1.ListConsumableTargetsResponse], error)
+	// ReadScroll reads the spell on a Spell Scroll of a character's sheet (SRD 5.1, "Spell Scroll"), the step before the cast. The
+	// spell must be on the scroll, of the scroll's level, on at the table, and on the list of a class the reader casts from. When its
+	// level is above the highest the reader casts (pact slots included) the reader first makes an ability check with their
+	// spellcasting ability against DC 10 plus the spell's level: d20 plus the modifier, rolled by the app (roll_in_app) or a physical
+	// d20's face typed (d20_face), by the table's rule (RN-18); a read that needs no check takes no roll and ignores one.
+	//
+	// A read that needs no check, or whose check passed, spends nothing: it is written as the session event `scroll_read`, the pass
+	// the cast of the scroll's spell uses. The pass lapses when the reader reads again (a scroll, whatever the result) and when the
+	// reader's turn ends or the combat ends. A failed check spends the scroll's unit and the casting time's economy (in a running
+	// combat: the action, the bonus action or the reaction; nothing out of one), with no effect: it is written as the session event
+	// `consumable_used` and, in a running combat, as the log line CONSUMABLE_USED with the outcome SCROLL_FAILED. Both events close
+	// the undo chain. A read is refused, with nothing spent, when the reader could not then cast the spell: in a running combat
+	// when it is not the reader's turn or the economy of the spell's casting time is already spent (the master has the last word on
+	// the economy, as for a cast). The master and the character's player may read; the roll is the master's own for an NPC.
+	//
+	// Errors: `permission_denied` for a character that is not the caller's (a player); `not_found` for a character that is not
+	// there; `invalid_argument` for an entry that is no Spell Scroll, an idempotency key that is not a UUID or one reused for another
+	// request, a d20 face outside 1 to 20, and a read that needs a check with no roll; `failed_precondition` with NO_OPEN_SESSION,
+	// CharacterBlocked CHARACTER_DEAD, and EncounterBlocked: ITEM_GONE for an entry that is no longer on the sheet, COMBATANT_DOWN
+	// for a reader at 0 hit points, SCROLL_NO_SPELL, SCROLL_SPELL_OFF (never naming the spell to a player), SCROLL_SPELL_NOT_ON_LIST,
+	// WRONG_DICE_MODE, and in a running combat NOT_YOUR_TURN, ACTION_USED, BONUS_ACTION_USED, REACTION_USED and
+	// BONUS_ACTION_SPELL_LIMIT.
+	ReadScroll(context.Context, *connect.Request[v1.ReadScrollRequest]) (*connect.Response[v1.ReadScrollResponse], error)
 }
 
 // NewChargesServiceClient constructs a client for the meurpg.play.v1.ChargesService service. By
@@ -230,6 +256,12 @@ func NewChargesServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 			connect.WithSchema(chargesServiceMethods.ByName("ListConsumableTargets")),
 			connect.WithClientOptions(opts...),
 		),
+		readScroll: connect.NewClient[v1.ReadScrollRequest, v1.ReadScrollResponse](
+			httpClient,
+			baseURL+ChargesServiceReadScrollProcedure,
+			connect.WithSchema(chargesServiceMethods.ByName("ReadScroll")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -243,6 +275,7 @@ type chargesServiceClient struct {
 	dawn                  *connect.Client[v1.DawnRequest, v1.DawnResponse]
 	useConsumable         *connect.Client[v1.UseConsumableRequest, v1.UseConsumableResponse]
 	listConsumableTargets *connect.Client[v1.ListConsumableTargetsRequest, v1.ListConsumableTargetsResponse]
+	readScroll            *connect.Client[v1.ReadScrollRequest, v1.ReadScrollResponse]
 }
 
 // SpendCharges calls meurpg.play.v1.ChargesService.SpendCharges.
@@ -283,6 +316,11 @@ func (c *chargesServiceClient) UseConsumable(ctx context.Context, req *connect.R
 // ListConsumableTargets calls meurpg.play.v1.ChargesService.ListConsumableTargets.
 func (c *chargesServiceClient) ListConsumableTargets(ctx context.Context, req *connect.Request[v1.ListConsumableTargetsRequest]) (*connect.Response[v1.ListConsumableTargetsResponse], error) {
 	return c.listConsumableTargets.CallUnary(ctx, req)
+}
+
+// ReadScroll calls meurpg.play.v1.ChargesService.ReadScroll.
+func (c *chargesServiceClient) ReadScroll(ctx context.Context, req *connect.Request[v1.ReadScrollRequest]) (*connect.Response[v1.ReadScrollResponse], error) {
+	return c.readScroll.CallUnary(ctx, req)
 }
 
 // ChargesServiceHandler is an implementation of the meurpg.play.v1.ChargesService service.
@@ -388,6 +426,29 @@ type ChargesServiceHandler interface {
 	// is not there; `invalid_argument` for an entry that is no consumable; `failed_precondition` with EncounterBlocked
 	// ITEM_GONE for an entry that is no longer on the sheet and CharacterBlocked CHARACTER_DEAD for a dead user.
 	ListConsumableTargets(context.Context, *connect.Request[v1.ListConsumableTargetsRequest]) (*connect.Response[v1.ListConsumableTargetsResponse], error)
+	// ReadScroll reads the spell on a Spell Scroll of a character's sheet (SRD 5.1, "Spell Scroll"), the step before the cast. The
+	// spell must be on the scroll, of the scroll's level, on at the table, and on the list of a class the reader casts from. When its
+	// level is above the highest the reader casts (pact slots included) the reader first makes an ability check with their
+	// spellcasting ability against DC 10 plus the spell's level: d20 plus the modifier, rolled by the app (roll_in_app) or a physical
+	// d20's face typed (d20_face), by the table's rule (RN-18); a read that needs no check takes no roll and ignores one.
+	//
+	// A read that needs no check, or whose check passed, spends nothing: it is written as the session event `scroll_read`, the pass
+	// the cast of the scroll's spell uses. The pass lapses when the reader reads again (a scroll, whatever the result) and when the
+	// reader's turn ends or the combat ends. A failed check spends the scroll's unit and the casting time's economy (in a running
+	// combat: the action, the bonus action or the reaction; nothing out of one), with no effect: it is written as the session event
+	// `consumable_used` and, in a running combat, as the log line CONSUMABLE_USED with the outcome SCROLL_FAILED. Both events close
+	// the undo chain. A read is refused, with nothing spent, when the reader could not then cast the spell: in a running combat
+	// when it is not the reader's turn or the economy of the spell's casting time is already spent (the master has the last word on
+	// the economy, as for a cast). The master and the character's player may read; the roll is the master's own for an NPC.
+	//
+	// Errors: `permission_denied` for a character that is not the caller's (a player); `not_found` for a character that is not
+	// there; `invalid_argument` for an entry that is no Spell Scroll, an idempotency key that is not a UUID or one reused for another
+	// request, a d20 face outside 1 to 20, and a read that needs a check with no roll; `failed_precondition` with NO_OPEN_SESSION,
+	// CharacterBlocked CHARACTER_DEAD, and EncounterBlocked: ITEM_GONE for an entry that is no longer on the sheet, COMBATANT_DOWN
+	// for a reader at 0 hit points, SCROLL_NO_SPELL, SCROLL_SPELL_OFF (never naming the spell to a player), SCROLL_SPELL_NOT_ON_LIST,
+	// WRONG_DICE_MODE, and in a running combat NOT_YOUR_TURN, ACTION_USED, BONUS_ACTION_USED, REACTION_USED and
+	// BONUS_ACTION_SPELL_LIMIT.
+	ReadScroll(context.Context, *connect.Request[v1.ReadScrollRequest]) (*connect.Response[v1.ReadScrollResponse], error)
 }
 
 // NewChargesServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -445,6 +506,12 @@ func NewChargesServiceHandler(svc ChargesServiceHandler, opts ...connect.Handler
 		connect.WithSchema(chargesServiceMethods.ByName("ListConsumableTargets")),
 		connect.WithHandlerOptions(opts...),
 	)
+	chargesServiceReadScrollHandler := connect.NewUnaryHandler(
+		ChargesServiceReadScrollProcedure,
+		svc.ReadScroll,
+		connect.WithSchema(chargesServiceMethods.ByName("ReadScroll")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/meurpg.play.v1.ChargesService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case ChargesServiceSpendChargesProcedure:
@@ -463,6 +530,8 @@ func NewChargesServiceHandler(svc ChargesServiceHandler, opts ...connect.Handler
 			chargesServiceUseConsumableHandler.ServeHTTP(w, r)
 		case ChargesServiceListConsumableTargetsProcedure:
 			chargesServiceListConsumableTargetsHandler.ServeHTTP(w, r)
+		case ChargesServiceReadScrollProcedure:
+			chargesServiceReadScrollHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -502,4 +571,8 @@ func (UnimplementedChargesServiceHandler) UseConsumable(context.Context, *connec
 
 func (UnimplementedChargesServiceHandler) ListConsumableTargets(context.Context, *connect.Request[v1.ListConsumableTargetsRequest]) (*connect.Response[v1.ListConsumableTargetsResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("meurpg.play.v1.ChargesService.ListConsumableTargets is not implemented"))
+}
+
+func (UnimplementedChargesServiceHandler) ReadScroll(context.Context, *connect.Request[v1.ReadScrollRequest]) (*connect.Response[v1.ReadScrollResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("meurpg.play.v1.ChargesService.ReadScroll is not implemented"))
 }

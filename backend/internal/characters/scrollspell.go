@@ -25,7 +25,7 @@ import (
 
 // scrollSpellGonePT is what the character's player reads for a scroll whose spell the master switched off or archived after it
 // was set (RN-23), in place of the spell's key and name.
-const scrollSpellGonePT = "A magia deste pergaminho não está mais na mesa."
+const scrollSpellGonePT = rules.ScrollSpellGonePT
 
 // scrollSpellRequest is a SetScrollSpell request whose shape is checked.
 type scrollSpellRequest struct {
@@ -172,22 +172,19 @@ func fillScrollSpells(content *rules.Content, f *charactersv1.FullSheet, derived
 		if key == "" {
 			continue
 		}
-		scroll, ok := content.SpellScrollNumbers(it.GetKey())
-		if !ok {
+		sp := content.ScrollSpellOf(it.GetKey(), key)
+		if !sp.IsScroll {
 			it.SpellKey = "" // a spell stored on what is no scroll says nothing
 			continue
 		}
 		it.Consumable = sheetConsumableOf(content, it.GetKey())
-		det, exists := content.SpellDetails(key)
-		off := !exists || content.Hidden(key)
-		moved := exists && det.Spell.Level != scroll.Level
 		switch {
-		case !master && moved:
+		case !master && sp.Moved:
 			it.SpellKey = "" // the scroll reads as having no spell
-		case !master && off:
+		case !master && sp.Off:
 			it.SpellKey, it.SpellGonePt = "", scrollSpellGonePT
-		case master && (off || moved):
-			it.SpellNamePt, it.SpellOff, it.SpellLevelChanged = content.NamePT(key), off, moved
+		case master && (sp.Off || sp.Moved):
+			it.SpellNamePt, it.SpellOff, it.SpellLevelChanged = content.NamePT(key), sp.Off, sp.Moved
 		default:
 			it.SpellNamePt = content.NamePT(key)
 			fillScrollRead(it.Consumable, content, derived, key)

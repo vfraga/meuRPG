@@ -65,6 +65,9 @@ type ItemKeeper interface {
 	// ConsumableItem reads a consumable entry of the character's sheet (key and name) and writes and locks nothing. `not_found`
 	// for a character or an entry that is not there, `invalid_argument` for an item that is not a consumable.
 	ConsumableItem(ctx context.Context, tx pgx.Tx, campaignID, characterID, entryID string) (*charactersv1.SheetMagicItem, error)
+	// ScrollOf reads a Spell Scroll entry as its reader reads it (the spell it gives, what reading it comes to for the character) and
+	// locks the character. `not_found` for a character or an entry that is not there, `invalid_argument` for an entry that is no scroll.
+	ScrollOf(ctx context.Context, tx pgx.Tx, campaignID, characterID, entryID string) (link.ScrollEntry, error)
 	// RestoreDawn gives every magic item of the campaign's characters its dawn, with the dice rolled by roll, and
 	// returns the items that regained charges.
 	RestoreDawn(ctx context.Context, tx pgx.Tx, campaignID string, roll link.DawnRoll) ([]link.DawnItem, error)

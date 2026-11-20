@@ -88,6 +88,63 @@ func (ChargesBlockedReason) EnumDescriptor() ([]byte, []int) {
 	return file_meurpg_play_v1_charges_proto_rawDescGZIP(), []int{0}
 }
 
+// ScrollReadOutcome is what the reading of a Spell Scroll came to.
+type ScrollReadOutcome int32
+
+const (
+	ScrollReadOutcome_SCROLL_READ_OUTCOME_UNSPECIFIED ScrollReadOutcome = 0
+	// The spell's level is one the reader casts: no check, and the read stands until the cast, the reader's next read or the end of
+	// the reader's turn.
+	ScrollReadOutcome_SCROLL_READ_OUTCOME_NO_CHECK_NEEDED ScrollReadOutcome = 1
+	// The check passed: the read stands as above.
+	ScrollReadOutcome_SCROLL_READ_OUTCOME_PASSED ScrollReadOutcome = 2
+	// The check failed: the scroll came apart with no effect, and the casting time's economy was spent.
+	ScrollReadOutcome_SCROLL_READ_OUTCOME_FAILED ScrollReadOutcome = 3
+)
+
+// Enum value maps for ScrollReadOutcome.
+var (
+	ScrollReadOutcome_name = map[int32]string{
+		0: "SCROLL_READ_OUTCOME_UNSPECIFIED",
+		1: "SCROLL_READ_OUTCOME_NO_CHECK_NEEDED",
+		2: "SCROLL_READ_OUTCOME_PASSED",
+		3: "SCROLL_READ_OUTCOME_FAILED",
+	}
+	ScrollReadOutcome_value = map[string]int32{
+		"SCROLL_READ_OUTCOME_UNSPECIFIED":     0,
+		"SCROLL_READ_OUTCOME_NO_CHECK_NEEDED": 1,
+		"SCROLL_READ_OUTCOME_PASSED":          2,
+		"SCROLL_READ_OUTCOME_FAILED":          3,
+	}
+)
+
+func (x ScrollReadOutcome) Enum() *ScrollReadOutcome {
+	p := new(ScrollReadOutcome)
+	*p = x
+	return p
+}
+
+func (x ScrollReadOutcome) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (ScrollReadOutcome) Descriptor() protoreflect.EnumDescriptor {
+	return file_meurpg_play_v1_charges_proto_enumTypes[1].Descriptor()
+}
+
+func (ScrollReadOutcome) Type() protoreflect.EnumType {
+	return &file_meurpg_play_v1_charges_proto_enumTypes[1]
+}
+
+func (x ScrollReadOutcome) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use ScrollReadOutcome.Descriptor instead.
+func (ScrollReadOutcome) EnumDescriptor() ([]byte, []int) {
+	return file_meurpg_play_v1_charges_proto_rawDescGZIP(), []int{1}
+}
+
 // ConsumableTargetState is how a possible receiver stands, as every player at the table may see it.
 type ConsumableTargetState int32
 
@@ -125,11 +182,11 @@ func (x ConsumableTargetState) String() string {
 }
 
 func (ConsumableTargetState) Descriptor() protoreflect.EnumDescriptor {
-	return file_meurpg_play_v1_charges_proto_enumTypes[1].Descriptor()
+	return file_meurpg_play_v1_charges_proto_enumTypes[2].Descriptor()
 }
 
 func (ConsumableTargetState) Type() protoreflect.EnumType {
-	return &file_meurpg_play_v1_charges_proto_enumTypes[1]
+	return &file_meurpg_play_v1_charges_proto_enumTypes[2]
 }
 
 func (x ConsumableTargetState) Number() protoreflect.EnumNumber {
@@ -138,7 +195,7 @@ func (x ConsumableTargetState) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use ConsumableTargetState.Descriptor instead.
 func (ConsumableTargetState) EnumDescriptor() ([]byte, []int) {
-	return file_meurpg_play_v1_charges_proto_rawDescGZIP(), []int{1}
+	return file_meurpg_play_v1_charges_proto_rawDescGZIP(), []int{2}
 }
 
 // ChargesBlocked is the detail of ChargesService's `failed_precondition` for a rule of its own.
@@ -1274,6 +1331,300 @@ func (x *UseConsumableResponse) GetVitals() []*CharacterVitals {
 	return nil
 }
 
+type ReadScrollRequest struct {
+	state      protoimpl.MessageState `protogen:"open.v1"`
+	CampaignId string                 `protobuf:"bytes,1,opt,name=campaign_id,json=campaignId,proto3" json:"campaign_id,omitempty"`
+	// The character that reads the scroll: the one whose sheet holds it.
+	CharacterId string `protobuf:"bytes,2,opt,name=character_id,json=characterId,proto3" json:"character_id,omitempty"`
+	// The id of the scroll's entry on the sheet (SheetMagicItem.id).
+	EntryId        string `protobuf:"bytes,3,opt,name=entry_id,json=entryId,proto3" json:"entry_id,omitempty"`
+	IdempotencyKey string `protobuf:"bytes,4,opt,name=idempotency_key,json=idempotencyKey,proto3" json:"idempotency_key,omitempty"`
+	// How the check's d20 comes (RN-18), for a read that needs a check only: the app rolls it, or the player typed the face of a
+	// real die.
+	//
+	// Types that are valid to be assigned to Roll:
+	//
+	//	*ReadScrollRequest_RollInApp
+	//	*ReadScrollRequest_D20Face
+	Roll          isReadScrollRequest_Roll `protobuf_oneof:"roll"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ReadScrollRequest) Reset() {
+	*x = ReadScrollRequest{}
+	mi := &file_meurpg_play_v1_charges_proto_msgTypes[16]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ReadScrollRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ReadScrollRequest) ProtoMessage() {}
+
+func (x *ReadScrollRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_meurpg_play_v1_charges_proto_msgTypes[16]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ReadScrollRequest.ProtoReflect.Descriptor instead.
+func (*ReadScrollRequest) Descriptor() ([]byte, []int) {
+	return file_meurpg_play_v1_charges_proto_rawDescGZIP(), []int{16}
+}
+
+func (x *ReadScrollRequest) GetCampaignId() string {
+	if x != nil {
+		return x.CampaignId
+	}
+	return ""
+}
+
+func (x *ReadScrollRequest) GetCharacterId() string {
+	if x != nil {
+		return x.CharacterId
+	}
+	return ""
+}
+
+func (x *ReadScrollRequest) GetEntryId() string {
+	if x != nil {
+		return x.EntryId
+	}
+	return ""
+}
+
+func (x *ReadScrollRequest) GetIdempotencyKey() string {
+	if x != nil {
+		return x.IdempotencyKey
+	}
+	return ""
+}
+
+func (x *ReadScrollRequest) GetRoll() isReadScrollRequest_Roll {
+	if x != nil {
+		return x.Roll
+	}
+	return nil
+}
+
+func (x *ReadScrollRequest) GetRollInApp() bool {
+	if x != nil {
+		if x, ok := x.Roll.(*ReadScrollRequest_RollInApp); ok {
+			return x.RollInApp
+		}
+	}
+	return false
+}
+
+func (x *ReadScrollRequest) GetD20Face() int32 {
+	if x != nil {
+		if x, ok := x.Roll.(*ReadScrollRequest_D20Face); ok {
+			return x.D20Face
+		}
+	}
+	return 0
+}
+
+type isReadScrollRequest_Roll interface {
+	isReadScrollRequest_Roll()
+}
+
+type ReadScrollRequest_RollInApp struct {
+	RollInApp bool `protobuf:"varint,5,opt,name=roll_in_app,json=rollInApp,proto3,oneof"`
+}
+
+type ReadScrollRequest_D20Face struct {
+	D20Face int32 `protobuf:"varint,6,opt,name=d20_face,json=d20Face,proto3,oneof"`
+}
+
+func (*ReadScrollRequest_RollInApp) isReadScrollRequest_Roll() {}
+
+func (*ReadScrollRequest_D20Face) isReadScrollRequest_Roll() {}
+
+type ReadScrollResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Reading       *ScrollReading         `protobuf:"bytes,1,opt,name=reading,proto3" json:"reading,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ReadScrollResponse) Reset() {
+	*x = ReadScrollResponse{}
+	mi := &file_meurpg_play_v1_charges_proto_msgTypes[17]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ReadScrollResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ReadScrollResponse) ProtoMessage() {}
+
+func (x *ReadScrollResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_meurpg_play_v1_charges_proto_msgTypes[17]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ReadScrollResponse.ProtoReflect.Descriptor instead.
+func (*ReadScrollResponse) Descriptor() ([]byte, []int) {
+	return file_meurpg_play_v1_charges_proto_rawDescGZIP(), []int{17}
+}
+
+func (x *ReadScrollResponse) GetReading() *ScrollReading {
+	if x != nil {
+		return x.Reading
+	}
+	return nil
+}
+
+// ScrollReading is what a reading of a Spell Scroll came to, as the reader reads it (the character's player and the master).
+type ScrollReading struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The scroll's entry on the sheet (SheetMagicItem.id).
+	EntryId string            `protobuf:"bytes,1,opt,name=entry_id,json=entryId,proto3" json:"entry_id,omitempty"`
+	Outcome ScrollReadOutcome `protobuf:"varint,2,opt,name=outcome,proto3,enum=meurpg.play.v1.ScrollReadOutcome" json:"outcome,omitempty"`
+	// The spell the scroll holds: its catalog key and its name in Portuguese.
+	SpellKey    string `protobuf:"bytes,3,opt,name=spell_key,json=spellKey,proto3" json:"spell_key,omitempty"`
+	SpellNamePt string `protobuf:"bytes,4,opt,name=spell_name_pt,json=spellNamePt,proto3" json:"spell_name_pt,omitempty"`
+	// The scroll's level, 0 for a cantrip, and the level the spell is cast at (the spell's own).
+	ScrollLevel int32 `protobuf:"varint,5,opt,name=scroll_level,json=scrollLevel,proto3" json:"scroll_level,omitempty"`
+	CastLevel   int32 `protobuf:"varint,6,opt,name=cast_level,json=castLevel,proto3" json:"cast_level,omitempty"`
+	// The check, on PASSED and FAILED only: its DC (10 plus the spell's level), the d20 face, the spellcasting modifier and the
+	// total (d20 plus modifier). 0 when no check was made.
+	CheckDc  int32 `protobuf:"varint,7,opt,name=check_dc,json=checkDc,proto3" json:"check_dc,omitempty"`
+	D20      int32 `protobuf:"varint,8,opt,name=d20,proto3" json:"d20,omitempty"`
+	Modifier int32 `protobuf:"varint,9,opt,name=modifier,proto3" json:"modifier,omitempty"`
+	Total    int32 `protobuf:"varint,10,opt,name=total,proto3" json:"total,omitempty"`
+	// The unit left the sheet: true on FAILED, false on the other outcomes.
+	EntryGone     bool `protobuf:"varint,11,opt,name=entry_gone,json=entryGone,proto3" json:"entry_gone,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ScrollReading) Reset() {
+	*x = ScrollReading{}
+	mi := &file_meurpg_play_v1_charges_proto_msgTypes[18]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ScrollReading) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ScrollReading) ProtoMessage() {}
+
+func (x *ScrollReading) ProtoReflect() protoreflect.Message {
+	mi := &file_meurpg_play_v1_charges_proto_msgTypes[18]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ScrollReading.ProtoReflect.Descriptor instead.
+func (*ScrollReading) Descriptor() ([]byte, []int) {
+	return file_meurpg_play_v1_charges_proto_rawDescGZIP(), []int{18}
+}
+
+func (x *ScrollReading) GetEntryId() string {
+	if x != nil {
+		return x.EntryId
+	}
+	return ""
+}
+
+func (x *ScrollReading) GetOutcome() ScrollReadOutcome {
+	if x != nil {
+		return x.Outcome
+	}
+	return ScrollReadOutcome_SCROLL_READ_OUTCOME_UNSPECIFIED
+}
+
+func (x *ScrollReading) GetSpellKey() string {
+	if x != nil {
+		return x.SpellKey
+	}
+	return ""
+}
+
+func (x *ScrollReading) GetSpellNamePt() string {
+	if x != nil {
+		return x.SpellNamePt
+	}
+	return ""
+}
+
+func (x *ScrollReading) GetScrollLevel() int32 {
+	if x != nil {
+		return x.ScrollLevel
+	}
+	return 0
+}
+
+func (x *ScrollReading) GetCastLevel() int32 {
+	if x != nil {
+		return x.CastLevel
+	}
+	return 0
+}
+
+func (x *ScrollReading) GetCheckDc() int32 {
+	if x != nil {
+		return x.CheckDc
+	}
+	return 0
+}
+
+func (x *ScrollReading) GetD20() int32 {
+	if x != nil {
+		return x.D20
+	}
+	return 0
+}
+
+func (x *ScrollReading) GetModifier() int32 {
+	if x != nil {
+		return x.Modifier
+	}
+	return 0
+}
+
+func (x *ScrollReading) GetTotal() int32 {
+	if x != nil {
+		return x.Total
+	}
+	return 0
+}
+
+func (x *ScrollReading) GetEntryGone() bool {
+	if x != nil {
+		return x.EntryGone
+	}
+	return false
+}
+
 type ListConsumableTargetsRequest struct {
 	state      protoimpl.MessageState `protogen:"open.v1"`
 	CampaignId string                 `protobuf:"bytes,1,opt,name=campaign_id,json=campaignId,proto3" json:"campaign_id,omitempty"`
@@ -1287,7 +1638,7 @@ type ListConsumableTargetsRequest struct {
 
 func (x *ListConsumableTargetsRequest) Reset() {
 	*x = ListConsumableTargetsRequest{}
-	mi := &file_meurpg_play_v1_charges_proto_msgTypes[16]
+	mi := &file_meurpg_play_v1_charges_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1299,7 +1650,7 @@ func (x *ListConsumableTargetsRequest) String() string {
 func (*ListConsumableTargetsRequest) ProtoMessage() {}
 
 func (x *ListConsumableTargetsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_meurpg_play_v1_charges_proto_msgTypes[16]
+	mi := &file_meurpg_play_v1_charges_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1312,7 +1663,7 @@ func (x *ListConsumableTargetsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListConsumableTargetsRequest.ProtoReflect.Descriptor instead.
 func (*ListConsumableTargetsRequest) Descriptor() ([]byte, []int) {
-	return file_meurpg_play_v1_charges_proto_rawDescGZIP(), []int{16}
+	return file_meurpg_play_v1_charges_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *ListConsumableTargetsRequest) GetCampaignId() string {
@@ -1349,7 +1700,7 @@ type ListConsumableTargetsResponse struct {
 
 func (x *ListConsumableTargetsResponse) Reset() {
 	*x = ListConsumableTargetsResponse{}
-	mi := &file_meurpg_play_v1_charges_proto_msgTypes[17]
+	mi := &file_meurpg_play_v1_charges_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1361,7 +1712,7 @@ func (x *ListConsumableTargetsResponse) String() string {
 func (*ListConsumableTargetsResponse) ProtoMessage() {}
 
 func (x *ListConsumableTargetsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_meurpg_play_v1_charges_proto_msgTypes[17]
+	mi := &file_meurpg_play_v1_charges_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1374,7 +1725,7 @@ func (x *ListConsumableTargetsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListConsumableTargetsResponse.ProtoReflect.Descriptor instead.
 func (*ListConsumableTargetsResponse) Descriptor() ([]byte, []int) {
-	return file_meurpg_play_v1_charges_proto_rawDescGZIP(), []int{17}
+	return file_meurpg_play_v1_charges_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *ListConsumableTargetsResponse) GetTargets() []*ConsumableTarget {
@@ -1410,7 +1761,7 @@ type ConsumableTarget struct {
 
 func (x *ConsumableTarget) Reset() {
 	*x = ConsumableTarget{}
-	mi := &file_meurpg_play_v1_charges_proto_msgTypes[18]
+	mi := &file_meurpg_play_v1_charges_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1422,7 +1773,7 @@ func (x *ConsumableTarget) String() string {
 func (*ConsumableTarget) ProtoMessage() {}
 
 func (x *ConsumableTarget) ProtoReflect() protoreflect.Message {
-	mi := &file_meurpg_play_v1_charges_proto_msgTypes[18]
+	mi := &file_meurpg_play_v1_charges_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1435,7 +1786,7 @@ func (x *ConsumableTarget) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ConsumableTarget.ProtoReflect.Descriptor instead.
 func (*ConsumableTarget) Descriptor() ([]byte, []int) {
-	return file_meurpg_play_v1_charges_proto_rawDescGZIP(), []int{18}
+	return file_meurpg_play_v1_charges_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *ConsumableTarget) GetCharacterId() string {
@@ -1571,7 +1922,33 @@ const file_meurpg_play_v1_charges_proto_rawDesc = "" +
 	"\x0fdamage_type_key\x18\n" +
 	" \x01(\tR\rdamageTypeKey\x12.\n" +
 	"\x13target_character_id\x18\v \x01(\tR\x11targetCharacterId\x127\n" +
-	"\x06vitals\x18\f \x03(\v2\x1f.meurpg.play.v1.CharacterVitalsR\x06vitals\"}\n" +
+	"\x06vitals\x18\f \x03(\v2\x1f.meurpg.play.v1.CharacterVitalsR\x06vitals\"\xe2\x01\n" +
+	"\x11ReadScrollRequest\x12\x1f\n" +
+	"\vcampaign_id\x18\x01 \x01(\tR\n" +
+	"campaignId\x12!\n" +
+	"\fcharacter_id\x18\x02 \x01(\tR\vcharacterId\x12\x19\n" +
+	"\bentry_id\x18\x03 \x01(\tR\aentryId\x12'\n" +
+	"\x0fidempotency_key\x18\x04 \x01(\tR\x0eidempotencyKey\x12 \n" +
+	"\vroll_in_app\x18\x05 \x01(\bH\x00R\trollInApp\x12\x1b\n" +
+	"\bd20_face\x18\x06 \x01(\x05H\x00R\ad20FaceB\x06\n" +
+	"\x04roll\"M\n" +
+	"\x12ReadScrollResponse\x127\n" +
+	"\areading\x18\x01 \x01(\v2\x1d.meurpg.play.v1.ScrollReadingR\areading\"\xe8\x02\n" +
+	"\rScrollReading\x12\x19\n" +
+	"\bentry_id\x18\x01 \x01(\tR\aentryId\x12;\n" +
+	"\aoutcome\x18\x02 \x01(\x0e2!.meurpg.play.v1.ScrollReadOutcomeR\aoutcome\x12\x1b\n" +
+	"\tspell_key\x18\x03 \x01(\tR\bspellKey\x12\"\n" +
+	"\rspell_name_pt\x18\x04 \x01(\tR\vspellNamePt\x12!\n" +
+	"\fscroll_level\x18\x05 \x01(\x05R\vscrollLevel\x12\x1d\n" +
+	"\n" +
+	"cast_level\x18\x06 \x01(\x05R\tcastLevel\x12\x19\n" +
+	"\bcheck_dc\x18\a \x01(\x05R\acheckDc\x12\x10\n" +
+	"\x03d20\x18\b \x01(\x05R\x03d20\x12\x1a\n" +
+	"\bmodifier\x18\t \x01(\x05R\bmodifier\x12\x14\n" +
+	"\x05total\x18\n" +
+	" \x01(\x05R\x05total\x12\x1d\n" +
+	"\n" +
+	"entry_gone\x18\v \x01(\bR\tentryGone\"}\n" +
 	"\x1cListConsumableTargetsRequest\x12\x1f\n" +
 	"\vcampaign_id\x18\x01 \x01(\tR\n" +
 	"campaignId\x12!\n" +
@@ -1592,11 +1969,16 @@ const file_meurpg_play_v1_charges_proto_rawDesc = "" +
 	"\"CHARGES_BLOCKED_REASON_UNSPECIFIED\x10\x00\x12-\n" +
 	")CHARGES_BLOCKED_REASON_REGAIN_FACE_NEEDED\x10\x01\x12)\n" +
 	"%CHARGES_BLOCKED_REASON_COMBAT_RUNNING\x10\x02\x12,\n" +
-	"(CHARGES_BLOCKED_REASON_ALREADY_RECOVERED\x10\x03*\x82\x01\n" +
+	"(CHARGES_BLOCKED_REASON_ALREADY_RECOVERED\x10\x03*\xa1\x01\n" +
+	"\x11ScrollReadOutcome\x12#\n" +
+	"\x1fSCROLL_READ_OUTCOME_UNSPECIFIED\x10\x00\x12'\n" +
+	"#SCROLL_READ_OUTCOME_NO_CHECK_NEEDED\x10\x01\x12\x1e\n" +
+	"\x1aSCROLL_READ_OUTCOME_PASSED\x10\x02\x12\x1e\n" +
+	"\x1aSCROLL_READ_OUTCOME_FAILED\x10\x03*\x82\x01\n" +
 	"\x15ConsumableTargetState\x12'\n" +
 	"#CONSUMABLE_TARGET_STATE_UNSPECIFIED\x10\x00\x12\x1e\n" +
 	"\x1aCONSUMABLE_TARGET_STATE_OK\x10\x01\x12 \n" +
-	"\x1cCONSUMABLE_TARGET_STATE_DOWN\x10\x022\x80\x06\n" +
+	"\x1cCONSUMABLE_TARGET_STATE_DOWN\x10\x022\xd5\x06\n" +
 	"\x0eChargesService\x12Y\n" +
 	"\fSpendCharges\x12#.meurpg.play.v1.SpendChargesRequest\x1a$.meurpg.play.v1.SpendChargesResponse\x12_\n" +
 	"\x0eRollLastCharge\x12%.meurpg.play.v1.RollLastChargeRequest\x1a&.meurpg.play.v1.RollLastChargeResponse\x12S\n" +
@@ -1606,7 +1988,9 @@ const file_meurpg_play_v1_charges_proto_rawDesc = "" +
 	"\x11RecoverAmmunition\x12(.meurpg.play.v1.RecoverAmmunitionRequest\x1a).meurpg.play.v1.RecoverAmmunitionResponse\x12A\n" +
 	"\x04Dawn\x12\x1b.meurpg.play.v1.DawnRequest\x1a\x1c.meurpg.play.v1.DawnResponse\x12\\\n" +
 	"\rUseConsumable\x12$.meurpg.play.v1.UseConsumableRequest\x1a%.meurpg.play.v1.UseConsumableResponse\x12t\n" +
-	"\x15ListConsumableTargets\x12,.meurpg.play.v1.ListConsumableTargetsRequest\x1a-.meurpg.play.v1.ListConsumableTargetsResponseB\xba\x01\n" +
+	"\x15ListConsumableTargets\x12,.meurpg.play.v1.ListConsumableTargetsRequest\x1a-.meurpg.play.v1.ListConsumableTargetsResponse\x12S\n" +
+	"\n" +
+	"ReadScroll\x12!.meurpg.play.v1.ReadScrollRequest\x1a\".meurpg.play.v1.ReadScrollResponseB\xba\x01\n" +
 	"\x12com.meurpg.play.v1B\fChargesProtoP\x01Z<github.com/PuraFome/meuRPG/backend/gen/meurpg/play/v1;playv1\xa2\x02\x03MPX\xaa\x02\x0eMeurpg.Play.V1\xca\x02\x0eMeurpg\\Play\\V1\xe2\x02\x1aMeurpg\\Play\\V1\\GPBMetadata\xea\x02\x10Meurpg::Play::V1b\x06proto3"
 
 var (
@@ -1621,72 +2005,80 @@ func file_meurpg_play_v1_charges_proto_rawDescGZIP() []byte {
 	return file_meurpg_play_v1_charges_proto_rawDescData
 }
 
-var file_meurpg_play_v1_charges_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_meurpg_play_v1_charges_proto_msgTypes = make([]protoimpl.MessageInfo, 19)
+var file_meurpg_play_v1_charges_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
+var file_meurpg_play_v1_charges_proto_msgTypes = make([]protoimpl.MessageInfo, 22)
 var file_meurpg_play_v1_charges_proto_goTypes = []any{
 	(ChargesBlockedReason)(0),             // 0: meurpg.play.v1.ChargesBlockedReason
-	(ConsumableTargetState)(0),            // 1: meurpg.play.v1.ConsumableTargetState
-	(*ChargesBlocked)(nil),                // 2: meurpg.play.v1.ChargesBlocked
-	(*SpendChargesRequest)(nil),           // 3: meurpg.play.v1.SpendChargesRequest
-	(*SpendChargesResponse)(nil),          // 4: meurpg.play.v1.SpendChargesResponse
-	(*RollLastChargeRequest)(nil),         // 5: meurpg.play.v1.RollLastChargeRequest
-	(*RollLastChargeResponse)(nil),        // 6: meurpg.play.v1.RollLastChargeResponse
-	(*SetChargesRequest)(nil),             // 7: meurpg.play.v1.SetChargesRequest
-	(*SetChargesResponse)(nil),            // 8: meurpg.play.v1.SetChargesResponse
-	(*SetAmmunitionRequest)(nil),          // 9: meurpg.play.v1.SetAmmunitionRequest
-	(*SetAmmunitionResponse)(nil),         // 10: meurpg.play.v1.SetAmmunitionResponse
-	(*RecoverAmmunitionRequest)(nil),      // 11: meurpg.play.v1.RecoverAmmunitionRequest
-	(*RecoverAmmunitionResponse)(nil),     // 12: meurpg.play.v1.RecoverAmmunitionResponse
-	(*DawnRequest)(nil),                   // 13: meurpg.play.v1.DawnRequest
-	(*DawnResponse)(nil),                  // 14: meurpg.play.v1.DawnResponse
-	(*DawnRestored)(nil),                  // 15: meurpg.play.v1.DawnRestored
-	(*UseConsumableRequest)(nil),          // 16: meurpg.play.v1.UseConsumableRequest
-	(*UseConsumableResponse)(nil),         // 17: meurpg.play.v1.UseConsumableResponse
-	(*ListConsumableTargetsRequest)(nil),  // 18: meurpg.play.v1.ListConsumableTargetsRequest
-	(*ListConsumableTargetsResponse)(nil), // 19: meurpg.play.v1.ListConsumableTargetsResponse
-	(*ConsumableTarget)(nil),              // 20: meurpg.play.v1.ConsumableTarget
-	(*v1.SheetMagicItem)(nil),             // 21: meurpg.characters.v1.SheetMagicItem
-	(v1.ItemLoss)(0),                      // 22: meurpg.characters.v1.ItemLoss
-	(*v1.SheetAmmunition)(nil),            // 23: meurpg.characters.v1.SheetAmmunition
-	(ConsumableUseOutcome)(0),             // 24: meurpg.play.v1.ConsumableUseOutcome
-	(*CharacterVitals)(nil),               // 25: meurpg.play.v1.CharacterVitals
+	(ScrollReadOutcome)(0),                // 1: meurpg.play.v1.ScrollReadOutcome
+	(ConsumableTargetState)(0),            // 2: meurpg.play.v1.ConsumableTargetState
+	(*ChargesBlocked)(nil),                // 3: meurpg.play.v1.ChargesBlocked
+	(*SpendChargesRequest)(nil),           // 4: meurpg.play.v1.SpendChargesRequest
+	(*SpendChargesResponse)(nil),          // 5: meurpg.play.v1.SpendChargesResponse
+	(*RollLastChargeRequest)(nil),         // 6: meurpg.play.v1.RollLastChargeRequest
+	(*RollLastChargeResponse)(nil),        // 7: meurpg.play.v1.RollLastChargeResponse
+	(*SetChargesRequest)(nil),             // 8: meurpg.play.v1.SetChargesRequest
+	(*SetChargesResponse)(nil),            // 9: meurpg.play.v1.SetChargesResponse
+	(*SetAmmunitionRequest)(nil),          // 10: meurpg.play.v1.SetAmmunitionRequest
+	(*SetAmmunitionResponse)(nil),         // 11: meurpg.play.v1.SetAmmunitionResponse
+	(*RecoverAmmunitionRequest)(nil),      // 12: meurpg.play.v1.RecoverAmmunitionRequest
+	(*RecoverAmmunitionResponse)(nil),     // 13: meurpg.play.v1.RecoverAmmunitionResponse
+	(*DawnRequest)(nil),                   // 14: meurpg.play.v1.DawnRequest
+	(*DawnResponse)(nil),                  // 15: meurpg.play.v1.DawnResponse
+	(*DawnRestored)(nil),                  // 16: meurpg.play.v1.DawnRestored
+	(*UseConsumableRequest)(nil),          // 17: meurpg.play.v1.UseConsumableRequest
+	(*UseConsumableResponse)(nil),         // 18: meurpg.play.v1.UseConsumableResponse
+	(*ReadScrollRequest)(nil),             // 19: meurpg.play.v1.ReadScrollRequest
+	(*ReadScrollResponse)(nil),            // 20: meurpg.play.v1.ReadScrollResponse
+	(*ScrollReading)(nil),                 // 21: meurpg.play.v1.ScrollReading
+	(*ListConsumableTargetsRequest)(nil),  // 22: meurpg.play.v1.ListConsumableTargetsRequest
+	(*ListConsumableTargetsResponse)(nil), // 23: meurpg.play.v1.ListConsumableTargetsResponse
+	(*ConsumableTarget)(nil),              // 24: meurpg.play.v1.ConsumableTarget
+	(*v1.SheetMagicItem)(nil),             // 25: meurpg.characters.v1.SheetMagicItem
+	(v1.ItemLoss)(0),                      // 26: meurpg.characters.v1.ItemLoss
+	(*v1.SheetAmmunition)(nil),            // 27: meurpg.characters.v1.SheetAmmunition
+	(ConsumableUseOutcome)(0),             // 28: meurpg.play.v1.ConsumableUseOutcome
+	(*CharacterVitals)(nil),               // 29: meurpg.play.v1.CharacterVitals
 }
 var file_meurpg_play_v1_charges_proto_depIdxs = []int32{
 	0,  // 0: meurpg.play.v1.ChargesBlocked.reason:type_name -> meurpg.play.v1.ChargesBlockedReason
-	21, // 1: meurpg.play.v1.SpendChargesResponse.item:type_name -> meurpg.characters.v1.SheetMagicItem
-	21, // 2: meurpg.play.v1.RollLastChargeResponse.item:type_name -> meurpg.characters.v1.SheetMagicItem
-	22, // 3: meurpg.play.v1.RollLastChargeResponse.lost:type_name -> meurpg.characters.v1.ItemLoss
-	22, // 4: meurpg.play.v1.SetChargesRequest.lost:type_name -> meurpg.characters.v1.ItemLoss
-	21, // 5: meurpg.play.v1.SetChargesResponse.item:type_name -> meurpg.characters.v1.SheetMagicItem
-	23, // 6: meurpg.play.v1.SetAmmunitionResponse.ammunition:type_name -> meurpg.characters.v1.SheetAmmunition
-	23, // 7: meurpg.play.v1.RecoverAmmunitionResponse.ammunition:type_name -> meurpg.characters.v1.SheetAmmunition
-	15, // 8: meurpg.play.v1.DawnResponse.restored:type_name -> meurpg.play.v1.DawnRestored
-	21, // 9: meurpg.play.v1.DawnRestored.item:type_name -> meurpg.characters.v1.SheetMagicItem
-	24, // 10: meurpg.play.v1.UseConsumableResponse.outcome:type_name -> meurpg.play.v1.ConsumableUseOutcome
-	25, // 11: meurpg.play.v1.UseConsumableResponse.vitals:type_name -> meurpg.play.v1.CharacterVitals
-	20, // 12: meurpg.play.v1.ListConsumableTargetsResponse.targets:type_name -> meurpg.play.v1.ConsumableTarget
-	1,  // 13: meurpg.play.v1.ConsumableTarget.state:type_name -> meurpg.play.v1.ConsumableTargetState
-	3,  // 14: meurpg.play.v1.ChargesService.SpendCharges:input_type -> meurpg.play.v1.SpendChargesRequest
-	5,  // 15: meurpg.play.v1.ChargesService.RollLastCharge:input_type -> meurpg.play.v1.RollLastChargeRequest
-	7,  // 16: meurpg.play.v1.ChargesService.SetCharges:input_type -> meurpg.play.v1.SetChargesRequest
-	9,  // 17: meurpg.play.v1.ChargesService.SetAmmunition:input_type -> meurpg.play.v1.SetAmmunitionRequest
-	11, // 18: meurpg.play.v1.ChargesService.RecoverAmmunition:input_type -> meurpg.play.v1.RecoverAmmunitionRequest
-	13, // 19: meurpg.play.v1.ChargesService.Dawn:input_type -> meurpg.play.v1.DawnRequest
-	16, // 20: meurpg.play.v1.ChargesService.UseConsumable:input_type -> meurpg.play.v1.UseConsumableRequest
-	18, // 21: meurpg.play.v1.ChargesService.ListConsumableTargets:input_type -> meurpg.play.v1.ListConsumableTargetsRequest
-	4,  // 22: meurpg.play.v1.ChargesService.SpendCharges:output_type -> meurpg.play.v1.SpendChargesResponse
-	6,  // 23: meurpg.play.v1.ChargesService.RollLastCharge:output_type -> meurpg.play.v1.RollLastChargeResponse
-	8,  // 24: meurpg.play.v1.ChargesService.SetCharges:output_type -> meurpg.play.v1.SetChargesResponse
-	10, // 25: meurpg.play.v1.ChargesService.SetAmmunition:output_type -> meurpg.play.v1.SetAmmunitionResponse
-	12, // 26: meurpg.play.v1.ChargesService.RecoverAmmunition:output_type -> meurpg.play.v1.RecoverAmmunitionResponse
-	14, // 27: meurpg.play.v1.ChargesService.Dawn:output_type -> meurpg.play.v1.DawnResponse
-	17, // 28: meurpg.play.v1.ChargesService.UseConsumable:output_type -> meurpg.play.v1.UseConsumableResponse
-	19, // 29: meurpg.play.v1.ChargesService.ListConsumableTargets:output_type -> meurpg.play.v1.ListConsumableTargetsResponse
-	22, // [22:30] is the sub-list for method output_type
-	14, // [14:22] is the sub-list for method input_type
-	14, // [14:14] is the sub-list for extension type_name
-	14, // [14:14] is the sub-list for extension extendee
-	0,  // [0:14] is the sub-list for field type_name
+	25, // 1: meurpg.play.v1.SpendChargesResponse.item:type_name -> meurpg.characters.v1.SheetMagicItem
+	25, // 2: meurpg.play.v1.RollLastChargeResponse.item:type_name -> meurpg.characters.v1.SheetMagicItem
+	26, // 3: meurpg.play.v1.RollLastChargeResponse.lost:type_name -> meurpg.characters.v1.ItemLoss
+	26, // 4: meurpg.play.v1.SetChargesRequest.lost:type_name -> meurpg.characters.v1.ItemLoss
+	25, // 5: meurpg.play.v1.SetChargesResponse.item:type_name -> meurpg.characters.v1.SheetMagicItem
+	27, // 6: meurpg.play.v1.SetAmmunitionResponse.ammunition:type_name -> meurpg.characters.v1.SheetAmmunition
+	27, // 7: meurpg.play.v1.RecoverAmmunitionResponse.ammunition:type_name -> meurpg.characters.v1.SheetAmmunition
+	16, // 8: meurpg.play.v1.DawnResponse.restored:type_name -> meurpg.play.v1.DawnRestored
+	25, // 9: meurpg.play.v1.DawnRestored.item:type_name -> meurpg.characters.v1.SheetMagicItem
+	28, // 10: meurpg.play.v1.UseConsumableResponse.outcome:type_name -> meurpg.play.v1.ConsumableUseOutcome
+	29, // 11: meurpg.play.v1.UseConsumableResponse.vitals:type_name -> meurpg.play.v1.CharacterVitals
+	21, // 12: meurpg.play.v1.ReadScrollResponse.reading:type_name -> meurpg.play.v1.ScrollReading
+	1,  // 13: meurpg.play.v1.ScrollReading.outcome:type_name -> meurpg.play.v1.ScrollReadOutcome
+	24, // 14: meurpg.play.v1.ListConsumableTargetsResponse.targets:type_name -> meurpg.play.v1.ConsumableTarget
+	2,  // 15: meurpg.play.v1.ConsumableTarget.state:type_name -> meurpg.play.v1.ConsumableTargetState
+	4,  // 16: meurpg.play.v1.ChargesService.SpendCharges:input_type -> meurpg.play.v1.SpendChargesRequest
+	6,  // 17: meurpg.play.v1.ChargesService.RollLastCharge:input_type -> meurpg.play.v1.RollLastChargeRequest
+	8,  // 18: meurpg.play.v1.ChargesService.SetCharges:input_type -> meurpg.play.v1.SetChargesRequest
+	10, // 19: meurpg.play.v1.ChargesService.SetAmmunition:input_type -> meurpg.play.v1.SetAmmunitionRequest
+	12, // 20: meurpg.play.v1.ChargesService.RecoverAmmunition:input_type -> meurpg.play.v1.RecoverAmmunitionRequest
+	14, // 21: meurpg.play.v1.ChargesService.Dawn:input_type -> meurpg.play.v1.DawnRequest
+	17, // 22: meurpg.play.v1.ChargesService.UseConsumable:input_type -> meurpg.play.v1.UseConsumableRequest
+	22, // 23: meurpg.play.v1.ChargesService.ListConsumableTargets:input_type -> meurpg.play.v1.ListConsumableTargetsRequest
+	19, // 24: meurpg.play.v1.ChargesService.ReadScroll:input_type -> meurpg.play.v1.ReadScrollRequest
+	5,  // 25: meurpg.play.v1.ChargesService.SpendCharges:output_type -> meurpg.play.v1.SpendChargesResponse
+	7,  // 26: meurpg.play.v1.ChargesService.RollLastCharge:output_type -> meurpg.play.v1.RollLastChargeResponse
+	9,  // 27: meurpg.play.v1.ChargesService.SetCharges:output_type -> meurpg.play.v1.SetChargesResponse
+	11, // 28: meurpg.play.v1.ChargesService.SetAmmunition:output_type -> meurpg.play.v1.SetAmmunitionResponse
+	13, // 29: meurpg.play.v1.ChargesService.RecoverAmmunition:output_type -> meurpg.play.v1.RecoverAmmunitionResponse
+	15, // 30: meurpg.play.v1.ChargesService.Dawn:output_type -> meurpg.play.v1.DawnResponse
+	18, // 31: meurpg.play.v1.ChargesService.UseConsumable:output_type -> meurpg.play.v1.UseConsumableResponse
+	23, // 32: meurpg.play.v1.ChargesService.ListConsumableTargets:output_type -> meurpg.play.v1.ListConsumableTargetsResponse
+	20, // 33: meurpg.play.v1.ChargesService.ReadScroll:output_type -> meurpg.play.v1.ReadScrollResponse
+	25, // [25:34] is the sub-list for method output_type
+	16, // [16:25] is the sub-list for method input_type
+	16, // [16:16] is the sub-list for extension type_name
+	16, // [16:16] is the sub-list for extension extendee
+	0,  // [0:16] is the sub-list for field type_name
 }
 
 func init() { file_meurpg_play_v1_charges_proto_init() }
@@ -1700,13 +2092,17 @@ func file_meurpg_play_v1_charges_proto_init() {
 		(*RollLastChargeRequest_RollInApp)(nil),
 		(*RollLastChargeRequest_D20Face)(nil),
 	}
+	file_meurpg_play_v1_charges_proto_msgTypes[16].OneofWrappers = []any{
+		(*ReadScrollRequest_RollInApp)(nil),
+		(*ReadScrollRequest_D20Face)(nil),
+	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_meurpg_play_v1_charges_proto_rawDesc), len(file_meurpg_play_v1_charges_proto_rawDesc)),
-			NumEnums:      2,
-			NumMessages:   19,
+			NumEnums:      3,
+			NumMessages:   22,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

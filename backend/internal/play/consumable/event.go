@@ -38,6 +38,15 @@ type Used struct {
 	Physical bool    `json:"use_physical,omitempty"`
 	// DamageType is the key of the damage a resistance potion gave resistance to.
 	DamageType string `json:"use_damage_type,omitempty"`
+	// The reading of a Spell Scroll (scroll.go): the character that read it, the spell and its level, whether a check was made
+	// (Checked) and its DC, d20, modifier and total (the total is Total, as for the healing dice).
+	Reader   string `json:"scroll_reader,omitempty"`
+	Spell    string `json:"scroll_spell,omitempty"`
+	Level    int32  `json:"scroll_level,omitempty"`
+	Checked  bool   `json:"scroll_checked,omitempty"`
+	CheckDC  int32  `json:"scroll_dc,omitempty"`
+	D20      int32  `json:"scroll_d20,omitempty"`
+	Modifier int32  `json:"scroll_modifier,omitempty"`
 }
 
 // Response is what the use answers, from the event the call wrote or found: the receiver (the user, when the event names
@@ -58,6 +67,10 @@ func OutcomeOf(outcome string) playv1.ConsumableUseOutcome {
 		return playv1.ConsumableUseOutcome_CONSUMABLE_USE_OUTCOME_HEALED
 	case OutcomeResistance:
 		return playv1.ConsumableUseOutcome_CONSUMABLE_USE_OUTCOME_RESISTANCE
+	case OutcomeScrollRead:
+		return playv1.ConsumableUseOutcome_CONSUMABLE_USE_OUTCOME_SCROLL_READ
+	case OutcomeScrollFailed:
+		return playv1.ConsumableUseOutcome_CONSUMABLE_USE_OUTCOME_SCROLL_FAILED
 	}
 	return playv1.ConsumableUseOutcome_CONSUMABLE_USE_OUTCOME_TEXT_ONLY
 }

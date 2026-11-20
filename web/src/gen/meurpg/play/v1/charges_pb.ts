@@ -25,7 +25,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file meurpg/play/v1/charges.proto.
  */
 export const file_meurpg_play_v1_charges: GenFile = /*@__PURE__*/
-  fileDesc("ChxtZXVycGcvcGxheS92MS9jaGFyZ2VzLnByb3RvEg5tZXVycGcucGxheS52MSJWCg5DaGFyZ2VzQmxvY2tlZBI0CgZyZWFzb24YASABKA4yJC5tZXVycGcucGxheS52MS5DaGFyZ2VzQmxvY2tlZFJlYXNvbhIOCgZuZWVkZWQYAiABKAUiewoTU3BlbmRDaGFyZ2VzUmVxdWVzdBITCgtjYW1wYWlnbl9pZBgBIAEoCRIUCgxjaGFyYWN0ZXJfaWQYAiABKAkSEAoIZW50cnlfaWQYAyABKAkSDgoGYW1vdW50GAQgASgFEhcKD2lkZW1wb3RlbmN5X2tleRgFIAEoCSJKChRTcGVuZENoYXJnZXNSZXNwb25zZRIyCgRpdGVtGAEgASgLMiQubWV1cnBnLmNoYXJhY3RlcnMudjEuU2hlZXRNYWdpY0l0ZW0iuwEKFVJvbGxMYXN0Q2hhcmdlUmVxdWVzdBITCgtjYW1wYWlnbl9pZBgBIAEoCRIUCgxjaGFyYWN0ZXJfaWQYAiABKAkSEAoIZW50cnlfaWQYAyABKAkSFwoPaWRlbXBvdGVuY3lfa2V5GAQgASgJEhUKC3JvbGxfaW5fYXBwGAUgASgISAASEgoIZDIwX2ZhY2UYBiABKAVIABIZChF0eXBlZF9yZWdhaW5fZmFjZRgHIAEoBUIGCgRyb2xsIq4BChZSb2xsTGFzdENoYXJnZVJlc3BvbnNlEjIKBGl0ZW0YASABKAsyJC5tZXVycGcuY2hhcmFjdGVycy52MS5TaGVldE1hZ2ljSXRlbRILCgNkMjAYAiABKAUSEAoIcmVnYWluZWQYAyABKAUSLAoEbG9zdBgEIAEoDjIeLm1ldXJwZy5jaGFyYWN0ZXJzLnYxLkl0ZW1Mb3NzEhMKC3JlZ2Fpbl9mYWNlGAUgASgFIq0BChFTZXRDaGFyZ2VzUmVxdWVzdBITCgtjYW1wYWlnbl9pZBgBIAEoCRIUCgxjaGFyYWN0ZXJfaWQYAiABKAkSEAoIZW50cnlfaWQYAyABKAkSFAoMY2hhcmdlc19sZWZ0GAQgASgFEiwKBGxvc3QYBSABKA4yHi5tZXVycGcuY2hhcmFjdGVycy52MS5JdGVtTG9zcxIXCg9pZGVtcG90ZW5jeV9rZXkYBiABKAkiSAoSU2V0Q2hhcmdlc1Jlc3BvbnNlEjIKBGl0ZW0YASABKAsyJC5tZXVycGcuY2hhcmFjdGVycy52MS5TaGVldE1hZ2ljSXRlbSJlChRTZXRBbW11bml0aW9uUmVxdWVzdBITCgtjYW1wYWlnbl9pZBgBIAEoCRIUCgxjaGFyYWN0ZXJfaWQYAiABKAkSEAoIYW1tb19rZXkYAyABKAkSEAoIcXVhbnRpdHkYBCABKAUiUgoVU2V0QW1tdW5pdGlvblJlc3BvbnNlEjkKCmFtbXVuaXRpb24YASABKAsyJS5tZXVycGcuY2hhcmFjdGVycy52MS5TaGVldEFtbXVuaXRpb24iXgoYUmVjb3ZlckFtbXVuaXRpb25SZXF1ZXN0EhMKC2NhbXBhaWduX2lkGAEgASgJEhQKDGNoYXJhY3Rlcl9pZBgCIAEoCRIXCg9pZGVtcG90ZW5jeV9rZXkYAyABKAkiVgoZUmVjb3ZlckFtbXVuaXRpb25SZXNwb25zZRI5CgphbW11bml0aW9uGAEgAygLMiUubWV1cnBnLmNoYXJhY3RlcnMudjEuU2hlZXRBbW11bml0aW9uIjsKC0Rhd25SZXF1ZXN0EhMKC2NhbXBhaWduX2lkGAEgASgJEhcKD2lkZW1wb3RlbmN5X2tleRgCIAEoCSI+CgxEYXduUmVzcG9uc2USLgoIcmVzdG9yZWQYASADKAsyHC5tZXVycGcucGxheS52MS5EYXduUmVzdG9yZWQiagoMRGF3blJlc3RvcmVkEhQKDGNoYXJhY3Rlcl9pZBgBIAEoCRIyCgRpdGVtGAIgASgLMiQubWV1cnBnLmNoYXJhY3RlcnMudjEuU2hlZXRNYWdpY0l0ZW0SEAoIcmVnYWluZWQYAyABKAUiswEKFFVzZUNvbnN1bWFibGVSZXF1ZXN0EhMKC2NhbXBhaWduX2lkGAEgASgJEhQKDGNoYXJhY3Rlcl9pZBgCIAEoCRIQCghlbnRyeV9pZBgDIAEoCRIbChN0YXJnZXRfY2hhcmFjdGVyX2lkGAQgASgJEhcKD2lkZW1wb3RlbmN5X2tleRgFIAEoCRITCgtyb2xsX2luX2FwcBgGIAEoCBITCgt0eXBlZF9mYWNlcxgHIAMoBSLDAgoVVXNlQ29uc3VtYWJsZVJlc3BvbnNlEhAKCGVudHJ5X2lkGAEgASgJEhAKCGl0ZW1fa2V5GAIgASgJEhQKDGl0ZW1fbmFtZV9wdBgDIAEoCRI1CgdvdXRjb21lGAQgASgOMiQubWV1cnBnLnBsYXkudjEuQ29uc3VtYWJsZVVzZU91dGNvbWUSDAoEdGV4dBgFIAMoCRIRCglkaWNlX3RleHQYBiABKAkSDQoFZmFjZXMYByADKAUSEgoKcm9sbF90b3RhbBgIIAEoBRIOCgZoZWFsZWQYCSABKAUSFwoPZGFtYWdlX3R5cGVfa2V5GAogASgJEhsKE3RhcmdldF9jaGFyYWN0ZXJfaWQYCyABKAkSLwoGdml0YWxzGAwgAygLMh8ubWV1cnBnLnBsYXkudjEuQ2hhcmFjdGVyVml0YWxzIlsKHExpc3RDb25zdW1hYmxlVGFyZ2V0c1JlcXVlc3QSEwoLY2FtcGFpZ25faWQYASABKAkSFAoMY2hhcmFjdGVyX2lkGAIgASgJEhAKCGVudHJ5X2lkGAMgASgJImUKHUxpc3RDb25zdW1hYmxlVGFyZ2V0c1Jlc3BvbnNlEjEKB3RhcmdldHMYASADKAsyIC5tZXVycGcucGxheS52MS5Db25zdW1hYmxlVGFyZ2V0EhEKCWluX2NvbWJhdBgCIAEoCCKWAQoQQ29uc3VtYWJsZVRhcmdldBIUCgxjaGFyYWN0ZXJfaWQYASABKAkSDAoEbmFtZRgCIAEoCRITCgtkaXN0YW5jZV9mdBgDIAEoBRI0CgVzdGF0ZRgEIAEoDjIlLm1ldXJwZy5wbGF5LnYxLkNvbnN1bWFibGVUYXJnZXRTdGF0ZRITCgttYXlfcmVjZWl2ZRgFIAEoCCrGAQoUQ2hhcmdlc0Jsb2NrZWRSZWFzb24SJgoiQ0hBUkdFU19CTE9DS0VEX1JFQVNPTl9VTlNQRUNJRklFRBAAEi0KKUNIQVJHRVNfQkxPQ0tFRF9SRUFTT05fUkVHQUlOX0ZBQ0VfTkVFREVEEAESKQolQ0hBUkdFU19CTE9DS0VEX1JFQVNPTl9DT01CQVRfUlVOTklORxACEiwKKENIQVJHRVNfQkxPQ0tFRF9SRUFTT05fQUxSRUFEWV9SRUNPVkVSRUQQAyqCAQoVQ29uc3VtYWJsZVRhcmdldFN0YXRlEicKI0NPTlNVTUFCTEVfVEFSR0VUX1NUQVRFX1VOU1BFQ0lGSUVEEAASHgoaQ09OU1VNQUJMRV9UQVJHRVRfU1RBVEVfT0sQARIgChxDT05TVU1BQkxFX1RBUkdFVF9TVEFURV9ET1dOEAIygAYKDkNoYXJnZXNTZXJ2aWNlElkKDFNwZW5kQ2hhcmdlcxIjLm1ldXJwZy5wbGF5LnYxLlNwZW5kQ2hhcmdlc1JlcXVlc3QaJC5tZXVycGcucGxheS52MS5TcGVuZENoYXJnZXNSZXNwb25zZRJfCg5Sb2xsTGFzdENoYXJnZRIlLm1ldXJwZy5wbGF5LnYxLlJvbGxMYXN0Q2hhcmdlUmVxdWVzdBomLm1ldXJwZy5wbGF5LnYxLlJvbGxMYXN0Q2hhcmdlUmVzcG9uc2USUwoKU2V0Q2hhcmdlcxIhLm1ldXJwZy5wbGF5LnYxLlNldENoYXJnZXNSZXF1ZXN0GiIubWV1cnBnLnBsYXkudjEuU2V0Q2hhcmdlc1Jlc3BvbnNlElwKDVNldEFtbXVuaXRpb24SJC5tZXVycGcucGxheS52MS5TZXRBbW11bml0aW9uUmVxdWVzdBolLm1ldXJwZy5wbGF5LnYxLlNldEFtbXVuaXRpb25SZXNwb25zZRJoChFSZWNvdmVyQW1tdW5pdGlvbhIoLm1ldXJwZy5wbGF5LnYxLlJlY292ZXJBbW11bml0aW9uUmVxdWVzdBopLm1ldXJwZy5wbGF5LnYxLlJlY292ZXJBbW11bml0aW9uUmVzcG9uc2USQQoERGF3bhIbLm1ldXJwZy5wbGF5LnYxLkRhd25SZXF1ZXN0GhwubWV1cnBnLnBsYXkudjEuRGF3blJlc3BvbnNlElwKDVVzZUNvbnN1bWFibGUSJC5tZXVycGcucGxheS52MS5Vc2VDb25zdW1hYmxlUmVxdWVzdBolLm1ldXJwZy5wbGF5LnYxLlVzZUNvbnN1bWFibGVSZXNwb25zZRJ0ChVMaXN0Q29uc3VtYWJsZVRhcmdldHMSLC5tZXVycGcucGxheS52MS5MaXN0Q29uc3VtYWJsZVRhcmdldHNSZXF1ZXN0Gi0ubWV1cnBnLnBsYXkudjEuTGlzdENvbnN1bWFibGVUYXJnZXRzUmVzcG9uc2VCugEKEmNvbS5tZXVycGcucGxheS52MUIMQ2hhcmdlc1Byb3RvUAFaPGdpdGh1Yi5jb20vUHVyYUZvbWUvbWV1UlBHL2JhY2tlbmQvZ2VuL21ldXJwZy9wbGF5L3YxO3BsYXl2MaICA01QWKoCDk1ldXJwZy5QbGF5LlYxygIOTWV1cnBnXFBsYXlcVjHiAhpNZXVycGdcUGxheVxWMVxHUEJNZXRhZGF0YeoCEE1ldXJwZzo6UGxheTo6VjFiBnByb3RvMw", [file_meurpg_characters_v1_characters, file_meurpg_play_v1_combat, file_meurpg_play_v1_play]);
+  fileDesc("ChxtZXVycGcvcGxheS92MS9jaGFyZ2VzLnByb3RvEg5tZXVycGcucGxheS52MSJWCg5DaGFyZ2VzQmxvY2tlZBI0CgZyZWFzb24YASABKA4yJC5tZXVycGcucGxheS52MS5DaGFyZ2VzQmxvY2tlZFJlYXNvbhIOCgZuZWVkZWQYAiABKAUiewoTU3BlbmRDaGFyZ2VzUmVxdWVzdBITCgtjYW1wYWlnbl9pZBgBIAEoCRIUCgxjaGFyYWN0ZXJfaWQYAiABKAkSEAoIZW50cnlfaWQYAyABKAkSDgoGYW1vdW50GAQgASgFEhcKD2lkZW1wb3RlbmN5X2tleRgFIAEoCSJKChRTcGVuZENoYXJnZXNSZXNwb25zZRIyCgRpdGVtGAEgASgLMiQubWV1cnBnLmNoYXJhY3RlcnMudjEuU2hlZXRNYWdpY0l0ZW0iuwEKFVJvbGxMYXN0Q2hhcmdlUmVxdWVzdBITCgtjYW1wYWlnbl9pZBgBIAEoCRIUCgxjaGFyYWN0ZXJfaWQYAiABKAkSEAoIZW50cnlfaWQYAyABKAkSFwoPaWRlbXBvdGVuY3lfa2V5GAQgASgJEhUKC3JvbGxfaW5fYXBwGAUgASgISAASEgoIZDIwX2ZhY2UYBiABKAVIABIZChF0eXBlZF9yZWdhaW5fZmFjZRgHIAEoBUIGCgRyb2xsIq4BChZSb2xsTGFzdENoYXJnZVJlc3BvbnNlEjIKBGl0ZW0YASABKAsyJC5tZXVycGcuY2hhcmFjdGVycy52MS5TaGVldE1hZ2ljSXRlbRILCgNkMjAYAiABKAUSEAoIcmVnYWluZWQYAyABKAUSLAoEbG9zdBgEIAEoDjIeLm1ldXJwZy5jaGFyYWN0ZXJzLnYxLkl0ZW1Mb3NzEhMKC3JlZ2Fpbl9mYWNlGAUgASgFIq0BChFTZXRDaGFyZ2VzUmVxdWVzdBITCgtjYW1wYWlnbl9pZBgBIAEoCRIUCgxjaGFyYWN0ZXJfaWQYAiABKAkSEAoIZW50cnlfaWQYAyABKAkSFAoMY2hhcmdlc19sZWZ0GAQgASgFEiwKBGxvc3QYBSABKA4yHi5tZXVycGcuY2hhcmFjdGVycy52MS5JdGVtTG9zcxIXCg9pZGVtcG90ZW5jeV9rZXkYBiABKAkiSAoSU2V0Q2hhcmdlc1Jlc3BvbnNlEjIKBGl0ZW0YASABKAsyJC5tZXVycGcuY2hhcmFjdGVycy52MS5TaGVldE1hZ2ljSXRlbSJlChRTZXRBbW11bml0aW9uUmVxdWVzdBITCgtjYW1wYWlnbl9pZBgBIAEoCRIUCgxjaGFyYWN0ZXJfaWQYAiABKAkSEAoIYW1tb19rZXkYAyABKAkSEAoIcXVhbnRpdHkYBCABKAUiUgoVU2V0QW1tdW5pdGlvblJlc3BvbnNlEjkKCmFtbXVuaXRpb24YASABKAsyJS5tZXVycGcuY2hhcmFjdGVycy52MS5TaGVldEFtbXVuaXRpb24iXgoYUmVjb3ZlckFtbXVuaXRpb25SZXF1ZXN0EhMKC2NhbXBhaWduX2lkGAEgASgJEhQKDGNoYXJhY3Rlcl9pZBgCIAEoCRIXCg9pZGVtcG90ZW5jeV9rZXkYAyABKAkiVgoZUmVjb3ZlckFtbXVuaXRpb25SZXNwb25zZRI5CgphbW11bml0aW9uGAEgAygLMiUubWV1cnBnLmNoYXJhY3RlcnMudjEuU2hlZXRBbW11bml0aW9uIjsKC0Rhd25SZXF1ZXN0EhMKC2NhbXBhaWduX2lkGAEgASgJEhcKD2lkZW1wb3RlbmN5X2tleRgCIAEoCSI+CgxEYXduUmVzcG9uc2USLgoIcmVzdG9yZWQYASADKAsyHC5tZXVycGcucGxheS52MS5EYXduUmVzdG9yZWQiagoMRGF3blJlc3RvcmVkEhQKDGNoYXJhY3Rlcl9pZBgBIAEoCRIyCgRpdGVtGAIgASgLMiQubWV1cnBnLmNoYXJhY3RlcnMudjEuU2hlZXRNYWdpY0l0ZW0SEAoIcmVnYWluZWQYAyABKAUiswEKFFVzZUNvbnN1bWFibGVSZXF1ZXN0EhMKC2NhbXBhaWduX2lkGAEgASgJEhQKDGNoYXJhY3Rlcl9pZBgCIAEoCRIQCghlbnRyeV9pZBgDIAEoCRIbChN0YXJnZXRfY2hhcmFjdGVyX2lkGAQgASgJEhcKD2lkZW1wb3RlbmN5X2tleRgFIAEoCRITCgtyb2xsX2luX2FwcBgGIAEoCBITCgt0eXBlZF9mYWNlcxgHIAMoBSLDAgoVVXNlQ29uc3VtYWJsZVJlc3BvbnNlEhAKCGVudHJ5X2lkGAEgASgJEhAKCGl0ZW1fa2V5GAIgASgJEhQKDGl0ZW1fbmFtZV9wdBgDIAEoCRI1CgdvdXRjb21lGAQgASgOMiQubWV1cnBnLnBsYXkudjEuQ29uc3VtYWJsZVVzZU91dGNvbWUSDAoEdGV4dBgFIAMoCRIRCglkaWNlX3RleHQYBiABKAkSDQoFZmFjZXMYByADKAUSEgoKcm9sbF90b3RhbBgIIAEoBRIOCgZoZWFsZWQYCSABKAUSFwoPZGFtYWdlX3R5cGVfa2V5GAogASgJEhsKE3RhcmdldF9jaGFyYWN0ZXJfaWQYCyABKAkSLwoGdml0YWxzGAwgAygLMh8ubWV1cnBnLnBsYXkudjEuQ2hhcmFjdGVyVml0YWxzIpwBChFSZWFkU2Nyb2xsUmVxdWVzdBITCgtjYW1wYWlnbl9pZBgBIAEoCRIUCgxjaGFyYWN0ZXJfaWQYAiABKAkSEAoIZW50cnlfaWQYAyABKAkSFwoPaWRlbXBvdGVuY3lfa2V5GAQgASgJEhUKC3JvbGxfaW5fYXBwGAUgASgISAASEgoIZDIwX2ZhY2UYBiABKAVIAEIGCgRyb2xsIkQKElJlYWRTY3JvbGxSZXNwb25zZRIuCgdyZWFkaW5nGAEgASgLMh0ubWV1cnBnLnBsYXkudjEuU2Nyb2xsUmVhZGluZyL9AQoNU2Nyb2xsUmVhZGluZxIQCghlbnRyeV9pZBgBIAEoCRIyCgdvdXRjb21lGAIgASgOMiEubWV1cnBnLnBsYXkudjEuU2Nyb2xsUmVhZE91dGNvbWUSEQoJc3BlbGxfa2V5GAMgASgJEhUKDXNwZWxsX25hbWVfcHQYBCABKAkSFAoMc2Nyb2xsX2xldmVsGAUgASgFEhIKCmNhc3RfbGV2ZWwYBiABKAUSEAoIY2hlY2tfZGMYByABKAUSCwoDZDIwGAggASgFEhAKCG1vZGlmaWVyGAkgASgFEg0KBXRvdGFsGAogASgFEhIKCmVudHJ5X2dvbmUYCyABKAgiWwocTGlzdENvbnN1bWFibGVUYXJnZXRzUmVxdWVzdBITCgtjYW1wYWlnbl9pZBgBIAEoCRIUCgxjaGFyYWN0ZXJfaWQYAiABKAkSEAoIZW50cnlfaWQYAyABKAkiZQodTGlzdENvbnN1bWFibGVUYXJnZXRzUmVzcG9uc2USMQoHdGFyZ2V0cxgBIAMoCzIgLm1ldXJwZy5wbGF5LnYxLkNvbnN1bWFibGVUYXJnZXQSEQoJaW5fY29tYmF0GAIgASgIIpYBChBDb25zdW1hYmxlVGFyZ2V0EhQKDGNoYXJhY3Rlcl9pZBgBIAEoCRIMCgRuYW1lGAIgASgJEhMKC2Rpc3RhbmNlX2Z0GAMgASgFEjQKBXN0YXRlGAQgASgOMiUubWV1cnBnLnBsYXkudjEuQ29uc3VtYWJsZVRhcmdldFN0YXRlEhMKC21heV9yZWNlaXZlGAUgASgIKsYBChRDaGFyZ2VzQmxvY2tlZFJlYXNvbhImCiJDSEFSR0VTX0JMT0NLRURfUkVBU09OX1VOU1BFQ0lGSUVEEAASLQopQ0hBUkdFU19CTE9DS0VEX1JFQVNPTl9SRUdBSU5fRkFDRV9ORUVERUQQARIpCiVDSEFSR0VTX0JMT0NLRURfUkVBU09OX0NPTUJBVF9SVU5OSU5HEAISLAooQ0hBUkdFU19CTE9DS0VEX1JFQVNPTl9BTFJFQURZX1JFQ09WRVJFRBADKqEBChFTY3JvbGxSZWFkT3V0Y29tZRIjCh9TQ1JPTExfUkVBRF9PVVRDT01FX1VOU1BFQ0lGSUVEEAASJwojU0NST0xMX1JFQURfT1VUQ09NRV9OT19DSEVDS19ORUVERUQQARIeChpTQ1JPTExfUkVBRF9PVVRDT01FX1BBU1NFRBACEh4KGlNDUk9MTF9SRUFEX09VVENPTUVfRkFJTEVEEAMqggEKFUNvbnN1bWFibGVUYXJnZXRTdGF0ZRInCiNDT05TVU1BQkxFX1RBUkdFVF9TVEFURV9VTlNQRUNJRklFRBAAEh4KGkNPTlNVTUFCTEVfVEFSR0VUX1NUQVRFX09LEAESIAocQ09OU1VNQUJMRV9UQVJHRVRfU1RBVEVfRE9XThACMtUGCg5DaGFyZ2VzU2VydmljZRJZCgxTcGVuZENoYXJnZXMSIy5tZXVycGcucGxheS52MS5TcGVuZENoYXJnZXNSZXF1ZXN0GiQubWV1cnBnLnBsYXkudjEuU3BlbmRDaGFyZ2VzUmVzcG9uc2USXwoOUm9sbExhc3RDaGFyZ2USJS5tZXVycGcucGxheS52MS5Sb2xsTGFzdENoYXJnZVJlcXVlc3QaJi5tZXVycGcucGxheS52MS5Sb2xsTGFzdENoYXJnZVJlc3BvbnNlElMKClNldENoYXJnZXMSIS5tZXVycGcucGxheS52MS5TZXRDaGFyZ2VzUmVxdWVzdBoiLm1ldXJwZy5wbGF5LnYxLlNldENoYXJnZXNSZXNwb25zZRJcCg1TZXRBbW11bml0aW9uEiQubWV1cnBnLnBsYXkudjEuU2V0QW1tdW5pdGlvblJlcXVlc3QaJS5tZXVycGcucGxheS52MS5TZXRBbW11bml0aW9uUmVzcG9uc2USaAoRUmVjb3ZlckFtbXVuaXRpb24SKC5tZXVycGcucGxheS52MS5SZWNvdmVyQW1tdW5pdGlvblJlcXVlc3QaKS5tZXVycGcucGxheS52MS5SZWNvdmVyQW1tdW5pdGlvblJlc3BvbnNlEkEKBERhd24SGy5tZXVycGcucGxheS52MS5EYXduUmVxdWVzdBocLm1ldXJwZy5wbGF5LnYxLkRhd25SZXNwb25zZRJcCg1Vc2VDb25zdW1hYmxlEiQubWV1cnBnLnBsYXkudjEuVXNlQ29uc3VtYWJsZVJlcXVlc3QaJS5tZXVycGcucGxheS52MS5Vc2VDb25zdW1hYmxlUmVzcG9uc2USdAoVTGlzdENvbnN1bWFibGVUYXJnZXRzEiwubWV1cnBnLnBsYXkudjEuTGlzdENvbnN1bWFibGVUYXJnZXRzUmVxdWVzdBotLm1ldXJwZy5wbGF5LnYxLkxpc3RDb25zdW1hYmxlVGFyZ2V0c1Jlc3BvbnNlElMKClJlYWRTY3JvbGwSIS5tZXVycGcucGxheS52MS5SZWFkU2Nyb2xsUmVxdWVzdBoiLm1ldXJwZy5wbGF5LnYxLlJlYWRTY3JvbGxSZXNwb25zZUK6AQoSY29tLm1ldXJwZy5wbGF5LnYxQgxDaGFyZ2VzUHJvdG9QAVo8Z2l0aHViLmNvbS9QdXJhRm9tZS9tZXVSUEcvYmFja2VuZC9nZW4vbWV1cnBnL3BsYXkvdjE7cGxheXYxogIDTVBYqgIOTWV1cnBnLlBsYXkuVjHKAg5NZXVycGdcUGxheVxWMeICGk1ldXJwZ1xQbGF5XFYxXEdQQk1ldGFkYXRh6gIQTWV1cnBnOjpQbGF5OjpWMWIGcHJvdG8z", [file_meurpg_characters_v1_characters, file_meurpg_play_v1_combat, file_meurpg_play_v1_play]);
 
 /**
  * ChargesBlocked is the detail of ChargesService's `failed_precondition` for a rule of its own.
@@ -602,6 +602,159 @@ export const UseConsumableResponseSchema: GenMessage<UseConsumableResponse> = /*
   messageDesc(file_meurpg_play_v1_charges, 15);
 
 /**
+ * @generated from message meurpg.play.v1.ReadScrollRequest
+ */
+export type ReadScrollRequest = Message<"meurpg.play.v1.ReadScrollRequest"> & {
+  /**
+   * @generated from field: string campaign_id = 1;
+   */
+  campaignId: string;
+
+  /**
+   * The character that reads the scroll: the one whose sheet holds it.
+   *
+   * @generated from field: string character_id = 2;
+   */
+  characterId: string;
+
+  /**
+   * The id of the scroll's entry on the sheet (SheetMagicItem.id).
+   *
+   * @generated from field: string entry_id = 3;
+   */
+  entryId: string;
+
+  /**
+   * @generated from field: string idempotency_key = 4;
+   */
+  idempotencyKey: string;
+
+  /**
+   * How the check's d20 comes (RN-18), for a read that needs a check only: the app rolls it, or the player typed the face of a
+   * real die.
+   *
+   * @generated from oneof meurpg.play.v1.ReadScrollRequest.roll
+   */
+  roll: {
+    /**
+     * @generated from field: bool roll_in_app = 5;
+     */
+    value: boolean;
+    case: "rollInApp";
+  } | {
+    /**
+     * @generated from field: int32 d20_face = 6;
+     */
+    value: number;
+    case: "d20Face";
+  } | { case: undefined; value?: undefined };
+};
+
+/**
+ * Describes the message meurpg.play.v1.ReadScrollRequest.
+ * Use `create(ReadScrollRequestSchema)` to create a new message.
+ */
+export const ReadScrollRequestSchema: GenMessage<ReadScrollRequest> = /*@__PURE__*/
+  messageDesc(file_meurpg_play_v1_charges, 16);
+
+/**
+ * @generated from message meurpg.play.v1.ReadScrollResponse
+ */
+export type ReadScrollResponse = Message<"meurpg.play.v1.ReadScrollResponse"> & {
+  /**
+   * @generated from field: meurpg.play.v1.ScrollReading reading = 1;
+   */
+  reading?: ScrollReading | undefined;
+};
+
+/**
+ * Describes the message meurpg.play.v1.ReadScrollResponse.
+ * Use `create(ReadScrollResponseSchema)` to create a new message.
+ */
+export const ReadScrollResponseSchema: GenMessage<ReadScrollResponse> = /*@__PURE__*/
+  messageDesc(file_meurpg_play_v1_charges, 17);
+
+/**
+ * ScrollReading is what a reading of a Spell Scroll came to, as the reader reads it (the character's player and the master).
+ *
+ * @generated from message meurpg.play.v1.ScrollReading
+ */
+export type ScrollReading = Message<"meurpg.play.v1.ScrollReading"> & {
+  /**
+   * The scroll's entry on the sheet (SheetMagicItem.id).
+   *
+   * @generated from field: string entry_id = 1;
+   */
+  entryId: string;
+
+  /**
+   * @generated from field: meurpg.play.v1.ScrollReadOutcome outcome = 2;
+   */
+  outcome: ScrollReadOutcome;
+
+  /**
+   * The spell the scroll holds: its catalog key and its name in Portuguese.
+   *
+   * @generated from field: string spell_key = 3;
+   */
+  spellKey: string;
+
+  /**
+   * @generated from field: string spell_name_pt = 4;
+   */
+  spellNamePt: string;
+
+  /**
+   * The scroll's level, 0 for a cantrip, and the level the spell is cast at (the spell's own).
+   *
+   * @generated from field: int32 scroll_level = 5;
+   */
+  scrollLevel: number;
+
+  /**
+   * @generated from field: int32 cast_level = 6;
+   */
+  castLevel: number;
+
+  /**
+   * The check, on PASSED and FAILED only: its DC (10 plus the spell's level), the d20 face, the spellcasting modifier and the
+   * total (d20 plus modifier). 0 when no check was made.
+   *
+   * @generated from field: int32 check_dc = 7;
+   */
+  checkDc: number;
+
+  /**
+   * @generated from field: int32 d20 = 8;
+   */
+  d20: number;
+
+  /**
+   * @generated from field: int32 modifier = 9;
+   */
+  modifier: number;
+
+  /**
+   * @generated from field: int32 total = 10;
+   */
+  total: number;
+
+  /**
+   * The unit left the sheet: true on FAILED, false on the other outcomes.
+   *
+   * @generated from field: bool entry_gone = 11;
+   */
+  entryGone: boolean;
+};
+
+/**
+ * Describes the message meurpg.play.v1.ScrollReading.
+ * Use `create(ScrollReadingSchema)` to create a new message.
+ */
+export const ScrollReadingSchema: GenMessage<ScrollReading> = /*@__PURE__*/
+  messageDesc(file_meurpg_play_v1_charges, 18);
+
+/**
  * @generated from message meurpg.play.v1.ListConsumableTargetsRequest
  */
 export type ListConsumableTargetsRequest = Message<"meurpg.play.v1.ListConsumableTargetsRequest"> & {
@@ -630,7 +783,7 @@ export type ListConsumableTargetsRequest = Message<"meurpg.play.v1.ListConsumabl
  * Use `create(ListConsumableTargetsRequestSchema)` to create a new message.
  */
 export const ListConsumableTargetsRequestSchema: GenMessage<ListConsumableTargetsRequest> = /*@__PURE__*/
-  messageDesc(file_meurpg_play_v1_charges, 16);
+  messageDesc(file_meurpg_play_v1_charges, 19);
 
 /**
  * @generated from message meurpg.play.v1.ListConsumableTargetsResponse
@@ -656,7 +809,7 @@ export type ListConsumableTargetsResponse = Message<"meurpg.play.v1.ListConsumab
  * Use `create(ListConsumableTargetsResponseSchema)` to create a new message.
  */
 export const ListConsumableTargetsResponseSchema: GenMessage<ListConsumableTargetsResponse> = /*@__PURE__*/
-  messageDesc(file_meurpg_play_v1_charges, 17);
+  messageDesc(file_meurpg_play_v1_charges, 20);
 
 /**
  * ConsumableTarget is a character the consumable may be given to.
@@ -703,7 +856,7 @@ export type ConsumableTarget = Message<"meurpg.play.v1.ConsumableTarget"> & {
  * Use `create(ConsumableTargetSchema)` to create a new message.
  */
 export const ConsumableTargetSchema: GenMessage<ConsumableTarget> = /*@__PURE__*/
-  messageDesc(file_meurpg_play_v1_charges, 18);
+  messageDesc(file_meurpg_play_v1_charges, 21);
 
 /**
  * ChargesBlockedReason is why a charges or ammunition call was refused with `failed_precondition`.
@@ -746,6 +899,46 @@ export const ChargesBlockedReasonSchema: GenEnum<ChargesBlockedReason> = /*@__PU
   enumDesc(file_meurpg_play_v1_charges, 0);
 
 /**
+ * ScrollReadOutcome is what the reading of a Spell Scroll came to.
+ *
+ * @generated from enum meurpg.play.v1.ScrollReadOutcome
+ */
+export enum ScrollReadOutcome {
+  /**
+   * @generated from enum value: SCROLL_READ_OUTCOME_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * The spell's level is one the reader casts: no check, and the read stands until the cast, the reader's next read or the end of
+   * the reader's turn.
+   *
+   * @generated from enum value: SCROLL_READ_OUTCOME_NO_CHECK_NEEDED = 1;
+   */
+  NO_CHECK_NEEDED = 1,
+
+  /**
+   * The check passed: the read stands as above.
+   *
+   * @generated from enum value: SCROLL_READ_OUTCOME_PASSED = 2;
+   */
+  PASSED = 2,
+
+  /**
+   * The check failed: the scroll came apart with no effect, and the casting time's economy was spent.
+   *
+   * @generated from enum value: SCROLL_READ_OUTCOME_FAILED = 3;
+   */
+  FAILED = 3,
+}
+
+/**
+ * Describes the enum meurpg.play.v1.ScrollReadOutcome.
+ */
+export const ScrollReadOutcomeSchema: GenEnum<ScrollReadOutcome> = /*@__PURE__*/
+  enumDesc(file_meurpg_play_v1_charges, 1);
+
+/**
  * ConsumableTargetState is how a possible receiver stands, as every player at the table may see it.
  *
  * @generated from enum meurpg.play.v1.ConsumableTargetState
@@ -777,7 +970,7 @@ export enum ConsumableTargetState {
  * Describes the enum meurpg.play.v1.ConsumableTargetState.
  */
 export const ConsumableTargetStateSchema: GenEnum<ConsumableTargetState> = /*@__PURE__*/
-  enumDesc(file_meurpg_play_v1_charges, 1);
+  enumDesc(file_meurpg_play_v1_charges, 2);
 
 /**
  * ChargesService runs the charges of the magic items and the ammunition of a campaign's characters.
@@ -955,6 +1148,37 @@ export const ChargesService: GenService<{
     methodKind: "unary";
     input: typeof ListConsumableTargetsRequestSchema;
     output: typeof ListConsumableTargetsResponseSchema;
+  },
+  /**
+   * ReadScroll reads the spell on a Spell Scroll of a character's sheet (SRD 5.1, "Spell Scroll"), the step before the cast. The
+   * spell must be on the scroll, of the scroll's level, on at the table, and on the list of a class the reader casts from. When its
+   * level is above the highest the reader casts (pact slots included) the reader first makes an ability check with their
+   * spellcasting ability against DC 10 plus the spell's level: d20 plus the modifier, rolled by the app (roll_in_app) or a physical
+   * d20's face typed (d20_face), by the table's rule (RN-18); a read that needs no check takes no roll and ignores one.
+   *
+   * A read that needs no check, or whose check passed, spends nothing: it is written as the session event `scroll_read`, the pass
+   * the cast of the scroll's spell uses. The pass lapses when the reader reads again (a scroll, whatever the result) and when the
+   * reader's turn ends or the combat ends. A failed check spends the scroll's unit and the casting time's economy (in a running
+   * combat: the action, the bonus action or the reaction; nothing out of one), with no effect: it is written as the session event
+   * `consumable_used` and, in a running combat, as the log line CONSUMABLE_USED with the outcome SCROLL_FAILED. Both events close
+   * the undo chain. A read is refused, with nothing spent, when the reader could not then cast the spell: in a running combat
+   * when it is not the reader's turn or the economy of the spell's casting time is already spent (the master has the last word on
+   * the economy, as for a cast). The master and the character's player may read; the roll is the master's own for an NPC.
+   *
+   * Errors: `permission_denied` for a character that is not the caller's (a player); `not_found` for a character that is not
+   * there; `invalid_argument` for an entry that is no Spell Scroll, an idempotency key that is not a UUID or one reused for another
+   * request, a d20 face outside 1 to 20, and a read that needs a check with no roll; `failed_precondition` with NO_OPEN_SESSION,
+   * CharacterBlocked CHARACTER_DEAD, and EncounterBlocked: ITEM_GONE for an entry that is no longer on the sheet, COMBATANT_DOWN
+   * for a reader at 0 hit points, SCROLL_NO_SPELL, SCROLL_SPELL_OFF (never naming the spell to a player), SCROLL_SPELL_NOT_ON_LIST,
+   * WRONG_DICE_MODE, and in a running combat NOT_YOUR_TURN, ACTION_USED, BONUS_ACTION_USED, REACTION_USED and
+   * BONUS_ACTION_SPELL_LIMIT.
+   *
+   * @generated from rpc meurpg.play.v1.ChargesService.ReadScroll
+   */
+  readScroll: {
+    methodKind: "unary";
+    input: typeof ReadScrollRequestSchema;
+    output: typeof ReadScrollResponseSchema;
   },
 }> = /*@__PURE__*/
   serviceDesc(file_meurpg_play_v1_charges, 0);

@@ -480,6 +480,19 @@ func SpellLimited(turn TurnState, economy string, level int) bool {
 	return turn.BonusSpellCast || (economy == rules.EconomyBonusAction && turn.SpellCast)
 }
 
+// ScrollReadReason is why the spell of a Spell Scroll could not be cast in this turn, by the two checks a spell's option makes after
+// what the spell is: the economy of its casting time, then the limit a bonus action spell puts on the turn's spells. nil when it
+// could. economy is the casting time's ("" for a longer one, which spends none) and level the spell's.
+func ScrollReadReason(turn TurnState, economy string, level int) *Reason {
+	if eo := economyOption(economy, turn); !eo.Enabled {
+		return eo.Reason
+	}
+	if SpellLimited(turn, economy, level) {
+		return &Reason{Code: ReasonBonusActionSpellLimit}
+	}
+	return nil
+}
+
 // IsFreeCantrip says a spell is a cantrip with a casting time of 1 action, the
 // one spell the bonus action limit allows beside a bonus action spell.
 func IsFreeCantrip(economy string, level int) bool {

@@ -130,6 +130,30 @@ service ChargesService {
   // is not there; `invalid_argument` for an entry that is no consumable; `failed_precondition` with EncounterBlocked
   // ITEM_GONE for an entry that is no longer on the sheet and CharacterBlocked CHARACTER_DEAD for a dead user.
   rpc ListConsumableTargets(ListConsumableTargetsRequest) returns (ListConsumableTargetsResponse);
+
+  // ReadScroll reads the spell on a Spell Scroll of a character's sheet (SRD 5.1, "Spell Scroll"), the step before the cast. The
+  // spell must be on the scroll, of the scroll's level, on at the table, and on the list of a class the reader casts from. When its
+  // level is above the highest the reader casts (pact slots included) the reader first makes an ability check with their
+  // spellcasting ability against DC 10 plus the spell's level: d20 plus the modifier, rolled by the app (roll_in_app) or a physical
+  // d20's face typed (d20_face), by the table's rule (RN-18); a read that needs no check takes no roll and ignores one.
+  //
+  // A read that needs no check, or whose check passed, spends nothing: it is written as the session event `scroll_read`, the pass
+  // the cast of the scroll's spell uses. The pass lapses when the reader reads again (a scroll, whatever the result) and when the
+  // reader's turn ends or the combat ends. A failed check spends the scroll's unit and the casting time's economy (in a running
+  // combat: the action, the bonus action or the reaction; nothing out of one), with no effect: it is written as the session event
+  // `consumable_used` and, in a running combat, as the log line CONSUMABLE_USED with the outcome SCROLL_FAILED. Both events close
+  // the undo chain. A read is refused, with nothing spent, when the reader could not then cast the spell: in a running combat
+  // when it is not the reader's turn or the economy of the spell's casting time is already spent (the master has the last word on
+  // the economy, as for a cast). The master and the character's player may read; the roll is the master's own for an NPC.
+  //
+  // Errors: `permission_denied` for a character that is not the caller's (a player); `not_found` for a character that is not
+  // there; `invalid_argument` for an entry that is no Spell Scroll, an idempotency key that is not a UUID or one reused for another
+  // request, a d20 face outside 1 to 20, and a read that needs a check with no roll; `failed_precondition` with NO_OPEN_SESSION,
+  // CharacterBlocked CHARACTER_DEAD, and EncounterBlocked: ITEM_GONE for an entry that is no longer on the sheet, COMBATANT_DOWN
+  // for a reader at 0 hit points, SCROLL_NO_SPELL, SCROLL_SPELL_OFF (never naming the spell to a player), SCROLL_SPELL_NOT_ON_LIST,
+  // WRONG_DICE_MODE, and in a running combat NOT_YOUR_TURN, ACTION_USED, BONUS_ACTION_USED, REACTION_USED and
+  // BONUS_ACTION_SPELL_LIMIT.
+  rpc ReadScroll(ReadScrollRequest) returns (ReadScrollResponse);
 }
 
 // ChargesBlockedReason is why a charges or ammunition call was refused with `failed_precondition`.
@@ -291,6 +315,58 @@ message UseConsumableResponse {
   string target_character_id = 11;
   // The vitals of the characters the use changed (the receiver).
   repeated CharacterVitals vitals = 12;
+}
+
+message ReadScrollRequest {
+  string campaign_id = 1;
+  // The character that reads the scroll: the one whose sheet holds it.
+  string character_id = 2;
+  // The id of the scroll's entry on the sheet (SheetMagicItem.id).
+  string entry_id = 3;
+  string idempotency_key = 4;
+  // How the check's d20 comes (RN-18), for a read that needs a check only: the app rolls it, or the player typed the face of a
+  // real die.
+  oneof roll {
+    bool roll_in_app = 5;
+    int32 d20_face = 6;
+  }
+}
+
+message ReadScrollResponse {
+  ScrollReading reading = 1;
+}
+
+// ScrollReading is what a reading of a Spell Scroll came to, as the reader reads it (the character's player and the master).
+message ScrollReading {
+  // The scroll's entry on the sheet (SheetMagicItem.id).
+  string entry_id = 1;
+  ScrollReadOutcome outcome = 2;
+  // The spell the scroll holds: its catalog key and its name in Portuguese.
+  string spell_key = 3;
+  string spell_name_pt = 4;
+  // The scroll's level, 0 for a cantrip, and the level the spell is cast at (the spell's own).
+  int32 scroll_level = 5;
+  int32 cast_level = 6;
+  // The check, on PASSED and FAILED only: its DC (10 plus the spell's level), the d20 face, the spellcasting modifier and the
+  // total (d20 plus modifier). 0 when no check was made.
+  int32 check_dc = 7;
+  int32 d20 = 8;
+  int32 modifier = 9;
+  int32 total = 10;
+  // The unit left the sheet: true on FAILED, false on the other outcomes.
+  bool entry_gone = 11;
+}
+
+// ScrollReadOutcome is what the reading of a Spell Scroll came to.
+enum ScrollReadOutcome {
+  SCROLL_READ_OUTCOME_UNSPECIFIED = 0;
+  // The spell's level is one the reader casts: no check, and the read stands until the cast, the reader's next read or the end of
+  // the reader's turn.
+  SCROLL_READ_OUTCOME_NO_CHECK_NEEDED = 1;
+  // The check passed: the read stands as above.
+  SCROLL_READ_OUTCOME_PASSED = 2;
+  // The check failed: the scroll came apart with no effect, and the casting time's economy was spent.
+  SCROLL_READ_OUTCOME_FAILED = 3;
 }
 
 message ListConsumableTargetsRequest {

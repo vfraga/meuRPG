@@ -12,6 +12,7 @@ import (
 	charactersv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/characters/v1"
 	"github.com/PuraFome/meuRPG/backend/internal/characters/charactersdb"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/uid"
+	"github.com/PuraFome/meuRPG/backend/internal/play/link"
 )
 
 // RemoveConsumable uses up one unit of a consumable: it takes the entry (one entry of the sheet's magic items is one
@@ -102,4 +103,37 @@ func (s *Service) loadConsumable(ctx context.Context, tx pgx.Tx, campaignID, cha
 	}
 	item.NamePt = content.MagicItemNamePT(item.GetKey())
 	return consumableEntry{q: q, row: row, full: full, at: at, item: item}, nil
+}
+
+// ScrollOf reads a Spell Scroll entry of a character's sheet as its reader reads it (the spell it gives and what reading it comes to
+// for the character, by the rules: ReadScrollSpell), and locks the character's row until the transaction ends, so what the read
+// decides on is what the unit's removal then finds. Like the keeper's other methods it asks nobody who the caller is. `not_found`
+// for a character or an entry that is not there, `invalid_argument` for an entry that is no Spell Scroll.
+func (s *Service) ScrollOf(ctx context.Context, tx pgx.Tx, campaignID, characterID, entryID string) (link.ScrollEntry, error) {
+	found, err := s.loadConsumable(ctx, tx, campaignID, characterID, entryID, true)
+	if err != nil {
+		return link.ScrollEntry{}, err
+	}
+	content, err := s.contentFor(ctx, tx, campaignID)
+	if err != nil {
+		return link.ScrollEntry{}, wrap("read rules content", err)
+	}
+	item := found.item
+	sp := content.ScrollSpellOf(item.GetKey(), item.GetSpellKey())
+	if !sp.IsScroll {
+		return link.ScrollEntry{}, invalidArgument(fieldErr("entry_id", "is not a Spell Scroll"))
+	}
+	out := link.ScrollEntry{EntryID: item.GetId(), ItemKey: item.GetKey(), ItemNamePT: item.GetNamePt(), NoSpell: !sp.Gives(), Off: sp.Off}
+	if out.NoSpell {
+		return out, nil
+	}
+	_, derived, _, err := s.fighter(ctx, tx, campaignID, characterID)
+	if err != nil {
+		return link.ScrollEntry{}, err
+	}
+	read, _ := content.ReadScrollSpell(derived, sp.Key)
+	out.SpellKey, out.SpellNamePT, out.Level = sp.Key, content.NamePT(sp.Key), read.Level
+	out.Reads, out.UnreadablePT, out.Economy = read.Reads, read.UnreadablePT, read.Economy
+	out.CheckNeeded, out.CheckDC, out.Modifier = read.CheckNeeded, read.CheckDC, derived.AbilityModifier(read.Ability)
+	return out, nil
 }

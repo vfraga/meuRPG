@@ -25,6 +25,10 @@ type ScrollRead struct {
 	Economy string
 }
 
+// ScrollSpellGonePT is what the character's player reads for a scroll whose spell the master switched off or archived after it was
+// set (RN-23), in place of the spell's key and name, and as the words of a refused read.
+const ScrollSpellGonePT = "A magia deste pergaminho não está mais na mesa."
+
 // scrollCheckBaseDC is what the check's DC adds the spell's level to.
 const scrollCheckBaseDC = 10
 
@@ -100,4 +104,68 @@ func (c *Content) unreadableReasonPT(d Derived) string {
 		}
 	}
 	return text + "."
+}
+
+// ScrollSpell is what the spell stored on an item of a sheet makes of it as a Spell Scroll: the one place that says whether a scroll
+// gives a spell, for the sheet's read and for the reading of the scroll alike.
+type ScrollSpell struct {
+	// IsScroll says the item is a variant of the Spell Scroll family; false for any other item, whose stored key says nothing.
+	IsScroll bool
+	// Key is the stored spell key ("" for a scroll with none).
+	Key string
+	// Level is the spell's own level, 0 when the key is no spell.
+	Level int
+	// Off says the key is no spell of the content or the table has switched it off or archived it.
+	Off bool
+	// Moved says the spell exists and its level is not the scroll's.
+	Moved bool
+}
+
+// Gives says the scroll gives the spell: it holds one that exists, is on at the table and is of the scroll's level.
+func (s ScrollSpell) Gives() bool { return s.IsScroll && s.Key != "" && !s.Off && !s.Moved }
+
+// ScrollSpellOf reads the spell the item holds, for the spell key stored on its sheet entry.
+func (c *Content) ScrollSpellOf(itemKey, spellKey string) ScrollSpell {
+	scroll, ok := c.SpellScrollNumbers(itemKey)
+	if !ok {
+		return ScrollSpell{}
+	}
+	out := ScrollSpell{IsScroll: true, Key: spellKey}
+	if spellKey == "" {
+		return out
+	}
+	det, exists := c.SpellDetails(spellKey)
+	out.Off = !exists || c.Hidden(spellKey)
+	if exists {
+		out.Level, out.Moved = det.Spell.Level, det.Spell.Level != scroll.Level
+	}
+	return out
+}
+
+// ScrollCheck is the ability check that reading a spell above the reader's level asks for.
+type ScrollCheck struct {
+	D20, Modifier, Total, DC int
+	// Passed says the total reaches the DC; always true for a read that asks no check.
+	Passed bool
+}
+
+// Check is the check of the reading for the d20 rolled or typed and the modifier of the reader's spellcasting ability: the total
+// (d20 plus modifier) against the DC, a tie passing, with no critical on a 1 or a 20 (an ability check has none). A read that
+// needs no check passes with nothing rolled.
+func (r ScrollRead) Check(d20, modifier int) ScrollCheck {
+	if !r.CheckNeeded {
+		return ScrollCheck{Passed: true}
+	}
+	total := d20 + modifier
+	return ScrollCheck{D20: d20, Modifier: modifier, Total: total, DC: r.CheckDC, Passed: total >= r.CheckDC}
+}
+
+// AbilityModifier is the modifier of the character's ability, 0 for an ability the sheet does not carry (none).
+func (d Derived) AbilityModifier(a Ability) int {
+	for _, s := range d.Abilities {
+		if s.Ability == a {
+			return s.Modifier
+		}
+	}
+	return 0
 }
