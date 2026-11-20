@@ -3105,6 +3105,14 @@ const (
 	CombatLogKind_COMBAT_LOG_KIND_MOUNT_SAVE CombatLogKind = 109
 	// A rider fell off its mount ("Toren caiu da montaria"): the same audience as MOUNT_SAVE, with no number for anyone.
 	CombatLogKind_COMBAT_LOG_KIND_RIDER_THROWN CombatLogKind = 110
+	// A bonded creature, the steed of Find Steed, was dismissed in a running combat ("Lia dispensou Estrela"): the bond stays and the
+	// spell brings it back. The actor is the combatant of its owner and `target_label` names the creature (its combatant left the
+	// combat, so `target_id` is empty). The audience is the creature's own: the master and every player when the creature was in sight,
+	// and the master alone when the master had hidden it (RN-10).
+	CombatLogKind_COMBAT_LOG_KIND_CREATURE_DISMISSED CombatLogKind = 120
+	// A bonded creature was released in a running combat ("Lia libertou Estrela"): the bond ends. The same actor, target and audience
+	// as CREATURE_DISMISSED.
+	CombatLogKind_COMBAT_LOG_KIND_CREATURE_RELEASED CombatLogKind = 121
 )
 
 // Enum value maps for CombatLogKind.
@@ -3155,6 +3163,8 @@ var (
 		108: "COMBAT_LOG_KIND_DISMOUNTED",
 		109: "COMBAT_LOG_KIND_MOUNT_SAVE",
 		110: "COMBAT_LOG_KIND_RIDER_THROWN",
+		120: "COMBAT_LOG_KIND_CREATURE_DISMISSED",
+		121: "COMBAT_LOG_KIND_CREATURE_RELEASED",
 	}
 	CombatLogKind_value = map[string]int32{
 		"COMBAT_LOG_KIND_UNSPECIFIED":             0,
@@ -3202,6 +3212,8 @@ var (
 		"COMBAT_LOG_KIND_DISMOUNTED":              108,
 		"COMBAT_LOG_KIND_MOUNT_SAVE":              109,
 		"COMBAT_LOG_KIND_RIDER_THROWN":            110,
+		"COMBAT_LOG_KIND_CREATURE_DISMISSED":      120,
+		"COMBAT_LOG_KIND_CREATURE_RELEASED":       121,
 	}
 )
 
@@ -32719,7 +32731,7 @@ const file_meurpg_play_v1_combat_proto_rawDesc = "" +
 	"\x1aDEATH_SAVE_OUTCOME_SUCCESS\x10\x01\x12\x1e\n" +
 	"\x1aDEATH_SAVE_OUTCOME_FAILURE\x10\x02\x12'\n" +
 	"#DEATH_SAVE_OUTCOME_CRITICAL_FAILURE\x10\x03\x12\x1e\n" +
-	"\x1aDEATH_SAVE_OUTCOME_REVIVED\x10\x04*\xa3\f\n" +
+	"\x1aDEATH_SAVE_OUTCOME_REVIVED\x10\x04*\xf2\f\n" +
 	"\rCombatLogKind\x12\x1f\n" +
 	"\x1bCOMBAT_LOG_KIND_UNSPECIFIED\x10\x00\x12\x1c\n" +
 	"\x18COMBAT_LOG_KIND_RESOURCE\x10Z\x12 \n" +
@@ -32766,7 +32778,9 @@ const file_meurpg_play_v1_combat_proto_rawDesc = "" +
 	"\x17COMBAT_LOG_KIND_MOUNTED\x10k\x12\x1e\n" +
 	"\x1aCOMBAT_LOG_KIND_DISMOUNTED\x10l\x12\x1e\n" +
 	"\x1aCOMBAT_LOG_KIND_MOUNT_SAVE\x10m\x12 \n" +
-	"\x1cCOMBAT_LOG_KIND_RIDER_THROWN\x10n*\xb4\x02\n" +
+	"\x1cCOMBAT_LOG_KIND_RIDER_THROWN\x10n\x12&\n" +
+	"\"COMBAT_LOG_KIND_CREATURE_DISMISSED\x10x\x12%\n" +
+	"!COMBAT_LOG_KIND_CREATURE_RELEASED\x10y*\xb4\x02\n" +
 	"\x12WildShapeEndReason\x12%\n" +
 	"!WILD_SHAPE_END_REASON_UNSPECIFIED\x10\x00\x12\x1e\n" +
 	"\x1aWILD_SHAPE_END_REASON_LEFT\x10\x01\x12 \n" +

@@ -85,6 +85,9 @@ type CreatureHost interface {
 	// steed it must be the owner's turn with the action unspent, or it answers the combat's refusal. It does nothing when the combat is
 	// not running or the steed is not in it.
 	SpendDismissal(ctx context.Context, tx pgx.Tx, campaignID, actorUserID, characterID, creatureID string, at time.Time) error
+	// SteedSentAway writes the combat's line of a bonded steed that is dismissed or released (released says which), inside tx, when a
+	// running combat holds the steed. It does nothing otherwise. Call it before CreaturesLeaving, which takes the steed's combatant out.
+	SteedSentAway(ctx context.Context, tx pgx.Tx, campaignID, actorUserID, characterID, creatureID string, released bool, at time.Time) error
 	// LockSession takes the campaign's open session's row inside tx, if there is
 	// one. A change to a creature calls it first, as a combat's writes lock the
 	// session before the creatures: one lock order, no deadlock.
@@ -680,8 +683,14 @@ func (s *Service) leaveCombat(ctx context.Context, tx pgx.Tx, m authz.Membership
 	if err != nil || s.creatureHost == nil {
 		return reason, "", err
 	}
-	if v.Source == creatureSourceSteed && !isMaster(m) {
-		if err := s.creatureHost.SpendDismissal(ctx, tx, m.CampaignID, m.UserID, v.CharacterID, v.ID, s.now()); err != nil {
+	if v.Source == creatureSourceSteed {
+		if !isMaster(m) {
+			if err := s.creatureHost.SpendDismissal(ctx, tx, m.CampaignID, m.UserID, v.CharacterID, v.ID, s.now()); err != nil {
+				return reason, "", err
+			}
+		}
+		released := how == charactersv1.CreatureDismissal_CREATURE_DISMISSAL_RELEASE
+		if err := s.creatureHost.SteedSentAway(ctx, tx, m.CampaignID, m.UserID, v.CharacterID, v.ID, released, s.now()); err != nil {
 			return reason, "", err
 		}
 	}

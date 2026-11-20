@@ -670,6 +670,7 @@ The pair is one occupant of the mount's square, and the mount's turn is its own.
   A recast revives the same steed at full hit points, with its form, name and type, and refuses another form or type.
   "Dispensar" sends the steed away and keeps the bond, and "Libertar" ends the bond.
   In a combat that holds the steed, either one costs the owner's action; the master and a dismissal outside combat are free.
+  In a running combat either one is a line of the log ("Lia dispensou Estrela: o vínculo continua", "Lia libertou Estrela"), read by the master and by every player.
   At 0 hit points the steed disappears and the bond stays, so a recast brings it back.
   The steed's Intelligence is at least 6, and no effect reads a lower one.
   The caster picks celestial, fey or fiend; only the owner and the master read the choice.

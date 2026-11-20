@@ -714,6 +714,9 @@ type actionEvent struct {
 	Source         string     `json:"source,omitempty"`
 	Ritual         bool       `json:"ritual,omitempty"`
 	Reason         string     `json:"reason,omitempty"`
+	// GoneLabel is the name of the creature a combatant_removed event of a steed sent away is about: its combatant is gone from the
+	// combat, so the line of the log reads the name from here.
+	GoneLabel string `json:"gone_label,omitempty"`
 
 	// Wild Shape and the familiar's eyes (MR-037, MR-036): the beast's key, the damage
 	// the beast's fall carried over to the character, the form before a change an

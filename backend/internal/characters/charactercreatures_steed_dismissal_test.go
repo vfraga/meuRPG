@@ -46,7 +46,7 @@ func TestSteedDismissalAsksPlayForTheOwnersActionFirst(t *testing.T) {
 	if err := tb.dismissAs(tb.owner, id, dismiss); err != nil {
 		t.Fatal(err)
 	}
-	wantCreatureCalls(t, "the owner dismisses the steed", tb.spy, "lock", "spend the action for "+id, fmt.Sprintf("leaving by %s: %s", tb.owner.id, id),
+	wantCreatureCalls(t, "the owner dismisses the steed", tb.spy, "lock", "spend the action for "+id, "steed "+id+" sent away (released false)", fmt.Sprintf("leaving by %s: %s", tb.owner.id, id),
 		fmt.Sprintf(`event creature_dismissed by %s {"character_id":%q,"creature_ids":[%q],"reason":"dismissed"}`, tb.owner.id, tb.pc.GetId(), id),
 		"publish creatures of "+tb.owner.id)
 	if _, err := tb.h.pool.Exec(t.Context(), `UPDATE character_creatures SET bonded = false WHERE id = $1`, id); err != nil {

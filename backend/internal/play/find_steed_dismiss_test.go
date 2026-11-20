@@ -6,6 +6,7 @@ import (
 	"connectrpc.com/connect"
 
 	charactersv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/characters/v1"
+	playv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/play/v1"
 )
 
 // Dismiss and Release of a steed (#588 slice 3): a dismissal keeps the bond, a release ends it; in a combat the owner's player spends the
@@ -169,5 +170,58 @@ func TestFindSteedNothingInACombatCanUndoItsCastingAway(t *testing.T) {
 	}
 	if bonded, reason := a.steedBondOf(t, id); !bonded || reason != "" {
 		t.Errorf("the steed after the undo: bonded %v, reason %q, want it bonded and live", bonded, reason)
+	}
+}
+
+// steedLine is the log line of the steed's dismissal or release the user reads, or nil.
+func (a *armed) steedLine(t *testing.T, u *user, e *playv1.Encounter, kind playv1.CombatLogKind) *playv1.CombatLogEntry {
+	t.Helper()
+	var found *playv1.CombatLogEntry
+	for _, round := range a.log(t, u, e).GetRounds() {
+		for _, entry := range round.GetEntries() {
+			if entry.GetKind() == kind {
+				found = entry
+			}
+		}
+	}
+	return found
+}
+
+// TestFindSteedDismissAndReleaseInACombatAreLines: sending the steed away in a running combat writes one line, with the owner's character as
+// the actor and the steed as the one sent away, read by the master and every player who sees the steed.
+func TestFindSteedDismissAndReleaseInACombatAreLines(t *testing.T) {
+	t.Parallel()
+	for _, tc := range []struct {
+		name  string
+		how   charactersv1.CreatureDismissal
+		kind  playv1.CombatLogKind
+		other playv1.CombatLogKind
+	}{
+		{"dismissed", charactersv1.CreatureDismissal_CREATURE_DISMISSAL_DISMISS, playv1.CombatLogKind_COMBAT_LOG_KIND_CREATURE_DISMISSED, playv1.CombatLogKind_COMBAT_LOG_KIND_CREATURE_RELEASED},
+		{"released", charactersv1.CreatureDismissal_CREATURE_DISMISSAL_RELEASE, playv1.CombatLogKind_COMBAT_LOG_KIND_CREATURE_RELEASED, playv1.CombatLogKind_COMBAT_LOG_KIND_CREATURE_DISMISSED},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			a, e := riderInFight(t)
+			if line := a.steedLine(t, a.master, e, tc.kind); line != nil {
+				t.Fatalf("the log has a %v line before the steed is sent away", tc.kind)
+			}
+			if err := a.dismissSteedAs(t, a.ana, a.steedCreatureID(t), tc.how); err != nil {
+				t.Fatalf("send the steed away error = %v", err)
+			}
+			for who, u := range map[string]*user{"the master": a.master, "the owner": a.ana, "another player who sees the steed": a.caio} {
+				line := a.steedLine(t, u, e, tc.kind)
+				if line == nil {
+					t.Errorf("%s reads no %v line", who, tc.kind)
+					continue
+				}
+				if line.GetActorLabel() != "Aurélio" || line.GetTargetLabel() != "Trovão" {
+					t.Errorf("%s reads %q and %q, want the owner's character and the steed", who, line.GetActorLabel(), line.GetTargetLabel())
+				}
+				if wrong := a.steedLine(t, u, e, tc.other); wrong != nil {
+					t.Errorf("%s reads a %v line too", who, tc.other)
+				}
+			}
+		})
 	}
 }

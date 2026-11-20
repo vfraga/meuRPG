@@ -65,6 +65,11 @@ func (s *creatureHostSpy) SpendDismissal(_ context.Context, _ pgx.Tx, _, _, _, c
 	return s.spendFail
 }
 
+func (s *creatureHostSpy) SteedSentAway(_ context.Context, _ pgx.Tx, _, _, _, creatureID string, released bool, _ time.Time) error {
+	s.record("steed %s sent away (released %v)", creatureID, released)
+	return nil
+}
+
 func (s *creatureHostSpy) LockSession(context.Context, pgx.Tx, string) error {
 	s.record("lock")
 	return nil

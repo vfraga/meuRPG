@@ -670,6 +670,7 @@ O par ocupa um só lugar, o quadrado da montaria, e o turno da montaria continua
   Uma nova conjuração traz de volta a mesma montaria com os PV cheios, com a forma, o nome e o tipo, e recusa outra forma ou outro tipo.
   "Dispensar" manda a montaria embora e mantém o vínculo, e "Libertar" encerra o vínculo.
   Num combate que tem a montaria, qualquer um dos dois custa a ação do dono; o mestre e a dispensa fora do combate são gratuitos.
+  Num combate em andamento, qualquer um dos dois é uma linha do registro ("Lia dispensou Estrela: o vínculo continua", "Lia libertou Estrela"), lida pelo mestre e por todo jogador.
   Com 0 PV a montaria desaparece e o vínculo fica, então uma nova conjuração a traz de volta.
   A Inteligência da montaria é no mínimo 6, e nenhum efeito lê um valor menor.
   O conjurador escolhe celestial, fada ou ínfero; só o dono e o mestre leem a escolha.

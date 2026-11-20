@@ -101,6 +101,46 @@ func (s *Service) SpendDismissal(ctx context.Context, tx pgx.Tx, campaignID, act
 	return spendAction(ctx, c, cs[i], false)
 }
 
+// The two reasons of the combatant_removed event of a steed that is sent away: the log reads them as the lines CREATURE_DISMISSED and
+// CREATURE_RELEASED.
+const (
+	removedSteedDismissed = "steed_dismissed"
+	removedSteedReleased  = "steed_released"
+)
+
+// SteedSentAway writes the line of a bonded steed that is dismissed or released in a running combat that holds it, before its
+// combatant leaves (characters.CreatureHost): the owner's combatant is the actor and the steed's name rides in the event, since the
+// combatant is gone when the log is read. Whoever sees the steed reads it; a hidden one is the master's alone.
+func (s *Service) SteedSentAway(ctx context.Context, tx pgx.Tx, campaignID, actorUserID, characterID, creatureID string, released bool, at time.Time) error {
+	q := s.queries.WithTx(tx)
+	session, enc, found, err := openCombatOf(ctx, q, campaignID)
+	if err != nil || !found || enc.Status != statusActive {
+		return err
+	}
+	cs, err := q.ListCombatants(ctx, enc.ID)
+	if err != nil {
+		return fmt.Errorf("list the combatants: %w", err)
+	}
+	steeds := creatureCombatantsOf(cs, []string{creatureID})
+	if len(steeds) == 0 {
+		return nil
+	}
+	ev := actionEvent{Round: enc.Round, Created: []string{creatureID}, OwnerCharacter: characterID, GoneLabel: steeds[0].Label, Reason: removedSteedDismissed}
+	if released {
+		ev.Reason = removedSteedReleased
+	}
+	secret := steeds[0].Hidden
+	if i := slices.IndexFunc(cs, func(o playdb.Combatant) bool { return o.Kind == kindPlayer && o.CharacterID == characterID }); i >= 0 {
+		ev.Actor, secret = cs[i].ID, secret || cs[i].Hidden
+	}
+	ev.Secret = secret
+	c, err := s.openTx(ctx, combatTx{tx: tx, q: q, session: session, enc: enc, now: at, actorUserID: actorUserID, svc: s})
+	if err != nil {
+		return err
+	}
+	return insertEvent(ctx, c, eventCombatantRemoved, &actorUserID, nil, ev)
+}
+
 // openCombatOf is the campaign's open session, locked, and its open combat; false when
 // there is no session or no combat.
 func openCombatOf(ctx context.Context, q *playdb.Queries, campaignID string) (playdb.GameSession, playdb.Encounter, bool, error) {

@@ -579,6 +579,7 @@ var logHandlers = map[string]logHandler{
 	eventCombatantMoved:          (*logBuilder).moved,
 	eventCombatantMounted:        plainLine(playv1.CombatLogKind_COMBAT_LOG_KIND_MOUNTED),
 	eventCombatantDismounted:     plainLine(playv1.CombatLogKind_COMBAT_LOG_KIND_DISMOUNTED),
+	eventCombatantRemoved:        steedSentAwayLine,
 	eventDoorOpened:              plainLine(playv1.CombatLogKind_COMBAT_LOG_KIND_DOOR_OPENED),
 	eventCombatantsAdded:         (*logBuilder).monstersAdded,
 	eventLegendarySpent:          masterLine(playv1.CombatLogKind_COMBAT_LOG_KIND_LEGENDARY_SPENT),
@@ -669,6 +670,26 @@ func plainLine(kind playv1.CombatLogKind) logHandler {
 		entry.kind = kind
 		return true
 	}
+}
+
+// steedSentAwayLine is the handler of a combatant_removed event: a bonded steed that was dismissed or released is a line, any other
+// removal is not.
+func steedSentAwayLine(_ *logBuilder, _ playdb.ListEncounterEventsRow, entry *logEntry) bool {
+	switch entry.ev.Reason {
+	case removedSteedDismissed:
+		entry.kind = playv1.CombatLogKind_COMBAT_LOG_KIND_CREATURE_DISMISSED
+	case removedSteedReleased:
+		entry.kind = playv1.CombatLogKind_COMBAT_LOG_KIND_CREATURE_RELEASED
+	default:
+		return false
+	}
+	return true
+}
+
+// fillSteedSentAway names the steed of the line: its combatant is gone from the combat, so its name comes from the event.
+func (e *logEntry) fillSteedSentAway(_ *logViewing, out *playv1.CombatLogEntry) bool {
+	out.TargetLabel = e.ev.GoneLabel
+	return true
 }
 
 // masterLine is the handler of an event that is a line of the kind for the master alone.
@@ -1273,6 +1294,8 @@ var logFillers = map[playv1.CombatLogKind]logFiller{
 	playv1.CombatLogKind_COMBAT_LOG_KIND_EFFECT_ENDED:            (*logEntry).fillEffectEnd,
 	playv1.CombatLogKind_COMBAT_LOG_KIND_MOUNT_SAVE:              (*logEntry).fillMountSave,
 	playv1.CombatLogKind_COMBAT_LOG_KIND_RIDER_THROWN:            (*logEntry).fillMountSave,
+	playv1.CombatLogKind_COMBAT_LOG_KIND_CREATURE_DISMISSED:      (*logEntry).fillSteedSentAway,
+	playv1.CombatLogKind_COMBAT_LOG_KIND_CREATURE_RELEASED:       (*logEntry).fillSteedSentAway,
 	playv1.CombatLogKind_COMBAT_LOG_KIND_ITEM_CHARGE_SPENT:       (*logEntry).fillItemUse,
 	playv1.CombatLogKind_COMBAT_LOG_KIND_ITEM_LAST_CHARGE_ROLLED: (*logEntry).fillItemUse,
 	playv1.CombatLogKind_COMBAT_LOG_KIND_AMMUNITION_SPENT:        (*logEntry).fillItemUse,
