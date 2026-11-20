@@ -2,6 +2,7 @@ package rules
 
 import (
 	"slices"
+	"strings"
 	"testing"
 )
 
@@ -41,6 +42,7 @@ func TestMatchPicks(t *testing.T) {
 		{"a full source leaves the later pick out", []pickSource{{Count: 1, From: []string{"a", "b"}}}, []string{"a", "b"}, []int{0, -1}},
 		{"an open source takes any key", []pickSource{{Count: 1, Any: true}}, []string{"q"}, []int{0}},
 		{"the earlier pick moves to make room", []pickSource{{Count: 1, From: []string{"a", "b"}}, {Count: 1, From: []string{"a"}}}, []string{"a", "b"}, []int{1, 0}},
+		{"a source of two overlapping another", []pickSource{{Count: 2, From: []string{"a", "b", "c"}}, {Count: 1, From: []string{"a"}}}, []string{"a", "b", "c"}, []int{1, 0, 0}},
 		{"a chain of moves", []pickSource{{Count: 1, From: []string{"a", "b"}}, {Count: 1, From: []string{"b", "c"}}, {Count: 1, From: []string{"c"}}}, []string{"a", "b", "c"}, []int{0, 1, 2}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -93,7 +95,7 @@ func fitIssues(d Derived) []Issue {
 
 // TestFitIssueIsTheMastersAndNoChoiceProblem pins the path that decides it: the issue comes only from deriver.readsFit (the
 // master's derivation of table content), and ChoiceSet.ChoiceProblems, which the save and the level-up read, is built from
-// the choices alone and never from the issues of Derive, so the stored sheet that does not fit saves and levels up.
+// the choices alone and never from the issues of Derive. TestUnfitStoredSheetLevelsUp pins the level-up.
 func TestFitIssueIsTheMastersAndNoChoiceProblem(t *testing.T) {
 	t.Parallel()
 	c, fits := fitSheet(t, "skill:arcana")
@@ -275,6 +277,26 @@ func TestUnplacedNewPick(t *testing.T) {
 			t.Errorf("stealth is in no list, got %q %v", key, found)
 		}
 	})
+	t.Run("a new expertise no source takes is refused", func(t *testing.T) {
+		t.Parallel()
+		race := TableRace{
+			Key: "race:perito@mesa", NamePT: "Perito", Revision: 1, Size: "Medium", SpeedFt: 30,
+			Traits: []TableFeature{{Key: "trait:faro@mesa", NamePT: "Faro", Effects: []Effect{{Type: "choice", Choice: "expertise", Count: 1, From: []string{"skill:athletics"}}}}},
+		}
+		ec := withOverlay(t, Overlay{Revision: 1, Races: []TableRace{race}})
+		held := sweepBase(t, ec, "class:fighter", "")
+		held.Race = race.Key
+		now := held.clone()
+		now.Expertise = []string{"skill:athletics"}
+		if field, key, found := ec.UnplacedNewPick(&held, now); found {
+			t.Errorf("refused %q at %q", key, field)
+		}
+		now.Expertise = []string{"skill:acrobatics"}
+		field, key, found := ec.UnplacedNewPick(&held, now)
+		if !found || field != "full.expertise_skill_keys[0]" || key != "skill:acrobatics" {
+			t.Errorf("got %q %q %v", field, key, found)
+		}
+	})
 	t.Run("a tool no choice of the owner lists", func(t *testing.T) {
 		t.Parallel()
 		const thieves, herbs, smith = "proficiency:thieves-tools", "proficiency:herbalism-kit", "proficiency:smiths-tools"
@@ -295,4 +317,120 @@ func TestUnplacedNewPick(t *testing.T) {
 			t.Errorf("got %q %q %v", field, k, found)
 		}
 	})
+}
+
+// toolFitFixture is a background whose feature has two tool choices: one of thieves' tools or the herbalism kit, one of the
+// smith's tools. The sheet holds thieves' tools and the herbalism kit: the matching takes one of them and leaves the other.
+func toolFitFixture(t *testing.T) (*Content, Build, string) {
+	t.Helper()
+	const thieves, herbs, smith = "proficiency:thieves-tools", "proficiency:herbalism-kit", "proficiency:smiths-tools"
+	o := filterBackgroundWith(Effect{Type: "choice", Choice: "tool", Count: 1, From: []string{thieves, herbs}})
+	o.Backgrounds[0].Feature.Effects = append(o.Backgrounds[0].Feature.Effects, Effect{Type: "choice", Choice: "tool", Count: 1, From: []string{smith}})
+	c := withOverlay(t, o)
+	b := filterBuild()
+	b.FeatureChoices = []string{ScopedChoice(filterPickKey(), thieves), ScopedChoice(filterPickKey(), herbs)}
+	return c, b, filterPickKey()
+}
+
+func missingTools(d Derived) int {
+	n := 0
+	for _, oc := range d.OpenChoices {
+		if oc.Kind == OpenChoiceTools {
+			n += oc.Missing
+		}
+	}
+	return n
+}
+
+// TestHeldToolPickTheMatchingLeavesOutStillCounts: a stored sheet that does not fit plays. A held tool pick that the
+// placement leaves out counts as held, as the choice counts it, and still gives its proficiency; the master's fit issue
+// is the only trace.
+func TestHeldToolPickTheMatchingLeavesOutStillCounts(t *testing.T) {
+	t.Parallel()
+	c, b, key := toolFitFixture(t)
+	d := Derive(b, c)
+	if n := missingTools(d); n != 0 {
+		t.Errorf("Derive asks for %d more tools, the choice holds both", n)
+	}
+	for _, is := range d.Issues {
+		if is.Code == IssueMissing && strings.Contains(is.Message, "ferramenta") {
+			t.Errorf("missing-tools issue: %s", is.Message)
+		}
+	}
+	for _, p := range []string{"proficiency:thieves-tools", "proficiency:herbalism-kit"} {
+		if !slices.ContainsFunc(d.Proficiencies, func(x Proficiency) bool { return x.Key == p }) {
+			t.Errorf("the held pick %s gives no proficiency", p)
+		}
+	}
+	for _, g := range c.Choices(b).Groups {
+		for _, ch := range g.Choices {
+			if ch.Key == key && (ch.Picks != 2 || ch.Missing() != 0) {
+				t.Errorf("the choice holds %d of %d", ch.Done(), ch.Picks)
+			}
+		}
+	}
+	if is := fitIssues(d); len(is) != 1 {
+		t.Errorf("the master's fit issues = %v, want one", is)
+	}
+	if is := fitIssues(Derive(b, c.ForPlayer())); len(is) != 0 {
+		t.Errorf("a player's fit issues = %v", is)
+	}
+}
+
+// TestUnfitStoredSheetLevelsUp: a stored sheet whose picks do not fit still levels up. The level adds a source, so the pick
+// the fit issue names changes; the issue never blocks the level, and the new skill is refused only when no source of the
+// level takes it.
+func TestUnfitStoredSheetLevelsUp(t *testing.T) {
+	t.Parallel()
+	race := TableRace{
+		Key: "race:perito@mesa", NamePT: "Perito", Revision: 1, Size: "Medium", SpeedFt: 30,
+		Traits: []TableFeature{{Key: "trait:faro@mesa", NamePT: "Faro", Effects: []Effect{{Type: "choice", Choice: "skill", Count: 1, From: []string{"skill:medicine"}}}}},
+	}
+	c := withOverlay(t, Overlay{Revision: 1, Races: []TableRace{race}, Subclasses: []TableSubclass{{
+		TableEntry: TableEntry{Key: sourceSub, NamePT: "Mestre do saber"}, Class: "class:fighter",
+		Levels: []TableSubclassLevel{{Level: 3, Features: []TableFeature{{
+			Key: "feature:estudo@mesa", NamePT: "Estudo", DescPT: []string{"Uma perícia à escolha."},
+			Effects: []Effect{{Type: "choice", Choice: "skill", Count: 1, From: []string{"skill:stealth", "skill:arcana"}}},
+		}}}},
+	}}})
+	before := sweepUp(t, c, sweepBase(t, c, "class:fighter", ""), "class:fighter", sourceSub, 2)
+	before.Race = race.Key
+	before.SkillProficiencies = []string{"skill:acrobatics", "skill:animal-handling", "skill:stealth"}
+	if is := fitIssues(Derive(before, c)); len(is) != 1 {
+		t.Fatalf("the stored sheet's fit issues = %v, want one", is)
+	}
+	ch := satisfy(t, c, before, "class:fighter", sourceSub)
+	ch.SkillProficiencies = []string{"skill:arcana"}
+	after, err := ApplyLevelUp(before, ch, c)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := CheckLevelUpOf(before, after, ch, c); err != nil {
+		t.Errorf("the level up is refused: %v", err)
+	}
+	ch.SkillProficiencies = []string{"skill:history"}
+	after, err = ApplyLevelUp(before, ch, c)
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantRefusal(t, CheckLevelUpOf(before, after, ch, c), LevelUpReasonSkills, "full.skill_proficiency_keys")
+}
+
+// TestToolFitIssue: the tool fit issue is the master's, comes once the owner's picks are as many as its choices ask, and
+// names the tool by its name.
+func TestToolFitIssue(t *testing.T) {
+	t.Parallel()
+	c, b, _ := toolFitFixture(t)
+	is := fitIssues(Derive(b, c))
+	if len(is) != 1 || is[0].Field != choiceKeysField || !strings.Contains(is[0].Message, "ferramenta") {
+		t.Fatalf("fit issues = %v, want one about a tool", is)
+	}
+	short := b.clone()
+	short.FeatureChoices = short.FeatureChoices[:1] // one pick of two asked: the count is not right, so no fit issue
+	if is := fitIssues(Derive(short, c)); len(is) != 0 {
+		t.Errorf("a sheet short of picks has fit issues: %v", is)
+	}
+	if is := fitIssues(Derive(b, c.ForPlayer())); len(is) != 0 {
+		t.Errorf("a player's fit issues = %v", is)
+	}
 }

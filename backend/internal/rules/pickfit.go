@@ -5,9 +5,10 @@ import (
 	"slices"
 )
 
-// The fit of a sheet's picks to the lists they come from. A stored sheet whose count of skills, expertise or tools is
-// right but whose picks no placement fits in the sources still saves, levels up and plays: the issue is the master's alone
-// and is no choice problem, so it never blocks a save of picks nobody touched.
+// The fit of a sheet's picks to the lists they come from.
+// A stored sheet with the right count of picks that no placement fits still saves, levels up and plays.
+// Its held picks still count and still give what they give.
+// The issue is the master's alone, it is no choice problem, and it blocks nothing.
 
 // The sheet fields of the lists the fit issue is about.
 const (
@@ -72,11 +73,6 @@ func (x *deriver) checkToolFit() {
 	for _, p := range x.unplacedTools {
 		offered := 0
 		for _, q := range x.pickedTools {
-			if q.Owner == p.Owner {
-				offered++
-			}
-		}
-		for _, q := range x.unplacedTools {
 			if q.Owner == p.Owner {
 				offered++
 			}

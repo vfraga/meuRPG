@@ -58,10 +58,7 @@ func (c *content) isToolKey(key string) bool {
 type proficiencyPick struct{ Value, Owner string }
 
 // pickedProficiencies are the languages and the tools the picks of Build.FeatureChoices give: the ones whose owner
-// is on the sheet (owned) and grants a pick with room left, that the owner offers, none picked before. In the order
-// of the picks. The tools an owner offers by several choices (each with its own list) are placed in them by matching, so
-// a pick the second list allows is no less valid than one the first allows; the tools of an owner that no placement takes
-// are the third result.
+// is on the sheet (owned), that the owner offers, none picked before. In the order of the picks. The tools of an owner are placed in its tool choices; the ones no placement takes are the third result.
 func (c *content) pickedProficiencies(b Build, owned func(string) bool) (languages, tools, unplaced []proficiencyPick) {
 	taken := map[string]int{}
 	var offered []proficiencyPick
@@ -127,7 +124,9 @@ func (c *content) placeToolPicks(picks []proficiencyPick) (placed, unplaced []pr
 // proficiencyPicks reads the language and tool picks of the sheet, once the effects are collected.
 func (x *deriver) proficiencyPicks() {
 	onSheet := ownedBy(x.b, *x.d)
-	x.pickedLanguages, x.pickedTools, x.unplacedTools = x.c.pickedProficiencies(x.b, func(k string) bool { return x.owned[k] || onSheet(k) })
+	var placed []proficiencyPick
+	x.pickedLanguages, placed, x.unplacedTools = x.c.pickedProficiencies(x.b, func(k string) bool { return x.owned[k] || onSheet(k) })
+	x.pickedTools = slices.Concat(placed, x.unplacedTools)
 }
 
 // listedNames adds to the sheet's list the names the player typed in a free field, once each: a name the sheet

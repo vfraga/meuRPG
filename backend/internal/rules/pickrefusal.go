@@ -54,7 +54,7 @@ func (x *deriver) unplacedNewList(field string, sources []pickSource, list, held
 	return "", "", false
 }
 
-// placesAlone says the pick adds to the placement of the picks: the maximum placement with it is larger than without it.
+// placesAlone says the largest placement is bigger with the pick than without it.
 func placesAlone(sources []pickSource, picks []string, pick string) bool {
 	without := slices.DeleteFunc(slices.Clone(picks), func(k string) bool { return k == pick })
 	return placedCount(sources, picks) > placedCount(sources, without)

@@ -1380,7 +1380,7 @@ const (
 	// level, a Pact Boon, a spell or other options); the pick stays on the sheet.
 	IssueOptionPrerequisite = "option_prerequisite"
 	// IssuePickFit: a skill, an expertise or a tool pick that no list the character chooses from takes, though the
-	// count is right. Only the master reads it, and it blocks nothing.
+	// count is right. Only the master reads it, and it blocks nothing: the picks still count and still give what they give.
 	IssuePickFit = "pick_fit"
 	// IssueArmorProficiency: armor or a shield without the proficiency.
 	IssueArmorProficiency = "armor_proficiency"

@@ -1373,15 +1373,15 @@ func (c *content) checkLevelUpSkills(before, after Build, classKey string, mc *M
 
 // checkNewIssues refuses the first problem the sheet after has and the sheet
 // before did not: it must not end up with one. Magical Secrets spells
-// (offOwnList) are off the class list on purpose.
+// (offOwnList) are off the class list on purpose. The fit issue is the master's advisory and is never one.
 func checkNewIssues(dBefore, dAfter Derived, offOwnList map[string]bool) *LevelUpError {
 	had := map[string]bool{}
 	for _, is := range dBefore.Issues {
 		had[is.ID()] = true
 	}
 	for _, is := range dAfter.Issues {
-		if is.Code == IssueSpellNotOnList && offOwnList[is.Field] {
-			continue
+		if is.Code == IssueSpellNotOnList && offOwnList[is.Field] || is.Code == IssuePickFit {
+			continue // the master's fit issue never blocks a level: a new pick is judged by checkSkillSources
 		}
 		if !had[is.ID()] {
 			return &LevelUpError{Field: is.Field, Reason: LevelUpReasonSheetIssue, Code: is.Code, Message: is.Message}

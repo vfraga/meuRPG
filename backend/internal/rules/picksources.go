@@ -19,9 +19,9 @@ func (s pickSource) allows(key string) bool {
 	return s.Any || slices.Contains(s.From, key)
 }
 
-// matchPicks places the picks in the sources: the result holds, for each pick, the index of the source that takes it, or -1
-// when the placement leaves it out. The placement is a maximum matching of picks to slots (each source has Count slots), so a
-// pick is left out only when no placement takes it with the others; the earlier picks stay placed in preference to the later.
+// matchPicks gives, for each pick, the index of the source that takes it, or -1.
+// Each source has Count slots and the placement is the largest one.
+// A pick is left out only when no placement takes it with the others.
 func matchPicks(sources []pickSource, picks []string) []int {
 	var slotSource []int
 	for i, s := range sources {
@@ -48,8 +48,8 @@ func matchPicks(sources []pickSource, picks []string) []int {
 	return out
 }
 
-// place finds a slot for pick p, moving the picks that hold the slots it needs to other slots when they can go (an
-// augmenting path); tried marks the slots the search has visited.
+// place finds a slot for pick p, moving a pick that holds the slot to another when it can go.
+// tried marks the slots already visited.
 func place(sources []pickSource, picks []string, slotSource, slotPick []int, p int, tried []bool) bool {
 	for slot, si := range slotSource {
 		if tried[slot] || !sources[si].allows(picks[p]) {

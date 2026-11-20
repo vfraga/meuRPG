@@ -60,7 +60,7 @@ func TestLevelUpSweepTableMulticlass(t *testing.T) {
 				b := sweepBase(t, c, srdKey, srdSub)
 				b.BaseScores = copyScores(strong)
 				b = sweepUp(t, c, b, srdKey, srdSub, 5)
-				b = addClass(c, b, tableKey, 1)
+				b = addClass(t, c, b, tableKey, 1)
 				sweepUp(t, c, b, tableKey, tableSub, MaxLevel)
 			})
 			t.Run(fmt.Sprintf("%s before %s", tableKey, srdKey), func(t *testing.T) {
@@ -68,7 +68,7 @@ func TestLevelUpSweepTableMulticlass(t *testing.T) {
 				b := sweepBase(t, c, tableKey, tableSub)
 				b.BaseScores = copyScores(strong)
 				b = sweepUp(t, c, b, tableKey, tableSub, 5)
-				b = addClass(c, b, srdKey, 1)
+				b = addClass(t, c, b, srdKey, 1)
 				sweepUp(t, c, b, tableKey, tableSub, 14)
 			})
 		}
@@ -87,7 +87,7 @@ func TestLevelUpSweepTableMulticlass(t *testing.T) {
 				if other == "class:paladin" {
 					lvl = 2 // casts from level 2
 				}
-				b = addClass(c, b, other, lvl)
+				b = addClass(t, c, b, other, lvl)
 				b = sweepUp(t, c, b, third.class, third.sub, MaxLevel)
 				if d := Derive(b, c); len(d.Spellcasting) != 2 {
 					t.Errorf("casters = %d, want 2", len(d.Spellcasting))
@@ -105,7 +105,8 @@ func copyScores(m map[Ability]int) map[Ability]int {
 
 // nextSkillFrom is the first skill of the list the character is not proficient in; the list is the one the class lets a
 // multiclass character choose from (an empty list allows every skill).
-func nextSkillFrom(c *Content, b Build, from []string) string {
+func nextSkillFrom(t *testing.T, c *Content, b Build, from []string) string {
+	t.Helper()
 	have := map[string]bool{}
 	for _, s := range slices.Concat(b.SkillProficiencies, c.c.backgrounds[b.Background].Skills) {
 		have[s] = true
@@ -115,16 +116,18 @@ func nextSkillFrom(c *Content, b Build, from []string) string {
 			return s
 		}
 	}
+	t.Fatalf("no skill of %v is left for the character to choose", from)
 	return ""
 }
 
 // addClass is the master's multiclassing in the editor: a new class at a level,
 // with the skills it gives a multiclass character and the spells it asks for.
-func addClass(c *Content, b Build, classKey string, level int) Build {
+func addClass(t *testing.T, c *Content, b Build, classKey string, level int) Build {
+	t.Helper()
 	b.Classes = append(b.Classes, ClassLevel{Class: classKey, Level: level})
 	if mc := c.c.classes[classKey].Multiclass.SkillChoices; mc != nil {
 		for range mc.Choose {
-			b.SkillProficiencies = append(b.SkillProficiencies, nextSkillFrom(c, b, mc.From))
+			b.SkillProficiencies = append(b.SkillProficiencies, nextSkillFrom(t, c, b, mc.From))
 		}
 	}
 	return fillSpells(c, b, classKey, 0)
