@@ -155,25 +155,25 @@ func TestAToolAlternativeTakesAFilter(t *testing.T) {
 	t.Parallel()
 	e := Effect{Type: "choice", Choice: choiceAlternatives, Count: 1, Alternatives: []ChoiceAlternative{
 		{Kind: altSkill, From: []string{"skill:stealth", "skill:deception"}},
-		{Kind: altTool, Filter: toolFilter("tool")},
+		{Kind: altTool, Filter: toolFilter("weapon")},
 	}}
 	c := withOverlayOn(t, loadForTest(t), filterBackgroundWith(e))
 	ch := choiceOf(t, c.Choices(altBuild()), altKey(e))
-	want := append([]string{"skill:deception", "skill:stealth"}, c.c.proficiencyKeysOfKinds("tool")...)
+	want := append([]string{"skill:deception", "skill:stealth"}, c.c.proficiencyKeysOfKinds("weapon")...)
 	slices.Sort(want)
 	if got := sortedOptionKeys(ch); !slices.Equal(got, want) {
-		t.Fatalf("%d options, want the 2 skills and the %d tools", len(got), len(want)-2)
+		t.Fatalf("%d options, want the 2 skills and the %d weapons", len(got), len(want)-2)
 	}
-	b := altBuild(altStored(e, "proficiency:disguise-kit"))
+	b := altBuild(altStored(e, "proficiency:glaives"))
 	d := Derive(b, c)
-	if !slices.ContainsFunc(d.Proficiencies, func(p Proficiency) bool { return p.Key == "proficiency:disguise-kit" }) {
+	if !slices.ContainsFunc(d.Proficiencies, func(p Proficiency) bool { return p.Key == "proficiency:glaives" }) {
 		t.Errorf("the tool pick gave no proficiency: %v", d.Proficiencies)
 	}
 	if got := c.Choices(b); len(got.NotOffered) != 0 || choiceOf(t, got, altKey(e)).Missing() != 0 || missingIssues(d) != 0 || openOf(d, OpenChoiceTools) != 0 {
 		t.Errorf("the tool pick is not counted: not offered %v, open tools %d, missing %d, issues %d %v", got.NotOffered, openOf(d, OpenChoiceTools), choiceOf(t, got, altKey(e)).Missing(), missingIssues(d), d.Issues)
 	}
 	// A tool the filter leaves out is no key a pick may carry.
-	if c.c.choiceValueOK(altStored(e, "proficiency:glaives")) {
+	if c.c.choiceValueOK(altStored(e, "proficiency:thieves-tools")) {
 		t.Error("a tool outside the filter's kinds is carried")
 	}
 }
