@@ -148,6 +148,9 @@ No other player reads it, and there is no "usou a Inspiração" line.
 It applies to every roll a window holds: the weapon attack, the spell attack, the contest start, the contest answer and Hide.
 A concentration save and an effect save have no window, so they have no replay.
 The typed faces are checked only at the replay.
+A replay that the roll's checks refuse after the Inspiração was spent (the player asked an advantage with a reason over a disadvantage that came while the window waited, and `chooseMode` refuses it) is rolled back whole: the replay runs in a savepoint (`guardReplay`, `settleReplay`).
+The Inspiração is back, no `favor` event or `inspiration_holds` row stands, the hold is `dropped` and the master reads the `held_dropped` line.
+What stays spent is only what the windows' own answers wrote before the savepoint: the reactor's slot and reaction, as a reaction used against an action that then did not happen.
 A contest start, a contest answer and Hide are held the same way by Cutting Words and the master's check window: the hold only checks the Inspiration is there, and the replay spends it.
 
 ## The log and the undo

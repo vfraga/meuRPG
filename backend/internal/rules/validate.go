@@ -300,6 +300,10 @@ func checkName(s string) string {
 	return ""
 }
 
+// UnknownKeyMessage is what a key of the wrong kind, or one the content does not have, is told: the server answers a pick
+// the table keeps out of the offer with the same words.
+const UnknownKeyMessage = "is not a known key of the right kind"
+
 // checkKeys checks a list of keys: at most limit, no repeats, each of the
 // right kind.
 func checkKeys(c *content, field string, keys []string, limit int, valid func(*content, string) bool) error {
@@ -314,7 +318,7 @@ func checkKeys(c *content, field string, keys []string, limit int, valid func(*c
 		}
 		seen[k] = true
 		if !valid(c, k) {
-			return &ValidationError{Field: f, Message: "is not a known key of the right kind"}
+			return &ValidationError{Field: f, Message: UnknownKeyMessage}
 		}
 	}
 	return nil

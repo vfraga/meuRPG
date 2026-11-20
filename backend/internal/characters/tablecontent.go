@@ -487,9 +487,18 @@ func tableEffectsOf(in []*rulesv1.TableEffect) []rules.Effect {
 			DamageTypes: e.GetDamageTypes(), Kind: e.GetKind(), Conditions: e.GetConditions(), AgainstCondition: e.GetAgainstCondition(),
 			Flag: e.GetFlag(), Use: featureUseOf(e.GetUse()), Aura: tableSpellEffectOf(e.GetAura()),
 			AttackPenalty: int(e.GetAttackPenalty()), WeaponProperties: e.GetWeaponProperties(),
+			Filter: choiceFilterOf(e.GetFilter()), FromFeature: e.GetFromFeature(),
 		})
 	}
 	return out
+}
+
+// choiceFilterOf is the filter of a choice, nil for none.
+func choiceFilterOf(m *rulesv1.TableChoiceFilter) *rules.ChoiceFilter {
+	if m == nil {
+		return nil
+	}
+	return &rules.ChoiceFilter{ProficiencyKinds: m.GetProficiencyKinds()}
 }
 
 // featureUseOf is the use a grant_action declares, nil for none. An unset enum is the rules' default (""), and a
@@ -1480,6 +1489,9 @@ func (v playerView) dropEffects(fs []*rulesv1.TableFeature) {
 			ef.From = v.visible(ef.From)
 			if v.hidden(ef.Spell) {
 				ef.Spell = "" // a granted spell the players do not see is not named to them
+			}
+			if v.hidden(ef.FromFeature) {
+				ef.FromFeature = "" // nor the feature whose options a choice offers
 			}
 		}
 		v.stripOptionPrerequisite(f.GetPrerequisite())

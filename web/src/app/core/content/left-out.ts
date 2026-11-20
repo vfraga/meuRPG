@@ -5,6 +5,12 @@ import type {
 import { EFFECT_FIELD_LABELS } from './effect-field-copy';
 import { KIND_NOUNS, KIND_WORDS, navOfKind } from './content-kinds';
 import { violationText } from './content-violations';
+import {
+  LOADED_GENERIC_TEXT,
+  LOADED_LEAD,
+  LOADED_TOOL_LIST_SHAPE,
+  loadedToolListText,
+} from './content-violation-texts-loaded';
 
 /**
  * The entries the rules refuse (issue "left out entries"): the server builds the campaign's content without them
@@ -425,4 +431,50 @@ export function backInSentence(
   }
   const rest = clauses.join(', e ');
   return `${first} ${rest.charAt(0).toUpperCase()}${rest.slice(1)}.`;
+}
+
+/** The key a violation's path ends at in the entry's own body ("…effects[0].from[1]"), or `''` when it ends at no text. */
+export function keyAtPath(entry: TableEntry, field: string): string {
+  let cursor: unknown = entry.body.value;
+  for (const raw of field.split('.').slice(1)) {
+    const m = TOKEN.exec(raw);
+    if (!m) {
+      return '';
+    }
+    const list = asRecord(cursor)?.[camel(m[1])];
+    cursor =
+      m[2] === undefined
+        ? list
+        : Array.isArray(list)
+          ? (list as unknown[])[Number(m[2])]
+          : undefined;
+  }
+  return typeof cursor === 'string' ? cursor : '';
+}
+
+/** What the page of an entry that loads with a part left out says above its editor: a warning, never "fora da campanha". */
+export interface LoadedNote {
+  /** "Esta entrada tem um aviso." (bold). */
+  readonly lead: string;
+  /** The sentence of each issue of the entry. */
+  readonly texts: readonly string[];
+}
+
+/** The note of the entry, or `null` for one with no issue. `nameOf` is the key's name as the master's catalog says it. */
+export function loadedNote(
+  entry: TableEntry,
+  issues: readonly TableContentViolation[],
+  nameOf: (key: string) => string,
+): LoadedNote | null {
+  const mine = issues.filter((v) => v.key === entry.key);
+  if (mine.length === 0) {
+    return null;
+  }
+  return {
+    lead: LOADED_LEAD,
+    texts: mine.map((v) => {
+      const key = LOADED_TOOL_LIST_SHAPE.test(v.field) ? keyAtPath(entry, v.field) : '';
+      return key ? loadedToolListText(nameOf(key)) : LOADED_GENERIC_TEXT;
+    }),
+  };
 }

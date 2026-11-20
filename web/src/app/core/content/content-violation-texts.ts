@@ -1,6 +1,7 @@
 import { FEAT_OPTION_TEXTS, PREREQUISITE_TEXTS } from './content-violation-texts-feat';
 import { INFUSION_TEXTS } from './content-violation-texts-infusion';
 import { RACE_FIELD_TEXTS } from './content-violation-texts-race';
+import { SWAP_FIELD_TEXTS } from './content-violation-texts-swap';
 
 /** What the server's reason at a field says in Portuguese: the table `violationText` looks a violation up in (the rest of its words are there). */
 
@@ -281,6 +282,24 @@ export const FIELD_TEXTS: readonly { shape: RegExp; reason?: string; text: strin
   // reroll and roll_minimum (rolleffects.go): their own fields.
   { shape: /\.effects\[\]\.rolls$/, text: 'Marque ao menos uma jogada.' },
   { shape: /\.effects\[\]\.at_most$/, text: 'A face vai de 1 a 20.' },
+  // A choice that offers every proficiency of some kinds, or the options of another feature: rules/choicefilter.go, choicefeature.go.
+  {
+    shape: /\.effects\[\]\.filter$/,
+    text: 'Os tipos de proficiência valem só numa escolha de ferramentas, no lugar da lista. Escolha uma origem só.',
+  },
+  {
+    shape: /\.effects\[\]\.filter\.proficiency_kinds$/,
+    text: 'Marque ao menos um tipo, sem repetir: armas, ferramentas ou veículos e kits.',
+  },
+  {
+    shape: /\.effects\[\]\.from_feature$/,
+    reason: 'dangling_reference',
+    text: 'Esta característica não existe, não tem opções ou já oferece as de outra. Escolha outra.',
+  },
+  {
+    shape: /\.effects\[\]\.from_feature$/,
+    text: 'As opções de outra característica valem só numa escolha de características de classe ou subclasse, no lugar da lista. Escolha uma origem só.',
+  },
   // A table option for an SRD option set (MR-025): the paths and reasons of backend/internal/rules/overlay_option.go.
   {
     shape: /^table_option\.set$/,
@@ -388,6 +407,7 @@ export const FIELD_TEXTS: readonly { shape: RegExp; reason?: string; text: strin
   { shape: /\.class_keys\[\]$/, text: 'Esta classe está na lista duas vezes.' },
   ...FEAT_OPTION_TEXTS,
   ...RACE_FIELD_TEXTS,
+  ...SWAP_FIELD_TEXTS,
   // The target of a modifier is a closed list of the menu; one that left it (or never was in it) is refused here. After the feat's own rows, whose option effects read a pick.
   {
     shape: /\.effects\[\]\.target$/,

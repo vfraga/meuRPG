@@ -105,6 +105,12 @@ func TestClassRefusalsNameTheirField(t *testing.T) {
 			o.Subclasses[0].AlwaysPrepared = []TableAlwaysPrepared{{ClassLevel: 3, Spell: "spell:bless"}}
 		}, "subclasses[0].always_prepared", ReasonCasting},
 		// The effects: each field of the menu.
+		{"a filter on a choice of skills", effect(Effect{Type: "choice", Choice: "skill", Count: 1, Filter: &ChoiceFilter{ProficiencyKinds: []string{"tool"}}}), eff + ".filter", ReasonValue},
+		{"a filter with no kind", effect(Effect{Type: "choice", Choice: "tool", Count: 1, Filter: &ChoiceFilter{}}), eff + ".filter.proficiency_kinds", ReasonValue},
+		{"a filter with a kind that is no proficiency's", effect(Effect{Type: "choice", Choice: "tool", Count: 1, Filter: &ChoiceFilter{ProficiencyKinds: []string{"armor"}}}), eff + ".filter.proficiency_kinds", ReasonValue},
+		{"a feature that is not there", effect(Effect{Type: "choice", Choice: "feature", Count: 1, FromFeature: "feature:fantasma"}), eff + ".from_feature", ReasonReference},
+		{"a feature with no options", effect(Effect{Type: "choice", Choice: "feature", Count: 1, FromFeature: "feature:second-wind"}), eff + ".from_feature", ReasonReference},
+		{"more picks than the feature's options", effect(Effect{Type: "choice", Choice: "feature", Count: 7, FromFeature: "feature:fighter-fighting-style"}), eff + ".count", ReasonValue},
 		{"a handler", effect(Effect{Type: "handler", Handler: "monk.martial_arts"}), eff + ".type", ReasonEffect},
 		{"an effect type", effect(Effect{Type: "spellcasting"}), eff + ".type", ReasonEffect},
 		{"a modifier target", effect(Effect{Type: "modifier", Target: "luck", Mode: "add", Value: "1"}), eff + ".target", ReasonValue},

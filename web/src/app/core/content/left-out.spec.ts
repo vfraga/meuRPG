@@ -1,6 +1,7 @@
 import { create } from '@bufbuild/protobuf';
 
 import {
+  TableBackgroundSchema,
   TableClassLevelSchema,
   TableClassSchema,
   TableContentKind,
@@ -18,6 +19,7 @@ import {
   buildLeftOut,
   leftOutNote,
   leftOutTitle,
+  loadedNote,
   parentKeyOf,
   placeOfPath,
   togetherWith,
@@ -427,5 +429,42 @@ describe('the note of a left-out entry and the line after a fix (K2, K4)', () =>
     expect(backInSentence(before, NO_LEFT_OUT, guardiao(0), [guardiao(0), sub, sub2])).toBe(
       'Guardião do Vale voltou para a campanha. Juramento da Névoa e Outro voltaram junto.',
     );
+  });
+});
+
+describe('loadedNote', () => {
+  const FROM = 'table_background.feature.effects[0].from[1]';
+  const cais = entry(TableContentKind.BACKGROUND, 'Cais do Farol', {
+    body: {
+      case: 'tableBackground',
+      value: create(TableBackgroundSchema, {
+        namePt: 'Cais do Farol',
+        feature: feature('Rede do cais', [
+          {
+            type: 'choice',
+            choice: 'tool',
+            count: 1,
+            from: ['proficiency:smiths-tools', 'skill:athletics'],
+          },
+        ]),
+      }),
+    },
+  });
+  const names = (k: string) => (k === 'skill:athletics' ? 'Atletismo' : k);
+
+  it('says, in a warning, which key the list of tools cites and that it is not offered', () => {
+    const note = loadedNote(cais, [v(cais.key, FROM, 'bad_value')], names);
+    expect(note?.lead).toBe('Esta entrada tem um aviso.');
+    expect(note?.texts).toEqual([
+      'A lista de ferramentas cita «Atletismo», que não é uma ferramenta, uma arma nem outro tipo aceito. Essa opção não é oferecida. Edite a escolha para corrigir.',
+    ]);
+    expect(note?.texts.join(' ')).not.toContain('fora da campanha');
+  });
+
+  it('is nothing for an entry with no issue, and a plain sentence for one it does not know', () => {
+    expect(loadedNote(cais, [v('background:outro@mesa', FROM, 'bad_value')], names)).toBeNull();
+    expect(
+      loadedNote(cais, [v(cais.key, 'table_background.skills', 'bad_value')], names)?.texts[0],
+    ).toContain('Uma parte desta entrada');
   });
 });

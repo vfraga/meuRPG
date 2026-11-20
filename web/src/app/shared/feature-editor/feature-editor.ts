@@ -113,6 +113,8 @@ export class FeatureEditor {
    * holder; an option and a feat do not. Needs the campaign (the bestiary's search) and, to name the table's creatures, its entries.
    */
   readonly allowSummon = input(false);
+  /** A class or subclass feature (or a class-feature entry) may offer the options of another feature in a choice of features. */
+  readonly offerFeatures = input(false);
   readonly campaignId = input('');
   readonly entries = input<readonly TableEntry[]>([]);
 

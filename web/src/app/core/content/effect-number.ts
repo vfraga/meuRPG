@@ -20,3 +20,13 @@ export function withNumber(
     typed: Object.keys(typed).length > 0 ? typed : undefined,
   };
 }
+
+/** What the draft holds for the field `name`, as text: a number shows what was typed while that still reads as the number. */
+export function readField(d: EffectDraft, name: string, signed: boolean): string {
+  const v = d[draftKey(name)];
+  if (typeof v === 'number') {
+    const typed = d.typed?.[name];
+    return typed !== undefined && Object.is(readWhole(typed, signed), v) ? typed : wholeText(v);
+  }
+  return typeof v === 'string' ? v : '';
+}

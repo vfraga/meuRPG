@@ -31,6 +31,8 @@ func (cb *choiceBuilder) assignPools() {
 	}
 	for _, p := range pools {
 		if len(p.entries) > 0 {
+			p.sortEntries()
+			p.dealRequired()
 			maps.Copy(takenBy, cb.dealPicks(p))
 		}
 	}
@@ -112,16 +114,46 @@ func (p *pool) add(e *optionEntry) {
 	}
 }
 
-// dealPicks gives the picks that belong to the pool to its choices, in the order
-// the character got them, marks them used and returns the choice that took each.
-// The picks no choice has room for overflow to the last choice.
-func (cb *choiceBuilder) dealPicks(p *pool) map[string]*optionEntry {
+// sortEntries puts the choices of the pool in the order the character got them.
+func (p *pool) sortEntries() {
 	slices.SortStableFunc(p.entries, func(a, b *optionEntry) int {
 		if a.level != b.level {
 			return a.level - b.level
 		}
 		return a.order - b.order
 	})
+}
+
+// dealRequired is requiredPicks for the pool as a whole, when the table keeps options out of one of its choices: the
+// choices ask for the picks a player may make today in all, and the earlier choice takes its share first, as it takes
+// the picks (dealPicks). A choice never asks for more than it would alone. The entries are in order.
+func (p *pool) dealRequired() {
+	asked, filtered := 0, false
+	var pickable, held []string
+	for _, e := range p.entries {
+		asked += e.choose
+		filtered = filtered || e.filtered
+		pickable = append(pickable, e.pickable...)
+		held = append(held, e.held...)
+	}
+	if !filtered {
+		return
+	}
+	slices.Sort(pickable)
+	slices.Sort(held)
+	left := requiredPicks(asked, slices.Compact(pickable), slices.Compact(held))
+	for _, e := range p.entries {
+		e.choose = min(e.choose, left)
+		e.choice.Picks = e.choose
+		left -= e.choose
+	}
+}
+
+// dealPicks gives the picks that belong to the pool to its choices, in the order
+// the character got them, marks them used and returns the choice that took each.
+// The picks no choice has room for overflow to the last choice.
+func (cb *choiceBuilder) dealPicks(p *pool) map[string]*optionEntry {
+	p.sortEntries()
 	var inPool []string
 	for _, k := range cb.plain {
 		if p.options[k] {

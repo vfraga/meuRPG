@@ -509,8 +509,28 @@ message TableEffect {
   // the cast spends no slot. A cast of the same spell with a slot (`also_with_slot`) uses the slot's
   // level. Refused on a cantrip, with `ritual_only` and on any other effect type.
   int32 cast_level = 95;
+  // choice of kind "tool" only: instead of a `from` list, the player picks from every
+  // proficiency of the content that the filter's kinds name. Refused together with `from`,
+  // `set`, `from_feature` and `daily_choice`.
+  TableChoiceFilter filter = 96;
+  // choice of kind "feature" only: the key of a feature with options ("feature:..."), the SRD's or
+  // a table entry's. The choice offers that feature's options, which it shares as one pool with the
+  // choices that offer the same options (the "two more" of a later level), and asks for `count` of
+  // them. Refused together with `from`, `set` and `filter`. The options the player may not
+  // read are not in the pool; a feature that offers another feature's options is refused.
+  string from_feature = 97;
   // Field 90 is not used.
   reserved 90;
+}
+
+// TableChoiceFilter says which entries a `choice` effect offers, by what they are rather
+// than by a list of keys. Today it holds the kinds of proficiency of a choice of tools. The
+// fields for the spells of a choice of spells join this message later; a field it does not
+// have yet is never sent.
+message TableChoiceFilter {
+  // The kinds of proficiency offered: "weapon", "tool" and "other" (the vehicles and the
+  // kits the SRD lists apart from the tools). Each at most once; at least one.
+  repeated string proficiency_kinds = 1 [(meurpg.options.v1.max_items) = 3];
 }
 
 // TableFeature is a class or subclass feature, a race or subrace trait, or a
@@ -565,7 +585,9 @@ message TableFeature {
   // option of the pool; unset or empty means never. The pool is this feature's options, with the options of the
   // other features of the same class or subclass that share an option with it (a later level's "2 more"). Only a
   // class or subclass feature that has options may set it (an option may not). Whether the table plays with the rule
-  // "Trocar uma escolha no aumento de atributo" does not matter: the feature's own data decides.
+  // "Trocar uma escolha no aumento de atributo" does not matter: the feature's own data decides. A feature whose
+  // choice offers the options of another feature (`from_feature` on one of its effects) cannot set it: the master's
+  // save is refused at this field, and the master drops the swap levels or gives the feature options of its own.
   FeatureSwapLevels swap_levels = 10;
 }
 
@@ -1834,6 +1856,12 @@ message ListTableEntriesResponse {
   // TableContentViolation. The entry itself is still in `entries`, so the master
   // can edit or archive it. Filled for the master only; always empty for a player.
   repeated TableContentViolation left_out = 4;
+  // The entries that load, with a part of them left out of the campaign's content: a
+  // key in the list of a choice of tools that no choice of tools offers is dropped
+  // from the pool. Each violation's `key`, `field` and `reason` are as in left_out,
+  // and the master clears it by fixing the field. Filled for the master only;
+  // always empty for a player.
+  repeated TableContentViolation loaded_with_issues = 5;
 }
 
 // CreateTableEntryRequest adds an entry.
@@ -2210,7 +2238,9 @@ message EffectMenuField {
   // value of a short `list`, shown as radio cards with their hints), "tags",
   // "resource_ref" (the name of a resource effect the entry defines; the editor lists
   // the ones it has), "state_ref" (the name of a state effect the entry defines, or one
-  // of `list` when it has one: "rage" for a resistance) or "yes_no" (a switch: true or false).
+  // of `list` when it has one: "rage" for a resistance), "yes_no" (a switch: true or false),
+  // "choice_filter" (the `filter` of a choice: the kinds of `list` it names) or "feature_ref"
+  // (the key of a feature that has options).
   string kind = 3;
   // The EffectMenuList the value comes from, when it is a closed list; empty for a
   // free value. For a `choice` effect's `from` the list depends on the kind chosen:

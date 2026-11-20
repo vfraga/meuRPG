@@ -216,6 +216,21 @@ type ChoiceSet struct {
 	Groups []ChoiceGroup
 	// NotOffered are the stored picks that no choice of this character offers.
 	NotOffered []string
+	// KeptOut are the picks of the sheet that the pool of a choice of the options of another feature keeps out of its
+	// offer, and the sheet holds all the same (the server refuses the new ones).
+	KeptOut []string `json:"-"`
+}
+
+// choiceOfFeature is the choice that the feature makes, when the set has one.
+func (s ChoiceSet) choiceOfFeature(feature string) (Choice, bool) {
+	for _, g := range s.Groups {
+		for _, ch := range g.Choices {
+			if ch.FeatureKey == feature && ch.Kind == ChoiceKindOptions {
+				return ch, true
+			}
+		}
+	}
+	return Choice{}, false
 }
 
 // Counts is how many selections are made and how many the sheet asks: the
@@ -357,6 +372,10 @@ type optionEntry struct {
 	options []string
 	level   int
 	order   int
+	// pickable and held split the options a player may pick now and the ones the sheet holds; filtered says the table
+	// keeps options out of the choice's pool. The pool asks for its picks in all from them (pool.dealRequired).
+	pickable, held []string
+	filtered       bool
 }
 
 type choiceBuilder struct {
@@ -378,6 +397,8 @@ type choiceBuilder struct {
 	typedLanguages, typedTools int
 	// legacyTaken counts the surplus cantrips choices already claimed.
 	legacyTaken int
+	// keptOut are the picks the pool of a choice of another feature's options keeps out, though the sheet holds them.
+	keptOut []string
 }
 
 func (c *content) choiceSet(b Build) ChoiceSet {
@@ -456,9 +477,14 @@ func (cb *choiceBuilder) labelOf(g *groupBuild, ch *Choice) string {
 // picks of its pool.
 func (cb *choiceBuilder) optionChoice(g *groupBuild, featureKey string, choose int, options []string) *optionEntry {
 	title := choiceTitle(cb.c, featureKey)
-	ch := cb.addChoice(g, &Choice{Key: featureKey, FeatureKey: featureKey, Kind: ChoiceKindOptions, TitlePT: title, Picks: choose, plain: true})
+	// The pool lists what the reader may pick, and asks for no more than a player may pick today: the answer says nothing
+	// of the rest. A pool with no option left asks nothing of the sheet, as no pick could answer it.
+	pickable, held, filtered := cb.c.optionShares(cb.b, featureKey, options)
+	choose, options = cb.c.requiredOptionPicks(cb.b, featureKey, choose, options), cb.c.visibleOptions(cb.b, featureKey, options)
+	cb.keptOut = append(cb.keptOut, cb.c.keptOutPicks(cb.b, featureKey, options)...)
+	ch := cb.addChoice(g, &Choice{Key: featureKey, FeatureKey: featureKey, Kind: ChoiceKindOptions, TitlePT: title, Picks: choose, plain: true, Advisory: len(options) == 0 && cb.c.fromFeature[featureKey] != ""})
 	cb.order++
-	e := &optionEntry{choice: ch, choose: choose, options: options, level: g.Level, order: cb.order}
+	e := &optionEntry{choice: ch, choose: choose, options: options, level: g.Level, order: cb.order, pickable: pickable, held: held, filtered: filtered}
 	cb.entries = append(cb.entries, e)
 	return e
 }
@@ -538,6 +564,7 @@ func (cb *choiceBuilder) finish() ChoiceSet {
 	}
 	slices.Sort(set.NotOffered)
 	set.NotOffered = slices.Compact(set.NotOffered)
+	set.KeptOut = slices.Compact(slices.Sorted(slices.Values(cb.keptOut)))
 	cb.results(&set)
 	return set
 }

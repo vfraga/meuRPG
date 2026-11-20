@@ -48,6 +48,9 @@ func (b *overlayBuilder) addSwapLevels(f *TableFeature, path string) error {
 			return ovErr(f.Key, "swap level %d is listed twice", n).at(fmt.Sprintf("%s.levels[%d]", at, i), ReasonValue)
 		}
 	}
+	if slices.ContainsFunc(f.Effects, func(e Effect) bool { return e.FromFeature != "" }) {
+		return ovErr(f.Key, "a feature that offers the options of another feature cannot allow swaps: drop the swap levels or give it options of its own").at(at, ReasonValue)
+	}
 	if len(b.n.features[f.Key].Options) == 0 {
 		return ovErr(f.Key, "only a feature with options can allow a swap").at(at, ReasonValue)
 	}

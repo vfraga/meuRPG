@@ -107,3 +107,26 @@ func TestAPackageRefusesAnEntryKeyTheServerNeverMakes(t *testing.T) {
 		})
 	}
 }
+
+// A campaign package whose choice of tools lists a key of another kind is refused as a write is: the entry is a problem of
+// the package, of the reason an invalid value has, and the package says nothing of the entry's key as a reference.
+func TestAPackageRefusesAKeyOfAnotherKindInAToolList(t *testing.T) {
+	t.Parallel()
+	const key = "background:cais-do-farol@mesa"
+	body := testBackground("Cais do farol")
+	body.Feature = &rulesv1.TableFeature{NamePt: "Rede do cais", DescPt: []string{"Texto de teste."}, Effects: []*rulesv1.TableEffect{{
+		Type: "choice", Choice: "tool", Count: 1, From: []string{"proficiency:smiths-tools", "skill:athletics"},
+	}}}
+	in := campaignpackage.NewImport(packagePartOpen(t, nil), "00000000-0000-4000-8000-0000000000c1", "u", false, nil)
+	sc := &stagedContent{
+		entries: []entryRow{storedEntry(rulesv1.TableContentKind_TABLE_CONTENT_KIND_BACKGROUND, key, "Cais do farol", body)},
+		names:   map[string]string{key: "Cais do farol"},
+	}
+	if (&packagePart{s: &Service{srd: loadRules(t), now: time.Now}}).compileStagedContent(in, sc) {
+		t.Fatalf("the package compiles with a tool list that names a skill, want it refused")
+	}
+	problems := in.Problems.List
+	if len(problems) != 1 || problems[0].GetName() != "Cais do farol" || problems[0].GetReason() != pkgv1.PackageProblemReason_PACKAGE_PROBLEM_REASON_INVALID {
+		t.Errorf("problems = %v, want one INVALID problem of the entry", problems)
+	}
+}

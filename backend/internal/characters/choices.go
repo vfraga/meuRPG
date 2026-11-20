@@ -53,7 +53,10 @@ func (s *Service) PreviewChoices(
 	if err != nil {
 		return nil, s.dbError(ctx, "read rules content", err)
 	}
-	var sheet *charactersv1.CharacterSheet
+	var (
+		sheet      *charactersv1.CharacterSheet
+		notOffered []string // the picks the sheet's pools keep out, which read as picks nothing offers
+	)
 	if req.Msg.GetCharacterId() == "" {
 		kind, ok := kindToDB[req.Msg.GetKind()]
 		if !ok {
@@ -65,7 +68,7 @@ func (s *Service) PreviewChoices(
 		if sheet, err = checkNewSheet(content, m, kind, req.Msg.GetSheet()); err != nil {
 			return nil, err
 		}
-	} else if sheet, err = s.sheetForChoices(ctx, m, content, req.Msg.GetCharacterId(), req.Msg.GetSheet()); err != nil {
+	} else if sheet, notOffered, err = s.sheetForChoices(ctx, m, content, req.Msg.GetCharacterId(), req.Msg.GetSheet()); err != nil {
 		return nil, err
 	}
 	full := sheet.GetFull()
@@ -73,55 +76,63 @@ func (s *Service) PreviewChoices(
 		return nil, invalidArgument(fieldErr("sheet.full", "is required: a basic sheet has no choices"))
 	}
 	build := buildOf(full)
-	return connect.NewResponse(choicesToProto(viewContent(content, m), build)), nil
+	res := choicesToProto(viewContent(content, m), build)
+	if len(notOffered) > 0 {
+		res.NotOffered = slices.Compact(slices.Sorted(slices.Values(append(res.NotOffered, notOffered...))))
+	}
+	return connect.NewResponse(res), nil
 }
 
 // sheetForChoices is the sheet PreviewChoices reads for a character: the draft the
 // caller sends when they may edit the sheet now (the checks of UpdateCharacter), else
 // the stored sheet with only the draft's picks (feature_choice_keys and
 // feature_choice_text) laid over it, so the page that completes the choices of a locked
-// sheet previews a pick without being able to read or change anything else.
-func (s *Service) sheetForChoices(ctx context.Context, m authz.Membership, content *rules.Content, characterID string, raw *charactersv1.CharacterSheet) (*charactersv1.CharacterSheet, error) {
+// sheet previews a pick without being able to read or change anything else. In that
+// second case a new pick that the table keeps out of the caller's offer stays out of the
+// sheet, and comes back as a pick nothing offers (what a key the content does not have is).
+func (s *Service) sheetForChoices(ctx context.Context, m authz.Membership, content *rules.Content, characterID string, raw *charactersv1.CharacterSheet) (*charactersv1.CharacterSheet, []string, error) {
 	id, ok := uid.Canonical(characterID)
 	if !ok {
-		return nil, errCharacterNotFound()
+		return nil, nil, errCharacterNotFound()
 	}
 	row, err := s.queries.GetCharacter(ctx, charactersdb.GetCharacterParams{CampaignID: m.CampaignID, ID: id})
 	if err != nil {
-		return nil, s.dbError(ctx, "read a character to read its choices", err)
+		return nil, nil, s.dbError(ctx, "read a character to read its choices", err)
 	}
 	if !canSee(m, row.Kind, row.Status, row.PlayerUserID) {
-		return nil, errCharacterNotFound()
+		return nil, nil, errCharacterNotFound()
 	}
 	stored, err := loadSheet(row.ID, row.Sheet)
 	if err != nil {
-		return nil, s.dbError(ctx, "read a character to read its choices", err)
+		return nil, nil, s.dbError(ctx, "read a character to read its choices", err)
 	}
 	if raw == nil {
-		return stored, nil
+		return stored, nil, nil
 	}
 	if mayEditSheet(m, row) && row.Status != statusDead {
 		sheet, _, err := s.checkEditedSheet(ctx, m, content, characterID, raw)
-		return sheet, err
+		return sheet, nil, err
 	}
 	full := stored.GetFull()
 	if full == nil || raw.GetFull() == nil {
-		return stored, nil
+		return stored, nil, nil
 	}
 	over := proto.CloneOf(full)
 	over.FeatureChoiceKeys = slices.Clone(raw.GetFull().GetFeatureChoiceKeys())
 	over.FeatureChoiceText = maps.Clone(raw.GetFull().GetFeatureChoiceText())
 	if err := cleanChoiceTexts(over); err != nil {
-		return nil, invalidArgument(err)
+		return nil, nil, invalidArgument(err)
 	}
 	if len(over.FeatureChoiceKeys) > rules.MaxListLength {
-		return nil, invalidArgument(fieldErr("sheet.full.feature_choice_keys", "must have at most %d entries", rules.MaxListLength))
+		return nil, nil, invalidArgument(fieldErr("sheet.full.feature_choice_keys", "must have at most %d entries", rules.MaxListLength))
 	}
+	fresh := newKeptOutPicks(viewContent(content, m), func() *charactersv1.FullSheet { return full }, over)
+	over.FeatureChoiceKeys = slices.DeleteFunc(over.FeatureChoiceKeys, func(k string) bool { return slices.Contains(fresh, k) })
 	// A pick is new when the stored sheet lacks it: what the master archived or switched off is not a new choice.
 	if err := refuseNewChoices(content, m, row.ID, full, over); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	return &charactersv1.CharacterSheet{Content: &charactersv1.CharacterSheet_Full{Full: over}}, nil
+	return &charactersv1.CharacterSheet{Content: &charactersv1.CharacterSheet_Full{Full: over}}, fresh, nil
 }
 
 // choicesToProto answers every choice of a build, and where its spell pickers find the
@@ -422,7 +433,7 @@ func pickedSheet(content *rules.Content, m authz.Membership, current charactersd
 	if full == nil {
 		return nil, nil, invalidArgument(fieldErr("character_id", "is a character with a basic sheet, which has no choices"))
 	}
-	next, labels, err := applyChoicePicks(content, full, picks)
+	next, labels, err := applyChoicePicksFor(content, viewContent(content, m), full, picks)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -500,7 +511,13 @@ func cleanChoiceText(text string) (string, error) {
 // changes. It returns the new sheet (a copy) and the labels of the choices answered.
 // Every pick is checked against what the stored sheet offers.
 func applyChoicePicks(content *rules.Content, full *charactersv1.FullSheet, picks []*charactersv1.ChoicePick) (*charactersv1.FullSheet, []string, error) {
-	set := content.Choices(buildOf(full))
+	return applyChoicePicksFor(content, content, full, picks)
+}
+
+// applyChoicePicksFor is applyChoicePicks for a reader whose view of the content (view) may keep options out of the pool
+// of a choice that offers another feature's options: the pick of one is a pick the choice does not list.
+func applyChoicePicksFor(content, view *rules.Content, full *charactersv1.FullSheet, picks []*charactersv1.ChoicePick) (*charactersv1.FullSheet, []string, error) {
+	set := withoutKeptOut(content.Choices(buildOf(full)), view, buildOf(full))
 	next := proto.CloneOf(full)
 	texts := maps.Clone(full.GetFeatureChoiceText())
 	if texts == nil {
@@ -522,6 +539,38 @@ func applyChoicePicks(content *rules.Content, full *charactersv1.FullSheet, pick
 	}
 	next.FeatureChoiceText = texts
 	return next, labels, nil
+}
+
+// withoutKeptOut takes out of the choices that offer the options of another feature the options that the reader's
+// view keeps out of their pools: the choices stay as they are, and a pick of one of those options is not one they list.
+func withoutKeptOut(set rules.ChoiceSet, view *rules.Content, b rules.Build) rules.ChoiceSet {
+	shown := shownOptions(view, b)
+	for _, g := range set.Groups {
+		for i, ch := range g.Choices {
+			if keys, ok := shown[ch.Key]; ok {
+				g.Choices[i].Options = slices.DeleteFunc(slices.Clone(ch.Options), func(o rules.ChoiceOption) bool { return !slices.Contains(keys, o.Key) })
+			}
+		}
+	}
+	return set
+}
+
+// shownOptions are the keys of the options the view lists in each choice that offers the options of another feature,
+// each such choice named even when it lists none.
+func shownOptions(view *rules.Content, b rules.Build) map[string][]string {
+	shown := map[string][]string{}
+	for _, g := range view.Choices(b).Groups {
+		for _, ch := range g.Choices {
+			if !view.AsksOptionsOf(ch.Key) {
+				continue
+			}
+			shown[ch.Key] = []string{}
+			for _, o := range ch.Options {
+				shown[ch.Key] = append(shown[ch.Key], o.Key)
+			}
+		}
+	}
+	return shown
 }
 
 // applyChoicePick checks one pick against its open choice and returns the choice and

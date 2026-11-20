@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
 import { create } from '@bufbuild/protobuf';
 import { Code, ConnectError } from '@connectrpc/connect';
 
@@ -11,6 +12,7 @@ import {
 import { TableContentClient } from '../../../core/content/content-client';
 import { catalog, entry } from '../../../core/content/content-testing';
 import { menu } from '../../../core/content/content-testing-menu';
+import { FeatureEditor } from '../../../shared/feature-editor/feature-editor';
 import { ClassFeatureEditor } from './class-feature-editor';
 import { settle } from '../../../../test-settle';
 
@@ -65,6 +67,12 @@ describe('ClassFeatureEditor (MR-025)', () => {
     Array.from(el.querySelectorAll<HTMLButtonElement>('button'))
       .find((b) => text(b).includes(label))!
       .click();
+
+  it('does not offer "Ou as opções de outra característica": the server refuses from_feature on a table class feature (#574)', () => {
+    const { fixture } = setup();
+    const editor = fixture.debugElement.query(By.directive(FeatureEditor));
+    expect(editor.componentInstance.offerFeatures()).toBe(false);
+  });
 
   it('draws the form from the entry: name, text, the class read-only, the level and what it replaces', () => {
     const { el } = setup();

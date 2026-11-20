@@ -2,6 +2,7 @@ package characters
 
 import (
 	"context"
+	"errors"
 	"slices"
 	"time"
 	"unicode"
@@ -54,6 +55,66 @@ func newOffChoice(content *rules.Content, before, after *charactersv1.FullSheet)
 		}
 	}
 	return "", "", false
+}
+
+// newKeptOutPicks are the picks that the sheet adds and the pool of a choice of the options of another feature keeps out
+// of its offer for the reader (content is the reader's view): the table retired them or, for a player, switched them off
+// with their entry. before reads the stored sheet (nil for a sheet that does not exist yet), only when a pick is kept
+// out; a pick the stored sheet holds stays.
+func newKeptOutPicks(content *rules.Content, before func() *charactersv1.FullSheet, after *charactersv1.FullSheet) []string {
+	kept := content.Choices(buildOf(after)).KeptOut
+	if len(kept) == 0 {
+		return nil
+	}
+	held := before().GetFeatureChoiceKeys()
+	return slices.DeleteFunc(slices.Clone(kept), func(k string) bool { return slices.Contains(held, k) })
+}
+
+// newKeptOutField is the sheet field of the first of those picks, in the sheet's order.
+func newKeptOutField(content *rules.Content, before func() *charactersv1.FullSheet, after *charactersv1.FullSheet) (string, bool) {
+	fresh := newKeptOutPicks(content, before, after)
+	for _, kf := range rules.BuildKeys(buildOf(after)) {
+		if slices.Contains(fresh, kf.Key) {
+			return kf.Field, true
+		}
+	}
+	return "", false
+}
+
+// refuseKeptOutPick refuses a new pick of an option the table keeps out of the reader's offer with the answer of a key
+// that the content does not have: the same status, the same field and the same sentence, so nothing tells the two apart.
+func refuseKeptOutPick(content *rules.Content, m authz.Membership, before func() *charactersv1.FullSheet, after *charactersv1.FullSheet) error {
+	if after == nil {
+		return nil
+	}
+	if field, found := newKeptOutField(viewContent(content, m), before, after); found {
+		return errUnknownKey("sheet." + field)
+	}
+	return nil
+}
+
+// noSheet is the stored sheet of a character that does not exist yet.
+func noSheet() *charactersv1.FullSheet { return nil }
+
+// storedSheetOf reads the stored sheet of a character the caller sees, nil for any other: a pick is new to a sheet the
+// caller cannot read.
+func (s *Service) storedSheetOf(ctx context.Context, m authz.Membership, characterID string) func() *charactersv1.FullSheet {
+	return func() *charactersv1.FullSheet {
+		row, err := s.queries.GetCharacter(ctx, charactersdb.GetCharacterParams{CampaignID: m.CampaignID, ID: characterID})
+		if err != nil || !canSee(m, row.Kind, row.Status, row.PlayerUserID) {
+			return nil
+		}
+		stored, err := loadSheet(row.ID, row.Sheet)
+		if err != nil {
+			return nil
+		}
+		return stored.GetFull()
+	}
+}
+
+// errUnknownKey is the answer to a key that is no key of the content's right kind, as checkSheet gives it.
+func errUnknownKey(field string) error {
+	return invalidArgument(&fieldError{field: field, err: errors.New(rules.UnknownKeyMessage)})
 }
 
 // errOffChoice is the refusal of CreateCharacter and UpdateCharacter for a newly

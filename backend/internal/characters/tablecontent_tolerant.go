@@ -40,7 +40,7 @@ func buildCounting(srd *rules.Content, entries []entryRow, revision int, off, st
 		overlay.Off = off
 		content, err := srd.With(overlay)
 		if err == nil {
-			return content.WithRefused(refusedOf(out)), out, builds, nil
+			return content.WithRefused(refusedOf(out)).WithStored(loadedWithIssuesOf(content, idx)), out, builds, nil
 		}
 		blamed, ok := blameLive(violationsOf(err, idx, ""), live, strict)
 		if !ok {
@@ -132,6 +132,18 @@ func refusedOf(out []leftOut) []rules.Refused {
 	}
 	slices.SortFunc(r, func(a, b rules.Refused) int { return strings.Compare(a.Key, b.Key) })
 	return r
+}
+
+// loadedWithIssuesOf is what the content loaded but left out of the stored entries, one line for each thing, with the entry's key.
+func loadedWithIssuesOf(content *rules.Content, idx overlayIndex) []rules.Refused {
+	var out []rules.Refused
+	for _, oe := range content.StoredIssues() {
+		if v := violationOf(oe, idx, ""); v.GetKey() != "" {
+			out = append(out, rules.Refused{Key: v.GetKey(), Field: v.GetField(), Reason: v.GetReason(), Message: v.GetMessage()})
+		}
+	}
+	slices.SortStableFunc(out, func(a, b rules.Refused) int { return strings.Compare(a.Key, b.Key) })
+	return out
 }
 
 // decodeTolerant decodes the stored entries and leaves out the rows that cannot be read.

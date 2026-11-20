@@ -69,6 +69,7 @@ import {
   confirmArchiveInSheet,
   headingOf,
   leftOutView,
+  loadedNoteView,
   mergeRefreshed,
   nameResolver,
   nounPhraseOf,
@@ -212,6 +213,8 @@ export class ContentEntry {
   protected readonly leftOut = computed(() => leftOutView(this.ctx(), this.key(), this.editing()));
   protected readonly updated = computed(() => updatedLine(this.entry()));
   protected readonly archivedOn = computed(() => archivedDay(this.entry()));
+  /** The warning of an entry that loads with a part left out (the master's only). */
+  protected readonly loaded = computed(() => loadedNoteView(this.ctx(), this.key(), this.nameOf()));
   protected readonly using = computed(() => usageOf(this.entry()));
   protected readonly backLabel = computed(() => backLabelOf(this.isMaster(), this.nav()));
   protected readonly backQuery = computed(() =>
@@ -365,9 +368,10 @@ export class ContentEntry {
     this.affected.set(res.affected);
     const saved = savedSentence(res.entry.kind, res.entry.namePt);
     this.savedLine.set(saved);
+    // The server says again which entries are out and which load with a warning (the save's answer carries only the entry), and
+    // a fix says the entry came back.
+    await this.refresh();
     if (before.count > 0) {
-      // The server says again which entries are out, and a fix says the entry came back.
-      await this.refresh();
       this.savedLine.set(backInSentence(before, this.leftOut().model, res.entry, entries) || saved);
     }
     if (!this.key()) {

@@ -18,6 +18,8 @@ export interface ContentContext {
   readonly contentVersion: string;
   /** The entries the rules refuse (the master's only): left out of the campaign's content until fixed or archived. */
   readonly leftOut: readonly TableContentViolation[];
+  /** The entries that load with a part left out (the master's only): an issue to read on the entry, no more. */
+  readonly loadedWithIssues: readonly TableContentViolation[];
 }
 
 export type ContextResult =
@@ -46,6 +48,7 @@ export async function loadContext(
         tableRevision: list.tableRevision,
         contentVersion: list.contentVersion,
         leftOut: list.leftOut,
+        loadedWithIssues: list.loadedWithIssues,
       },
     };
   } catch (err) {

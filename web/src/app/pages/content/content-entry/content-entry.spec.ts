@@ -8,6 +8,7 @@ import { BehaviorSubject } from 'rxjs';
 import { Role } from '../../../../gen/meurpg/campaigns/v1/campaigns_pb';
 import { ContentSchema, CreatureSchema } from '../../../../gen/meurpg/rules/v1/rules_pb';
 import {
+  TableBackgroundSchema,
   TableContentKind,
   TableContentRefusalSchema,
   TableCreatureSchema,
@@ -62,6 +63,7 @@ describe('ContentEntry', () => {
       failDefaults?: boolean;
       phone?: boolean;
       leftOut?: TableContentViolation[];
+      loadedWithIssues?: TableContentViolation[];
     } = {},
   ) {
     list.mockReset().mockResolvedValue({
@@ -69,6 +71,7 @@ describe('ContentEntry', () => {
       tableRevision: 7,
       contentVersion: '',
       leftOut: opts.leftOut ?? [],
+      loadedWithIssues: opts.loadedWithIssues ?? [],
     });
     catalog.mockReset().mockResolvedValue(create(ContentSchema, {}));
     effectMenu.mockReset().mockResolvedValue(menuResponse());
@@ -602,6 +605,7 @@ describe('ContentEntry', () => {
       tableRevision: 8,
       contentVersion: '',
       leftOut: [],
+      loadedWithIssues: [],
     });
     watcher.hint();
     await settle(fixture, 4);
@@ -624,6 +628,7 @@ describe('ContentEntry', () => {
       tableRevision: 9,
       contentVersion: '',
       leftOut: [],
+      loadedWithIssues: [],
     });
     watcher.hint();
     await settle(fixture, 4);
@@ -653,6 +658,7 @@ describe('ContentEntry', () => {
         tableRevision: 8,
         contentVersion: '',
         leftOut: [],
+        loadedWithIssues: [],
       });
       watcher.hint();
       await settle(fixture, 4);
@@ -678,6 +684,7 @@ describe('ContentEntry', () => {
         tableRevision: 9,
         contentVersion: '',
         leftOut: [],
+        loadedWithIssues: [],
       });
       await settle(fixture, 4);
       older.resolve({
@@ -685,6 +692,7 @@ describe('ContentEntry', () => {
         tableRevision: 8,
         contentVersion: '',
         leftOut: [],
+        loadedWithIssues: [],
       });
       await settle(fixture, 4);
       expect(text(el)).toContain('Corujeiro Novo');
@@ -857,10 +865,88 @@ describe('ContentEntry', () => {
       expect(text(el)).not.toContain('Não foi possível salvar');
     });
 
+    it('shows the warning of an entry that loads with a part left out, as a warning and not as an entry that is out', async () => {
+      const cais = entry(TableContentKind.BACKGROUND, 'Cais do Farol', {
+        body: {
+          case: 'tableBackground',
+          value: create(TableBackgroundSchema, {
+            namePt: 'Cais do Farol',
+            feature: feature('Rede do cais', [
+              {
+                type: 'choice',
+                choice: 'tool',
+                count: 1,
+                from: ['proficiency:smiths-tools', 'skill:athletics'],
+              },
+            ]),
+          }),
+        },
+      });
+      const issue = violation(cais.key, 'table_background.feature.effects[0].from[1]', 'bad_value');
+      const { el } = await setup(Role.MASTER, cais.key, [cais, ...mirathel().slice(1)], {
+        loadedWithIssues: [issue],
+      });
+      const note = el.querySelector('.mr-notice--warning')!;
+      expect(text(note)).toContain('Esta entrada tem um aviso.');
+      expect(text(note)).toContain('A lista de ferramentas cita «');
+      expect(text(note)).toContain('Edite a escolha para corrigir.');
+      expect(el.querySelector('.mr-notice--danger')).toBeNull();
+      expect(text(el)).not.toContain('fora da campanha');
+      expect(el.querySelector('.tags')?.textContent ?? '').not.toContain('Fora da campanha');
+    });
+
+    it('takes the warning from the server after a save: a fix that clears it removes the notice', async () => {
+      const cais = entry(TableContentKind.BACKGROUND, 'Cais do Farol', {
+        body: {
+          case: 'tableBackground',
+          value: create(TableBackgroundSchema, {
+            namePt: 'Cais do Farol',
+            feature: feature('Rede do cais', [
+              {
+                type: 'choice',
+                choice: 'tool',
+                count: 1,
+                from: ['proficiency:smiths-tools', 'skill:athletics'],
+              },
+            ]),
+          }),
+        },
+      });
+      const issue = violation(cais.key, 'table_background.feature.effects[0].from[1]', 'bad_value');
+      const { fixture, el } = await setup(Role.MASTER, cais.key, [cais, ...mirathel().slice(1)], {
+        loadedWithIssues: [issue],
+      });
+      expect(el.querySelector('.mr-notice--warning')).not.toBeNull();
+      list.mockResolvedValue({
+        entries: [cais, ...mirathel().slice(1)],
+        tableRevision: 8,
+        contentVersion: '',
+        leftOut: [],
+        loadedWithIssues: [],
+      });
+      const page = fixture.componentInstance as unknown as {
+        onSaved(r: { entry: unknown; affected: unknown[] }): Promise<void>;
+      };
+      const scroll = vi.spyOn(window, 'scrollTo').mockImplementation(() => undefined);
+      try {
+        await page.onSaved({ entry: { ...cais, revision: 9 }, affected: [] });
+        await settle(fixture, 4);
+      } finally {
+        scroll.mockRestore();
+      }
+      expect(el.querySelector('.mr-notice--warning')).toBeNull();
+    });
+
     it('says that a fix saved brought the entry and what depended on it back', async () => {
       const { c, entries, leftOut } = out();
       const { fixture, el } = await setup(Role.MASTER, c.key, entries, { leftOut });
-      list.mockResolvedValue({ entries, tableRevision: 8, contentVersion: '', leftOut: [] });
+      list.mockResolvedValue({
+        entries,
+        tableRevision: 8,
+        contentVersion: '',
+        leftOut: [],
+        loadedWithIssues: [],
+      });
       const page = fixture.componentInstance as unknown as {
         onSaved(r: { entry: unknown; affected: unknown[] }): Promise<void>;
       };
@@ -884,7 +970,13 @@ describe('ContentEntry', () => {
       const page = fixture.componentInstance as unknown as {
         onSaved(r: { entry: unknown; affected: unknown[] }): Promise<void>;
       };
-      list.mockResolvedValue({ entries, tableRevision: 8, contentVersion: '', leftOut });
+      list.mockResolvedValue({
+        entries,
+        tableRevision: 8,
+        contentVersion: '',
+        leftOut,
+        loadedWithIssues: [],
+      });
       const scroll = vi.spyOn(window, 'scrollTo').mockImplementation(() => undefined);
       try {
         await page.onSaved({ entry: { ...c, revision: 9 }, affected: [] });
@@ -915,7 +1007,13 @@ describe('ContentEntry', () => {
       const page = fixture.componentInstance as unknown as {
         onSaved(r: { entry: unknown; affected: unknown[] }): Promise<void>;
       };
-      list.mockResolvedValue({ entries, tableRevision: 8, contentVersion: '', leftOut });
+      list.mockResolvedValue({
+        entries,
+        tableRevision: 8,
+        contentVersion: '',
+        leftOut,
+        loadedWithIssues: [],
+      });
       const scroll = vi.spyOn(window, 'scrollTo').mockImplementation(() => undefined);
       try {
         await page.onSaved({ entry: { ...race, revision: 9 }, affected: [] });
@@ -945,6 +1043,7 @@ describe('ContentEntry', () => {
       const { c, entries } = out();
       const { el } = await setup(Role.MASTER, c.key, entries, {
         leftOut: [violation(c.key, '', 'overlay')],
+        loadedWithIssues: [],
       });
       expect(text(el.querySelector('.mr-notice--danger')!)).toContain(
         'As regras não aceitam mais esta classe: o conteúdo da mesa não fecha com esta entrada.',
@@ -955,6 +1054,7 @@ describe('ContentEntry', () => {
       const spell = entry(TableContentKind.SPELL, 'Lâmina de Nanquim', { charactersUsing: 0 });
       const { el } = await setup(Role.MASTER, spell.key, [spell], {
         leftOut: [violation(spell.key, 'table_spell.level', 'bad_value')],
+        loadedWithIssues: [],
       });
       expect(text(el.querySelector('.mr-notice--danger')!)).toContain(
         'Esta magia está fora da campanha.',
