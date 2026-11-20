@@ -1232,11 +1232,25 @@ func CheckLevelUpOf(before, after Build, ch LevelUpChoices, c *Content) error {
 	return nil
 }
 
+// CheckLevelUpOfMaster is CheckLevelUpOf for the master: the count of the new skills and expertise is the level's, as for
+// a player, but a new pick no source of the sheet places is not refused (the master reads the fit issue about it).
+func CheckLevelUpOfMaster(before, after Build, ch LevelUpChoices, c *Content) error {
+	if ch.SwapInvocation != "" && ch.Class != classWarlock {
+		return refuse(levelUpChoicesField, LevelUpReasonFeatureChoice, "an option was removed")
+	}
+	if err := checkLevelUp(before, after, sentSwaps{known: true, swaps: ch.FeatureSwaps, anyList: true}, c.c); err != nil {
+		return err
+	}
+	return nil
+}
+
 // sentSwaps are the swaps of a table feature's options a request sent. Without known, the check does not know what was
 // sent and takes any swap the offer allows.
 type sentSwaps struct {
 	known bool
 	swaps []PickSwap
+	// anyList is the master's check: a new skill or expertise is held to no list, so the sheet's sources need not place it.
+	anyList bool
 }
 
 // groups are the feature groups of the offer that removals may be excused by.
@@ -1303,7 +1317,7 @@ func checkLevelUp(before, after Build, sent sentSwaps, c *content) *LevelUpError
 	if lerr := checkLevelUpChoices(before, after, classKey, swaps, c); lerr != nil {
 		return lerr
 	}
-	if lerr := c.checkLevelUpSkills(before, after, offer, mc); lerr != nil {
+	if lerr := c.checkLevelUpSkills(before, after, offer, mc, !sent.anyList); lerr != nil {
 		return lerr
 	}
 	return checkNewIssues(dBefore, dAfter, offOwnList)
@@ -1393,8 +1407,8 @@ func duplicatesOf(before, after Build, newClass bool) Build {
 }
 
 // checkLevelUpSkills checks the new skills (the multiclass pick of a new class, mc
-// not nil) and the new expertise against what the offer of the level asks, and that the sheet's sources place the new picks.
-func (c *content) checkLevelUpSkills(before, after Build, offer LevelUpOffer, mc *MulticlassOffer) *LevelUpError {
+// not nil) and the new expertise against what the offer of the level asks, and, when placed, that the sheet's sources place the new picks.
+func (c *content) checkLevelUpSkills(before, after Build, offer LevelUpOffer, mc *MulticlassOffer, placed bool) *LevelUpError {
 	wantSkills, wantExpertise := offer.SkillChoices, offer.ExpertiseChoices
 	got, removedSkills := added(before.SkillProficiencies, after.SkillProficiencies)
 	switch {
@@ -1410,6 +1424,9 @@ func (c *content) checkLevelUpSkills(before, after Build, offer LevelUpOffer, mc
 	got, removed := added(before.Expertise, after.Expertise)
 	if removed || len(got) != wantExpertise {
 		return refuse(expertiseField, LevelUpReasonExpertise, "the new level gives %d expertise", wantExpertise)
+	}
+	if !placed {
+		return nil
 	}
 	return c.checkNewPicksPlaced(before, after)
 }

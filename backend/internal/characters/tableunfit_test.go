@@ -344,8 +344,8 @@ func TestTheMasterCompletesAChoiceWithAToolNoSourceTakes(t *testing.T) {
 	}
 }
 
-// refuseUnfitPick is the one place that holds a player to the lists: it refuses a player's pick no list allows, on every path
-// that calls it (create, import, save, preview, completing the choices and the level-up), and never the master's.
+// refuseUnfitPick is the one place that holds a player to the lists: called directly, it refuses a player's pick no list
+// allows and never the master's. The paths that call it are covered by the tests above, and the level up by the leaktest row.
 func TestOnlyAPlayerIsRefusedAPickNoListAllows(t *testing.T) {
 	t.Parallel()
 	u := newUnfitTable(t, "skill:survival")

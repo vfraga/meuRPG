@@ -1292,7 +1292,8 @@ The choices cover the SRD 5.1 sections Fighting Style, Draconic Ancestry and Bre
   The master alone reads an issue about it.
   A new pick that no list allows is refused for a player, and the sentence names only that pick.
   The master is never refused for it: the pick is saved, and the master reads the issue.
-  A level up asks for as many new skills as the sheet after the level may pick, held picks counted, and refuses a new skill that no list of the sheet after the level has room for.
+  A level up asks for as many new skills as the sheet after the level may pick, held picks counted, and refuses a player a new skill that no list of the sheet after the level has room for.
+  The master's preview of a level up is not refused for it.
 - **Creation.** A player's sheet with an open choice is refused ("Criar personagem" explains what is missing), and the editor has a step "Escolhas". The master's NPCs and the table sheets are not held to it.
 - **Options that cannot be taken yet** (an invocation that asks level 5, or a spell the sheet lacks) are listed, dotted, with the reason. Two options that give the same thing (the same resistance twice) are refused.
 - **A locked sheet** whose class gained a choice stays playable. The owner and the master read "N escolhas pendentes", and the player completes only the missing picks, changing nothing else on the sheet (RN-01). The master also reads "N escolhas em aberto" on the campaign page; a player never sees another's.
