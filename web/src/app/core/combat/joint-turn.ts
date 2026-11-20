@@ -153,7 +153,7 @@ export function orderItems(e: Encounter, master: boolean): OrderItem[] {
         total,
         members: run,
         onTurn: onTurn.length > 1 && run.some((c) => onTurn.some((t) => t.id === c.id)),
-        mounted: run.length === 2 && boxedPair(run[0], run[1], master),
+        mounted: run.length === 2 && boxedPair(run[0], run[1]),
       });
     } else {
       out.push(...run.map((combatant) => ({ kind: 'single' as const, combatant })));
@@ -164,7 +164,7 @@ export function orderItems(e: Encounter, master: boolean): OrderItem[] {
     // The mount right after its rider joins the rider's box, even a tie's that the rider joined (a tie is read on its first).
     const joins =
       run.length > 0 &&
-      (sameGroup(run[0], c, master, inTurnGroup) || boxedPair(run[run.length - 1], c, master));
+      (sameGroup(run[0], c, master, inTurnGroup) || boxedPair(run[run.length - 1], c));
     if (!joins) {
       flush();
     }
@@ -187,7 +187,7 @@ function sameGroup(
     return false;
   }
   // A rider and its mount are one box whatever the totals the viewer reads: the mount takes its rider's.
-  if (boxedPair(a, b, master)) {
+  if (boxedPair(a, b)) {
     return true;
   }
   if (a.initiative === undefined || b.initiative === undefined || a.initiative !== b.initiative) {

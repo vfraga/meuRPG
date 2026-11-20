@@ -269,7 +269,7 @@ describe('OrderColumn', () => {
         currentCombatantId: 'w',
         combatants: [
           combatant({ id: 'w', label: 'Wight', mountedOnId: 'e' }),
-          combatant({ id: 'e', label: 'Esqueleto', riderId: 'w', mountKind: '' }),
+          combatant({ id: 'e', label: 'Esqueleto', riderId: 'w', mountKind: 'controlled' }),
         ],
       }),
     );

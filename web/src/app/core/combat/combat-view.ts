@@ -274,7 +274,7 @@ interface RiddenPair {
 function riddenPair(joint: JointTurn): RiddenPair | null {
   const rider = joint.members.find((m) => m.mine && m.mountedOnId !== '');
   const mount = rider ? joint.members.find((m) => m.id === rider.mountedOnId) : undefined;
-  return rider && mount && boxedPair(rider, mount, false) ? { rider, mount } : null;
+  return rider && mount && boxedPair(rider, mount) ? { rider, mount } : null;
 }
 
 /**

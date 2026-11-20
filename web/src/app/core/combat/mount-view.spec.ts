@@ -31,34 +31,22 @@ describe('the link of a rider and its mount', () => {
     expect(isPair(tor, skeleton)).toBe(false);
   });
 
-  it('boxes a controlled pair for the master and the pair that follows for a player', () => {
-    expect(boxedPair(tor, horse(), true)).toBe(true);
-    expect(boxedPair(tor, horse('independent'), true)).toBe(false);
-    // The player is not told the mark of a mount that is not theirs: the empty mark still boxes.
-    expect(boxedPair(tor, horse(''), false)).toBe(true);
-    expect(boxedPair(tor, skeleton, false)).toBe(false);
-    // The rider's player reads the mark: an independent mount is not boxed for them either.
-    expect(boxedPair(tor, horse('independent'), false)).toBe(false);
+  it('boxes a pair only when the mount is known to be a trained one', () => {
+    expect(boxedPair(tor, horse())).toBe(true);
+    expect(boxedPair(tor, horse('independent'))).toBe(false);
+    expect(boxedPair(tor, skeleton)).toBe(false);
   });
 
-  it("reads an empty mark as unmarked for whoever is told the mark: the rider's player and the mount's owner", () => {
-    const mine = { ...tor, mine: true } as typeof tor;
-    expect(boxedPair(mine, horse(''), false)).toBe(false);
-    const owned = { ...horse(''), controlledByMe: true } as ReturnType<typeof horse>;
-    expect(boxedPair(tor, owned, false)).toBe(false);
-    expect(boxedPair(tor, horse(''), true)).toBe(false);
-  });
-
-  it('boxes, for a third party, a mount right after its rider whatever its mark (a known limit: the mark is not theirs)', () => {
-    // An independent NPC mount reads as '' to them, so it is boxed like a controlled one.
-    expect(boxedPair(wight, { ...skeleton, mountKind: '' } as typeof skeleton, false)).toBe(true);
+  it('does not box a mount with no kind: the screens do not guess the order from adjacency', () => {
+    expect(boxedPair(tor, horse(''))).toBe(false);
+    expect(boxedPair(wight, { ...skeleton, mountKind: '' } as typeof skeleton)).toBe(false);
   });
 
   it('says which mount follows its rider in a box', () => {
     const both = encounter({ combatants: [tor, horse(), wight, skeleton] });
-    expect(followsRider(both, horse(), true)).toBe(true);
-    expect(followsRider(both, skeleton, true)).toBe(false);
-    expect(followsRider(both, tor, true)).toBe(false);
+    expect(followsRider(both, horse())).toBe(true);
+    expect(followsRider(both, skeleton)).toBe(false);
+    expect(followsRider(both, tor)).toBe(false);
   });
 });
 
@@ -78,7 +66,7 @@ describe('the line a row says about the link', () => {
     expect(mountLine(e, spider, true, false)).toBe('Leva a Lia · independente');
   });
 
-  it('never tells a player the mark they cannot read', () => {
+  it('says "independente" only when the kind is known', () => {
     const other = encounter({
       combatants: [wight, { ...skeleton, mountKind: '' } as typeof skeleton],
     });

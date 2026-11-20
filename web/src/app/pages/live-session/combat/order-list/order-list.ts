@@ -290,7 +290,7 @@ export class OrderList {
 
   /** "Adestrada · leva Tor": the link first on the line, with its icon (588-08); a mount under its rider is indented. */
   protected readonly ride = (c: Combatant): string => mountLineOf(this.encounter(), c, true);
-  protected readonly follows = (c: Combatant): boolean => followsRider(this.encounter(), c, true);
+  protected readonly follows = (c: Combatant): boolean => followsRider(this.encounter(), c);
 
   /** The line under the name of a compact row: "Inic. 14 · CA 15", or the state word first ("Escondido · inic. 7"). */
   protected compactSub(c: Combatant, inGroup: boolean): string {

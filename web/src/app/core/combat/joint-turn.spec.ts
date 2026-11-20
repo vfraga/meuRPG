@@ -93,15 +93,15 @@ describe('joint turns (MR-013)', () => {
         expect(names(e, true)).toEqual(['montado:Tor+Cavalo de guerra', 'Zumbi']);
       });
 
-      it("does not box an unmarked mount for the rider's player, who reads the mark", () => {
+      it('does not box a mount with no kind, for anyone', () => {
         const mine = { ...rider, mine: true } as typeof rider;
         const e = encounter({ combatants: [mine, horse({ mountKind: '' }), zombie] });
         expect(names(e, false)).toEqual(['Tor', 'Cavalo de guerra', 'Zumbi']);
       });
 
-      it('boxes an NPC pair for a player without a number: the totals are not theirs (RN-20)', () => {
+      it('boxes an NPC pair of a trained mount for a player without a number: the totals are not theirs (RN-20)', () => {
         const npc = combatant({ id: 'w', label: 'Wight', mountedOnId: 'e' });
-        const steed = combatant({ id: 'e', label: 'Esqueleto', mountKind: '' });
+        const steed = combatant({ id: 'e', label: 'Esqueleto', mountKind: 'controlled' });
         const box = orderItems(encounter({ combatants: [zombie, npc, steed] }), false)[1];
         expect(box.kind === 'group' && box.mounted).toBe(true);
         expect(box.kind === 'group' ? box.total : 'x').toBeNull();
@@ -113,7 +113,7 @@ describe('joint turns (MR-013)', () => {
         const e = encounter({ combatants: [brisa, rider, horse({ initiative: 17 }), zombie] });
         expect(names(e, true)).toEqual(['Brisa+Tor+Cavalo de guerra', 'Zumbi']);
         const forPlayer = encounter({
-          combatants: [brisa, rider, horse({ mountKind: '' }), zombie],
+          combatants: [brisa, rider, horse({ mountKind: 'controlled' }), zombie],
         });
         expect(names(forPlayer, false)).toEqual(['Brisa+Tor+Cavalo de guerra', 'Zumbi']);
       });
