@@ -33,7 +33,7 @@ import { Segmented } from '../segmented/segmented';
           <span class="same__text">
             <span class="same__head">
               <b class="same__name">{{ b.name }}</b>
-              <span class="mr-tag"><mat-icon aria-hidden="true">link</mat-icon>Mesmo corcel</span>
+              <span class="mr-tag mr-tag--accent"><mat-icon aria-hidden="true">link</mat-icon>Mesmo corcel</span>
             </span>
             <span class="same__sub">{{ fixedLine() }}</span>
           </span>

@@ -90,15 +90,34 @@
   gap: 8px;
 }
 
-// A dialog (from a tablet up): the two buttons side by side, so the list keeps the room; the filled one is the wider, so its label stays on one line.
+// The buttons are "Cancelar" then the filled one in the page's order; on a phone the filled one is on top.
+[foot] > .line,
+[foot] > .roll {
+  order: 0;
+}
+
+[foot] > .go {
+  order: 1;
+}
+
+[foot] > .no {
+  order: 2;
+}
+
+// A dialog (from a tablet up): "Cancelar | Convocar" side by side, so the list keeps the room; the filled one is the wider, so its label stays on one line.
 @media (min-width: 768px) {
   [foot] {
     display: grid;
-    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
 
     > :not(button),
     > button:only-child {
       grid-column: 1 / -1;
+    }
+
+    > .go,
+    > .no {
+      order: 0;
     }
   }
 }
@@ -132,8 +151,6 @@
 
 .no {
   --mat-button-outlined-container-height: 44px;
-  --mat-button-outlined-label-text-color: var(--mr-accent-text);
-  --mat-button-outlined-outline-color: var(--mr-control-line);
   font-weight: 700;
 }
 

@@ -256,6 +256,12 @@ a.mr-list__row:hover .mr-list__name {
     font-size: var(--mr-font-14);
   }
 
+  // A tag that names the bond of a creature to its owner ("Montaria vinculada", "Mesmo corcel").
+  &--accent {
+    border-color: var(--mr-accent);
+    color: var(--mr-accent-text);
+  }
+
   &--pending {
     border-color: var(--mr-warning-ink);
     color: var(--mr-warning-ink);

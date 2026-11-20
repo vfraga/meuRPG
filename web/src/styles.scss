@@ -265,6 +265,11 @@ html {
       tonal-container-shape: var(--mr-radius-sm),
       filled-label-text-weight: 700,
       outlined-label-text-weight: 700,
+      // An outlined button's words and icon are ink: the accent is for the one filled button and for links.
+      // The pressed and hovered tint is ink too, so a pointer over the button does not paint it pink.
+      outlined-label-text-color: var(--mr-ink),
+      outlined-state-layer-color: var(--mr-ink),
+      outlined-ripple-color: var(--mr-ink),
       text-label-text-weight: 700,
       filled-label-text-size: 16px,
       outlined-label-text-size: 16px,
