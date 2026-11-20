@@ -15,5 +15,6 @@ func gearToProto(g rules.GearPiece) *rulesv1.GearEntry {
 	return &rulesv1.GearEntry{
 		Key: g.Key, NamePt: g.NamePT, Kind: gearKindToProto[g.Kind], Equipped: g.Equipped,
 		TwoHanded: g.TwoHanded, ArmorClassIfToggled: i32(g.ArmorClassIfToggled), Count: i32(g.Count),
+		InfusionNamePt: g.InfusionNamePT,
 	}
 }

@@ -321,6 +321,7 @@ func attackToProto(a rules.Attack) *rulesv1.Attack {
 		Adamantine:          a.Adamantine,
 		Magical:             a.Magical,
 		MagicBonus:          i32(a.MagicBonus),
+		InfusionNamePt:      a.InfusionNamePT,
 	}
 }
 
@@ -594,6 +595,7 @@ func itemModifiersOf(in []rules.ItemModifier) []*rulesv1.ItemModifier {
 	for _, m := range in {
 		out = append(out, &rulesv1.ItemModifier{
 			Target: m.Target, Value: i32(m.Value), SourceKey: m.SourceKey, SourceNamePt: m.SourceNamePT, Counts: m.Counts, ReasonPt: m.ReasonPT,
+			InfusionNamePt: m.InfusionNamePT, InfusionId: m.InfusionID,
 		})
 	}
 	return out

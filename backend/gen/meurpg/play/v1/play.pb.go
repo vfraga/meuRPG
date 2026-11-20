@@ -2686,6 +2686,7 @@ type WatchGameSessionResponse struct {
 	//	*WatchGameSessionResponse_FreeRollRolled_
 	//	*WatchGameSessionResponse_AttackHit_
 	//	*WatchGameSessionResponse_TableScreenChanged_
+	//	*WatchGameSessionResponse_CharacterInfusionsChanged_
 	Event isWatchGameSessionResponse_Event `protobuf_oneof:"event"`
 	// The session's hint number (game_sessions.hint_seq): it grows by one for every write that told the streams something,
 	// however many events it told. A stream that sees a number ahead of the ones it has applied (on a heartbeat, above all)
@@ -3092,6 +3093,15 @@ func (x *WatchGameSessionResponse) GetTableScreenChanged() *WatchGameSessionResp
 	return nil
 }
 
+func (x *WatchGameSessionResponse) GetCharacterInfusionsChanged() *WatchGameSessionResponse_CharacterInfusionsChanged {
+	if x != nil {
+		if x, ok := x.Event.(*WatchGameSessionResponse_CharacterInfusionsChanged_); ok {
+			return x.CharacterInfusionsChanged
+		}
+	}
+	return nil
+}
+
 func (x *WatchGameSessionResponse) GetSessionSeq() int64 {
 	if x != nil {
 		return x.SessionSeq
@@ -3358,6 +3368,12 @@ type WatchGameSessionResponse_TableScreenChanged_ struct {
 	TableScreenChanged *WatchGameSessionResponse_TableScreenChanged `protobuf:"bytes,47,opt,name=table_screen_changed,json=tableScreenChanged,proto3,oneof"`
 }
 
+type WatchGameSessionResponse_CharacterInfusionsChanged_ struct {
+	// The infusions of a character changed (one was put on, moved or ended). Sent to the
+	// master and the character's owner only. The app reads the open sheet again.
+	CharacterInfusionsChanged *WatchGameSessionResponse_CharacterInfusionsChanged `protobuf:"bytes,49,opt,name=character_infusions_changed,json=characterInfusionsChanged,proto3,oneof"`
+}
+
 func (*WatchGameSessionResponse_Ready_) isWatchGameSessionResponse_Event() {}
 
 func (*WatchGameSessionResponse_Heartbeat_) isWatchGameSessionResponse_Event() {}
@@ -3435,6 +3451,8 @@ func (*WatchGameSessionResponse_FreeRollRolled_) isWatchGameSessionResponse_Even
 func (*WatchGameSessionResponse_AttackHit_) isWatchGameSessionResponse_Event() {}
 
 func (*WatchGameSessionResponse_TableScreenChanged_) isWatchGameSessionResponse_Event() {}
+
+func (*WatchGameSessionResponse_CharacterInfusionsChanged_) isWatchGameSessionResponse_Event() {}
 
 // NudgePlayerRequest is the master's call for a player's attention.
 type NudgePlayerRequest struct {
@@ -4392,6 +4410,53 @@ func (*TakeBackLeftImageResponse) Descriptor() ([]byte, []int) {
 	return file_meurpg_play_v1_play_proto_rawDescGZIP(), []int{51}
 }
 
+// CharacterInfusionsChanged says the infusions a character keeps or carries changed. It carries no detail: the
+// sheet's infusions are read again.
+type WatchGameSessionResponse_CharacterInfusionsChanged struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The character whose infusions changed.
+	CharacterId   string `protobuf:"bytes,1,opt,name=character_id,json=characterId,proto3" json:"character_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *WatchGameSessionResponse_CharacterInfusionsChanged) Reset() {
+	*x = WatchGameSessionResponse_CharacterInfusionsChanged{}
+	mi := &file_meurpg_play_v1_play_proto_msgTypes[53]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *WatchGameSessionResponse_CharacterInfusionsChanged) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*WatchGameSessionResponse_CharacterInfusionsChanged) ProtoMessage() {}
+
+func (x *WatchGameSessionResponse_CharacterInfusionsChanged) ProtoReflect() protoreflect.Message {
+	mi := &file_meurpg_play_v1_play_proto_msgTypes[53]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use WatchGameSessionResponse_CharacterInfusionsChanged.ProtoReflect.Descriptor instead.
+func (*WatchGameSessionResponse_CharacterInfusionsChanged) Descriptor() ([]byte, []int) {
+	return file_meurpg_play_v1_play_proto_rawDescGZIP(), []int{35, 0}
+}
+
+func (x *WatchGameSessionResponse_CharacterInfusionsChanged) GetCharacterId() string {
+	if x != nil {
+		return x.CharacterId
+	}
+	return ""
+}
+
 // TableScreenChanged tells the master's panel that the TV at the table changed. Only the master's
 // streams get it. The TV tabs are counted in memory in each server instance, like the live streams: with
 // more than one instance a tab is counted by the instance that holds it. It names no item of the stage.
@@ -4414,7 +4479,7 @@ type WatchGameSessionResponse_TableScreenChanged struct {
 
 func (x *WatchGameSessionResponse_TableScreenChanged) Reset() {
 	*x = WatchGameSessionResponse_TableScreenChanged{}
-	mi := &file_meurpg_play_v1_play_proto_msgTypes[53]
+	mi := &file_meurpg_play_v1_play_proto_msgTypes[54]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4426,7 +4491,7 @@ func (x *WatchGameSessionResponse_TableScreenChanged) String() string {
 func (*WatchGameSessionResponse_TableScreenChanged) ProtoMessage() {}
 
 func (x *WatchGameSessionResponse_TableScreenChanged) ProtoReflect() protoreflect.Message {
-	mi := &file_meurpg_play_v1_play_proto_msgTypes[53]
+	mi := &file_meurpg_play_v1_play_proto_msgTypes[54]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4439,7 +4504,7 @@ func (x *WatchGameSessionResponse_TableScreenChanged) ProtoReflect() protoreflec
 
 // Deprecated: Use WatchGameSessionResponse_TableScreenChanged.ProtoReflect.Descriptor instead.
 func (*WatchGameSessionResponse_TableScreenChanged) Descriptor() ([]byte, []int) {
-	return file_meurpg_play_v1_play_proto_rawDescGZIP(), []int{35, 0}
+	return file_meurpg_play_v1_play_proto_rawDescGZIP(), []int{35, 1}
 }
 
 func (x *WatchGameSessionResponse_TableScreenChanged) GetOpen() bool {
@@ -4489,7 +4554,7 @@ type WatchGameSessionResponse_AttackHit struct {
 
 func (x *WatchGameSessionResponse_AttackHit) Reset() {
 	*x = WatchGameSessionResponse_AttackHit{}
-	mi := &file_meurpg_play_v1_play_proto_msgTypes[54]
+	mi := &file_meurpg_play_v1_play_proto_msgTypes[55]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4501,7 +4566,7 @@ func (x *WatchGameSessionResponse_AttackHit) String() string {
 func (*WatchGameSessionResponse_AttackHit) ProtoMessage() {}
 
 func (x *WatchGameSessionResponse_AttackHit) ProtoReflect() protoreflect.Message {
-	mi := &file_meurpg_play_v1_play_proto_msgTypes[54]
+	mi := &file_meurpg_play_v1_play_proto_msgTypes[55]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4514,7 +4579,7 @@ func (x *WatchGameSessionResponse_AttackHit) ProtoReflect() protoreflect.Message
 
 // Deprecated: Use WatchGameSessionResponse_AttackHit.ProtoReflect.Descriptor instead.
 func (*WatchGameSessionResponse_AttackHit) Descriptor() ([]byte, []int) {
-	return file_meurpg_play_v1_play_proto_rawDescGZIP(), []int{35, 1}
+	return file_meurpg_play_v1_play_proto_rawDescGZIP(), []int{35, 2}
 }
 
 func (x *WatchGameSessionResponse_AttackHit) GetId() string {
@@ -4555,7 +4620,7 @@ type WatchGameSessionResponse_FreeRollRolled struct {
 
 func (x *WatchGameSessionResponse_FreeRollRolled) Reset() {
 	*x = WatchGameSessionResponse_FreeRollRolled{}
-	mi := &file_meurpg_play_v1_play_proto_msgTypes[55]
+	mi := &file_meurpg_play_v1_play_proto_msgTypes[56]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4567,7 +4632,7 @@ func (x *WatchGameSessionResponse_FreeRollRolled) String() string {
 func (*WatchGameSessionResponse_FreeRollRolled) ProtoMessage() {}
 
 func (x *WatchGameSessionResponse_FreeRollRolled) ProtoReflect() protoreflect.Message {
-	mi := &file_meurpg_play_v1_play_proto_msgTypes[55]
+	mi := &file_meurpg_play_v1_play_proto_msgTypes[56]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4580,7 +4645,7 @@ func (x *WatchGameSessionResponse_FreeRollRolled) ProtoReflect() protoreflect.Me
 
 // Deprecated: Use WatchGameSessionResponse_FreeRollRolled.ProtoReflect.Descriptor instead.
 func (*WatchGameSessionResponse_FreeRollRolled) Descriptor() ([]byte, []int) {
-	return file_meurpg_play_v1_play_proto_rawDescGZIP(), []int{35, 2}
+	return file_meurpg_play_v1_play_proto_rawDescGZIP(), []int{35, 3}
 }
 
 func (x *WatchGameSessionResponse_FreeRollRolled) GetRoll() *FreeRoll {
@@ -4600,7 +4665,7 @@ type WatchGameSessionResponse_SessionMessageAdded struct {
 
 func (x *WatchGameSessionResponse_SessionMessageAdded) Reset() {
 	*x = WatchGameSessionResponse_SessionMessageAdded{}
-	mi := &file_meurpg_play_v1_play_proto_msgTypes[56]
+	mi := &file_meurpg_play_v1_play_proto_msgTypes[57]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4612,7 +4677,7 @@ func (x *WatchGameSessionResponse_SessionMessageAdded) String() string {
 func (*WatchGameSessionResponse_SessionMessageAdded) ProtoMessage() {}
 
 func (x *WatchGameSessionResponse_SessionMessageAdded) ProtoReflect() protoreflect.Message {
-	mi := &file_meurpg_play_v1_play_proto_msgTypes[56]
+	mi := &file_meurpg_play_v1_play_proto_msgTypes[57]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4625,7 +4690,7 @@ func (x *WatchGameSessionResponse_SessionMessageAdded) ProtoReflect() protorefle
 
 // Deprecated: Use WatchGameSessionResponse_SessionMessageAdded.ProtoReflect.Descriptor instead.
 func (*WatchGameSessionResponse_SessionMessageAdded) Descriptor() ([]byte, []int) {
-	return file_meurpg_play_v1_play_proto_rawDescGZIP(), []int{35, 3}
+	return file_meurpg_play_v1_play_proto_rawDescGZIP(), []int{35, 4}
 }
 
 func (x *WatchGameSessionResponse_SessionMessageAdded) GetMessage() *SessionMessage {
@@ -4646,7 +4711,7 @@ type WatchGameSessionResponse_MasterTyping struct {
 
 func (x *WatchGameSessionResponse_MasterTyping) Reset() {
 	*x = WatchGameSessionResponse_MasterTyping{}
-	mi := &file_meurpg_play_v1_play_proto_msgTypes[57]
+	mi := &file_meurpg_play_v1_play_proto_msgTypes[58]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4658,7 +4723,7 @@ func (x *WatchGameSessionResponse_MasterTyping) String() string {
 func (*WatchGameSessionResponse_MasterTyping) ProtoMessage() {}
 
 func (x *WatchGameSessionResponse_MasterTyping) ProtoReflect() protoreflect.Message {
-	mi := &file_meurpg_play_v1_play_proto_msgTypes[57]
+	mi := &file_meurpg_play_v1_play_proto_msgTypes[58]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4671,7 +4736,7 @@ func (x *WatchGameSessionResponse_MasterTyping) ProtoReflect() protoreflect.Mess
 
 // Deprecated: Use WatchGameSessionResponse_MasterTyping.ProtoReflect.Descriptor instead.
 func (*WatchGameSessionResponse_MasterTyping) Descriptor() ([]byte, []int) {
-	return file_meurpg_play_v1_play_proto_rawDescGZIP(), []int{35, 4}
+	return file_meurpg_play_v1_play_proto_rawDescGZIP(), []int{35, 5}
 }
 
 func (x *WatchGameSessionResponse_MasterTyping) GetExpiresInSeconds() int32 {
@@ -4690,7 +4755,7 @@ type WatchGameSessionResponse_CallingYou struct {
 
 func (x *WatchGameSessionResponse_CallingYou) Reset() {
 	*x = WatchGameSessionResponse_CallingYou{}
-	mi := &file_meurpg_play_v1_play_proto_msgTypes[58]
+	mi := &file_meurpg_play_v1_play_proto_msgTypes[59]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4702,7 +4767,7 @@ func (x *WatchGameSessionResponse_CallingYou) String() string {
 func (*WatchGameSessionResponse_CallingYou) ProtoMessage() {}
 
 func (x *WatchGameSessionResponse_CallingYou) ProtoReflect() protoreflect.Message {
-	mi := &file_meurpg_play_v1_play_proto_msgTypes[58]
+	mi := &file_meurpg_play_v1_play_proto_msgTypes[59]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4715,7 +4780,7 @@ func (x *WatchGameSessionResponse_CallingYou) ProtoReflect() protoreflect.Messag
 
 // Deprecated: Use WatchGameSessionResponse_CallingYou.ProtoReflect.Descriptor instead.
 func (*WatchGameSessionResponse_CallingYou) Descriptor() ([]byte, []int) {
-	return file_meurpg_play_v1_play_proto_rawDescGZIP(), []int{35, 5}
+	return file_meurpg_play_v1_play_proto_rawDescGZIP(), []int{35, 6}
 }
 
 // HiddenHitPending says a question waits for the master in a combat. It names
@@ -4732,7 +4797,7 @@ type WatchGameSessionResponse_HiddenHitPending struct {
 
 func (x *WatchGameSessionResponse_HiddenHitPending) Reset() {
 	*x = WatchGameSessionResponse_HiddenHitPending{}
-	mi := &file_meurpg_play_v1_play_proto_msgTypes[59]
+	mi := &file_meurpg_play_v1_play_proto_msgTypes[60]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4744,7 +4809,7 @@ func (x *WatchGameSessionResponse_HiddenHitPending) String() string {
 func (*WatchGameSessionResponse_HiddenHitPending) ProtoMessage() {}
 
 func (x *WatchGameSessionResponse_HiddenHitPending) ProtoReflect() protoreflect.Message {
-	mi := &file_meurpg_play_v1_play_proto_msgTypes[59]
+	mi := &file_meurpg_play_v1_play_proto_msgTypes[60]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4757,7 +4822,7 @@ func (x *WatchGameSessionResponse_HiddenHitPending) ProtoReflect() protoreflect.
 
 // Deprecated: Use WatchGameSessionResponse_HiddenHitPending.ProtoReflect.Descriptor instead.
 func (*WatchGameSessionResponse_HiddenHitPending) Descriptor() ([]byte, []int) {
-	return file_meurpg_play_v1_play_proto_rawDescGZIP(), []int{35, 6}
+	return file_meurpg_play_v1_play_proto_rawDescGZIP(), []int{35, 7}
 }
 
 func (x *WatchGameSessionResponse_HiddenHitPending) GetEncounterId() string {
@@ -4785,7 +4850,7 @@ type WatchGameSessionResponse_ReactionWindowOpened struct {
 
 func (x *WatchGameSessionResponse_ReactionWindowOpened) Reset() {
 	*x = WatchGameSessionResponse_ReactionWindowOpened{}
-	mi := &file_meurpg_play_v1_play_proto_msgTypes[60]
+	mi := &file_meurpg_play_v1_play_proto_msgTypes[61]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4797,7 +4862,7 @@ func (x *WatchGameSessionResponse_ReactionWindowOpened) String() string {
 func (*WatchGameSessionResponse_ReactionWindowOpened) ProtoMessage() {}
 
 func (x *WatchGameSessionResponse_ReactionWindowOpened) ProtoReflect() protoreflect.Message {
-	mi := &file_meurpg_play_v1_play_proto_msgTypes[60]
+	mi := &file_meurpg_play_v1_play_proto_msgTypes[61]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4810,7 +4875,7 @@ func (x *WatchGameSessionResponse_ReactionWindowOpened) ProtoReflect() protorefl
 
 // Deprecated: Use WatchGameSessionResponse_ReactionWindowOpened.ProtoReflect.Descriptor instead.
 func (*WatchGameSessionResponse_ReactionWindowOpened) Descriptor() ([]byte, []int) {
-	return file_meurpg_play_v1_play_proto_rawDescGZIP(), []int{35, 7}
+	return file_meurpg_play_v1_play_proto_rawDescGZIP(), []int{35, 8}
 }
 
 func (x *WatchGameSessionResponse_ReactionWindowOpened) GetEncounterId() string {
@@ -4843,7 +4908,7 @@ type WatchGameSessionResponse_ReactionWindowClosed struct {
 
 func (x *WatchGameSessionResponse_ReactionWindowClosed) Reset() {
 	*x = WatchGameSessionResponse_ReactionWindowClosed{}
-	mi := &file_meurpg_play_v1_play_proto_msgTypes[61]
+	mi := &file_meurpg_play_v1_play_proto_msgTypes[62]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4855,7 +4920,7 @@ func (x *WatchGameSessionResponse_ReactionWindowClosed) String() string {
 func (*WatchGameSessionResponse_ReactionWindowClosed) ProtoMessage() {}
 
 func (x *WatchGameSessionResponse_ReactionWindowClosed) ProtoReflect() protoreflect.Message {
-	mi := &file_meurpg_play_v1_play_proto_msgTypes[61]
+	mi := &file_meurpg_play_v1_play_proto_msgTypes[62]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4868,7 +4933,7 @@ func (x *WatchGameSessionResponse_ReactionWindowClosed) ProtoReflect() protorefl
 
 // Deprecated: Use WatchGameSessionResponse_ReactionWindowClosed.ProtoReflect.Descriptor instead.
 func (*WatchGameSessionResponse_ReactionWindowClosed) Descriptor() ([]byte, []int) {
-	return file_meurpg_play_v1_play_proto_rawDescGZIP(), []int{35, 8}
+	return file_meurpg_play_v1_play_proto_rawDescGZIP(), []int{35, 9}
 }
 
 func (x *WatchGameSessionResponse_ReactionWindowClosed) GetEncounterId() string {
@@ -4908,7 +4973,7 @@ type WatchGameSessionResponse_SpellCastsChanged struct {
 
 func (x *WatchGameSessionResponse_SpellCastsChanged) Reset() {
 	*x = WatchGameSessionResponse_SpellCastsChanged{}
-	mi := &file_meurpg_play_v1_play_proto_msgTypes[62]
+	mi := &file_meurpg_play_v1_play_proto_msgTypes[63]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4920,7 +4985,7 @@ func (x *WatchGameSessionResponse_SpellCastsChanged) String() string {
 func (*WatchGameSessionResponse_SpellCastsChanged) ProtoMessage() {}
 
 func (x *WatchGameSessionResponse_SpellCastsChanged) ProtoReflect() protoreflect.Message {
-	mi := &file_meurpg_play_v1_play_proto_msgTypes[62]
+	mi := &file_meurpg_play_v1_play_proto_msgTypes[63]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4933,7 +4998,7 @@ func (x *WatchGameSessionResponse_SpellCastsChanged) ProtoReflect() protoreflect
 
 // Deprecated: Use WatchGameSessionResponse_SpellCastsChanged.ProtoReflect.Descriptor instead.
 func (*WatchGameSessionResponse_SpellCastsChanged) Descriptor() ([]byte, []int) {
-	return file_meurpg_play_v1_play_proto_rawDescGZIP(), []int{35, 9}
+	return file_meurpg_play_v1_play_proto_rawDescGZIP(), []int{35, 10}
 }
 
 // GroupCheckChanged is the content-free hint that the group check changed.
@@ -4945,7 +5010,7 @@ type WatchGameSessionResponse_GroupCheckChanged struct {
 
 func (x *WatchGameSessionResponse_GroupCheckChanged) Reset() {
 	*x = WatchGameSessionResponse_GroupCheckChanged{}
-	mi := &file_meurpg_play_v1_play_proto_msgTypes[63]
+	mi := &file_meurpg_play_v1_play_proto_msgTypes[64]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4957,7 +5022,7 @@ func (x *WatchGameSessionResponse_GroupCheckChanged) String() string {
 func (*WatchGameSessionResponse_GroupCheckChanged) ProtoMessage() {}
 
 func (x *WatchGameSessionResponse_GroupCheckChanged) ProtoReflect() protoreflect.Message {
-	mi := &file_meurpg_play_v1_play_proto_msgTypes[63]
+	mi := &file_meurpg_play_v1_play_proto_msgTypes[64]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4970,7 +5035,7 @@ func (x *WatchGameSessionResponse_GroupCheckChanged) ProtoReflect() protoreflect
 
 // Deprecated: Use WatchGameSessionResponse_GroupCheckChanged.ProtoReflect.Descriptor instead.
 func (*WatchGameSessionResponse_GroupCheckChanged) Descriptor() ([]byte, []int) {
-	return file_meurpg_play_v1_play_proto_rawDescGZIP(), []int{35, 10}
+	return file_meurpg_play_v1_play_proto_rawDescGZIP(), []int{35, 11}
 }
 
 // RevivifyChanged is the content-free hint that the casts of Revivify outside a combat
@@ -4983,7 +5048,7 @@ type WatchGameSessionResponse_RevivifyChanged struct {
 
 func (x *WatchGameSessionResponse_RevivifyChanged) Reset() {
 	*x = WatchGameSessionResponse_RevivifyChanged{}
-	mi := &file_meurpg_play_v1_play_proto_msgTypes[64]
+	mi := &file_meurpg_play_v1_play_proto_msgTypes[65]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4995,7 +5060,7 @@ func (x *WatchGameSessionResponse_RevivifyChanged) String() string {
 func (*WatchGameSessionResponse_RevivifyChanged) ProtoMessage() {}
 
 func (x *WatchGameSessionResponse_RevivifyChanged) ProtoReflect() protoreflect.Message {
-	mi := &file_meurpg_play_v1_play_proto_msgTypes[64]
+	mi := &file_meurpg_play_v1_play_proto_msgTypes[65]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5008,7 +5073,7 @@ func (x *WatchGameSessionResponse_RevivifyChanged) ProtoReflect() protoreflect.M
 
 // Deprecated: Use WatchGameSessionResponse_RevivifyChanged.ProtoReflect.Descriptor instead.
 func (*WatchGameSessionResponse_RevivifyChanged) Descriptor() ([]byte, []int) {
-	return file_meurpg_play_v1_play_proto_rawDescGZIP(), []int{35, 11}
+	return file_meurpg_play_v1_play_proto_rawDescGZIP(), []int{35, 12}
 }
 
 // HeldRollsChanged is the content-free hint that the questions of the held rolls changed.
@@ -5020,7 +5085,7 @@ type WatchGameSessionResponse_HeldRollsChanged struct {
 
 func (x *WatchGameSessionResponse_HeldRollsChanged) Reset() {
 	*x = WatchGameSessionResponse_HeldRollsChanged{}
-	mi := &file_meurpg_play_v1_play_proto_msgTypes[65]
+	mi := &file_meurpg_play_v1_play_proto_msgTypes[66]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5032,7 +5097,7 @@ func (x *WatchGameSessionResponse_HeldRollsChanged) String() string {
 func (*WatchGameSessionResponse_HeldRollsChanged) ProtoMessage() {}
 
 func (x *WatchGameSessionResponse_HeldRollsChanged) ProtoReflect() protoreflect.Message {
-	mi := &file_meurpg_play_v1_play_proto_msgTypes[65]
+	mi := &file_meurpg_play_v1_play_proto_msgTypes[66]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5045,7 +5110,7 @@ func (x *WatchGameSessionResponse_HeldRollsChanged) ProtoReflect() protoreflect.
 
 // Deprecated: Use WatchGameSessionResponse_HeldRollsChanged.ProtoReflect.Descriptor instead.
 func (*WatchGameSessionResponse_HeldRollsChanged) Descriptor() ([]byte, []int) {
-	return file_meurpg_play_v1_play_proto_rawDescGZIP(), []int{35, 12}
+	return file_meurpg_play_v1_play_proto_rawDescGZIP(), []int{35, 13}
 }
 
 // CharacterChangesRequested is the hint that the master asked for changes.
@@ -5059,7 +5124,7 @@ type WatchGameSessionResponse_CharacterChangesRequested struct {
 
 func (x *WatchGameSessionResponse_CharacterChangesRequested) Reset() {
 	*x = WatchGameSessionResponse_CharacterChangesRequested{}
-	mi := &file_meurpg_play_v1_play_proto_msgTypes[66]
+	mi := &file_meurpg_play_v1_play_proto_msgTypes[67]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5071,7 +5136,7 @@ func (x *WatchGameSessionResponse_CharacterChangesRequested) String() string {
 func (*WatchGameSessionResponse_CharacterChangesRequested) ProtoMessage() {}
 
 func (x *WatchGameSessionResponse_CharacterChangesRequested) ProtoReflect() protoreflect.Message {
-	mi := &file_meurpg_play_v1_play_proto_msgTypes[66]
+	mi := &file_meurpg_play_v1_play_proto_msgTypes[67]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5084,7 +5149,7 @@ func (x *WatchGameSessionResponse_CharacterChangesRequested) ProtoReflect() prot
 
 // Deprecated: Use WatchGameSessionResponse_CharacterChangesRequested.ProtoReflect.Descriptor instead.
 func (*WatchGameSessionResponse_CharacterChangesRequested) Descriptor() ([]byte, []int) {
-	return file_meurpg_play_v1_play_proto_rawDescGZIP(), []int{35, 13}
+	return file_meurpg_play_v1_play_proto_rawDescGZIP(), []int{35, 14}
 }
 
 func (x *WatchGameSessionResponse_CharacterChangesRequested) GetCharacterId() string {
@@ -5105,7 +5170,7 @@ type WatchGameSessionResponse_CharacterResubmitted struct {
 
 func (x *WatchGameSessionResponse_CharacterResubmitted) Reset() {
 	*x = WatchGameSessionResponse_CharacterResubmitted{}
-	mi := &file_meurpg_play_v1_play_proto_msgTypes[67]
+	mi := &file_meurpg_play_v1_play_proto_msgTypes[68]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5117,7 +5182,7 @@ func (x *WatchGameSessionResponse_CharacterResubmitted) String() string {
 func (*WatchGameSessionResponse_CharacterResubmitted) ProtoMessage() {}
 
 func (x *WatchGameSessionResponse_CharacterResubmitted) ProtoReflect() protoreflect.Message {
-	mi := &file_meurpg_play_v1_play_proto_msgTypes[67]
+	mi := &file_meurpg_play_v1_play_proto_msgTypes[68]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5130,7 +5195,7 @@ func (x *WatchGameSessionResponse_CharacterResubmitted) ProtoReflect() protorefl
 
 // Deprecated: Use WatchGameSessionResponse_CharacterResubmitted.ProtoReflect.Descriptor instead.
 func (*WatchGameSessionResponse_CharacterResubmitted) Descriptor() ([]byte, []int) {
-	return file_meurpg_play_v1_play_proto_rawDescGZIP(), []int{35, 14}
+	return file_meurpg_play_v1_play_proto_rawDescGZIP(), []int{35, 15}
 }
 
 func (x *WatchGameSessionResponse_CharacterResubmitted) GetCharacterId() string {
@@ -5151,7 +5216,7 @@ type WatchGameSessionResponse_CharacterRevived struct {
 
 func (x *WatchGameSessionResponse_CharacterRevived) Reset() {
 	*x = WatchGameSessionResponse_CharacterRevived{}
-	mi := &file_meurpg_play_v1_play_proto_msgTypes[68]
+	mi := &file_meurpg_play_v1_play_proto_msgTypes[69]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5163,7 +5228,7 @@ func (x *WatchGameSessionResponse_CharacterRevived) String() string {
 func (*WatchGameSessionResponse_CharacterRevived) ProtoMessage() {}
 
 func (x *WatchGameSessionResponse_CharacterRevived) ProtoReflect() protoreflect.Message {
-	mi := &file_meurpg_play_v1_play_proto_msgTypes[68]
+	mi := &file_meurpg_play_v1_play_proto_msgTypes[69]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5176,7 +5241,7 @@ func (x *WatchGameSessionResponse_CharacterRevived) ProtoReflect() protoreflect.
 
 // Deprecated: Use WatchGameSessionResponse_CharacterRevived.ProtoReflect.Descriptor instead.
 func (*WatchGameSessionResponse_CharacterRevived) Descriptor() ([]byte, []int) {
-	return file_meurpg_play_v1_play_proto_rawDescGZIP(), []int{35, 15}
+	return file_meurpg_play_v1_play_proto_rawDescGZIP(), []int{35, 16}
 }
 
 func (x *WatchGameSessionResponse_CharacterRevived) GetCharacterId() string {
@@ -5195,7 +5260,7 @@ type WatchGameSessionResponse_ContentChanged struct {
 
 func (x *WatchGameSessionResponse_ContentChanged) Reset() {
 	*x = WatchGameSessionResponse_ContentChanged{}
-	mi := &file_meurpg_play_v1_play_proto_msgTypes[69]
+	mi := &file_meurpg_play_v1_play_proto_msgTypes[70]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5207,7 +5272,7 @@ func (x *WatchGameSessionResponse_ContentChanged) String() string {
 func (*WatchGameSessionResponse_ContentChanged) ProtoMessage() {}
 
 func (x *WatchGameSessionResponse_ContentChanged) ProtoReflect() protoreflect.Message {
-	mi := &file_meurpg_play_v1_play_proto_msgTypes[69]
+	mi := &file_meurpg_play_v1_play_proto_msgTypes[70]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5220,7 +5285,7 @@ func (x *WatchGameSessionResponse_ContentChanged) ProtoReflect() protoreflect.Me
 
 // Deprecated: Use WatchGameSessionResponse_ContentChanged.ProtoReflect.Descriptor instead.
 func (*WatchGameSessionResponse_ContentChanged) Descriptor() ([]byte, []int) {
-	return file_meurpg_play_v1_play_proto_rawDescGZIP(), []int{35, 16}
+	return file_meurpg_play_v1_play_proto_rawDescGZIP(), []int{35, 17}
 }
 
 // PuzzleChanged is the content-free hint that a puzzle of the session changed.
@@ -5234,7 +5299,7 @@ type WatchGameSessionResponse_PuzzleChanged struct {
 
 func (x *WatchGameSessionResponse_PuzzleChanged) Reset() {
 	*x = WatchGameSessionResponse_PuzzleChanged{}
-	mi := &file_meurpg_play_v1_play_proto_msgTypes[70]
+	mi := &file_meurpg_play_v1_play_proto_msgTypes[71]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5246,7 +5311,7 @@ func (x *WatchGameSessionResponse_PuzzleChanged) String() string {
 func (*WatchGameSessionResponse_PuzzleChanged) ProtoMessage() {}
 
 func (x *WatchGameSessionResponse_PuzzleChanged) ProtoReflect() protoreflect.Message {
-	mi := &file_meurpg_play_v1_play_proto_msgTypes[70]
+	mi := &file_meurpg_play_v1_play_proto_msgTypes[71]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5259,7 +5324,7 @@ func (x *WatchGameSessionResponse_PuzzleChanged) ProtoReflect() protoreflect.Mes
 
 // Deprecated: Use WatchGameSessionResponse_PuzzleChanged.ProtoReflect.Descriptor instead.
 func (*WatchGameSessionResponse_PuzzleChanged) Descriptor() ([]byte, []int) {
-	return file_meurpg_play_v1_play_proto_rawDescGZIP(), []int{35, 17}
+	return file_meurpg_play_v1_play_proto_rawDescGZIP(), []int{35, 18}
 }
 
 func (x *WatchGameSessionResponse_PuzzleChanged) GetPuzzleId() string {
@@ -5284,7 +5349,7 @@ type WatchGameSessionResponse_TrapNoticed struct {
 
 func (x *WatchGameSessionResponse_TrapNoticed) Reset() {
 	*x = WatchGameSessionResponse_TrapNoticed{}
-	mi := &file_meurpg_play_v1_play_proto_msgTypes[71]
+	mi := &file_meurpg_play_v1_play_proto_msgTypes[72]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5296,7 +5361,7 @@ func (x *WatchGameSessionResponse_TrapNoticed) String() string {
 func (*WatchGameSessionResponse_TrapNoticed) ProtoMessage() {}
 
 func (x *WatchGameSessionResponse_TrapNoticed) ProtoReflect() protoreflect.Message {
-	mi := &file_meurpg_play_v1_play_proto_msgTypes[71]
+	mi := &file_meurpg_play_v1_play_proto_msgTypes[72]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5309,7 +5374,7 @@ func (x *WatchGameSessionResponse_TrapNoticed) ProtoReflect() protoreflect.Messa
 
 // Deprecated: Use WatchGameSessionResponse_TrapNoticed.ProtoReflect.Descriptor instead.
 func (*WatchGameSessionResponse_TrapNoticed) Descriptor() ([]byte, []int) {
-	return file_meurpg_play_v1_play_proto_rawDescGZIP(), []int{35, 18}
+	return file_meurpg_play_v1_play_proto_rawDescGZIP(), []int{35, 19}
 }
 
 func (x *WatchGameSessionResponse_TrapNoticed) GetMapId() string {
@@ -5344,7 +5409,7 @@ type WatchGameSessionResponse_VisionChanged struct {
 
 func (x *WatchGameSessionResponse_VisionChanged) Reset() {
 	*x = WatchGameSessionResponse_VisionChanged{}
-	mi := &file_meurpg_play_v1_play_proto_msgTypes[72]
+	mi := &file_meurpg_play_v1_play_proto_msgTypes[73]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5356,7 +5421,7 @@ func (x *WatchGameSessionResponse_VisionChanged) String() string {
 func (*WatchGameSessionResponse_VisionChanged) ProtoMessage() {}
 
 func (x *WatchGameSessionResponse_VisionChanged) ProtoReflect() protoreflect.Message {
-	mi := &file_meurpg_play_v1_play_proto_msgTypes[72]
+	mi := &file_meurpg_play_v1_play_proto_msgTypes[73]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5369,7 +5434,7 @@ func (x *WatchGameSessionResponse_VisionChanged) ProtoReflect() protoreflect.Mes
 
 // Deprecated: Use WatchGameSessionResponse_VisionChanged.ProtoReflect.Descriptor instead.
 func (*WatchGameSessionResponse_VisionChanged) Descriptor() ([]byte, []int) {
-	return file_meurpg_play_v1_play_proto_rawDescGZIP(), []int{35, 19}
+	return file_meurpg_play_v1_play_proto_rawDescGZIP(), []int{35, 20}
 }
 
 func (x *WatchGameSessionResponse_VisionChanged) GetMapId() string {
@@ -5389,7 +5454,7 @@ type WatchGameSessionResponse_CreaturesChanged struct {
 
 func (x *WatchGameSessionResponse_CreaturesChanged) Reset() {
 	*x = WatchGameSessionResponse_CreaturesChanged{}
-	mi := &file_meurpg_play_v1_play_proto_msgTypes[73]
+	mi := &file_meurpg_play_v1_play_proto_msgTypes[74]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5401,7 +5466,7 @@ func (x *WatchGameSessionResponse_CreaturesChanged) String() string {
 func (*WatchGameSessionResponse_CreaturesChanged) ProtoMessage() {}
 
 func (x *WatchGameSessionResponse_CreaturesChanged) ProtoReflect() protoreflect.Message {
-	mi := &file_meurpg_play_v1_play_proto_msgTypes[73]
+	mi := &file_meurpg_play_v1_play_proto_msgTypes[74]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5414,7 +5479,7 @@ func (x *WatchGameSessionResponse_CreaturesChanged) ProtoReflect() protoreflect.
 
 // Deprecated: Use WatchGameSessionResponse_CreaturesChanged.ProtoReflect.Descriptor instead.
 func (*WatchGameSessionResponse_CreaturesChanged) Descriptor() ([]byte, []int) {
-	return file_meurpg_play_v1_play_proto_rawDescGZIP(), []int{35, 20}
+	return file_meurpg_play_v1_play_proto_rawDescGZIP(), []int{35, 21}
 }
 
 // StageChanged carries nothing: it names no NPC, so a player's stream
@@ -5428,7 +5493,7 @@ type WatchGameSessionResponse_StageChanged struct {
 
 func (x *WatchGameSessionResponse_StageChanged) Reset() {
 	*x = WatchGameSessionResponse_StageChanged{}
-	mi := &file_meurpg_play_v1_play_proto_msgTypes[74]
+	mi := &file_meurpg_play_v1_play_proto_msgTypes[75]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5440,7 +5505,7 @@ func (x *WatchGameSessionResponse_StageChanged) String() string {
 func (*WatchGameSessionResponse_StageChanged) ProtoMessage() {}
 
 func (x *WatchGameSessionResponse_StageChanged) ProtoReflect() protoreflect.Message {
-	mi := &file_meurpg_play_v1_play_proto_msgTypes[74]
+	mi := &file_meurpg_play_v1_play_proto_msgTypes[75]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5453,7 +5518,7 @@ func (x *WatchGameSessionResponse_StageChanged) ProtoReflect() protoreflect.Mess
 
 // Deprecated: Use WatchGameSessionResponse_StageChanged.ProtoReflect.Descriptor instead.
 func (*WatchGameSessionResponse_StageChanged) Descriptor() ([]byte, []int) {
-	return file_meurpg_play_v1_play_proto_rawDescGZIP(), []int{35, 21}
+	return file_meurpg_play_v1_play_proto_rawDescGZIP(), []int{35, 22}
 }
 
 // NotesChanged carries nothing: it says a clue arrived in the player's
@@ -5469,7 +5534,7 @@ type WatchGameSessionResponse_NotesChanged struct {
 
 func (x *WatchGameSessionResponse_NotesChanged) Reset() {
 	*x = WatchGameSessionResponse_NotesChanged{}
-	mi := &file_meurpg_play_v1_play_proto_msgTypes[75]
+	mi := &file_meurpg_play_v1_play_proto_msgTypes[76]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5481,7 +5546,7 @@ func (x *WatchGameSessionResponse_NotesChanged) String() string {
 func (*WatchGameSessionResponse_NotesChanged) ProtoMessage() {}
 
 func (x *WatchGameSessionResponse_NotesChanged) ProtoReflect() protoreflect.Message {
-	mi := &file_meurpg_play_v1_play_proto_msgTypes[75]
+	mi := &file_meurpg_play_v1_play_proto_msgTypes[76]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5494,7 +5559,7 @@ func (x *WatchGameSessionResponse_NotesChanged) ProtoReflect() protoreflect.Mess
 
 // Deprecated: Use WatchGameSessionResponse_NotesChanged.ProtoReflect.Descriptor instead.
 func (*WatchGameSessionResponse_NotesChanged) Descriptor() ([]byte, []int) {
-	return file_meurpg_play_v1_play_proto_rawDescGZIP(), []int{35, 22}
+	return file_meurpg_play_v1_play_proto_rawDescGZIP(), []int{35, 23}
 }
 
 // SceneChanged carries nothing: it says the open scene changed, and the
@@ -5509,7 +5574,7 @@ type WatchGameSessionResponse_SceneChanged struct {
 
 func (x *WatchGameSessionResponse_SceneChanged) Reset() {
 	*x = WatchGameSessionResponse_SceneChanged{}
-	mi := &file_meurpg_play_v1_play_proto_msgTypes[76]
+	mi := &file_meurpg_play_v1_play_proto_msgTypes[77]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5521,7 +5586,7 @@ func (x *WatchGameSessionResponse_SceneChanged) String() string {
 func (*WatchGameSessionResponse_SceneChanged) ProtoMessage() {}
 
 func (x *WatchGameSessionResponse_SceneChanged) ProtoReflect() protoreflect.Message {
-	mi := &file_meurpg_play_v1_play_proto_msgTypes[76]
+	mi := &file_meurpg_play_v1_play_proto_msgTypes[77]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5534,7 +5599,7 @@ func (x *WatchGameSessionResponse_SceneChanged) ProtoReflect() protoreflect.Mess
 
 // Deprecated: Use WatchGameSessionResponse_SceneChanged.ProtoReflect.Descriptor instead.
 func (*WatchGameSessionResponse_SceneChanged) Descriptor() ([]byte, []int) {
-	return file_meurpg_play_v1_play_proto_rawDescGZIP(), []int{35, 23}
+	return file_meurpg_play_v1_play_proto_rawDescGZIP(), []int{35, 24}
 }
 
 // SceneCheckRolled says a character rolled an action of the open scene;
@@ -5551,7 +5616,7 @@ type WatchGameSessionResponse_SceneCheckRolled struct {
 
 func (x *WatchGameSessionResponse_SceneCheckRolled) Reset() {
 	*x = WatchGameSessionResponse_SceneCheckRolled{}
-	mi := &file_meurpg_play_v1_play_proto_msgTypes[77]
+	mi := &file_meurpg_play_v1_play_proto_msgTypes[78]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5563,7 +5628,7 @@ func (x *WatchGameSessionResponse_SceneCheckRolled) String() string {
 func (*WatchGameSessionResponse_SceneCheckRolled) ProtoMessage() {}
 
 func (x *WatchGameSessionResponse_SceneCheckRolled) ProtoReflect() protoreflect.Message {
-	mi := &file_meurpg_play_v1_play_proto_msgTypes[77]
+	mi := &file_meurpg_play_v1_play_proto_msgTypes[78]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5576,7 +5641,7 @@ func (x *WatchGameSessionResponse_SceneCheckRolled) ProtoReflect() protoreflect.
 
 // Deprecated: Use WatchGameSessionResponse_SceneCheckRolled.ProtoReflect.Descriptor instead.
 func (*WatchGameSessionResponse_SceneCheckRolled) Descriptor() ([]byte, []int) {
-	return file_meurpg_play_v1_play_proto_rawDescGZIP(), []int{35, 24}
+	return file_meurpg_play_v1_play_proto_rawDescGZIP(), []int{35, 25}
 }
 
 func (x *WatchGameSessionResponse_SceneCheckRolled) GetActionId() string {
@@ -5599,7 +5664,7 @@ type WatchGameSessionResponse_Ready struct {
 
 func (x *WatchGameSessionResponse_Ready) Reset() {
 	*x = WatchGameSessionResponse_Ready{}
-	mi := &file_meurpg_play_v1_play_proto_msgTypes[78]
+	mi := &file_meurpg_play_v1_play_proto_msgTypes[79]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5611,7 +5676,7 @@ func (x *WatchGameSessionResponse_Ready) String() string {
 func (*WatchGameSessionResponse_Ready) ProtoMessage() {}
 
 func (x *WatchGameSessionResponse_Ready) ProtoReflect() protoreflect.Message {
-	mi := &file_meurpg_play_v1_play_proto_msgTypes[78]
+	mi := &file_meurpg_play_v1_play_proto_msgTypes[79]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5624,7 +5689,7 @@ func (x *WatchGameSessionResponse_Ready) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WatchGameSessionResponse_Ready.ProtoReflect.Descriptor instead.
 func (*WatchGameSessionResponse_Ready) Descriptor() ([]byte, []int) {
-	return file_meurpg_play_v1_play_proto_rawDescGZIP(), []int{35, 25}
+	return file_meurpg_play_v1_play_proto_rawDescGZIP(), []int{35, 26}
 }
 
 func (x *WatchGameSessionResponse_Ready) GetGameSession() *GameSession {
@@ -5654,7 +5719,7 @@ type WatchGameSessionResponse_Heartbeat struct {
 
 func (x *WatchGameSessionResponse_Heartbeat) Reset() {
 	*x = WatchGameSessionResponse_Heartbeat{}
-	mi := &file_meurpg_play_v1_play_proto_msgTypes[79]
+	mi := &file_meurpg_play_v1_play_proto_msgTypes[80]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5666,7 +5731,7 @@ func (x *WatchGameSessionResponse_Heartbeat) String() string {
 func (*WatchGameSessionResponse_Heartbeat) ProtoMessage() {}
 
 func (x *WatchGameSessionResponse_Heartbeat) ProtoReflect() protoreflect.Message {
-	mi := &file_meurpg_play_v1_play_proto_msgTypes[79]
+	mi := &file_meurpg_play_v1_play_proto_msgTypes[80]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5679,7 +5744,7 @@ func (x *WatchGameSessionResponse_Heartbeat) ProtoReflect() protoreflect.Message
 
 // Deprecated: Use WatchGameSessionResponse_Heartbeat.ProtoReflect.Descriptor instead.
 func (*WatchGameSessionResponse_Heartbeat) Descriptor() ([]byte, []int) {
-	return file_meurpg_play_v1_play_proto_rawDescGZIP(), []int{35, 26}
+	return file_meurpg_play_v1_play_proto_rawDescGZIP(), []int{35, 27}
 }
 
 func (x *WatchGameSessionResponse_Heartbeat) GetSessionSeq() int64 {
@@ -5701,7 +5766,7 @@ type WatchGameSessionResponse_VitalsChanged struct {
 
 func (x *WatchGameSessionResponse_VitalsChanged) Reset() {
 	*x = WatchGameSessionResponse_VitalsChanged{}
-	mi := &file_meurpg_play_v1_play_proto_msgTypes[80]
+	mi := &file_meurpg_play_v1_play_proto_msgTypes[81]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5713,7 +5778,7 @@ func (x *WatchGameSessionResponse_VitalsChanged) String() string {
 func (*WatchGameSessionResponse_VitalsChanged) ProtoMessage() {}
 
 func (x *WatchGameSessionResponse_VitalsChanged) ProtoReflect() protoreflect.Message {
-	mi := &file_meurpg_play_v1_play_proto_msgTypes[80]
+	mi := &file_meurpg_play_v1_play_proto_msgTypes[81]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5726,7 +5791,7 @@ func (x *WatchGameSessionResponse_VitalsChanged) ProtoReflect() protoreflect.Mes
 
 // Deprecated: Use WatchGameSessionResponse_VitalsChanged.ProtoReflect.Descriptor instead.
 func (*WatchGameSessionResponse_VitalsChanged) Descriptor() ([]byte, []int) {
-	return file_meurpg_play_v1_play_proto_rawDescGZIP(), []int{35, 27}
+	return file_meurpg_play_v1_play_proto_rawDescGZIP(), []int{35, 28}
 }
 
 func (x *WatchGameSessionResponse_VitalsChanged) GetVitals() *CharacterVitals {
@@ -5750,7 +5815,7 @@ type WatchGameSessionResponse_SessionEnded struct {
 
 func (x *WatchGameSessionResponse_SessionEnded) Reset() {
 	*x = WatchGameSessionResponse_SessionEnded{}
-	mi := &file_meurpg_play_v1_play_proto_msgTypes[81]
+	mi := &file_meurpg_play_v1_play_proto_msgTypes[82]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5762,7 +5827,7 @@ func (x *WatchGameSessionResponse_SessionEnded) String() string {
 func (*WatchGameSessionResponse_SessionEnded) ProtoMessage() {}
 
 func (x *WatchGameSessionResponse_SessionEnded) ProtoReflect() protoreflect.Message {
-	mi := &file_meurpg_play_v1_play_proto_msgTypes[81]
+	mi := &file_meurpg_play_v1_play_proto_msgTypes[82]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5775,7 +5840,7 @@ func (x *WatchGameSessionResponse_SessionEnded) ProtoReflect() protoreflect.Mess
 
 // Deprecated: Use WatchGameSessionResponse_SessionEnded.ProtoReflect.Descriptor instead.
 func (*WatchGameSessionResponse_SessionEnded) Descriptor() ([]byte, []int) {
-	return file_meurpg_play_v1_play_proto_rawDescGZIP(), []int{35, 28}
+	return file_meurpg_play_v1_play_proto_rawDescGZIP(), []int{35, 29}
 }
 
 func (x *WatchGameSessionResponse_SessionEnded) GetGameSession() *GameSession {
@@ -5799,7 +5864,7 @@ type WatchGameSessionResponse_CurrentMapChanged struct {
 
 func (x *WatchGameSessionResponse_CurrentMapChanged) Reset() {
 	*x = WatchGameSessionResponse_CurrentMapChanged{}
-	mi := &file_meurpg_play_v1_play_proto_msgTypes[82]
+	mi := &file_meurpg_play_v1_play_proto_msgTypes[83]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5811,7 +5876,7 @@ func (x *WatchGameSessionResponse_CurrentMapChanged) String() string {
 func (*WatchGameSessionResponse_CurrentMapChanged) ProtoMessage() {}
 
 func (x *WatchGameSessionResponse_CurrentMapChanged) ProtoReflect() protoreflect.Message {
-	mi := &file_meurpg_play_v1_play_proto_msgTypes[82]
+	mi := &file_meurpg_play_v1_play_proto_msgTypes[83]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5824,7 +5889,7 @@ func (x *WatchGameSessionResponse_CurrentMapChanged) ProtoReflect() protoreflect
 
 // Deprecated: Use WatchGameSessionResponse_CurrentMapChanged.ProtoReflect.Descriptor instead.
 func (*WatchGameSessionResponse_CurrentMapChanged) Descriptor() ([]byte, []int) {
-	return file_meurpg_play_v1_play_proto_rawDescGZIP(), []int{35, 29}
+	return file_meurpg_play_v1_play_proto_rawDescGZIP(), []int{35, 30}
 }
 
 func (x *WatchGameSessionResponse_CurrentMapChanged) GetMapId() string {
@@ -5851,7 +5916,7 @@ type WatchGameSessionResponse_MapChanged struct {
 
 func (x *WatchGameSessionResponse_MapChanged) Reset() {
 	*x = WatchGameSessionResponse_MapChanged{}
-	mi := &file_meurpg_play_v1_play_proto_msgTypes[83]
+	mi := &file_meurpg_play_v1_play_proto_msgTypes[84]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5863,7 +5928,7 @@ func (x *WatchGameSessionResponse_MapChanged) String() string {
 func (*WatchGameSessionResponse_MapChanged) ProtoMessage() {}
 
 func (x *WatchGameSessionResponse_MapChanged) ProtoReflect() protoreflect.Message {
-	mi := &file_meurpg_play_v1_play_proto_msgTypes[83]
+	mi := &file_meurpg_play_v1_play_proto_msgTypes[84]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5876,7 +5941,7 @@ func (x *WatchGameSessionResponse_MapChanged) ProtoReflect() protoreflect.Messag
 
 // Deprecated: Use WatchGameSessionResponse_MapChanged.ProtoReflect.Descriptor instead.
 func (*WatchGameSessionResponse_MapChanged) Descriptor() ([]byte, []int) {
-	return file_meurpg_play_v1_play_proto_rawDescGZIP(), []int{35, 30}
+	return file_meurpg_play_v1_play_proto_rawDescGZIP(), []int{35, 31}
 }
 
 func (x *WatchGameSessionResponse_MapChanged) GetMapId() string {
@@ -5902,7 +5967,7 @@ type WatchGameSessionResponse_ShownImageChanged struct {
 
 func (x *WatchGameSessionResponse_ShownImageChanged) Reset() {
 	*x = WatchGameSessionResponse_ShownImageChanged{}
-	mi := &file_meurpg_play_v1_play_proto_msgTypes[84]
+	mi := &file_meurpg_play_v1_play_proto_msgTypes[85]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5914,7 +5979,7 @@ func (x *WatchGameSessionResponse_ShownImageChanged) String() string {
 func (*WatchGameSessionResponse_ShownImageChanged) ProtoMessage() {}
 
 func (x *WatchGameSessionResponse_ShownImageChanged) ProtoReflect() protoreflect.Message {
-	mi := &file_meurpg_play_v1_play_proto_msgTypes[84]
+	mi := &file_meurpg_play_v1_play_proto_msgTypes[85]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5927,7 +5992,7 @@ func (x *WatchGameSessionResponse_ShownImageChanged) ProtoReflect() protoreflect
 
 // Deprecated: Use WatchGameSessionResponse_ShownImageChanged.ProtoReflect.Descriptor instead.
 func (*WatchGameSessionResponse_ShownImageChanged) Descriptor() ([]byte, []int) {
-	return file_meurpg_play_v1_play_proto_rawDescGZIP(), []int{35, 31}
+	return file_meurpg_play_v1_play_proto_rawDescGZIP(), []int{35, 32}
 }
 
 func (x *WatchGameSessionResponse_ShownImageChanged) GetImage() *ShownImage {
@@ -5948,7 +6013,7 @@ type WatchGameSessionResponse_LeftImagesChanged struct {
 
 func (x *WatchGameSessionResponse_LeftImagesChanged) Reset() {
 	*x = WatchGameSessionResponse_LeftImagesChanged{}
-	mi := &file_meurpg_play_v1_play_proto_msgTypes[85]
+	mi := &file_meurpg_play_v1_play_proto_msgTypes[86]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5960,7 +6025,7 @@ func (x *WatchGameSessionResponse_LeftImagesChanged) String() string {
 func (*WatchGameSessionResponse_LeftImagesChanged) ProtoMessage() {}
 
 func (x *WatchGameSessionResponse_LeftImagesChanged) ProtoReflect() protoreflect.Message {
-	mi := &file_meurpg_play_v1_play_proto_msgTypes[85]
+	mi := &file_meurpg_play_v1_play_proto_msgTypes[86]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5973,7 +6038,7 @@ func (x *WatchGameSessionResponse_LeftImagesChanged) ProtoReflect() protoreflect
 
 // Deprecated: Use WatchGameSessionResponse_LeftImagesChanged.ProtoReflect.Descriptor instead.
 func (*WatchGameSessionResponse_LeftImagesChanged) Descriptor() ([]byte, []int) {
-	return file_meurpg_play_v1_play_proto_rawDescGZIP(), []int{35, 32}
+	return file_meurpg_play_v1_play_proto_rawDescGZIP(), []int{35, 33}
 }
 
 // EncounterChanged is a hint: the combat changed, so the app reads it again
@@ -6001,7 +6066,7 @@ type WatchGameSessionResponse_EncounterChanged struct {
 
 func (x *WatchGameSessionResponse_EncounterChanged) Reset() {
 	*x = WatchGameSessionResponse_EncounterChanged{}
-	mi := &file_meurpg_play_v1_play_proto_msgTypes[86]
+	mi := &file_meurpg_play_v1_play_proto_msgTypes[87]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6013,7 +6078,7 @@ func (x *WatchGameSessionResponse_EncounterChanged) String() string {
 func (*WatchGameSessionResponse_EncounterChanged) ProtoMessage() {}
 
 func (x *WatchGameSessionResponse_EncounterChanged) ProtoReflect() protoreflect.Message {
-	mi := &file_meurpg_play_v1_play_proto_msgTypes[86]
+	mi := &file_meurpg_play_v1_play_proto_msgTypes[87]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6026,7 +6091,7 @@ func (x *WatchGameSessionResponse_EncounterChanged) ProtoReflect() protoreflect.
 
 // Deprecated: Use WatchGameSessionResponse_EncounterChanged.ProtoReflect.Descriptor instead.
 func (*WatchGameSessionResponse_EncounterChanged) Descriptor() ([]byte, []int) {
-	return file_meurpg_play_v1_play_proto_rawDescGZIP(), []int{35, 33}
+	return file_meurpg_play_v1_play_proto_rawDescGZIP(), []int{35, 34}
 }
 
 func (x *WatchGameSessionResponse_EncounterChanged) GetEncounterId() string {
@@ -6076,7 +6141,7 @@ type WatchGameSessionResponse_TurnChanged struct {
 
 func (x *WatchGameSessionResponse_TurnChanged) Reset() {
 	*x = WatchGameSessionResponse_TurnChanged{}
-	mi := &file_meurpg_play_v1_play_proto_msgTypes[87]
+	mi := &file_meurpg_play_v1_play_proto_msgTypes[88]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6088,7 +6153,7 @@ func (x *WatchGameSessionResponse_TurnChanged) String() string {
 func (*WatchGameSessionResponse_TurnChanged) ProtoMessage() {}
 
 func (x *WatchGameSessionResponse_TurnChanged) ProtoReflect() protoreflect.Message {
-	mi := &file_meurpg_play_v1_play_proto_msgTypes[87]
+	mi := &file_meurpg_play_v1_play_proto_msgTypes[88]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6101,7 +6166,7 @@ func (x *WatchGameSessionResponse_TurnChanged) ProtoReflect() protoreflect.Messa
 
 // Deprecated: Use WatchGameSessionResponse_TurnChanged.ProtoReflect.Descriptor instead.
 func (*WatchGameSessionResponse_TurnChanged) Descriptor() ([]byte, []int) {
-	return file_meurpg_play_v1_play_proto_rawDescGZIP(), []int{35, 34}
+	return file_meurpg_play_v1_play_proto_rawDescGZIP(), []int{35, 35}
 }
 
 func (x *WatchGameSessionResponse_TurnChanged) GetEncounterId() string {
@@ -6159,7 +6224,7 @@ type WatchGameSessionResponse_CombatantMoved struct {
 
 func (x *WatchGameSessionResponse_CombatantMoved) Reset() {
 	*x = WatchGameSessionResponse_CombatantMoved{}
-	mi := &file_meurpg_play_v1_play_proto_msgTypes[88]
+	mi := &file_meurpg_play_v1_play_proto_msgTypes[89]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6171,7 +6236,7 @@ func (x *WatchGameSessionResponse_CombatantMoved) String() string {
 func (*WatchGameSessionResponse_CombatantMoved) ProtoMessage() {}
 
 func (x *WatchGameSessionResponse_CombatantMoved) ProtoReflect() protoreflect.Message {
-	mi := &file_meurpg_play_v1_play_proto_msgTypes[88]
+	mi := &file_meurpg_play_v1_play_proto_msgTypes[89]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6184,7 +6249,7 @@ func (x *WatchGameSessionResponse_CombatantMoved) ProtoReflect() protoreflect.Me
 
 // Deprecated: Use WatchGameSessionResponse_CombatantMoved.ProtoReflect.Descriptor instead.
 func (*WatchGameSessionResponse_CombatantMoved) Descriptor() ([]byte, []int) {
-	return file_meurpg_play_v1_play_proto_rawDescGZIP(), []int{35, 35}
+	return file_meurpg_play_v1_play_proto_rawDescGZIP(), []int{35, 36}
 }
 
 func (x *WatchGameSessionResponse_CombatantMoved) GetEncounterId() string {
@@ -6237,7 +6302,7 @@ type WatchGameSessionResponse_CombatLogChanged struct {
 
 func (x *WatchGameSessionResponse_CombatLogChanged) Reset() {
 	*x = WatchGameSessionResponse_CombatLogChanged{}
-	mi := &file_meurpg_play_v1_play_proto_msgTypes[89]
+	mi := &file_meurpg_play_v1_play_proto_msgTypes[90]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6249,7 +6314,7 @@ func (x *WatchGameSessionResponse_CombatLogChanged) String() string {
 func (*WatchGameSessionResponse_CombatLogChanged) ProtoMessage() {}
 
 func (x *WatchGameSessionResponse_CombatLogChanged) ProtoReflect() protoreflect.Message {
-	mi := &file_meurpg_play_v1_play_proto_msgTypes[89]
+	mi := &file_meurpg_play_v1_play_proto_msgTypes[90]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6262,7 +6327,7 @@ func (x *WatchGameSessionResponse_CombatLogChanged) ProtoReflect() protoreflect.
 
 // Deprecated: Use WatchGameSessionResponse_CombatLogChanged.ProtoReflect.Descriptor instead.
 func (*WatchGameSessionResponse_CombatLogChanged) Descriptor() ([]byte, []int) {
-	return file_meurpg_play_v1_play_proto_rawDescGZIP(), []int{35, 36}
+	return file_meurpg_play_v1_play_proto_rawDescGZIP(), []int{35, 37}
 }
 
 func (x *WatchGameSessionResponse_CombatLogChanged) GetEncounterId() string {
@@ -6297,7 +6362,7 @@ type WatchGameSessionResponse_XpChanged struct {
 
 func (x *WatchGameSessionResponse_XpChanged) Reset() {
 	*x = WatchGameSessionResponse_XpChanged{}
-	mi := &file_meurpg_play_v1_play_proto_msgTypes[90]
+	mi := &file_meurpg_play_v1_play_proto_msgTypes[91]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6309,7 +6374,7 @@ func (x *WatchGameSessionResponse_XpChanged) String() string {
 func (*WatchGameSessionResponse_XpChanged) ProtoMessage() {}
 
 func (x *WatchGameSessionResponse_XpChanged) ProtoReflect() protoreflect.Message {
-	mi := &file_meurpg_play_v1_play_proto_msgTypes[90]
+	mi := &file_meurpg_play_v1_play_proto_msgTypes[91]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6322,7 +6387,7 @@ func (x *WatchGameSessionResponse_XpChanged) ProtoReflect() protoreflect.Message
 
 // Deprecated: Use WatchGameSessionResponse_XpChanged.ProtoReflect.Descriptor instead.
 func (*WatchGameSessionResponse_XpChanged) Descriptor() ([]byte, []int) {
-	return file_meurpg_play_v1_play_proto_rawDescGZIP(), []int{35, 37}
+	return file_meurpg_play_v1_play_proto_rawDescGZIP(), []int{35, 38}
 }
 
 // TokenMoved is a token's new position. A token the app does not know
@@ -6343,7 +6408,7 @@ type WatchGameSessionResponse_TokenMoved struct {
 
 func (x *WatchGameSessionResponse_TokenMoved) Reset() {
 	*x = WatchGameSessionResponse_TokenMoved{}
-	mi := &file_meurpg_play_v1_play_proto_msgTypes[91]
+	mi := &file_meurpg_play_v1_play_proto_msgTypes[92]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6355,7 +6420,7 @@ func (x *WatchGameSessionResponse_TokenMoved) String() string {
 func (*WatchGameSessionResponse_TokenMoved) ProtoMessage() {}
 
 func (x *WatchGameSessionResponse_TokenMoved) ProtoReflect() protoreflect.Message {
-	mi := &file_meurpg_play_v1_play_proto_msgTypes[91]
+	mi := &file_meurpg_play_v1_play_proto_msgTypes[92]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6368,7 +6433,7 @@ func (x *WatchGameSessionResponse_TokenMoved) ProtoReflect() protoreflect.Messag
 
 // Deprecated: Use WatchGameSessionResponse_TokenMoved.ProtoReflect.Descriptor instead.
 func (*WatchGameSessionResponse_TokenMoved) Descriptor() ([]byte, []int) {
-	return file_meurpg_play_v1_play_proto_rawDescGZIP(), []int{35, 38}
+	return file_meurpg_play_v1_play_proto_rawDescGZIP(), []int{35, 39}
 }
 
 func (x *WatchGameSessionResponse_TokenMoved) GetMapId() string {
@@ -6597,7 +6662,7 @@ const file_meurpg_play_v1_play_proto_rawDesc = "" +
 	"\x04used\x18\x03 \x01(\x05R\x04used\":\n" +
 	"\x17WatchGameSessionRequest\x12\x1f\n" +
 	"\vcampaign_id\x18\x01 \x01(\tR\n" +
-	"campaignId\"\x963\n" +
+	"campaignId\"\xdd4\n" +
 	"\x18WatchGameSessionResponse\x12F\n" +
 	"\x05ready\x18\x01 \x01(\v2..meurpg.play.v1.WatchGameSessionResponse.ReadyH\x00R\x05ready\x12R\n" +
 	"\theartbeat\x18\x02 \x01(\v22.meurpg.play.v1.WatchGameSessionResponse.HeartbeatH\x00R\theartbeat\x12_\n" +
@@ -6643,9 +6708,12 @@ const file_meurpg_play_v1_play_proto_rawDesc = "" +
 	"\x10free_roll_rolled\x18- \x01(\v27.meurpg.play.v1.WatchGameSessionResponse.FreeRollRolledH\x00R\x0efreeRollRolled\x12S\n" +
 	"\n" +
 	"attack_hit\x18. \x01(\v22.meurpg.play.v1.WatchGameSessionResponse.AttackHitH\x00R\tattackHit\x12o\n" +
-	"\x14table_screen_changed\x18/ \x01(\v2;.meurpg.play.v1.WatchGameSessionResponse.TableScreenChangedH\x00R\x12tableScreenChanged\x12\x1f\n" +
+	"\x14table_screen_changed\x18/ \x01(\v2;.meurpg.play.v1.WatchGameSessionResponse.TableScreenChangedH\x00R\x12tableScreenChanged\x12\x84\x01\n" +
+	"\x1bcharacter_infusions_changed\x181 \x01(\v2B.meurpg.play.v1.WatchGameSessionResponse.CharacterInfusionsChangedH\x00R\x19characterInfusionsChanged\x12\x1f\n" +
 	"\vsession_seq\x180 \x01(\x03R\n" +
-	"sessionSeq\x1a\xad\x01\n" +
+	"sessionSeq\x1a>\n" +
+	"\x19CharacterInfusionsChanged\x12!\n" +
+	"\fcharacter_id\x18\x01 \x01(\tR\vcharacterId\x1a\xad\x01\n" +
 	"\x12TableScreenChanged\x12\x12\n" +
 	"\x04open\x18\x01 \x01(\bR\x04open\x123\n" +
 	"\alost_at\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\x06lostAt\x12'\n" +
@@ -6893,7 +6961,7 @@ func file_meurpg_play_v1_play_proto_rawDescGZIP() []byte {
 }
 
 var file_meurpg_play_v1_play_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_meurpg_play_v1_play_proto_msgTypes = make([]protoimpl.MessageInfo, 93)
+var file_meurpg_play_v1_play_proto_msgTypes = make([]protoimpl.MessageInfo, 94)
 var file_meurpg_play_v1_play_proto_goTypes = []any{
 	(GameSessionBlockedReason)(0),                              // 0: meurpg.play.v1.GameSessionBlockedReason
 	(ImageAudienceKind)(0),                                     // 1: meurpg.play.v1.ImageAudienceKind
@@ -6950,126 +7018,127 @@ var file_meurpg_play_v1_play_proto_goTypes = []any{
 	(*TakeBackLeftImageRequest)(nil),                           // 52: meurpg.play.v1.TakeBackLeftImageRequest
 	(*TakeBackLeftImageResponse)(nil),                          // 53: meurpg.play.v1.TakeBackLeftImageResponse
 	nil,                                                        // 54: meurpg.play.v1.CharacterVitals.HitDiceUsedByDieEntry
-	(*WatchGameSessionResponse_TableScreenChanged)(nil),        // 55: meurpg.play.v1.WatchGameSessionResponse.TableScreenChanged
-	(*WatchGameSessionResponse_AttackHit)(nil),                 // 56: meurpg.play.v1.WatchGameSessionResponse.AttackHit
-	(*WatchGameSessionResponse_FreeRollRolled)(nil),            // 57: meurpg.play.v1.WatchGameSessionResponse.FreeRollRolled
-	(*WatchGameSessionResponse_SessionMessageAdded)(nil),       // 58: meurpg.play.v1.WatchGameSessionResponse.SessionMessageAdded
-	(*WatchGameSessionResponse_MasterTyping)(nil),              // 59: meurpg.play.v1.WatchGameSessionResponse.MasterTyping
-	(*WatchGameSessionResponse_CallingYou)(nil),                // 60: meurpg.play.v1.WatchGameSessionResponse.CallingYou
-	(*WatchGameSessionResponse_HiddenHitPending)(nil),          // 61: meurpg.play.v1.WatchGameSessionResponse.HiddenHitPending
-	(*WatchGameSessionResponse_ReactionWindowOpened)(nil),      // 62: meurpg.play.v1.WatchGameSessionResponse.ReactionWindowOpened
-	(*WatchGameSessionResponse_ReactionWindowClosed)(nil),      // 63: meurpg.play.v1.WatchGameSessionResponse.ReactionWindowClosed
-	(*WatchGameSessionResponse_SpellCastsChanged)(nil),         // 64: meurpg.play.v1.WatchGameSessionResponse.SpellCastsChanged
-	(*WatchGameSessionResponse_GroupCheckChanged)(nil),         // 65: meurpg.play.v1.WatchGameSessionResponse.GroupCheckChanged
-	(*WatchGameSessionResponse_RevivifyChanged)(nil),           // 66: meurpg.play.v1.WatchGameSessionResponse.RevivifyChanged
-	(*WatchGameSessionResponse_HeldRollsChanged)(nil),          // 67: meurpg.play.v1.WatchGameSessionResponse.HeldRollsChanged
-	(*WatchGameSessionResponse_CharacterChangesRequested)(nil), // 68: meurpg.play.v1.WatchGameSessionResponse.CharacterChangesRequested
-	(*WatchGameSessionResponse_CharacterResubmitted)(nil),      // 69: meurpg.play.v1.WatchGameSessionResponse.CharacterResubmitted
-	(*WatchGameSessionResponse_CharacterRevived)(nil),          // 70: meurpg.play.v1.WatchGameSessionResponse.CharacterRevived
-	(*WatchGameSessionResponse_ContentChanged)(nil),            // 71: meurpg.play.v1.WatchGameSessionResponse.ContentChanged
-	(*WatchGameSessionResponse_PuzzleChanged)(nil),             // 72: meurpg.play.v1.WatchGameSessionResponse.PuzzleChanged
-	(*WatchGameSessionResponse_TrapNoticed)(nil),               // 73: meurpg.play.v1.WatchGameSessionResponse.TrapNoticed
-	(*WatchGameSessionResponse_VisionChanged)(nil),             // 74: meurpg.play.v1.WatchGameSessionResponse.VisionChanged
-	(*WatchGameSessionResponse_CreaturesChanged)(nil),          // 75: meurpg.play.v1.WatchGameSessionResponse.CreaturesChanged
-	(*WatchGameSessionResponse_StageChanged)(nil),              // 76: meurpg.play.v1.WatchGameSessionResponse.StageChanged
-	(*WatchGameSessionResponse_NotesChanged)(nil),              // 77: meurpg.play.v1.WatchGameSessionResponse.NotesChanged
-	(*WatchGameSessionResponse_SceneChanged)(nil),              // 78: meurpg.play.v1.WatchGameSessionResponse.SceneChanged
-	(*WatchGameSessionResponse_SceneCheckRolled)(nil),          // 79: meurpg.play.v1.WatchGameSessionResponse.SceneCheckRolled
-	(*WatchGameSessionResponse_Ready)(nil),                     // 80: meurpg.play.v1.WatchGameSessionResponse.Ready
-	(*WatchGameSessionResponse_Heartbeat)(nil),                 // 81: meurpg.play.v1.WatchGameSessionResponse.Heartbeat
-	(*WatchGameSessionResponse_VitalsChanged)(nil),             // 82: meurpg.play.v1.WatchGameSessionResponse.VitalsChanged
-	(*WatchGameSessionResponse_SessionEnded)(nil),              // 83: meurpg.play.v1.WatchGameSessionResponse.SessionEnded
-	(*WatchGameSessionResponse_CurrentMapChanged)(nil),         // 84: meurpg.play.v1.WatchGameSessionResponse.CurrentMapChanged
-	(*WatchGameSessionResponse_MapChanged)(nil),                // 85: meurpg.play.v1.WatchGameSessionResponse.MapChanged
-	(*WatchGameSessionResponse_ShownImageChanged)(nil),         // 86: meurpg.play.v1.WatchGameSessionResponse.ShownImageChanged
-	(*WatchGameSessionResponse_LeftImagesChanged)(nil),         // 87: meurpg.play.v1.WatchGameSessionResponse.LeftImagesChanged
-	(*WatchGameSessionResponse_EncounterChanged)(nil),          // 88: meurpg.play.v1.WatchGameSessionResponse.EncounterChanged
-	(*WatchGameSessionResponse_TurnChanged)(nil),               // 89: meurpg.play.v1.WatchGameSessionResponse.TurnChanged
-	(*WatchGameSessionResponse_CombatantMoved)(nil),            // 90: meurpg.play.v1.WatchGameSessionResponse.CombatantMoved
-	(*WatchGameSessionResponse_CombatLogChanged)(nil),          // 91: meurpg.play.v1.WatchGameSessionResponse.CombatLogChanged
-	(*WatchGameSessionResponse_XpChanged)(nil),                 // 92: meurpg.play.v1.WatchGameSessionResponse.XpChanged
-	(*WatchGameSessionResponse_TokenMoved)(nil),                // 93: meurpg.play.v1.WatchGameSessionResponse.TokenMoved
-	nil,                                    // 94: meurpg.play.v1.AdjustCharacterVitalsRequest.HitDiceUsedByDieEntry
-	(*Encounter)(nil),                      // 95: meurpg.play.v1.Encounter
-	(*SpellSlot)(nil),                      // 96: meurpg.play.v1.SpellSlot
-	(*SummonChoice)(nil),                   // 97: meurpg.play.v1.SummonChoice
-	(*timestamppb.Timestamp)(nil),          // 98: google.protobuf.Timestamp
-	(v1.Role)(0),                           // 99: meurpg.campaigns.v1.Role
-	(*v11.HitDice)(nil),                    // 100: meurpg.rules.v1.HitDice
-	(v11.Recharge)(0),                      // 101: meurpg.rules.v1.Recharge
-	(*FreeRoll)(nil),                       // 102: meurpg.play.v1.FreeRoll
-	(*SessionMessage)(nil),                 // 103: meurpg.play.v1.SessionMessage
-	(EncounterMode)(0),                     // 104: meurpg.play.v1.EncounterMode
-	(*GetSessionSummaryRequest)(nil),       // 105: meurpg.play.v1.GetSessionSummaryRequest
-	(*SendSessionMessageRequest)(nil),      // 106: meurpg.play.v1.SendSessionMessageRequest
-	(*ListSessionMessagesRequest)(nil),     // 107: meurpg.play.v1.ListSessionMessagesRequest
-	(*SignalMasterTypingRequest)(nil),      // 108: meurpg.play.v1.SignalMasterTypingRequest
-	(*RollFreeDiceRequest)(nil),            // 109: meurpg.play.v1.RollFreeDiceRequest
-	(*ListFreeRollsRequest)(nil),           // 110: meurpg.play.v1.ListFreeRollsRequest
-	(*OpenSceneRequest)(nil),               // 111: meurpg.play.v1.OpenSceneRequest
-	(*SetSceneAudienceRequest)(nil),        // 112: meurpg.play.v1.SetSceneAudienceRequest
-	(*SetScenePlayersMayJoinRequest)(nil),  // 113: meurpg.play.v1.SetScenePlayersMayJoinRequest
-	(*JoinSceneRequest)(nil),               // 114: meurpg.play.v1.JoinSceneRequest
-	(*CloseSceneRequest)(nil),              // 115: meurpg.play.v1.CloseSceneRequest
-	(*GetOpenSceneRequest)(nil),            // 116: meurpg.play.v1.GetOpenSceneRequest
-	(*RollSceneCheckRequest)(nil),          // 117: meurpg.play.v1.RollSceneCheckRequest
-	(*SearchForTrapsRequest)(nil),          // 118: meurpg.play.v1.SearchForTrapsRequest
-	(*FireTrapRequest)(nil),                // 119: meurpg.play.v1.FireTrapRequest
-	(*ListTrapActivityRequest)(nil),        // 120: meurpg.play.v1.ListTrapActivityRequest
-	(*ListTrapDamagesRequest)(nil),         // 121: meurpg.play.v1.ListTrapDamagesRequest
-	(*ApplyTrapDamageRequest)(nil),         // 122: meurpg.play.v1.ApplyTrapDamageRequest
-	(*DiscardTrapDamageRequest)(nil),       // 123: meurpg.play.v1.DiscardTrapDamageRequest
-	(*GrantSceneAttemptRequest)(nil),       // 124: meurpg.play.v1.GrantSceneAttemptRequest
-	(*PutOnStageRequest)(nil),              // 125: meurpg.play.v1.PutOnStageRequest
-	(*TakeOffStageRequest)(nil),            // 126: meurpg.play.v1.TakeOffStageRequest
-	(*SetStageNpcHiddenRequest)(nil),       // 127: meurpg.play.v1.SetStageNpcHiddenRequest
-	(*SetSpeakerRequest)(nil),              // 128: meurpg.play.v1.SetSpeakerRequest
-	(*GetSessionSummaryResponse)(nil),      // 129: meurpg.play.v1.GetSessionSummaryResponse
-	(*SendSessionMessageResponse)(nil),     // 130: meurpg.play.v1.SendSessionMessageResponse
-	(*ListSessionMessagesResponse)(nil),    // 131: meurpg.play.v1.ListSessionMessagesResponse
-	(*SignalMasterTypingResponse)(nil),     // 132: meurpg.play.v1.SignalMasterTypingResponse
-	(*RollFreeDiceResponse)(nil),           // 133: meurpg.play.v1.RollFreeDiceResponse
-	(*ListFreeRollsResponse)(nil),          // 134: meurpg.play.v1.ListFreeRollsResponse
-	(*OpenSceneResponse)(nil),              // 135: meurpg.play.v1.OpenSceneResponse
-	(*SetSceneAudienceResponse)(nil),       // 136: meurpg.play.v1.SetSceneAudienceResponse
-	(*SetScenePlayersMayJoinResponse)(nil), // 137: meurpg.play.v1.SetScenePlayersMayJoinResponse
-	(*JoinSceneResponse)(nil),              // 138: meurpg.play.v1.JoinSceneResponse
-	(*CloseSceneResponse)(nil),             // 139: meurpg.play.v1.CloseSceneResponse
-	(*GetOpenSceneResponse)(nil),           // 140: meurpg.play.v1.GetOpenSceneResponse
-	(*RollSceneCheckResponse)(nil),         // 141: meurpg.play.v1.RollSceneCheckResponse
-	(*SearchForTrapsResponse)(nil),         // 142: meurpg.play.v1.SearchForTrapsResponse
-	(*FireTrapResponse)(nil),               // 143: meurpg.play.v1.FireTrapResponse
-	(*ListTrapActivityResponse)(nil),       // 144: meurpg.play.v1.ListTrapActivityResponse
-	(*ListTrapDamagesResponse)(nil),        // 145: meurpg.play.v1.ListTrapDamagesResponse
-	(*ApplyTrapDamageResponse)(nil),        // 146: meurpg.play.v1.ApplyTrapDamageResponse
-	(*DiscardTrapDamageResponse)(nil),      // 147: meurpg.play.v1.DiscardTrapDamageResponse
-	(*GrantSceneAttemptResponse)(nil),      // 148: meurpg.play.v1.GrantSceneAttemptResponse
-	(*PutOnStageResponse)(nil),             // 149: meurpg.play.v1.PutOnStageResponse
-	(*TakeOffStageResponse)(nil),           // 150: meurpg.play.v1.TakeOffStageResponse
-	(*SetStageNpcHiddenResponse)(nil),      // 151: meurpg.play.v1.SetStageNpcHiddenResponse
-	(*SetSpeakerResponse)(nil),             // 152: meurpg.play.v1.SetSpeakerResponse
+	(*WatchGameSessionResponse_CharacterInfusionsChanged)(nil), // 55: meurpg.play.v1.WatchGameSessionResponse.CharacterInfusionsChanged
+	(*WatchGameSessionResponse_TableScreenChanged)(nil),        // 56: meurpg.play.v1.WatchGameSessionResponse.TableScreenChanged
+	(*WatchGameSessionResponse_AttackHit)(nil),                 // 57: meurpg.play.v1.WatchGameSessionResponse.AttackHit
+	(*WatchGameSessionResponse_FreeRollRolled)(nil),            // 58: meurpg.play.v1.WatchGameSessionResponse.FreeRollRolled
+	(*WatchGameSessionResponse_SessionMessageAdded)(nil),       // 59: meurpg.play.v1.WatchGameSessionResponse.SessionMessageAdded
+	(*WatchGameSessionResponse_MasterTyping)(nil),              // 60: meurpg.play.v1.WatchGameSessionResponse.MasterTyping
+	(*WatchGameSessionResponse_CallingYou)(nil),                // 61: meurpg.play.v1.WatchGameSessionResponse.CallingYou
+	(*WatchGameSessionResponse_HiddenHitPending)(nil),          // 62: meurpg.play.v1.WatchGameSessionResponse.HiddenHitPending
+	(*WatchGameSessionResponse_ReactionWindowOpened)(nil),      // 63: meurpg.play.v1.WatchGameSessionResponse.ReactionWindowOpened
+	(*WatchGameSessionResponse_ReactionWindowClosed)(nil),      // 64: meurpg.play.v1.WatchGameSessionResponse.ReactionWindowClosed
+	(*WatchGameSessionResponse_SpellCastsChanged)(nil),         // 65: meurpg.play.v1.WatchGameSessionResponse.SpellCastsChanged
+	(*WatchGameSessionResponse_GroupCheckChanged)(nil),         // 66: meurpg.play.v1.WatchGameSessionResponse.GroupCheckChanged
+	(*WatchGameSessionResponse_RevivifyChanged)(nil),           // 67: meurpg.play.v1.WatchGameSessionResponse.RevivifyChanged
+	(*WatchGameSessionResponse_HeldRollsChanged)(nil),          // 68: meurpg.play.v1.WatchGameSessionResponse.HeldRollsChanged
+	(*WatchGameSessionResponse_CharacterChangesRequested)(nil), // 69: meurpg.play.v1.WatchGameSessionResponse.CharacterChangesRequested
+	(*WatchGameSessionResponse_CharacterResubmitted)(nil),      // 70: meurpg.play.v1.WatchGameSessionResponse.CharacterResubmitted
+	(*WatchGameSessionResponse_CharacterRevived)(nil),          // 71: meurpg.play.v1.WatchGameSessionResponse.CharacterRevived
+	(*WatchGameSessionResponse_ContentChanged)(nil),            // 72: meurpg.play.v1.WatchGameSessionResponse.ContentChanged
+	(*WatchGameSessionResponse_PuzzleChanged)(nil),             // 73: meurpg.play.v1.WatchGameSessionResponse.PuzzleChanged
+	(*WatchGameSessionResponse_TrapNoticed)(nil),               // 74: meurpg.play.v1.WatchGameSessionResponse.TrapNoticed
+	(*WatchGameSessionResponse_VisionChanged)(nil),             // 75: meurpg.play.v1.WatchGameSessionResponse.VisionChanged
+	(*WatchGameSessionResponse_CreaturesChanged)(nil),          // 76: meurpg.play.v1.WatchGameSessionResponse.CreaturesChanged
+	(*WatchGameSessionResponse_StageChanged)(nil),              // 77: meurpg.play.v1.WatchGameSessionResponse.StageChanged
+	(*WatchGameSessionResponse_NotesChanged)(nil),              // 78: meurpg.play.v1.WatchGameSessionResponse.NotesChanged
+	(*WatchGameSessionResponse_SceneChanged)(nil),              // 79: meurpg.play.v1.WatchGameSessionResponse.SceneChanged
+	(*WatchGameSessionResponse_SceneCheckRolled)(nil),          // 80: meurpg.play.v1.WatchGameSessionResponse.SceneCheckRolled
+	(*WatchGameSessionResponse_Ready)(nil),                     // 81: meurpg.play.v1.WatchGameSessionResponse.Ready
+	(*WatchGameSessionResponse_Heartbeat)(nil),                 // 82: meurpg.play.v1.WatchGameSessionResponse.Heartbeat
+	(*WatchGameSessionResponse_VitalsChanged)(nil),             // 83: meurpg.play.v1.WatchGameSessionResponse.VitalsChanged
+	(*WatchGameSessionResponse_SessionEnded)(nil),              // 84: meurpg.play.v1.WatchGameSessionResponse.SessionEnded
+	(*WatchGameSessionResponse_CurrentMapChanged)(nil),         // 85: meurpg.play.v1.WatchGameSessionResponse.CurrentMapChanged
+	(*WatchGameSessionResponse_MapChanged)(nil),                // 86: meurpg.play.v1.WatchGameSessionResponse.MapChanged
+	(*WatchGameSessionResponse_ShownImageChanged)(nil),         // 87: meurpg.play.v1.WatchGameSessionResponse.ShownImageChanged
+	(*WatchGameSessionResponse_LeftImagesChanged)(nil),         // 88: meurpg.play.v1.WatchGameSessionResponse.LeftImagesChanged
+	(*WatchGameSessionResponse_EncounterChanged)(nil),          // 89: meurpg.play.v1.WatchGameSessionResponse.EncounterChanged
+	(*WatchGameSessionResponse_TurnChanged)(nil),               // 90: meurpg.play.v1.WatchGameSessionResponse.TurnChanged
+	(*WatchGameSessionResponse_CombatantMoved)(nil),            // 91: meurpg.play.v1.WatchGameSessionResponse.CombatantMoved
+	(*WatchGameSessionResponse_CombatLogChanged)(nil),          // 92: meurpg.play.v1.WatchGameSessionResponse.CombatLogChanged
+	(*WatchGameSessionResponse_XpChanged)(nil),                 // 93: meurpg.play.v1.WatchGameSessionResponse.XpChanged
+	(*WatchGameSessionResponse_TokenMoved)(nil),                // 94: meurpg.play.v1.WatchGameSessionResponse.TokenMoved
+	nil,                                    // 95: meurpg.play.v1.AdjustCharacterVitalsRequest.HitDiceUsedByDieEntry
+	(*Encounter)(nil),                      // 96: meurpg.play.v1.Encounter
+	(*SpellSlot)(nil),                      // 97: meurpg.play.v1.SpellSlot
+	(*SummonChoice)(nil),                   // 98: meurpg.play.v1.SummonChoice
+	(*timestamppb.Timestamp)(nil),          // 99: google.protobuf.Timestamp
+	(v1.Role)(0),                           // 100: meurpg.campaigns.v1.Role
+	(*v11.HitDice)(nil),                    // 101: meurpg.rules.v1.HitDice
+	(v11.Recharge)(0),                      // 102: meurpg.rules.v1.Recharge
+	(*FreeRoll)(nil),                       // 103: meurpg.play.v1.FreeRoll
+	(*SessionMessage)(nil),                 // 104: meurpg.play.v1.SessionMessage
+	(EncounterMode)(0),                     // 105: meurpg.play.v1.EncounterMode
+	(*GetSessionSummaryRequest)(nil),       // 106: meurpg.play.v1.GetSessionSummaryRequest
+	(*SendSessionMessageRequest)(nil),      // 107: meurpg.play.v1.SendSessionMessageRequest
+	(*ListSessionMessagesRequest)(nil),     // 108: meurpg.play.v1.ListSessionMessagesRequest
+	(*SignalMasterTypingRequest)(nil),      // 109: meurpg.play.v1.SignalMasterTypingRequest
+	(*RollFreeDiceRequest)(nil),            // 110: meurpg.play.v1.RollFreeDiceRequest
+	(*ListFreeRollsRequest)(nil),           // 111: meurpg.play.v1.ListFreeRollsRequest
+	(*OpenSceneRequest)(nil),               // 112: meurpg.play.v1.OpenSceneRequest
+	(*SetSceneAudienceRequest)(nil),        // 113: meurpg.play.v1.SetSceneAudienceRequest
+	(*SetScenePlayersMayJoinRequest)(nil),  // 114: meurpg.play.v1.SetScenePlayersMayJoinRequest
+	(*JoinSceneRequest)(nil),               // 115: meurpg.play.v1.JoinSceneRequest
+	(*CloseSceneRequest)(nil),              // 116: meurpg.play.v1.CloseSceneRequest
+	(*GetOpenSceneRequest)(nil),            // 117: meurpg.play.v1.GetOpenSceneRequest
+	(*RollSceneCheckRequest)(nil),          // 118: meurpg.play.v1.RollSceneCheckRequest
+	(*SearchForTrapsRequest)(nil),          // 119: meurpg.play.v1.SearchForTrapsRequest
+	(*FireTrapRequest)(nil),                // 120: meurpg.play.v1.FireTrapRequest
+	(*ListTrapActivityRequest)(nil),        // 121: meurpg.play.v1.ListTrapActivityRequest
+	(*ListTrapDamagesRequest)(nil),         // 122: meurpg.play.v1.ListTrapDamagesRequest
+	(*ApplyTrapDamageRequest)(nil),         // 123: meurpg.play.v1.ApplyTrapDamageRequest
+	(*DiscardTrapDamageRequest)(nil),       // 124: meurpg.play.v1.DiscardTrapDamageRequest
+	(*GrantSceneAttemptRequest)(nil),       // 125: meurpg.play.v1.GrantSceneAttemptRequest
+	(*PutOnStageRequest)(nil),              // 126: meurpg.play.v1.PutOnStageRequest
+	(*TakeOffStageRequest)(nil),            // 127: meurpg.play.v1.TakeOffStageRequest
+	(*SetStageNpcHiddenRequest)(nil),       // 128: meurpg.play.v1.SetStageNpcHiddenRequest
+	(*SetSpeakerRequest)(nil),              // 129: meurpg.play.v1.SetSpeakerRequest
+	(*GetSessionSummaryResponse)(nil),      // 130: meurpg.play.v1.GetSessionSummaryResponse
+	(*SendSessionMessageResponse)(nil),     // 131: meurpg.play.v1.SendSessionMessageResponse
+	(*ListSessionMessagesResponse)(nil),    // 132: meurpg.play.v1.ListSessionMessagesResponse
+	(*SignalMasterTypingResponse)(nil),     // 133: meurpg.play.v1.SignalMasterTypingResponse
+	(*RollFreeDiceResponse)(nil),           // 134: meurpg.play.v1.RollFreeDiceResponse
+	(*ListFreeRollsResponse)(nil),          // 135: meurpg.play.v1.ListFreeRollsResponse
+	(*OpenSceneResponse)(nil),              // 136: meurpg.play.v1.OpenSceneResponse
+	(*SetSceneAudienceResponse)(nil),       // 137: meurpg.play.v1.SetSceneAudienceResponse
+	(*SetScenePlayersMayJoinResponse)(nil), // 138: meurpg.play.v1.SetScenePlayersMayJoinResponse
+	(*JoinSceneResponse)(nil),              // 139: meurpg.play.v1.JoinSceneResponse
+	(*CloseSceneResponse)(nil),             // 140: meurpg.play.v1.CloseSceneResponse
+	(*GetOpenSceneResponse)(nil),           // 141: meurpg.play.v1.GetOpenSceneResponse
+	(*RollSceneCheckResponse)(nil),         // 142: meurpg.play.v1.RollSceneCheckResponse
+	(*SearchForTrapsResponse)(nil),         // 143: meurpg.play.v1.SearchForTrapsResponse
+	(*FireTrapResponse)(nil),               // 144: meurpg.play.v1.FireTrapResponse
+	(*ListTrapActivityResponse)(nil),       // 145: meurpg.play.v1.ListTrapActivityResponse
+	(*ListTrapDamagesResponse)(nil),        // 146: meurpg.play.v1.ListTrapDamagesResponse
+	(*ApplyTrapDamageResponse)(nil),        // 147: meurpg.play.v1.ApplyTrapDamageResponse
+	(*DiscardTrapDamageResponse)(nil),      // 148: meurpg.play.v1.DiscardTrapDamageResponse
+	(*GrantSceneAttemptResponse)(nil),      // 149: meurpg.play.v1.GrantSceneAttemptResponse
+	(*PutOnStageResponse)(nil),             // 150: meurpg.play.v1.PutOnStageResponse
+	(*TakeOffStageResponse)(nil),           // 151: meurpg.play.v1.TakeOffStageResponse
+	(*SetStageNpcHiddenResponse)(nil),      // 152: meurpg.play.v1.SetStageNpcHiddenResponse
+	(*SetSpeakerResponse)(nil),             // 153: meurpg.play.v1.SetSpeakerResponse
 }
 var file_meurpg_play_v1_play_proto_depIdxs = []int32{
 	29,  // 0: meurpg.play.v1.AssumeWildShapeResponse.vitals:type_name -> meurpg.play.v1.CharacterVitals
-	95,  // 1: meurpg.play.v1.AssumeWildShapeResponse.encounter:type_name -> meurpg.play.v1.Encounter
+	96,  // 1: meurpg.play.v1.AssumeWildShapeResponse.encounter:type_name -> meurpg.play.v1.Encounter
 	29,  // 2: meurpg.play.v1.LeaveWildShapeResponse.vitals:type_name -> meurpg.play.v1.CharacterVitals
-	95,  // 3: meurpg.play.v1.LeaveWildShapeResponse.encounter:type_name -> meurpg.play.v1.Encounter
+	96,  // 3: meurpg.play.v1.LeaveWildShapeResponse.encounter:type_name -> meurpg.play.v1.Encounter
 	29,  // 4: meurpg.play.v1.StartFamiliarSightResponse.vitals:type_name -> meurpg.play.v1.CharacterVitals
-	95,  // 5: meurpg.play.v1.StartFamiliarSightResponse.encounter:type_name -> meurpg.play.v1.Encounter
+	96,  // 5: meurpg.play.v1.StartFamiliarSightResponse.encounter:type_name -> meurpg.play.v1.Encounter
 	29,  // 6: meurpg.play.v1.StopFamiliarSightResponse.vitals:type_name -> meurpg.play.v1.CharacterVitals
-	95,  // 7: meurpg.play.v1.StopFamiliarSightResponse.encounter:type_name -> meurpg.play.v1.Encounter
-	96,  // 8: meurpg.play.v1.CastSummonRequest.slot:type_name -> meurpg.play.v1.SpellSlot
-	97,  // 9: meurpg.play.v1.CastSummonRequest.summon:type_name -> meurpg.play.v1.SummonChoice
+	96,  // 7: meurpg.play.v1.StopFamiliarSightResponse.encounter:type_name -> meurpg.play.v1.Encounter
+	97,  // 8: meurpg.play.v1.CastSummonRequest.slot:type_name -> meurpg.play.v1.SpellSlot
+	98,  // 9: meurpg.play.v1.CastSummonRequest.summon:type_name -> meurpg.play.v1.SummonChoice
 	29,  // 10: meurpg.play.v1.CastSummonResponse.vitals:type_name -> meurpg.play.v1.CharacterVitals
 	0,   // 11: meurpg.play.v1.GameSessionBlocked.reason:type_name -> meurpg.play.v1.GameSessionBlockedReason
-	98,  // 12: meurpg.play.v1.GameSession.started_at:type_name -> google.protobuf.Timestamp
-	98,  // 13: meurpg.play.v1.GameSession.ended_at:type_name -> google.protobuf.Timestamp
+	99,  // 12: meurpg.play.v1.GameSession.started_at:type_name -> google.protobuf.Timestamp
+	99,  // 13: meurpg.play.v1.GameSession.ended_at:type_name -> google.protobuf.Timestamp
 	13,  // 14: meurpg.play.v1.StartGameSessionResponse.game_session:type_name -> meurpg.play.v1.GameSession
 	13,  // 15: meurpg.play.v1.EndGameSessionResponse.game_session:type_name -> meurpg.play.v1.GameSession
 	13,  // 16: meurpg.play.v1.ListGameSessionsResponse.game_sessions:type_name -> meurpg.play.v1.GameSession
 	22,  // 17: meurpg.play.v1.ListOpenGameSessionsResponse.open_game_sessions:type_name -> meurpg.play.v1.OpenGameSession
 	13,  // 18: meurpg.play.v1.OpenGameSession.game_session:type_name -> meurpg.play.v1.GameSession
-	99,  // 19: meurpg.play.v1.OpenGameSession.my_role:type_name -> meurpg.campaigns.v1.Role
+	100, // 19: meurpg.play.v1.OpenGameSession.my_role:type_name -> meurpg.campaigns.v1.Role
 	31,  // 20: meurpg.play.v1.GetCharacterWildShapeResponse.wild_shape:type_name -> meurpg.play.v1.WildShapeState
 	13,  // 21: meurpg.play.v1.GetLiveSessionResponse.game_session:type_name -> meurpg.play.v1.GameSession
 	29,  // 22: meurpg.play.v1.GetLiveSessionResponse.vitals:type_name -> meurpg.play.v1.CharacterVitals
@@ -7078,161 +7147,162 @@ var file_meurpg_play_v1_play_proto_depIdxs = []int32{
 	1,   // 25: meurpg.play.v1.ImageAudience.kind:type_name -> meurpg.play.v1.ImageAudienceKind
 	34,  // 26: meurpg.play.v1.CharacterVitals.spell_slots:type_name -> meurpg.play.v1.SpellSlotUsage
 	35,  // 27: meurpg.play.v1.CharacterVitals.pact_slots:type_name -> meurpg.play.v1.PactSlotUsage
-	100, // 28: meurpg.play.v1.CharacterVitals.hit_dice:type_name -> meurpg.rules.v1.HitDice
-	98,  // 29: meurpg.play.v1.CharacterVitals.updated_at:type_name -> google.protobuf.Timestamp
+	101, // 28: meurpg.play.v1.CharacterVitals.hit_dice:type_name -> meurpg.rules.v1.HitDice
+	99,  // 29: meurpg.play.v1.CharacterVitals.updated_at:type_name -> google.protobuf.Timestamp
 	33,  // 30: meurpg.play.v1.CharacterVitals.resources:type_name -> meurpg.play.v1.ResourceUsage
 	31,  // 31: meurpg.play.v1.CharacterVitals.wild_shape:type_name -> meurpg.play.v1.WildShapeState
 	32,  // 32: meurpg.play.v1.CharacterVitals.familiar_sight:type_name -> meurpg.play.v1.FamiliarSightState
 	54,  // 33: meurpg.play.v1.CharacterVitals.hit_dice_used_by_die:type_name -> meurpg.play.v1.CharacterVitals.HitDiceUsedByDieEntry
 	30,  // 34: meurpg.play.v1.CharacterVitals.active_states:type_name -> meurpg.play.v1.ActiveState
-	101, // 35: meurpg.play.v1.ResourceUsage.recharge:type_name -> meurpg.rules.v1.Recharge
-	80,  // 36: meurpg.play.v1.WatchGameSessionResponse.ready:type_name -> meurpg.play.v1.WatchGameSessionResponse.Ready
-	81,  // 37: meurpg.play.v1.WatchGameSessionResponse.heartbeat:type_name -> meurpg.play.v1.WatchGameSessionResponse.Heartbeat
-	82,  // 38: meurpg.play.v1.WatchGameSessionResponse.vitals_changed:type_name -> meurpg.play.v1.WatchGameSessionResponse.VitalsChanged
-	83,  // 39: meurpg.play.v1.WatchGameSessionResponse.session_ended:type_name -> meurpg.play.v1.WatchGameSessionResponse.SessionEnded
-	84,  // 40: meurpg.play.v1.WatchGameSessionResponse.current_map_changed:type_name -> meurpg.play.v1.WatchGameSessionResponse.CurrentMapChanged
-	85,  // 41: meurpg.play.v1.WatchGameSessionResponse.map_changed:type_name -> meurpg.play.v1.WatchGameSessionResponse.MapChanged
-	93,  // 42: meurpg.play.v1.WatchGameSessionResponse.token_moved:type_name -> meurpg.play.v1.WatchGameSessionResponse.TokenMoved
-	86,  // 43: meurpg.play.v1.WatchGameSessionResponse.shown_image_changed:type_name -> meurpg.play.v1.WatchGameSessionResponse.ShownImageChanged
-	87,  // 44: meurpg.play.v1.WatchGameSessionResponse.left_images_changed:type_name -> meurpg.play.v1.WatchGameSessionResponse.LeftImagesChanged
-	88,  // 45: meurpg.play.v1.WatchGameSessionResponse.encounter_changed:type_name -> meurpg.play.v1.WatchGameSessionResponse.EncounterChanged
-	89,  // 46: meurpg.play.v1.WatchGameSessionResponse.turn_changed:type_name -> meurpg.play.v1.WatchGameSessionResponse.TurnChanged
-	90,  // 47: meurpg.play.v1.WatchGameSessionResponse.combatant_moved:type_name -> meurpg.play.v1.WatchGameSessionResponse.CombatantMoved
-	91,  // 48: meurpg.play.v1.WatchGameSessionResponse.combat_log_changed:type_name -> meurpg.play.v1.WatchGameSessionResponse.CombatLogChanged
-	92,  // 49: meurpg.play.v1.WatchGameSessionResponse.xp_changed:type_name -> meurpg.play.v1.WatchGameSessionResponse.XpChanged
-	78,  // 50: meurpg.play.v1.WatchGameSessionResponse.scene_changed:type_name -> meurpg.play.v1.WatchGameSessionResponse.SceneChanged
-	79,  // 51: meurpg.play.v1.WatchGameSessionResponse.scene_check_rolled:type_name -> meurpg.play.v1.WatchGameSessionResponse.SceneCheckRolled
-	76,  // 52: meurpg.play.v1.WatchGameSessionResponse.stage_changed:type_name -> meurpg.play.v1.WatchGameSessionResponse.StageChanged
-	77,  // 53: meurpg.play.v1.WatchGameSessionResponse.notes_changed:type_name -> meurpg.play.v1.WatchGameSessionResponse.NotesChanged
-	74,  // 54: meurpg.play.v1.WatchGameSessionResponse.vision_changed:type_name -> meurpg.play.v1.WatchGameSessionResponse.VisionChanged
-	75,  // 55: meurpg.play.v1.WatchGameSessionResponse.creatures_changed:type_name -> meurpg.play.v1.WatchGameSessionResponse.CreaturesChanged
-	73,  // 56: meurpg.play.v1.WatchGameSessionResponse.trap_noticed:type_name -> meurpg.play.v1.WatchGameSessionResponse.TrapNoticed
-	72,  // 57: meurpg.play.v1.WatchGameSessionResponse.puzzle_changed:type_name -> meurpg.play.v1.WatchGameSessionResponse.PuzzleChanged
-	71,  // 58: meurpg.play.v1.WatchGameSessionResponse.content_changed:type_name -> meurpg.play.v1.WatchGameSessionResponse.ContentChanged
-	61,  // 59: meurpg.play.v1.WatchGameSessionResponse.hidden_hit_pending:type_name -> meurpg.play.v1.WatchGameSessionResponse.HiddenHitPending
-	62,  // 60: meurpg.play.v1.WatchGameSessionResponse.reaction_window_opened:type_name -> meurpg.play.v1.WatchGameSessionResponse.ReactionWindowOpened
-	63,  // 61: meurpg.play.v1.WatchGameSessionResponse.reaction_window_closed:type_name -> meurpg.play.v1.WatchGameSessionResponse.ReactionWindowClosed
-	64,  // 62: meurpg.play.v1.WatchGameSessionResponse.spell_casts_changed:type_name -> meurpg.play.v1.WatchGameSessionResponse.SpellCastsChanged
-	65,  // 63: meurpg.play.v1.WatchGameSessionResponse.group_check_changed:type_name -> meurpg.play.v1.WatchGameSessionResponse.GroupCheckChanged
-	66,  // 64: meurpg.play.v1.WatchGameSessionResponse.revivify_changed:type_name -> meurpg.play.v1.WatchGameSessionResponse.RevivifyChanged
-	68,  // 65: meurpg.play.v1.WatchGameSessionResponse.character_changes_requested:type_name -> meurpg.play.v1.WatchGameSessionResponse.CharacterChangesRequested
-	69,  // 66: meurpg.play.v1.WatchGameSessionResponse.character_resubmitted:type_name -> meurpg.play.v1.WatchGameSessionResponse.CharacterResubmitted
-	70,  // 67: meurpg.play.v1.WatchGameSessionResponse.character_revived:type_name -> meurpg.play.v1.WatchGameSessionResponse.CharacterRevived
-	60,  // 68: meurpg.play.v1.WatchGameSessionResponse.calling_you:type_name -> meurpg.play.v1.WatchGameSessionResponse.CallingYou
-	67,  // 69: meurpg.play.v1.WatchGameSessionResponse.held_rolls_changed:type_name -> meurpg.play.v1.WatchGameSessionResponse.HeldRollsChanged
-	58,  // 70: meurpg.play.v1.WatchGameSessionResponse.session_message_added:type_name -> meurpg.play.v1.WatchGameSessionResponse.SessionMessageAdded
-	59,  // 71: meurpg.play.v1.WatchGameSessionResponse.master_typing:type_name -> meurpg.play.v1.WatchGameSessionResponse.MasterTyping
-	57,  // 72: meurpg.play.v1.WatchGameSessionResponse.free_roll_rolled:type_name -> meurpg.play.v1.WatchGameSessionResponse.FreeRollRolled
-	56,  // 73: meurpg.play.v1.WatchGameSessionResponse.attack_hit:type_name -> meurpg.play.v1.WatchGameSessionResponse.AttackHit
-	55,  // 74: meurpg.play.v1.WatchGameSessionResponse.table_screen_changed:type_name -> meurpg.play.v1.WatchGameSessionResponse.TableScreenChanged
-	42,  // 75: meurpg.play.v1.AdjustCharacterVitalsRequest.spell_slots_used:type_name -> meurpg.play.v1.SpellSlotsUsed
-	41,  // 76: meurpg.play.v1.AdjustCharacterVitalsRequest.resources_used:type_name -> meurpg.play.v1.ResourceUsed
-	94,  // 77: meurpg.play.v1.AdjustCharacterVitalsRequest.hit_dice_used_by_die:type_name -> meurpg.play.v1.AdjustCharacterVitalsRequest.HitDiceUsedByDieEntry
-	29,  // 78: meurpg.play.v1.AdjustCharacterVitalsResponse.vitals:type_name -> meurpg.play.v1.CharacterVitals
-	28,  // 79: meurpg.play.v1.SetShownImageRequest.audience:type_name -> meurpg.play.v1.ImageAudience
-	27,  // 80: meurpg.play.v1.SetShownImageResponse.shown_image:type_name -> meurpg.play.v1.ShownImage
-	28,  // 81: meurpg.play.v1.SetShownImageAudienceRequest.audience:type_name -> meurpg.play.v1.ImageAudience
-	27,  // 82: meurpg.play.v1.SetShownImageAudienceResponse.shown_image:type_name -> meurpg.play.v1.ShownImage
-	27,  // 83: meurpg.play.v1.ListLeftImagesResponse.images:type_name -> meurpg.play.v1.ShownImage
-	98,  // 84: meurpg.play.v1.WatchGameSessionResponse.TableScreenChanged.lost_at:type_name -> google.protobuf.Timestamp
-	102, // 85: meurpg.play.v1.WatchGameSessionResponse.FreeRollRolled.roll:type_name -> meurpg.play.v1.FreeRoll
-	103, // 86: meurpg.play.v1.WatchGameSessionResponse.SessionMessageAdded.message:type_name -> meurpg.play.v1.SessionMessage
-	13,  // 87: meurpg.play.v1.WatchGameSessionResponse.Ready.game_session:type_name -> meurpg.play.v1.GameSession
-	29,  // 88: meurpg.play.v1.WatchGameSessionResponse.VitalsChanged.vitals:type_name -> meurpg.play.v1.CharacterVitals
-	13,  // 89: meurpg.play.v1.WatchGameSessionResponse.SessionEnded.game_session:type_name -> meurpg.play.v1.GameSession
-	27,  // 90: meurpg.play.v1.WatchGameSessionResponse.ShownImageChanged.image:type_name -> meurpg.play.v1.ShownImage
-	104, // 91: meurpg.play.v1.WatchGameSessionResponse.EncounterChanged.mode:type_name -> meurpg.play.v1.EncounterMode
-	14,  // 92: meurpg.play.v1.PlayService.StartGameSession:input_type -> meurpg.play.v1.StartGameSessionRequest
-	16,  // 93: meurpg.play.v1.PlayService.EndGameSession:input_type -> meurpg.play.v1.EndGameSessionRequest
-	105, // 94: meurpg.play.v1.PlayService.GetSessionSummary:input_type -> meurpg.play.v1.GetSessionSummaryRequest
-	18,  // 95: meurpg.play.v1.PlayService.ListGameSessions:input_type -> meurpg.play.v1.ListGameSessionsRequest
-	20,  // 96: meurpg.play.v1.PlayService.ListOpenGameSessions:input_type -> meurpg.play.v1.ListOpenGameSessionsRequest
-	23,  // 97: meurpg.play.v1.PlayService.GetLiveSession:input_type -> meurpg.play.v1.GetLiveSessionRequest
-	24,  // 98: meurpg.play.v1.PlayService.GetCharacterWildShape:input_type -> meurpg.play.v1.GetCharacterWildShapeRequest
-	36,  // 99: meurpg.play.v1.PlayService.WatchGameSession:input_type -> meurpg.play.v1.WatchGameSessionRequest
-	40,  // 100: meurpg.play.v1.PlayService.AdjustCharacterVitals:input_type -> meurpg.play.v1.AdjustCharacterVitalsRequest
-	38,  // 101: meurpg.play.v1.PlayService.NudgePlayer:input_type -> meurpg.play.v1.NudgePlayerRequest
-	106, // 102: meurpg.play.v1.PlayService.SendSessionMessage:input_type -> meurpg.play.v1.SendSessionMessageRequest
-	107, // 103: meurpg.play.v1.PlayService.ListSessionMessages:input_type -> meurpg.play.v1.ListSessionMessagesRequest
-	108, // 104: meurpg.play.v1.PlayService.SignalMasterTyping:input_type -> meurpg.play.v1.SignalMasterTypingRequest
-	109, // 105: meurpg.play.v1.PlayService.RollFreeDice:input_type -> meurpg.play.v1.RollFreeDiceRequest
-	110, // 106: meurpg.play.v1.PlayService.ListFreeRolls:input_type -> meurpg.play.v1.ListFreeRollsRequest
-	44,  // 107: meurpg.play.v1.PlayService.SetCurrentMap:input_type -> meurpg.play.v1.SetCurrentMapRequest
-	46,  // 108: meurpg.play.v1.PlayService.SetShownImage:input_type -> meurpg.play.v1.SetShownImageRequest
-	48,  // 109: meurpg.play.v1.PlayService.SetShownImageAudience:input_type -> meurpg.play.v1.SetShownImageAudienceRequest
-	50,  // 110: meurpg.play.v1.PlayService.ListLeftImages:input_type -> meurpg.play.v1.ListLeftImagesRequest
-	52,  // 111: meurpg.play.v1.PlayService.TakeBackLeftImage:input_type -> meurpg.play.v1.TakeBackLeftImageRequest
-	111, // 112: meurpg.play.v1.PlayService.OpenScene:input_type -> meurpg.play.v1.OpenSceneRequest
-	112, // 113: meurpg.play.v1.PlayService.SetSceneAudience:input_type -> meurpg.play.v1.SetSceneAudienceRequest
-	113, // 114: meurpg.play.v1.PlayService.SetScenePlayersMayJoin:input_type -> meurpg.play.v1.SetScenePlayersMayJoinRequest
-	114, // 115: meurpg.play.v1.PlayService.JoinScene:input_type -> meurpg.play.v1.JoinSceneRequest
-	115, // 116: meurpg.play.v1.PlayService.CloseScene:input_type -> meurpg.play.v1.CloseSceneRequest
-	116, // 117: meurpg.play.v1.PlayService.GetOpenScene:input_type -> meurpg.play.v1.GetOpenSceneRequest
-	117, // 118: meurpg.play.v1.PlayService.RollSceneCheck:input_type -> meurpg.play.v1.RollSceneCheckRequest
-	118, // 119: meurpg.play.v1.PlayService.SearchForTraps:input_type -> meurpg.play.v1.SearchForTrapsRequest
-	119, // 120: meurpg.play.v1.PlayService.FireTrap:input_type -> meurpg.play.v1.FireTrapRequest
-	120, // 121: meurpg.play.v1.PlayService.ListTrapActivity:input_type -> meurpg.play.v1.ListTrapActivityRequest
-	121, // 122: meurpg.play.v1.PlayService.ListTrapDamages:input_type -> meurpg.play.v1.ListTrapDamagesRequest
-	122, // 123: meurpg.play.v1.PlayService.ApplyTrapDamage:input_type -> meurpg.play.v1.ApplyTrapDamageRequest
-	123, // 124: meurpg.play.v1.PlayService.DiscardTrapDamage:input_type -> meurpg.play.v1.DiscardTrapDamageRequest
-	124, // 125: meurpg.play.v1.PlayService.GrantSceneAttempt:input_type -> meurpg.play.v1.GrantSceneAttemptRequest
-	125, // 126: meurpg.play.v1.PlayService.PutOnStage:input_type -> meurpg.play.v1.PutOnStageRequest
-	126, // 127: meurpg.play.v1.PlayService.TakeOffStage:input_type -> meurpg.play.v1.TakeOffStageRequest
-	127, // 128: meurpg.play.v1.PlayService.SetStageNpcHidden:input_type -> meurpg.play.v1.SetStageNpcHiddenRequest
-	128, // 129: meurpg.play.v1.PlayService.SetSpeaker:input_type -> meurpg.play.v1.SetSpeakerRequest
-	10,  // 130: meurpg.play.v1.PlayService.CastSummon:input_type -> meurpg.play.v1.CastSummonRequest
-	2,   // 131: meurpg.play.v1.PlayService.AssumeWildShape:input_type -> meurpg.play.v1.AssumeWildShapeRequest
-	4,   // 132: meurpg.play.v1.PlayService.LeaveWildShape:input_type -> meurpg.play.v1.LeaveWildShapeRequest
-	6,   // 133: meurpg.play.v1.PlayService.StartFamiliarSight:input_type -> meurpg.play.v1.StartFamiliarSightRequest
-	8,   // 134: meurpg.play.v1.PlayService.StopFamiliarSight:input_type -> meurpg.play.v1.StopFamiliarSightRequest
-	15,  // 135: meurpg.play.v1.PlayService.StartGameSession:output_type -> meurpg.play.v1.StartGameSessionResponse
-	17,  // 136: meurpg.play.v1.PlayService.EndGameSession:output_type -> meurpg.play.v1.EndGameSessionResponse
-	129, // 137: meurpg.play.v1.PlayService.GetSessionSummary:output_type -> meurpg.play.v1.GetSessionSummaryResponse
-	19,  // 138: meurpg.play.v1.PlayService.ListGameSessions:output_type -> meurpg.play.v1.ListGameSessionsResponse
-	21,  // 139: meurpg.play.v1.PlayService.ListOpenGameSessions:output_type -> meurpg.play.v1.ListOpenGameSessionsResponse
-	26,  // 140: meurpg.play.v1.PlayService.GetLiveSession:output_type -> meurpg.play.v1.GetLiveSessionResponse
-	25,  // 141: meurpg.play.v1.PlayService.GetCharacterWildShape:output_type -> meurpg.play.v1.GetCharacterWildShapeResponse
-	37,  // 142: meurpg.play.v1.PlayService.WatchGameSession:output_type -> meurpg.play.v1.WatchGameSessionResponse
-	43,  // 143: meurpg.play.v1.PlayService.AdjustCharacterVitals:output_type -> meurpg.play.v1.AdjustCharacterVitalsResponse
-	39,  // 144: meurpg.play.v1.PlayService.NudgePlayer:output_type -> meurpg.play.v1.NudgePlayerResponse
-	130, // 145: meurpg.play.v1.PlayService.SendSessionMessage:output_type -> meurpg.play.v1.SendSessionMessageResponse
-	131, // 146: meurpg.play.v1.PlayService.ListSessionMessages:output_type -> meurpg.play.v1.ListSessionMessagesResponse
-	132, // 147: meurpg.play.v1.PlayService.SignalMasterTyping:output_type -> meurpg.play.v1.SignalMasterTypingResponse
-	133, // 148: meurpg.play.v1.PlayService.RollFreeDice:output_type -> meurpg.play.v1.RollFreeDiceResponse
-	134, // 149: meurpg.play.v1.PlayService.ListFreeRolls:output_type -> meurpg.play.v1.ListFreeRollsResponse
-	45,  // 150: meurpg.play.v1.PlayService.SetCurrentMap:output_type -> meurpg.play.v1.SetCurrentMapResponse
-	47,  // 151: meurpg.play.v1.PlayService.SetShownImage:output_type -> meurpg.play.v1.SetShownImageResponse
-	49,  // 152: meurpg.play.v1.PlayService.SetShownImageAudience:output_type -> meurpg.play.v1.SetShownImageAudienceResponse
-	51,  // 153: meurpg.play.v1.PlayService.ListLeftImages:output_type -> meurpg.play.v1.ListLeftImagesResponse
-	53,  // 154: meurpg.play.v1.PlayService.TakeBackLeftImage:output_type -> meurpg.play.v1.TakeBackLeftImageResponse
-	135, // 155: meurpg.play.v1.PlayService.OpenScene:output_type -> meurpg.play.v1.OpenSceneResponse
-	136, // 156: meurpg.play.v1.PlayService.SetSceneAudience:output_type -> meurpg.play.v1.SetSceneAudienceResponse
-	137, // 157: meurpg.play.v1.PlayService.SetScenePlayersMayJoin:output_type -> meurpg.play.v1.SetScenePlayersMayJoinResponse
-	138, // 158: meurpg.play.v1.PlayService.JoinScene:output_type -> meurpg.play.v1.JoinSceneResponse
-	139, // 159: meurpg.play.v1.PlayService.CloseScene:output_type -> meurpg.play.v1.CloseSceneResponse
-	140, // 160: meurpg.play.v1.PlayService.GetOpenScene:output_type -> meurpg.play.v1.GetOpenSceneResponse
-	141, // 161: meurpg.play.v1.PlayService.RollSceneCheck:output_type -> meurpg.play.v1.RollSceneCheckResponse
-	142, // 162: meurpg.play.v1.PlayService.SearchForTraps:output_type -> meurpg.play.v1.SearchForTrapsResponse
-	143, // 163: meurpg.play.v1.PlayService.FireTrap:output_type -> meurpg.play.v1.FireTrapResponse
-	144, // 164: meurpg.play.v1.PlayService.ListTrapActivity:output_type -> meurpg.play.v1.ListTrapActivityResponse
-	145, // 165: meurpg.play.v1.PlayService.ListTrapDamages:output_type -> meurpg.play.v1.ListTrapDamagesResponse
-	146, // 166: meurpg.play.v1.PlayService.ApplyTrapDamage:output_type -> meurpg.play.v1.ApplyTrapDamageResponse
-	147, // 167: meurpg.play.v1.PlayService.DiscardTrapDamage:output_type -> meurpg.play.v1.DiscardTrapDamageResponse
-	148, // 168: meurpg.play.v1.PlayService.GrantSceneAttempt:output_type -> meurpg.play.v1.GrantSceneAttemptResponse
-	149, // 169: meurpg.play.v1.PlayService.PutOnStage:output_type -> meurpg.play.v1.PutOnStageResponse
-	150, // 170: meurpg.play.v1.PlayService.TakeOffStage:output_type -> meurpg.play.v1.TakeOffStageResponse
-	151, // 171: meurpg.play.v1.PlayService.SetStageNpcHidden:output_type -> meurpg.play.v1.SetStageNpcHiddenResponse
-	152, // 172: meurpg.play.v1.PlayService.SetSpeaker:output_type -> meurpg.play.v1.SetSpeakerResponse
-	11,  // 173: meurpg.play.v1.PlayService.CastSummon:output_type -> meurpg.play.v1.CastSummonResponse
-	3,   // 174: meurpg.play.v1.PlayService.AssumeWildShape:output_type -> meurpg.play.v1.AssumeWildShapeResponse
-	5,   // 175: meurpg.play.v1.PlayService.LeaveWildShape:output_type -> meurpg.play.v1.LeaveWildShapeResponse
-	7,   // 176: meurpg.play.v1.PlayService.StartFamiliarSight:output_type -> meurpg.play.v1.StartFamiliarSightResponse
-	9,   // 177: meurpg.play.v1.PlayService.StopFamiliarSight:output_type -> meurpg.play.v1.StopFamiliarSightResponse
-	135, // [135:178] is the sub-list for method output_type
-	92,  // [92:135] is the sub-list for method input_type
-	92,  // [92:92] is the sub-list for extension type_name
-	92,  // [92:92] is the sub-list for extension extendee
-	0,   // [0:92] is the sub-list for field type_name
+	102, // 35: meurpg.play.v1.ResourceUsage.recharge:type_name -> meurpg.rules.v1.Recharge
+	81,  // 36: meurpg.play.v1.WatchGameSessionResponse.ready:type_name -> meurpg.play.v1.WatchGameSessionResponse.Ready
+	82,  // 37: meurpg.play.v1.WatchGameSessionResponse.heartbeat:type_name -> meurpg.play.v1.WatchGameSessionResponse.Heartbeat
+	83,  // 38: meurpg.play.v1.WatchGameSessionResponse.vitals_changed:type_name -> meurpg.play.v1.WatchGameSessionResponse.VitalsChanged
+	84,  // 39: meurpg.play.v1.WatchGameSessionResponse.session_ended:type_name -> meurpg.play.v1.WatchGameSessionResponse.SessionEnded
+	85,  // 40: meurpg.play.v1.WatchGameSessionResponse.current_map_changed:type_name -> meurpg.play.v1.WatchGameSessionResponse.CurrentMapChanged
+	86,  // 41: meurpg.play.v1.WatchGameSessionResponse.map_changed:type_name -> meurpg.play.v1.WatchGameSessionResponse.MapChanged
+	94,  // 42: meurpg.play.v1.WatchGameSessionResponse.token_moved:type_name -> meurpg.play.v1.WatchGameSessionResponse.TokenMoved
+	87,  // 43: meurpg.play.v1.WatchGameSessionResponse.shown_image_changed:type_name -> meurpg.play.v1.WatchGameSessionResponse.ShownImageChanged
+	88,  // 44: meurpg.play.v1.WatchGameSessionResponse.left_images_changed:type_name -> meurpg.play.v1.WatchGameSessionResponse.LeftImagesChanged
+	89,  // 45: meurpg.play.v1.WatchGameSessionResponse.encounter_changed:type_name -> meurpg.play.v1.WatchGameSessionResponse.EncounterChanged
+	90,  // 46: meurpg.play.v1.WatchGameSessionResponse.turn_changed:type_name -> meurpg.play.v1.WatchGameSessionResponse.TurnChanged
+	91,  // 47: meurpg.play.v1.WatchGameSessionResponse.combatant_moved:type_name -> meurpg.play.v1.WatchGameSessionResponse.CombatantMoved
+	92,  // 48: meurpg.play.v1.WatchGameSessionResponse.combat_log_changed:type_name -> meurpg.play.v1.WatchGameSessionResponse.CombatLogChanged
+	93,  // 49: meurpg.play.v1.WatchGameSessionResponse.xp_changed:type_name -> meurpg.play.v1.WatchGameSessionResponse.XpChanged
+	79,  // 50: meurpg.play.v1.WatchGameSessionResponse.scene_changed:type_name -> meurpg.play.v1.WatchGameSessionResponse.SceneChanged
+	80,  // 51: meurpg.play.v1.WatchGameSessionResponse.scene_check_rolled:type_name -> meurpg.play.v1.WatchGameSessionResponse.SceneCheckRolled
+	77,  // 52: meurpg.play.v1.WatchGameSessionResponse.stage_changed:type_name -> meurpg.play.v1.WatchGameSessionResponse.StageChanged
+	78,  // 53: meurpg.play.v1.WatchGameSessionResponse.notes_changed:type_name -> meurpg.play.v1.WatchGameSessionResponse.NotesChanged
+	75,  // 54: meurpg.play.v1.WatchGameSessionResponse.vision_changed:type_name -> meurpg.play.v1.WatchGameSessionResponse.VisionChanged
+	76,  // 55: meurpg.play.v1.WatchGameSessionResponse.creatures_changed:type_name -> meurpg.play.v1.WatchGameSessionResponse.CreaturesChanged
+	74,  // 56: meurpg.play.v1.WatchGameSessionResponse.trap_noticed:type_name -> meurpg.play.v1.WatchGameSessionResponse.TrapNoticed
+	73,  // 57: meurpg.play.v1.WatchGameSessionResponse.puzzle_changed:type_name -> meurpg.play.v1.WatchGameSessionResponse.PuzzleChanged
+	72,  // 58: meurpg.play.v1.WatchGameSessionResponse.content_changed:type_name -> meurpg.play.v1.WatchGameSessionResponse.ContentChanged
+	62,  // 59: meurpg.play.v1.WatchGameSessionResponse.hidden_hit_pending:type_name -> meurpg.play.v1.WatchGameSessionResponse.HiddenHitPending
+	63,  // 60: meurpg.play.v1.WatchGameSessionResponse.reaction_window_opened:type_name -> meurpg.play.v1.WatchGameSessionResponse.ReactionWindowOpened
+	64,  // 61: meurpg.play.v1.WatchGameSessionResponse.reaction_window_closed:type_name -> meurpg.play.v1.WatchGameSessionResponse.ReactionWindowClosed
+	65,  // 62: meurpg.play.v1.WatchGameSessionResponse.spell_casts_changed:type_name -> meurpg.play.v1.WatchGameSessionResponse.SpellCastsChanged
+	66,  // 63: meurpg.play.v1.WatchGameSessionResponse.group_check_changed:type_name -> meurpg.play.v1.WatchGameSessionResponse.GroupCheckChanged
+	67,  // 64: meurpg.play.v1.WatchGameSessionResponse.revivify_changed:type_name -> meurpg.play.v1.WatchGameSessionResponse.RevivifyChanged
+	69,  // 65: meurpg.play.v1.WatchGameSessionResponse.character_changes_requested:type_name -> meurpg.play.v1.WatchGameSessionResponse.CharacterChangesRequested
+	70,  // 66: meurpg.play.v1.WatchGameSessionResponse.character_resubmitted:type_name -> meurpg.play.v1.WatchGameSessionResponse.CharacterResubmitted
+	71,  // 67: meurpg.play.v1.WatchGameSessionResponse.character_revived:type_name -> meurpg.play.v1.WatchGameSessionResponse.CharacterRevived
+	61,  // 68: meurpg.play.v1.WatchGameSessionResponse.calling_you:type_name -> meurpg.play.v1.WatchGameSessionResponse.CallingYou
+	68,  // 69: meurpg.play.v1.WatchGameSessionResponse.held_rolls_changed:type_name -> meurpg.play.v1.WatchGameSessionResponse.HeldRollsChanged
+	59,  // 70: meurpg.play.v1.WatchGameSessionResponse.session_message_added:type_name -> meurpg.play.v1.WatchGameSessionResponse.SessionMessageAdded
+	60,  // 71: meurpg.play.v1.WatchGameSessionResponse.master_typing:type_name -> meurpg.play.v1.WatchGameSessionResponse.MasterTyping
+	58,  // 72: meurpg.play.v1.WatchGameSessionResponse.free_roll_rolled:type_name -> meurpg.play.v1.WatchGameSessionResponse.FreeRollRolled
+	57,  // 73: meurpg.play.v1.WatchGameSessionResponse.attack_hit:type_name -> meurpg.play.v1.WatchGameSessionResponse.AttackHit
+	56,  // 74: meurpg.play.v1.WatchGameSessionResponse.table_screen_changed:type_name -> meurpg.play.v1.WatchGameSessionResponse.TableScreenChanged
+	55,  // 75: meurpg.play.v1.WatchGameSessionResponse.character_infusions_changed:type_name -> meurpg.play.v1.WatchGameSessionResponse.CharacterInfusionsChanged
+	42,  // 76: meurpg.play.v1.AdjustCharacterVitalsRequest.spell_slots_used:type_name -> meurpg.play.v1.SpellSlotsUsed
+	41,  // 77: meurpg.play.v1.AdjustCharacterVitalsRequest.resources_used:type_name -> meurpg.play.v1.ResourceUsed
+	95,  // 78: meurpg.play.v1.AdjustCharacterVitalsRequest.hit_dice_used_by_die:type_name -> meurpg.play.v1.AdjustCharacterVitalsRequest.HitDiceUsedByDieEntry
+	29,  // 79: meurpg.play.v1.AdjustCharacterVitalsResponse.vitals:type_name -> meurpg.play.v1.CharacterVitals
+	28,  // 80: meurpg.play.v1.SetShownImageRequest.audience:type_name -> meurpg.play.v1.ImageAudience
+	27,  // 81: meurpg.play.v1.SetShownImageResponse.shown_image:type_name -> meurpg.play.v1.ShownImage
+	28,  // 82: meurpg.play.v1.SetShownImageAudienceRequest.audience:type_name -> meurpg.play.v1.ImageAudience
+	27,  // 83: meurpg.play.v1.SetShownImageAudienceResponse.shown_image:type_name -> meurpg.play.v1.ShownImage
+	27,  // 84: meurpg.play.v1.ListLeftImagesResponse.images:type_name -> meurpg.play.v1.ShownImage
+	99,  // 85: meurpg.play.v1.WatchGameSessionResponse.TableScreenChanged.lost_at:type_name -> google.protobuf.Timestamp
+	103, // 86: meurpg.play.v1.WatchGameSessionResponse.FreeRollRolled.roll:type_name -> meurpg.play.v1.FreeRoll
+	104, // 87: meurpg.play.v1.WatchGameSessionResponse.SessionMessageAdded.message:type_name -> meurpg.play.v1.SessionMessage
+	13,  // 88: meurpg.play.v1.WatchGameSessionResponse.Ready.game_session:type_name -> meurpg.play.v1.GameSession
+	29,  // 89: meurpg.play.v1.WatchGameSessionResponse.VitalsChanged.vitals:type_name -> meurpg.play.v1.CharacterVitals
+	13,  // 90: meurpg.play.v1.WatchGameSessionResponse.SessionEnded.game_session:type_name -> meurpg.play.v1.GameSession
+	27,  // 91: meurpg.play.v1.WatchGameSessionResponse.ShownImageChanged.image:type_name -> meurpg.play.v1.ShownImage
+	105, // 92: meurpg.play.v1.WatchGameSessionResponse.EncounterChanged.mode:type_name -> meurpg.play.v1.EncounterMode
+	14,  // 93: meurpg.play.v1.PlayService.StartGameSession:input_type -> meurpg.play.v1.StartGameSessionRequest
+	16,  // 94: meurpg.play.v1.PlayService.EndGameSession:input_type -> meurpg.play.v1.EndGameSessionRequest
+	106, // 95: meurpg.play.v1.PlayService.GetSessionSummary:input_type -> meurpg.play.v1.GetSessionSummaryRequest
+	18,  // 96: meurpg.play.v1.PlayService.ListGameSessions:input_type -> meurpg.play.v1.ListGameSessionsRequest
+	20,  // 97: meurpg.play.v1.PlayService.ListOpenGameSessions:input_type -> meurpg.play.v1.ListOpenGameSessionsRequest
+	23,  // 98: meurpg.play.v1.PlayService.GetLiveSession:input_type -> meurpg.play.v1.GetLiveSessionRequest
+	24,  // 99: meurpg.play.v1.PlayService.GetCharacterWildShape:input_type -> meurpg.play.v1.GetCharacterWildShapeRequest
+	36,  // 100: meurpg.play.v1.PlayService.WatchGameSession:input_type -> meurpg.play.v1.WatchGameSessionRequest
+	40,  // 101: meurpg.play.v1.PlayService.AdjustCharacterVitals:input_type -> meurpg.play.v1.AdjustCharacterVitalsRequest
+	38,  // 102: meurpg.play.v1.PlayService.NudgePlayer:input_type -> meurpg.play.v1.NudgePlayerRequest
+	107, // 103: meurpg.play.v1.PlayService.SendSessionMessage:input_type -> meurpg.play.v1.SendSessionMessageRequest
+	108, // 104: meurpg.play.v1.PlayService.ListSessionMessages:input_type -> meurpg.play.v1.ListSessionMessagesRequest
+	109, // 105: meurpg.play.v1.PlayService.SignalMasterTyping:input_type -> meurpg.play.v1.SignalMasterTypingRequest
+	110, // 106: meurpg.play.v1.PlayService.RollFreeDice:input_type -> meurpg.play.v1.RollFreeDiceRequest
+	111, // 107: meurpg.play.v1.PlayService.ListFreeRolls:input_type -> meurpg.play.v1.ListFreeRollsRequest
+	44,  // 108: meurpg.play.v1.PlayService.SetCurrentMap:input_type -> meurpg.play.v1.SetCurrentMapRequest
+	46,  // 109: meurpg.play.v1.PlayService.SetShownImage:input_type -> meurpg.play.v1.SetShownImageRequest
+	48,  // 110: meurpg.play.v1.PlayService.SetShownImageAudience:input_type -> meurpg.play.v1.SetShownImageAudienceRequest
+	50,  // 111: meurpg.play.v1.PlayService.ListLeftImages:input_type -> meurpg.play.v1.ListLeftImagesRequest
+	52,  // 112: meurpg.play.v1.PlayService.TakeBackLeftImage:input_type -> meurpg.play.v1.TakeBackLeftImageRequest
+	112, // 113: meurpg.play.v1.PlayService.OpenScene:input_type -> meurpg.play.v1.OpenSceneRequest
+	113, // 114: meurpg.play.v1.PlayService.SetSceneAudience:input_type -> meurpg.play.v1.SetSceneAudienceRequest
+	114, // 115: meurpg.play.v1.PlayService.SetScenePlayersMayJoin:input_type -> meurpg.play.v1.SetScenePlayersMayJoinRequest
+	115, // 116: meurpg.play.v1.PlayService.JoinScene:input_type -> meurpg.play.v1.JoinSceneRequest
+	116, // 117: meurpg.play.v1.PlayService.CloseScene:input_type -> meurpg.play.v1.CloseSceneRequest
+	117, // 118: meurpg.play.v1.PlayService.GetOpenScene:input_type -> meurpg.play.v1.GetOpenSceneRequest
+	118, // 119: meurpg.play.v1.PlayService.RollSceneCheck:input_type -> meurpg.play.v1.RollSceneCheckRequest
+	119, // 120: meurpg.play.v1.PlayService.SearchForTraps:input_type -> meurpg.play.v1.SearchForTrapsRequest
+	120, // 121: meurpg.play.v1.PlayService.FireTrap:input_type -> meurpg.play.v1.FireTrapRequest
+	121, // 122: meurpg.play.v1.PlayService.ListTrapActivity:input_type -> meurpg.play.v1.ListTrapActivityRequest
+	122, // 123: meurpg.play.v1.PlayService.ListTrapDamages:input_type -> meurpg.play.v1.ListTrapDamagesRequest
+	123, // 124: meurpg.play.v1.PlayService.ApplyTrapDamage:input_type -> meurpg.play.v1.ApplyTrapDamageRequest
+	124, // 125: meurpg.play.v1.PlayService.DiscardTrapDamage:input_type -> meurpg.play.v1.DiscardTrapDamageRequest
+	125, // 126: meurpg.play.v1.PlayService.GrantSceneAttempt:input_type -> meurpg.play.v1.GrantSceneAttemptRequest
+	126, // 127: meurpg.play.v1.PlayService.PutOnStage:input_type -> meurpg.play.v1.PutOnStageRequest
+	127, // 128: meurpg.play.v1.PlayService.TakeOffStage:input_type -> meurpg.play.v1.TakeOffStageRequest
+	128, // 129: meurpg.play.v1.PlayService.SetStageNpcHidden:input_type -> meurpg.play.v1.SetStageNpcHiddenRequest
+	129, // 130: meurpg.play.v1.PlayService.SetSpeaker:input_type -> meurpg.play.v1.SetSpeakerRequest
+	10,  // 131: meurpg.play.v1.PlayService.CastSummon:input_type -> meurpg.play.v1.CastSummonRequest
+	2,   // 132: meurpg.play.v1.PlayService.AssumeWildShape:input_type -> meurpg.play.v1.AssumeWildShapeRequest
+	4,   // 133: meurpg.play.v1.PlayService.LeaveWildShape:input_type -> meurpg.play.v1.LeaveWildShapeRequest
+	6,   // 134: meurpg.play.v1.PlayService.StartFamiliarSight:input_type -> meurpg.play.v1.StartFamiliarSightRequest
+	8,   // 135: meurpg.play.v1.PlayService.StopFamiliarSight:input_type -> meurpg.play.v1.StopFamiliarSightRequest
+	15,  // 136: meurpg.play.v1.PlayService.StartGameSession:output_type -> meurpg.play.v1.StartGameSessionResponse
+	17,  // 137: meurpg.play.v1.PlayService.EndGameSession:output_type -> meurpg.play.v1.EndGameSessionResponse
+	130, // 138: meurpg.play.v1.PlayService.GetSessionSummary:output_type -> meurpg.play.v1.GetSessionSummaryResponse
+	19,  // 139: meurpg.play.v1.PlayService.ListGameSessions:output_type -> meurpg.play.v1.ListGameSessionsResponse
+	21,  // 140: meurpg.play.v1.PlayService.ListOpenGameSessions:output_type -> meurpg.play.v1.ListOpenGameSessionsResponse
+	26,  // 141: meurpg.play.v1.PlayService.GetLiveSession:output_type -> meurpg.play.v1.GetLiveSessionResponse
+	25,  // 142: meurpg.play.v1.PlayService.GetCharacterWildShape:output_type -> meurpg.play.v1.GetCharacterWildShapeResponse
+	37,  // 143: meurpg.play.v1.PlayService.WatchGameSession:output_type -> meurpg.play.v1.WatchGameSessionResponse
+	43,  // 144: meurpg.play.v1.PlayService.AdjustCharacterVitals:output_type -> meurpg.play.v1.AdjustCharacterVitalsResponse
+	39,  // 145: meurpg.play.v1.PlayService.NudgePlayer:output_type -> meurpg.play.v1.NudgePlayerResponse
+	131, // 146: meurpg.play.v1.PlayService.SendSessionMessage:output_type -> meurpg.play.v1.SendSessionMessageResponse
+	132, // 147: meurpg.play.v1.PlayService.ListSessionMessages:output_type -> meurpg.play.v1.ListSessionMessagesResponse
+	133, // 148: meurpg.play.v1.PlayService.SignalMasterTyping:output_type -> meurpg.play.v1.SignalMasterTypingResponse
+	134, // 149: meurpg.play.v1.PlayService.RollFreeDice:output_type -> meurpg.play.v1.RollFreeDiceResponse
+	135, // 150: meurpg.play.v1.PlayService.ListFreeRolls:output_type -> meurpg.play.v1.ListFreeRollsResponse
+	45,  // 151: meurpg.play.v1.PlayService.SetCurrentMap:output_type -> meurpg.play.v1.SetCurrentMapResponse
+	47,  // 152: meurpg.play.v1.PlayService.SetShownImage:output_type -> meurpg.play.v1.SetShownImageResponse
+	49,  // 153: meurpg.play.v1.PlayService.SetShownImageAudience:output_type -> meurpg.play.v1.SetShownImageAudienceResponse
+	51,  // 154: meurpg.play.v1.PlayService.ListLeftImages:output_type -> meurpg.play.v1.ListLeftImagesResponse
+	53,  // 155: meurpg.play.v1.PlayService.TakeBackLeftImage:output_type -> meurpg.play.v1.TakeBackLeftImageResponse
+	136, // 156: meurpg.play.v1.PlayService.OpenScene:output_type -> meurpg.play.v1.OpenSceneResponse
+	137, // 157: meurpg.play.v1.PlayService.SetSceneAudience:output_type -> meurpg.play.v1.SetSceneAudienceResponse
+	138, // 158: meurpg.play.v1.PlayService.SetScenePlayersMayJoin:output_type -> meurpg.play.v1.SetScenePlayersMayJoinResponse
+	139, // 159: meurpg.play.v1.PlayService.JoinScene:output_type -> meurpg.play.v1.JoinSceneResponse
+	140, // 160: meurpg.play.v1.PlayService.CloseScene:output_type -> meurpg.play.v1.CloseSceneResponse
+	141, // 161: meurpg.play.v1.PlayService.GetOpenScene:output_type -> meurpg.play.v1.GetOpenSceneResponse
+	142, // 162: meurpg.play.v1.PlayService.RollSceneCheck:output_type -> meurpg.play.v1.RollSceneCheckResponse
+	143, // 163: meurpg.play.v1.PlayService.SearchForTraps:output_type -> meurpg.play.v1.SearchForTrapsResponse
+	144, // 164: meurpg.play.v1.PlayService.FireTrap:output_type -> meurpg.play.v1.FireTrapResponse
+	145, // 165: meurpg.play.v1.PlayService.ListTrapActivity:output_type -> meurpg.play.v1.ListTrapActivityResponse
+	146, // 166: meurpg.play.v1.PlayService.ListTrapDamages:output_type -> meurpg.play.v1.ListTrapDamagesResponse
+	147, // 167: meurpg.play.v1.PlayService.ApplyTrapDamage:output_type -> meurpg.play.v1.ApplyTrapDamageResponse
+	148, // 168: meurpg.play.v1.PlayService.DiscardTrapDamage:output_type -> meurpg.play.v1.DiscardTrapDamageResponse
+	149, // 169: meurpg.play.v1.PlayService.GrantSceneAttempt:output_type -> meurpg.play.v1.GrantSceneAttemptResponse
+	150, // 170: meurpg.play.v1.PlayService.PutOnStage:output_type -> meurpg.play.v1.PutOnStageResponse
+	151, // 171: meurpg.play.v1.PlayService.TakeOffStage:output_type -> meurpg.play.v1.TakeOffStageResponse
+	152, // 172: meurpg.play.v1.PlayService.SetStageNpcHidden:output_type -> meurpg.play.v1.SetStageNpcHiddenResponse
+	153, // 173: meurpg.play.v1.PlayService.SetSpeaker:output_type -> meurpg.play.v1.SetSpeakerResponse
+	11,  // 174: meurpg.play.v1.PlayService.CastSummon:output_type -> meurpg.play.v1.CastSummonResponse
+	3,   // 175: meurpg.play.v1.PlayService.AssumeWildShape:output_type -> meurpg.play.v1.AssumeWildShapeResponse
+	5,   // 176: meurpg.play.v1.PlayService.LeaveWildShape:output_type -> meurpg.play.v1.LeaveWildShapeResponse
+	7,   // 177: meurpg.play.v1.PlayService.StartFamiliarSight:output_type -> meurpg.play.v1.StartFamiliarSightResponse
+	9,   // 178: meurpg.play.v1.PlayService.StopFamiliarSight:output_type -> meurpg.play.v1.StopFamiliarSightResponse
+	136, // [136:179] is the sub-list for method output_type
+	93,  // [93:136] is the sub-list for method input_type
+	93,  // [93:93] is the sub-list for extension type_name
+	93,  // [93:93] is the sub-list for extension extendee
+	0,   // [0:93] is the sub-list for field type_name
 }
 
 func init() { file_meurpg_play_v1_play_proto_init() }
@@ -7287,6 +7357,7 @@ func file_meurpg_play_v1_play_proto_init() {
 		(*WatchGameSessionResponse_FreeRollRolled_)(nil),
 		(*WatchGameSessionResponse_AttackHit_)(nil),
 		(*WatchGameSessionResponse_TableScreenChanged_)(nil),
+		(*WatchGameSessionResponse_CharacterInfusionsChanged_)(nil),
 	}
 	file_meurpg_play_v1_play_proto_msgTypes[38].OneofWrappers = []any{}
 	type x struct{}
@@ -7295,7 +7366,7 @@ func file_meurpg_play_v1_play_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_meurpg_play_v1_play_proto_rawDesc), len(file_meurpg_play_v1_play_proto_rawDesc)),
 			NumEnums:      2,
-			NumMessages:   93,
+			NumMessages:   94,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

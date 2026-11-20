@@ -11,6 +11,7 @@ The module serves three Connect services:
 | `CharacterService` | Characters, stories, master notes, approval, reserved characters and claims, level-up, character creatures. | This page. |
 | `ContentService` | The rules catalogue and everything public about the SRD (spells, creatures, presets). | [Content service](#content-service). |
 | `TableContentService` | The master's own content, its switches and packs. | [Table content](characters-table-content.md). |
+| `InfusionService` | The infusions of an artificer: what it keeps and knows, the pieces an infusion goes on, putting one on, moving it and ending it. | [Infusion calls](#infusion-calls). |
 
 Related pages: [Table content](characters-table-content.md) (live content, switches, packs, the spell page), [Browser side](characters-web.md) (the editors and screens), [Rules module](rules.md).
 
@@ -54,7 +55,7 @@ Related pages: [Table content](characters-table-content.md) (live content, switc
 | `SetGallery` | `Gallery` | Which images are in a campaign's gallery (NPC portraits), from `maps`. |
 | `SetLive` | `Live` | The session stream: `PublishXPChanged`, `PublishVitalsChanged`, `PublishContentChanged`, implemented by `play`. |
 | `SetCreatureHost` | `CreatureHost` | The combat that holds a character's creatures, from `play`. |
-| `SetReviewHost` | `ReviewHost` | The streams a review or revival is told on, the combat a revived character returns to, `GearChanged` and `ArmorWorn` (Mage Armor follows the equipped armor and shield), and `EquipInCombat` (the combat's cost for a gear change), from `play`. |
+| `SetReviewHost` | `ReviewHost` | The streams a review or revival is told on, the combat a revived character returns to, `GearChanged` and `ArmorWorn` (Mage Armor follows the equipped armor and shield), `EquipInCombat` (the combat's cost for a gear change) and `InfusionChanged` (the session events and the combat of an infusion change), from `play`. |
 | `SetLevelUps` | `LevelUps` | Whether a character can level up (RN-12), from `progression`. |
 | `SetCampaignNames` | `CampaignNames` | The campaign's name for an exported content pack (optional). |
 | `Config.Dice` | `DiceRules` | The campaign's dice setting (RN-18), from `campaigns`. |
@@ -92,6 +93,7 @@ What a player may see and change is then decided from the character's row (`canS
 | `ListCharacterCreatures`, `GetSummonOptions`, `ListWildShapeForms` | Yes, any player character | Their own character | `not_found` | `not_found` | `unauthenticated` | `not_found` |
 | `RenameCreature`, `DismissCreature` | Yes | Their own character's creatures | `not_found` | `not_found` | `unauthenticated` | `not_found` |
 | `GiveCreature`, `AdjustCreatureHitPoints` | Yes | `permission_denied` | `permission_denied` | `not_found` | `unauthenticated` | `not_found` |
+| `InfusionService` reads and writes | Yes | Their own character | `not_found` | `not_found` | `unauthenticated` | `not_found` |
 | `ContentService.ListContent`, `GetSpellDetails` | Yes | Yes | Yes | `not_found` | `unauthenticated` | Yes |
 | `ContentService.ListSpells`, `ListMagicItems`, `ListCreatures`, `GetCreature`, `ListTrapPresets`, `ListLightPresets` | Yes | Yes | Yes | `not_found` | `unauthenticated` | `not_found` |
 | `TableContentService.ListTableEntries` | All entries and the counts | Only the entries a player may see, in full, never a count | Same | `not_found` | `unauthenticated` | `not_found` |
@@ -190,9 +192,170 @@ It is idempotent by state: asking for the state the piece has changes nothing.
 The answer is the carried keys and the revision, not the sheet: a screen reads the sheet again. `DerivedSheet.gear` lists every piece (equipped or carried) with its Portuguese name, whether it is two-handed and the armor class the sheet would have with that piece's state flipped (`armor_class_if_toggled`, derived by the server with the flipped state; 0 when it is not previewed, as for Mage Armor); the browser never computes an armor class. A carried piece therefore never leaves the list.
 Inside the transaction and before the write it asks play (`ReviewHost.EquipInCombat`) what a running combat charges ([Combat](play/combat.md#equipping-and-stowing-gear)).
 
+## Infusions on the sheet
+
+A record of an infusion names the character whose gear it sits on as its holder.
+The live records of a holder are `rules.Build.Infusions`, read by `holderInfusions` (`infusions_load.go`).
+Every read or check that derives a number an infusion changes builds with them.
+They are the sheet a client reads, the preview of a sheet, the save check, the attunement count, the level-up plan, preview and apply, the combat's armor class and attacks, and Mage Armor.
+A build that reads no such number builds without them.
+`infusions_sites_test.go` lists every build of a sheet in the package and says which it is, so a new one has to say.
+A write reads the records after it locked the character's row.
+A record carries its artificer (`InfusionRecord.ArtificerID`) and a build carries its own `CharacterID`: a record whose artificer is not the build's character is not valid now, so a holder's sheet never judges another character's infusion by its own features.
+`FullSheet.infusions` lists one `SheetInfusion` per live record on every read, valid or not, the oldest first (`since`, then the id).
+The derivation never counts more valid records of a host than its limit at the class level.
+Of the valid records the oldest give way (`since`, then the id), and each says so as not valid now: "A infusão está acima do limite.".
+A record that gave way stays live and ends by no write of its own.
+The attunement count and the manual bonus check read the records as the sheet does, lost prerequisites and the limit included (`readInfusions`).
+Each row has the record, the infusion's name, the piece's or the object's name, whether the app computes it, whether it is valid now, the bonus it gives at the class level and what it asks of attunement.
+A text only record and an object record are rows too.
+The server fills the list and a save ignores it.
+A host feature with the typed infusion limit shows no `resource` effect of its own in `Derived.Resources`: the live count against the limit is the one count the sheet shows.
+A feature with no limit rule keeps its resource.
+
+A save that takes a gear key off the sheet ends the live records on it with the reason `item_gone`.
+The records are ended in the transaction of the save, and it is the holder's save that ends them: the artificer's own save in this version, which reads the holder's live records once and uses them for the check and for the end.
+Moving a piece between equipped and carried keeps the piece listed, so its record stays.
+No other writer takes a key off `armor_key`, `weapon_keys` or `shield`: equipping, the level-up, the choices, the daily choices, attunement, the XP award and the removal of a consumable leave them alone.
+The campaign package brings no records.
+
+## Infusion calls
+
+`InfusionService` (`infusions.proto`) is mounted on `characters.Service` beside the other services.
+The two reads are in `infusions_read.go`.
+The three writes are in `infusions_write.go`.
+The Portuguese sentences and the `InfusionBlocked` detail are in `infusions_texts.go`.
+Every call needs a member of the campaign.
+The artificer's owner and the master may call all five.
+Another player and a stranger get `not_found`, as for any character they cannot see.
+In this version the holder is the artificer.
+`holder_character_id` is required, and any other id is `invalid_argument` on that field.
+
+### Reads
+
+`ListCharacterInfusions` answers the sheet's `SheetInfusion` rows (the same loader and order as the sheet), the known infusions, the limit and the count.
+A known infusion is an option the character picked in a host feature that carries the infusion rule.
+The sheet must still know it: the content has it, the feature is at its level and the prerequisite is met.
+It also has no live valid record.
+The known infusions come in the order of the character's choices.
+The engine says "known" by reading a probe record of each pick (`knownInfusionKeys`), so the read and the writes share one rule.
+A probe the limit pushes out (`InfusionStatus.OverLimit`) is still a known infusion.
+Each known infusion has its name and the option's text.
+It also says what the infusion goes on, whether it asks for attunement and whether the app computes it.
+It lists the damage types it offers, with their Portuguese names.
+`limit` and `used` come from `Derived.InfusionHosts`.
+A character with two host features gets the sum of their limits and of their valid records.
+
+`ListInfusionTargets` answers an infusion the character does not know as it answers a key that is no infusion: the empty list.
+`ListInfusionTargets` has one row for each gear key of the sheet (armor, shield, weapons, equipped or carried).
+`copies` says how many times the key is listed.
+The reason of a row, in this order, is `WRONG_KIND`, `ALREADY_MAGICAL` and `TAKEN`.
+`ALREADY_MAGICAL` is a manual bonus entry on the key, or the weapon's magical mark.
+Its sentence is "Já é um item mágico (+N): a infusão pede um item comum.", and has no +N when the piece has no number.
+`TAKEN` is a valid live record on the key, and the sentence names it.
+A record that is not valid now does not take its piece.
+An infusion that goes on any object or on a spellcasting focus has no gear row it can take, because the sheet lists no such gear.
+Its gear rows are `WRONG_KIND`.
+One more row has an empty `item_key`, no reason and the kind word "objeto".
+That row means "another object, by name", and the player names it in `InfuseItem`.
+A key that is no infusion of the content lists nothing.
+The list and the writes share one knowledge check.
+
+### Writes
+
+All three writes run under the session funnel (`inSession`), as `SetEquipped` does.
+They are pinned in `charactersSeamWriters`.
+Each locks the artificer's character row first (`visibleForUpdate`) and reads the records after it.
+The count against the limit is made on the rows the write changes.
+A sheet that is locked by a started game session does not stop them, as it does not stop equipping.
+`InfuseItem` and `MoveInfusion` refuse a dead artificer with `CharacterBlocked` `CHARACTER_DEAD`, for the owner and the master, as `SetEquipped` does.
+`EndInfusion` refuses it for the owner only: the infusions of a dead artificer stay until the master ends them.
+A request with a `revision` that is not the character's is `aborted`; 0 skips the check.
+Each answer carries `revision`, the sheet's revision after the write, and a follow-up write may send it.
+The refusals of a rule are `failed_precondition` with an `InfusionBlocked` detail.
+
+`InfuseItem` checks, in this order:
+- `INFUSION_NOT_KNOWN`: the key is not a known infusion (not picked, no host feature, the content lost it, a prerequisite lost).
+- `ITEM_CHANGED`: the infusion has a live valid record, or `end_infusion_id` is not a live record the character holds.
+- `invalid_argument` on `parameter`: a resistance infusion takes one of its damage types, any other takes none.
+- `invalid_argument` on `object_name_pt`: a name cleaned as the app's names are (1 to 40 characters, one line, no control, hidden or bidi characters, NFC), and never together with an `item_key`.
+- `ITEM_NOT_ACCEPTED`: the piece is of the wrong kind, already magical or not on the sheet, or an object is named for an infusion that takes none.
+- `ITEM_ALREADY_INFUSED`: a valid live record of any infusion holds the piece, unless `end_infusion_id` names that record: the call is then a replacement.
+- `invalid_argument` on `attune_now` when the infusion asks for no attunement.
+
+A live record of the same infusion that is not valid now does not refuse the call.
+It ends with `taken`, so what the list offers as known can be put on.
+A record the limit pushed out is one of them.
+A live record on the piece that is not valid now ends with `taken` too.
+The record named in `end_infusion_id` that sits on the piece being infused ends with `replaced`, whether the limit is full or not, and the new record goes on the piece.
+At the limit of the infusion's host feature (valid records of that host equal to it), one valid record ends with `replaced`.
+It is the record named in `end_infusion_id`, or the oldest valid one of that host (`since`, then id).
+A record the limit pushed out is not chosen by the write.
+A write never pushes a valid record out with no event: the record that gives way is one that counts, and it ends with its event.
+At the limit, `end_infusion_id` must name a record that counts toward the host's limit, or `ITEM_CHANGED`: ending a record over the limit frees no place.
+At the limit, a piece that carries a record over the limit of the host refuses the call with `ITEM_CHANGED`, named or not.
+A record over the limit exists only while its host is full (ending a valid one makes it count again), so under the limit the two rules never meet.
+The record named in `end_infusion_id` that sits on the piece and is not valid for another reason (a lost prerequisite, another artificer's) is ended with `taken`, as when none is named, so the named and the unnamed call answer the same.
+A named record elsewhere, under the limit, is left alone.
+`end_infusion_id` is found among the records the character holds, so an id of another character or another campaign is `ITEM_CHANGED`, the answer of an id that does not exist.
+A host with no limit has no room to make, and the call is `INFUSION_NOT_KNOWN`.
+`ended_infusion_id` is the first record that ended.
+The new record is written by the store, which makes its id in Go.
+An object's `item_key` is `object:<id>`, so two objects of one name are two records.
+`attune_now` attunes through `checkAttunement`, the check `SetAttunement` uses.
+The owner needs the window of a rest and spends it, the master needs none, and a fourth item is refused.
+A refusal of it refuses the whole call, and the transaction writes nothing.
+
+`MoveInfusion` needs a live record of this artificer (`ITEM_CHANGED` otherwise) of an infusion the character still knows.
+It checks the new item as `InfuseItem` does: `ITEM_NOT_ACCEPTED`, `ITEM_ALREADY_INFUSED` and `invalid_argument` on `object_name_pt`.
+The record's `since` begins again and its attunement is cleared.
+The move is derived before it is written (`moveKeepsValid`): the record on its new item with the new `since`, the records on the piece that end with it gone.
+If a record that is valid now would not be valid after it, the call is `ITEM_CHANGED` and writes nothing.
+That is the oldest valid record giving way at a full limit, for a record over the limit or one whose piece left the sheet.
+Under the limit the same move goes through.
+A move to the piece it is on changes nothing.
+
+`EndInfusion` needs a live record of this artificer (`ITEM_CHANGED` otherwise) and ends it with `ended`.
+The master may end the record of a dead artificer.
+Its answer is the id and the revision.
+It has no idempotency key, so a retry of an infusion that ended answers `ITEM_CHANGED`.
+
+### Idempotency and the seam
+
+An `idempotency_key` of `InfuseItem` or `MoveInfusion` is a UUID scoped by the campaign.
+The answer is kept in `character_infusion_requests` in the same transaction, with the hash of the request.
+A retry with the same request returns the first answer, even after the record ended, and writes nothing.
+The same key with another request is `invalid_argument`.
+The replay is checked right after the lock, before the dead, revision and infusion checks.
+
+Every write that changes a record calls `infusionsChanged` (`infusions_write.go`).
+It raises the artificer's `revision`, so an editor that holds the old one is told and an open sheet reads again.
+It tells the session through `Touch`.
+It is the one seam the three writes share after their change.
+
+The seam also tells play, through `ReviewHost.InfusionChanged`, once for the whole write.
+The call carries the list of what changed, in the order it happened.
+The records that ended (`taken`, `replaced`) come first, then the one infused or moved.
+It is one call for the write, and not one for each record.
+So play writes its events in that order and tells its streams once.
+A change holds ids and keys only.
+These are the record, the artificer, the holder, the infusion's key, the item and why a record ended.
+Play may refuse, and then the whole write rolls back.
+A retry that finds its key stored calls nothing.
+The sheet save does the same for the records of a piece that left the sheet (`item_gone`), in the save's own transaction.
+After the call the seam tells the master and the owner of the artificer that its infusions changed.
+That hint is `character_infusions_changed`, with the character's id and nothing else.
+The holder is the artificer in this version, so no other character is told.
+
 ## Attunement
 
 Two kinds of entry can be attuned: a magic item of `FullSheet.magic_items` and a +N piece of `FullSheet.item_bonuses` that names a catalog item (`ItemBonus.item_key`).
+A valid infusion record that asks for attunement counts toward the maximum when it is attuned, as an attuned magic item does (`rules.AttunedCount`).
+The record is a third kind of entry, listed by `entriesOf` after the magic items: its id is `infusion:<record id>`, and `SetAttunement` names it like any other.
+Only a live record that names the character as holder and whose infusion asks for attunement is an entry.
+A record whose infusion asks none, an ended record, a record of another holder and an id that names no record are unknown entries: `invalid_argument` on `entry_id`.
+The window and the limit of three are the ones of every entry, and the count loads the records.
+The record's `attuned` is written through the store in the transaction of the sheet's write, so the revision moves and the reply lists the record attuned.
 A `SheetMagicItem` has a key, `attuned`, an `id`, and, filled by the server on every read, `requires_attunement`, `restriction_pt`, `restriction`, `same_item_attuned` and `name_pt`.
 At most 20 magic items; two copies of one item are two entries.
 The entry id is unique on the sheet: a magic item's is `m<n>`, given by the server to a new entry and kept on every save, and a +N piece's is `bonus:<key>`.

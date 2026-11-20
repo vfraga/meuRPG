@@ -200,16 +200,9 @@
   }
 }
 
-// "Próximo": the filled button on a phone (the artboards), outlined from a tablet up, where the
-// only filled button of the screen is "Confirmar o nível N". Disabled by a missing choice it is
-// dashed, and a tap still answers: the focus goes to the first missing choice.
+// "Próximo": the filled button at every width. Disabled by a missing choice it is dashed, and a tap
+// still answers: the focus goes to the first missing choice.
 .next {
-  @media (min-width: 768px) {
-    --mat-button-filled-container-color: var(--mr-surface);
-    --mat-button-filled-label-text-color: var(--mr-accent-text);
-    border: 1px solid var(--mr-control-line);
-  }
-
   // Material fades a disabled button; this one is only "not yet", so its words keep full contrast.
   &--off {
     --mat-button-filled-container-color: var(--mr-surface);

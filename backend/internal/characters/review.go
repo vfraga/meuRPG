@@ -54,6 +54,8 @@ const (
 	hintChangesRequested = "changes_requested"
 	hintResubmitted      = "resubmitted"
 	hintRevived          = "revived"
+	// hintInfusionsChanged: the infusions of a character changed (a content-free hint to the master and the owner).
+	hintInfusionsChanged = "infusions_changed"
 )
 
 // reviewToProto is a review row as the master and the owner read it.
@@ -389,6 +391,12 @@ type ReviewHost interface {
 	// economy for the change in the combat that holds the character. The combat's streams are told
 	// through t, once the transaction committed.
 	EquipInCombat(ctx context.Context, tx pgx.Tx, campaignID, characterID, actorUserID string, change EquipChange, t sessiontell.Tell) error
+	// InfusionChanged tells play what a write changed in the records of an artificer's infusions, inside tx, once for the whole
+	// write (the records that ended first, then the one infused or moved): the session event of each change when the campaign
+	// has an open session (none otherwise), and the open combat that holds the artificer or the holder, so its screens read their
+	// turn and attack options again. Play may refuse (a coded error, which aborts the write). What the streams are told goes
+	// through t, once the transaction committed.
+	InfusionChanged(ctx context.Context, tx pgx.Tx, campaignID, actorUserID string, changes []link.InfusionChange, t sessiontell.Tell) error
 	// PublishEncounterChanged tells every stream that the combat changed. Call it after the
 	// commit.
 	PublishEncounterChanged(ctx context.Context, campaignID, encounterID string)

@@ -30,7 +30,7 @@
 //
 // Sign-in needs the OIDC_* variables. Without them the API still starts,
 // and the sign-in routes answer 503. CampaignService,
-// CampaignDocumentService, CharacterService, ContentService,
+// CampaignDocumentService, CharacterService, InfusionService, ContentService,
 // TableContentService, PlayService,
 // ProgressionService,
 // GalleryService and MapService need sign-in too; without it, they are not

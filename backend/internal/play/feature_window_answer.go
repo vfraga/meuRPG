@@ -40,6 +40,9 @@ func (s *Service) answerFeature(ctx context.Context, m authz.Membership, in answ
 	if len(msg.GetTargets()) > 0 {
 		return nil, true, badTargets(targetsNotUsed)
 	}
+	if err := diceNotUsed(msg); err != nil {
+		return nil, true, err
+	}
 	out := &useFeatureOut{}
 	kind := eventFeatureUsed
 	do := func(c *combatTx) (any, error) { return s.useFeatureWindowTx(ctx, c, m, in, msg, out) }

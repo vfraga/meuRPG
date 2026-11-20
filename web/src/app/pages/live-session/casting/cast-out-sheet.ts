@@ -60,6 +60,7 @@ import {
   castRequestOf,
   casterRowsOf,
   diceOf,
+  diceTextAt,
   endsConfirmText,
   missingOf,
   spellRowsOf,
@@ -237,7 +238,12 @@ export class CastOutSheet {
   });
   protected readonly asksAbility = computed(() => needsAbility(this.spellKey()));
   protected readonly rollsDice = computed(() => !!this.spell()?.rollsDice && !this.long());
-  protected readonly dice = computed(() => diceOf(this.spell()?.rollDice ?? ''));
+  /** The dice the cast rolls at the level it is cast at ("3d8"). */
+  protected readonly diceText = computed(() => {
+    const s = this.spell();
+    return s ? diceTextAt(s, this.level()) : '';
+  });
+  protected readonly dice = computed(() => diceOf(this.diceText()));
   /** What the slot, the way and the targets still lack, as the button says it. */
   protected readonly missing = computed(() =>
     missingOf(this.spell(), {

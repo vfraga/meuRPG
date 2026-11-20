@@ -95,6 +95,7 @@ const FIELD_WORDS: Readonly<Record<string, string>> = {
   feature: 'a característica',
   effects: 'os efeitos',
   prerequisite: 'o pré-requisito',
+  swap_levels: 'os níveis de troca de opção',
   hit_die: 'o dado de vida',
   saving_throws: 'os testes de resistência',
   skill_choose: 'quantas perícias escolhe',

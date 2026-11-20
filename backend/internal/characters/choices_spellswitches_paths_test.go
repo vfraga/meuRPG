@@ -151,10 +151,10 @@ func TestTheSwitchesApplyToTheSpellPicksOfALevelUp(t *testing.T) {
 			t.Errorf("%s: error %v, want the refusal %v", name, err, want)
 		}
 	}
-	off := charactersv1.LevelUpRefusalReason_LEVEL_UP_REFUSAL_REASON_SWITCHED_OFF_CHOICE
-	gone := charactersv1.LevelUpRefusalReason_LEVEL_UP_REFUSAL_REASON_ARCHIVED_CHOICE
-	refusal("the level that picks a switched-off ritual", levelUp(c, "spell:hold-person", rituals(row.held, row.allowed), nil), off)
-	refusal("the level that picks a retired ritual", levelUp(c, "spell:hold-person", rituals(retired, row.allowed), nil), gone)
+	// A ritual the character never held and the table offers no player is answered as one that does not exist.
+	bare := charactersv1.LevelUpRefusalReason_LEVEL_UP_REFUSAL_REASON_FEATURE_CHOICE
+	refusal("the level that picks a switched-off ritual", levelUp(c, "spell:hold-person", rituals(row.held, row.allowed), nil), bare)
+	refusal("the level that picks a retired ritual", levelUp(c, "spell:hold-person", rituals(retired, row.allowed), nil), bare)
 
 	// The level that takes the book without its rituals, and then the late choice.
 	if err := levelUp(c, "spell:hold-person", rituals(), nil); err != nil {
@@ -162,8 +162,8 @@ func TestTheSwitchesApplyToTheSpellPicksOfALevelUp(t *testing.T) {
 	}
 	c = tb.other.get(t, tb.campaign, c.GetId())
 	late := func(spells ...string) []string { return rituals(spells...)[1:] }
-	refusal("the late choice that picks a switched-off ritual", levelUp(c, "spell:fear", nil, late(row.held, row.allowed)), off)
-	refusal("the late choice that picks a retired ritual", levelUp(c, "spell:fear", nil, late(retired, row.allowed)), gone)
+	refusal("the late choice that picks a switched-off ritual", levelUp(c, "spell:fear", nil, late(row.held, row.allowed)), bare)
+	refusal("the late choice that picks a retired ritual", levelUp(c, "spell:fear", nil, late(retired, row.allowed)), bare)
 	if err := levelUp(c, "spell:fear", nil, late(row.allowed, "spell:comprehend-languages")); err != nil {
 		t.Errorf("the late choice with rituals that stay on: %v", err)
 	}

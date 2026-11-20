@@ -62,6 +62,11 @@ func parseAnswerInput(ctx context.Context, msg *playv1.AnswerReactionRequest) (a
 	if choice == playv1.ReactionChoice_REACTION_CHOICE_PASS && len(msg.GetTargets()) > 0 { // whatever the window
 		return m, answerInput{}, badTargets(targetsNotUsed)
 	}
+	if choice == playv1.ReactionChoice_REACTION_CHOICE_PASS {
+		if err := diceNotUsed(msg); err != nil {
+			return m, answerInput{}, err
+		}
+	}
 	return m, answerInput{key: key, encID: encID, winID: winID, choice: choice}, nil
 }
 
@@ -147,8 +152,8 @@ func (s *Service) answerWindow(ctx context.Context, c *combatTx, m authz.Members
 	if err != nil {
 		return nil, err
 	}
-	if len(msg.GetTargets()) > 0 { // a READIED window never gets here
-		return nil, badTargets(targetsNotUsed)
+	if err := fieldsNotUsed(msg); err != nil { // a READIED window never gets here
+		return nil, err
 	}
 	use := in.choice == playv1.ReactionChoice_REACTION_CHOICE_USE
 	switch reaction.Kind(w.Kind) {

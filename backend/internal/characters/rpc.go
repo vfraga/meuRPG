@@ -477,6 +477,7 @@ func checkNewSheet(content *rules.Content, m authz.Membership, kind string, raw 
 	}
 	if sheet.GetFull() != nil {
 		sheet.GetFull().AbilityOrigin = nil // the server's record, set later for a player
+		sheet.GetFull().Infusions = nil     // the server's records: a new character, or one a package brings, has none
 	}
 	if err := refuseNewChoices(content, m, "", nil, sheet.GetFull()); err != nil {
 		return nil, err
@@ -532,7 +533,11 @@ func (s *Service) character(ctx context.Context, content *rules.Content, row cha
 		}
 		displayName = displayNames[*row.PlayerUserID]
 	}
-	c, err := s.characterToProto(content, row, m, displayName)
+	infusions, err := s.holderInfusions(ctx, s.queries, row.ID)
+	if err != nil {
+		return nil, err
+	}
+	c, err := s.characterToProto(content, row, m, displayName, infusions)
 	if err != nil {
 		return nil, err
 	}

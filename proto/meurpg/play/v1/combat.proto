@@ -5212,7 +5212,7 @@ message CastSpellRequest {
   string idempotency_key = 7;
   // How the d20 of a spell attack comes: exactly one for a spell with an attack
   // roll, ignored by the others. roll_in_app rolls one d20 for each target;
-  // d20_face is the face of a physical die and fits a single target.
+  // d20_face is the face of a physical die and fits a single attack roll (several take ray_rolls).
   oneof roll {
     // True: the app rolls the d20 on the server (RN-18).
     bool roll_in_app = 8;
@@ -5329,6 +5329,20 @@ message CastSpellRequest {
   // A spell with a lasting effect puts it on the steed's combatant as it does on the caster's.
   // Any other spell leaves the steed to the table, and the cast says so in `SpellCast.steed_note`.
   bool also_steed = 37;
+
+  // At a table that rolls physical dice, a spell with several attack rolls (rays: Scorching Ray's, or one for each target of a spell
+  // that attacks several) takes the physical d20s of each: one entry per attack roll, in the order of the targets and, for each
+  // target, of the rays it takes (its darts). The request's roll_mode applies to every one, as d20_faces does for every target:
+  // each entry holds one face, or two where that roll is made with advantage or disadvantage.
+  // Required for such a cast (d20_face and d20_faces fit a single attack roll); `invalid_argument` for any other cast: a single
+  // attack roll, a roll_in_app, a spell with no attack roll. A wrong count of entries or of faces, or a face outside 1 to 20, is
+  // `invalid_argument`.
+  repeated RayRoll ray_rolls = 38;
+}
+
+// RayRoll is the physical d20s of one ray of a spell: one face, or two for advantage or disadvantage under the request's roll_mode.
+message RayRoll {
+  repeated int32 d20_faces = 1;
 }
 
 // SpellOptionChoice is a table cast option ticked on a casting.
@@ -7555,6 +7569,9 @@ message AnswerReactionRequest {
   oneof roll {
     bool roll_in_app = 8;
     int32 typed = 9;
+    // READIED, a readied spell that rolls a pool of dice (Sleep, Color Spray), released at a table with
+    // physical dice: the sum of the pool, as CastSpellRequest.pool_sum.
+    int32 pool_sum = 17;
   }
   string idempotency_key = 10;
   // A maneuver reduction (ManeuverReducePrompt.options[].key): the one the player uses. Needed
@@ -7564,6 +7581,21 @@ message AnswerReactionRequest {
   // Scorching Ray), as CastSpellRequest.targets. It replaces creature_ids; the two
   // together are `invalid_argument`. The server checks them as CastSpell does.
   repeated SpellTarget targets = 14;
+  // READIED: the physical d20s of the held attack or spell attack the release rolls (one face for a
+  // normal roll, the pair for advantage or disadvantage, 1 to 20 each), as RollAttackRequest.d20_faces and
+  // CastSpellRequest.d20_faces. Instead of the `roll` oneof: with roll_in_app, typed or pool_sum it is
+  // `invalid_argument`. Copied one to one into the request the release builds, which checks it as it does.
+  repeated int32 d20_faces = 18;
+  // READIED: the mode of the release's d20 instead of the server's suggestion, with the reason, as
+  // RollAttackRequest.roll_mode and mode_reason (CastSpellRequest's too). Copied one to one into the request the
+  // release builds. `invalid_argument` on an answer that rolls no d20 of its own.
+  RollMode roll_mode = 19;
+  string mode_reason = 20;
+  // READIED, a readied spell with several attack rolls (rays: Scorching Ray's) at a table that rolls physical dice: the physical
+  // d20s of each, as CastSpellRequest.ray_rolls (one entry per attack roll, in the order of the targets and of the rays each
+  // target takes). Copied one to one into the request the release builds, which checks it as it does. `invalid_argument` on a
+  // pass, on another kind of window, or on a row that is not a spell.
+  repeated RayRoll ray_rolls = 21;
 }
 
 // MarkReactionRollingRequest marks a window as being rolled.

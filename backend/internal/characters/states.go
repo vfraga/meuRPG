@@ -151,8 +151,13 @@ func equalStates(a, b []*playv1.ActiveState) bool {
 
 // writeStates stores the list and moves the vitals' revision.
 func (s *Service) writeStates(ctx context.Context, tx pgx.Tx, characterID string, states []*playv1.ActiveState) error {
+	return s.writeStoredStates(ctx, tx, characterID, storedOf(states))
+}
+
+// writeStoredStates saves the states column as it is stored and touches the vitals.
+func (s *Service) writeStoredStates(ctx context.Context, tx pgx.Tx, characterID string, stored []byte) error {
 	q := s.queries.WithTx(tx)
-	if err := q.SetActiveStates(ctx, charactersdb.SetActiveStatesParams{ID: characterID, States: storedOf(states)}); err != nil {
+	if err := q.SetActiveStates(ctx, charactersdb.SetActiveStatesParams{ID: characterID, States: stored}); err != nil {
 		return wrap("save the states", err)
 	}
 	if _, err := q.TouchVitals(ctx, charactersdb.TouchVitalsParams{CharacterID: characterID, Now: s.now()}); err != nil {

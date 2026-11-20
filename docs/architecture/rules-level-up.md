@@ -28,6 +28,7 @@ At the end the new sheet may not have an `Issue` the old one lacked (a spell out
 **Refusals.**
 Each refusal is a `*LevelUpError` with the field (in the proto's names, e.g. `full.cantrip_keys`) and a stable reason code, which the screen translates to Portuguese; the message is never read.
 The codes are the `LevelUpReason*` constants in `levelup.go` and the `LevelUpRefusalReason` enum in `characters.proto` (which adds the ones the server raises itself: the hit point roll, the table's hit point rule, archived and switched-off choices, feats not allowed, `SHEET_NEEDS_MASTER`).
+A player's request whose `feature_choice_keys` or swap `to_key` is not among the options `GetLevelUpOptions` offers that character at that level (after `hideFromPlayer`) is refused before anything is derived (`unofferedRefusal`, `levelup_offered.go`): `PreviewLevelUp` answers the refusal alone, with no `after` and no multiclass summary, and `LevelUpCharacter` refuses it. The master's reads are unchanged.
 
 **One source for the offer and the check.**
 What the options say and what the check demands come from the same numbers (`levelUpOptionsWith`).
@@ -63,6 +64,17 @@ Swapping the Pact of the Tome away drops its `#cantrips` picks.
 Swapping the Book of Ancient Secrets away drops its `#rituals` picks.
 The swap stays one change.
 Whether the table plays with the swap (`tablerules.Rules.PickSwapAllowed`) is for the server to check, as for feats: `GetLevelUpOptions` leaves `swap_groups` empty and `LevelUpCharacter` refuses with `SWAP_NOT_ALLOWED` (`choices.swap_pick`).
+
+**Swapping an option of a table feature.**
+A table class or subclass feature that has options may carry `TableFeature.swap_levels` (`FeatureSwapLevels`: `levels`, the class levels 1 to 20 each at most once, or `every_level`, true for every class level from the feature's own level on; never both).
+The overlay refuses it (`addSwapLevels`, `featureswap.go`, `bad_value`) at `.swap_levels`, `.swap_levels.levels[i]` or `.swap_levels.every_level` on a feature that is not a class or subclass feature, on an option, and on a feature with no options of its own and none offered by another feature; the data is kept in `content.featureSwaps`.
+`LevelUpOffer.FeatureSwaps` lists, for the class that gains the level (a subclass feature needs that subclass chosen), each owned feature whose `swap_levels` allows the new class level and that has something to swap, as a `SwapGroup` whose `Group` is the feature's key, the picks are the character's picks in the pool and the pool is what is offered.
+The pool is the feature's options plus the options of the entry's other owned features that share an option with it, transitively (`poolOptionsOf`, over `groupPools`), without the picks the sheet has and without archived or switched-off options.
+The permission is the feature's own data: it does not depend on `PickSwapAllowed` or on an Ability Score Improvement at the level, and `LevelUpChoices.Swap` and the cantrip swap work at the same level.
+`LevelUpChoices.FeatureSwaps` (`[]PickSwap`) gives up `From` for `To`: at most one per group, `From` values distinct, `To` values distinct, each one of the offer's, else the swap is refused (`SWAP_NOT_ALLOWED`).
+`ApplyLevelUp` replaces the pick in place (the choice engine deals the picks in order); `CheckLevelUp` lets exactly the offered removals through (`unmatchedRemovals`), and `CheckLevelUpOf`, which the level-up calls with the choices the sheet was made from, only the removals a sent swap names (`sentSwaps`); `applyPicks` takes a pick out through `SwapInvocation` only for the Warlock (the check refuses the level unless that pick is an invocation); the check judges the new pick on the sheet after the level (prerequisite, no repeat).
+A history record is never rewritten.
+The sheet text of a feature with `swap_levels` carries one more paragraph, "**Troca:** nos níveis 5 e 6 de Guerreiro você pode trocar uma opção desta característica por outra." ("em todo nível de <Classe> a partir do nível N" for every_level; markdown, the lead in bold), saying at which class levels of the class a pick may be swapped (`withSwapLine`, in both `Description` and `DescriptionPT`).
 
 ## Multiclassing at level-up
 

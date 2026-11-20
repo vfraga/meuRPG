@@ -51,11 +51,26 @@ func (s *Service) PreviewCharacter(
 	}
 	var derived rules.Derived
 	if full := sheet.GetFull(); full != nil {
-		derived = rules.Derive(buildOf(full), content)
+		if derived, err = s.previewDerived(ctx, content, req.Msg.GetCharacterId(), full); err != nil {
+			return nil, s.dbError(ctx, "read the infusions of a character to preview its sheet", err)
+		}
 	} else {
 		derived = basicDerived(content, sheet.GetBasic())
 	}
 	return connect.NewResponse(&charactersv1.PreviewCharacterResponse{Derived: r.derived(derived)}), nil
+}
+
+// previewDerived derives the full sheet a preview shows. The sheet of a character that exists is derived with the
+// character's live infusion records, as the save would show it; a sheet being made has none.
+func (s *Service) previewDerived(ctx context.Context, content *rules.Content, characterID string, full *charactersv1.FullSheet) (rules.Derived, error) {
+	build := buildOf(full)
+	if id, ok := uid.Canonical(characterID); ok {
+		var err error
+		if build, err = s.withInfusions(ctx, s.queries, id, build); err != nil {
+			return rules.Derived{}, err
+		}
+	}
+	return rules.Derive(build, content), nil
 }
 
 // checkEditedSheet is what UpdateCharacter checks before it writes, for the

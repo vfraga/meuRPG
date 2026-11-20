@@ -1,7 +1,8 @@
 import { expect } from '@playwright/test';
 import { test } from './diagnostics';
 
-import { castSheet, openCastOf, pickChoice, pickSlotRadio, pickTargetOf, tableForCasting } from './casting-support';
+import { adjustVitalsRPC } from './combat-support';
+import { castSheet, openCastOf, pickChoice, pickSlotRadio, pickTargetOf, tableForCasting, tableForHealing } from './casting-support';
 import { endOpenSessionRPC, openSessionPage } from './live-session-support';
 import { newSignedInContext } from './support';
 
@@ -88,6 +89,45 @@ test(
       await expect(mine.getByText('Magias ativas')).toBeVisible();
       await expect(mine.getByText('dura 8 horas')).toBeVisible();
       await expect(castSheet(player)).toHaveCount(0);
+    } finally {
+      await endOpenSessionRPC(master, campaignId);
+      await masterContext.close();
+      await playerContext.close();
+    }
+  },
+);
+
+// #944: the dice a physical-dice table rolls follow the level of the slot, not the spell's own.
+test(
+  'numa mesa de dados físicos, Curar Ferimentos com um espaço de 3º nível pede 3d8 e aplica a soma digitada',
+  { tag: ['@MR-048', '@RN-32'] },
+  async ({ browser }) => {
+    const masterContext = await newSignedInContext(browser, 'Mestre Teste');
+    const playerContext = await newSignedInContext(browser, 'Jogador Teste');
+    let campaignId = '';
+    const master = await masterContext.newPage();
+    try {
+      const player = await playerContext.newPage();
+      await master.goto('/');
+      await player.goto('/');
+      const table = await tableForHealing(master, player, `Cura ${Date.now()}`);
+      campaignId = table.campaignId;
+      await adjustVitalsRPC(master, campaignId, table.characterId, { hitPointsCurrent: 1 });
+
+      await openSessionPage(player, campaignId);
+      const sheet = await openCastOf(player, 'Curar Ferimentos');
+      await pickSlotRadio(sheet, '1º nível');
+      await expect(sheet.getByText('Role 1d8 para Curar Ferimentos: some os dados')).toBeVisible();
+      await expect(sheet.getByText('Digite a soma dos dados, de 1 a 8.')).toBeVisible();
+      await pickSlotRadio(sheet, '3º nível');
+      await expect(sheet.getByText('Role 3d8 para Curar Ferimentos: some os dados')).toBeVisible();
+      await expect(sheet.getByText('Digite a soma dos dados, de 3 a 24.')).toBeVisible();
+      await pickTargetOf(sheet, 'Brisa');
+
+      // 20 is above the 1d8 maximum, so only the 3d8 of the 3rd-level slot accepts it. Healed: 20 + Wisdom 3 + Disciple of Life (2 + 3).
+      await sheet.getByLabel('Role 3d8 para Curar Ferimentos: some os dados').fill('20');
+      await sheet.getByRole('button', { name: 'Confirmar' }).click();
+      await expect(sheet.getByText('Brisa recuperou 28 PV.')).toBeVisible();
     } finally {
       await endOpenSessionRPC(master, campaignId);
       await masterContext.close();

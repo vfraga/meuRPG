@@ -132,8 +132,8 @@ func (s *Service) answerReadied(ctx context.Context, m authz.Membership, in answ
 	if err != nil {
 		return nil, true, s.dbError(ctx, "read the readied action", err)
 	}
-	if usedAs(row) != readiedSpell && len(msg.GetTargets()) > 0 { // not released as a cast
-		return nil, true, badTargets(targetsNotUsed)
+	if err := releaseFieldsOf(msg, row); err != nil {
+		return nil, true, err
 	}
 	switch row.Kind {
 	case readiedAttack:
@@ -170,6 +170,46 @@ func (s *Service) mayAnswerReadied(ctx context.Context, m authz.Membership, encI
 		return errWindowDenied()
 	}
 	return nil
+}
+
+// fieldsNotUsed refuses the targets and the table's dice where the answer takes none.
+func fieldsNotUsed(msg *playv1.AnswerReactionRequest) error {
+	if len(msg.GetTargets()) > 0 {
+		return badTargets(targetsNotUsed)
+	}
+	return diceNotUsed(msg)
+}
+
+// diceNotUsed refuses the table's dice (pool_sum, d20_faces, a mode) where the answer rolls nothing of its own: a pass,
+// another kind of window, a readied action that is not an attack or a spell. An answer never drops what it carries.
+func diceNotUsed(msg *playv1.AnswerReactionRequest) error {
+	if _, pool := msg.GetRoll().(*playv1.AnswerReactionRequest_PoolSum); pool || len(msg.GetD20Faces()) > 0 || len(msg.GetRayRolls()) > 0 || msg.GetRollMode() != playv1.RollMode_ROLL_MODE_UNSPECIFIED || msg.GetModeReason() != "" {
+		return connect.NewError(connect.CodeInvalidArgument, errors.New("pool_sum, d20_faces, ray_rolls and the roll mode are for the release of a readied attack or spell"))
+	}
+	return nil
+}
+
+// releaseFieldsOf checks what an answer carries against the readied action it releases, before the request the release
+// builds is checked as the cast or the attack checks it: targets only for a cast, one way of rolling, and no pool for an
+// attack.
+func releaseFieldsOf(msg *playv1.AnswerReactionRequest, row playdb.ReadiedAction) error {
+	kind := usedAs(row)
+	if kind != readiedSpell && len(msg.GetTargets()) > 0 { // not released as a cast
+		return badTargets(targetsNotUsed)
+	}
+	if kind != readiedAttack && kind != readiedSpell {
+		return diceNotUsed(msg)
+	}
+	if msg.GetRoll() != nil && len(msg.GetD20Faces()) > 0 {
+		return connect.NewError(connect.CodeInvalidArgument, errors.New("set one of roll_in_app, typed, pool_sum or d20_faces"))
+	}
+	if _, pool := msg.GetRoll().(*playv1.AnswerReactionRequest_PoolSum); pool && kind == readiedAttack {
+		return connect.NewError(connect.CodeInvalidArgument, errors.New("pool_sum is for a spell that rolls a pool of dice"))
+	}
+	if kind == readiedAttack && len(msg.GetRayRolls()) > 0 {
+		return connect.NewError(connect.CodeInvalidArgument, errors.New("ray_rolls are for a spell with several attack rolls (rays)"))
+	}
+	return rayRollsAlone(len(msg.GetRayRolls()) > 0 && (msg.GetRoll() != nil || len(msg.GetD20Faces()) > 0), "roll_in_app, typed, pool_sum and d20_faces")
 }
 
 // targetsNotUsed refuses targets where the answer does not cast with them: only the use of a readied spell does.
@@ -256,6 +296,10 @@ func (s *Service) useReadiedAttack(ctx context.Context, m authz.Membership, in a
 	if typed, ok := msg.GetRoll().(*playv1.AnswerReactionRequest_Typed); ok {
 		req.Roll = &playv1.RollAttackRequest_D20Face{D20Face: typed.Typed}
 	}
+	if len(msg.GetD20Faces()) > 0 { // the table's dice instead of the app's: the attack reads them as it reads its own
+		req.Roll, req.D20Faces = nil, msg.GetD20Faces()
+	}
+	req.RollMode, req.ModeReason = msg.GetRollMode(), msg.GetModeReason()
 	res, err := s.rollAttack(ctx, m, connect.NewRequest(req))
 	if err != nil {
 		return nil, err

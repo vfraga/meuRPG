@@ -69,7 +69,7 @@ func (x *deriver) casterOf(oc ownedClass) (caster, bool) {
 	}
 	sc := Spellcasting{
 		Class: oc.key, ClassNamePT: c.namePT(oc.key), Ability: a,
-		SaveDC: 8 + x.prof + x.mods[a], AttackBonus: x.prof + x.mods[a],
+		SaveDC: 8 + x.prof + x.mods[a], AttackBonus: x.prof + x.mods[a] + x.focusBonus,
 		PreparesSpells: e.Prepares, Spellbook: e.Spellbook, Ritual: e.Ritual, SpellList: cast.list,
 	}
 	if s := row.Spellcasting; s != nil {

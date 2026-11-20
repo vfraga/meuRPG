@@ -52,6 +52,7 @@ Como o código faz isso está nos [docs de arquitetura](../../architecture/READM
 | RN-41 | **Ações sem rolagem.** Uma ação de criatura que não rola nada (um poder que o texto descreve) é usada como lembrete: gasta a ação e escreve uma linha no registro, e o mestre lê o texto do SRD. | [Detalhe](#rn-41-ações-sem-rolagem) |
 | RN-42 | **Ataque de monstro com várias partes de dano.** O acerto de um ataque da ficha causa todas as partes de dano da ação (uma espada mais fogo) como um só dano a aplicar, cada parte resistida pelo próprio tipo. | [Detalhe](#rn-42-ataque-de-monstro-com-várias-partes-de-dano) |
 | RN-43 | **A Inspiração do mestre.** O mestre concede Inspiração a um personagem de jogador como recompensa; o personagem a tem ou não, nunca mais de uma. Gastá-la dá vantagem numa jogada de ataque, num teste de resistência ou num teste de habilidade do próprio personagem. Nenhum outro jogador lê quem a tem. | [Detalhe](#rn-43-a-inspiração-do-mestre) |
+| RN-44 | **Infusões do artífice.** O artífice põe numa peça uma infusão que conhece. O número de infusões em uso é limitado pelo nível na classe, e uma a mais encerra a mais antiga, ou a que o jogador escolher. O dono e o mestre as leem e mudam; nenhum outro jogador as lê. | [Detalhe](#rn-44-infusões-do-artífice) |
 
 ## RN-01: Trava da ficha
 
@@ -86,6 +87,7 @@ O servidor monta a ficha nova a partir da guardada e a confere com as regras, en
 - **O mestre acrescenta o resto no editor** ("o mestre acrescenta pelo editor"): multiclasse, uma subclasse própria, o Arcanum Místico do Bruxo, a Maestria de Magias e as Magias Assinatura do Mago, os Segredos Mágicos Adicionais do Colégio do Conhecimento, os inimigos e terrenos favoritos do Patrulheiro, e trocar uma magia conhecida por outra (a subida de nível guiada só acrescenta magias).
 - **Uma ficha guardada que já não passa nas regras de hoje** recebe a recusa que pede ao mestre que corrija a ficha.
 - **Um jogador que não pode subir de nível** (o personagem não "Pode subir de nível", é um NPC ou está no nível 20) também é recusado.
+- **Uma escolha que o nível não oferece.** A subida de nível de um jogador (a prévia e a subida em si) que envia uma opção, ou a opção que uma troca assume, que o nível não oferece àquele personagem é recusada só com a recusa: nenhuma ficha de depois volta. A prévia do mestre continua como antes.
 - **O dado de vida** segue o modo de dados da campanha (RN-18). O dado rolado no app é rolado pelo servidor e guardado para aquele personagem e nível, então pedir de novo devolve o mesmo resultado. Uma campanha que obriga o dado físico recusa o dado do app, e o contrário.
 - **O mestre lê toda subida de nível** em "O que mudou".
 
@@ -508,6 +510,7 @@ Se não deixa, todos usam o tipo que o mestre define.
 - A regra cobre a iniciativa, as rolagens de ataque e de dano, os ataques de magia, o dano e a cura de magias, o Retomar o Fôlego, os testes contra a morte, o d20 de uma ação de cena de RP, a busca por armadilhas, as dicas de quebra-cabeça, o teste em grupo, os dois lados de uma disputa, o Esconder-se, o teste de habilidade da Contramágica e os valores de habilidade em 4d6 de uma ficha nova. Um modo que o mestre forçou recusa o outro jeito com "A campanha mudou a forma de rolar os dados. Recarregue a página.".
 - Os dados do amanhecer dos itens mágicos, rolados pelo mestre pela mesa toda, são sempre rolados pelo app, como as exceções de "rolar de novo" acima.
 - O teste de resistência de um alvo de magia é sempre rolado pelo app com o bônus da ficha.
+- Uma magia com várias jogadas de ataque (raios: Raio Ardente) pede um d20 digitado por jogada numa mesa com dados físicos, ou o par quando aquela jogada tem vantagem ou desvantagem: uma entrada para cada jogada, na ordem dos alvos e dos raios de cada alvo. Vale também quando a magia é liberada pela janela de uma ação preparada. Um d20 só não serve para várias jogadas de ataque.
 - O "rolar de novo?" de uma característica da mesa (RN-23) é rolado pelo app mesmo quando o mestre força os dados físicos: é o único d20 que o jogador não pode digitar.
 - Os PV rolados quando um personagem é criado não fazem parte desta regra.
 - Telas: o painel "Dados" do mestre, o "Como você rola os dados" do jogador, e as folhas de rolagem, que mostram "Rolar no app" e "Digitar o resultado" na ordem da preferência, ou só o jeito que um modo forçado permite.
@@ -963,6 +966,7 @@ Uma mudança vale a partir da próxima jogada, sem nunca reescrever o que já fo
 - **Névoa nos mapas novos** liga com a primeira grade do mapa, não na criação.
 - **Talentos.** "Talentos" é "permitidos" ou "não usados" (padrão "não usados"). Só quando permitidos a etapa de Aumento de Habilidade da subida de nível oferece "Aumentar habilidades" ou "Um talento", com os talentos para os quais o personagem se qualifica. O servidor confere o pré-requisito no nível novo, aplica o aumento de habilidade do próprio talento (nenhum acima de 20) e recusa um talento que o mestre aposentou ou desligou.
 - **Trocar uma escolha.** "Trocar uma escolha no aumento de atributo" é "ligada" ou "desligada" (padrão "desligada"). Só quando ligada a etapa de Aumento de Habilidade da subida de nível também oferece abrir mão de uma escolha anterior de um grupo (um truque da classe, um estilo de luta, uma opção de Metamagia, uma invocação, uma Dádiva do Pacto) por outra do mesmo conjunto, uma troca por nível desses. O conjunto são as opções do SRD e as da mesa, menos as escolhas que o personagem já tem, e a escolha nova tem os pré-requisitos de qualquer escolha (os das invocações, os de uma opção da mesa); o servidor recusa uma troca com a regra desligada, num nível sem aumento ou por uma escolha ou opção que o nível não oferece. A troca de invocação do bruxo a cada nível é outra regra e continua como está.
+- **Trocar uma opção de uma característica da mesa.** Uma característica de classe ou de subclasse da mesa que tem opções (as manobras da mesa, por exemplo) pode listar os níveis de classe em que quem sobe de nível pode abrir mão de uma opção escolhida por outra da mesma lista ("todo nível" é uma escolha, a partir do nível da própria característica). A lista são as opções da característica mais as das outras características da mesma classe ou subclasse que dividem uma opção, menos as opções que o personagem já tem e as arquivadas ou desligadas, e a opção nova tem os pré-requisitos de qualquer escolha. Isso não depende da regra de troca acima nem de um aumento no nível: valem os níveis da própria característica, e só quando a classe que ganha o nível é a da característica (a de uma subclasse exige essa subclasse escolhida). Uma troca por característica em cada nível, junto com a troca acima e a de um truque. O texto da característica na ficha diz em quais níveis uma opção pode ser trocada. As subidas anteriores mantêm seus registros, e o registro deste nível nomeia a troca. O servidor recusa uma troca num nível que a característica não lista ou por uma opção que o nível não oferece, e recusa uma escolha que sumiu sem uma troca enviada para ela (o campo próprio do Bruxo para abrir mão de uma invocação só tira uma invocação dessa classe). Uma troca que deixa outra escolha sem o pré-requisito (a opção deixada é uma que essa escolha pede) também é recusada. O que a opção deixada tinha guardado vai com ela, na mesma transação do nível: os usos gastos dos recursos que a opção define são zerados (um recurso que a ficha nova ainda tem por outra característica mantém a contagem) e um estado que a opção iniciou termina, então uma opção tomada de novo mais tarde começa do zero; o que outros módulos guardam para a opção é deles, e eles ouvem a troca pelo gancho da subida de nível, que pode ser chamado mais de uma vez para um mesmo nível (a transação pode rodar de novo) e não grava nada fora dessa transação.
 - **Um talento que uma característica concede para escolher** (uma raça, antecedente, classe ou outro talento com uma escolha de talento) é uma escolha como as outras (RN-33), pedida em "Escolhas": os talentos da mesa, ou só a lista que a concessão nomeia. Um talento que o personagem já tem, um aposentado e um desligado não são oferecidos; um para o qual o personagem ainda não se qualifica aparece com o que pede e não pode ser escolhido. A regra "Talentos" não o restringe. Ele aparece como "Talento · <origem>" e nunca duas vezes numa ficha.
 - **Modo de XP** (RN-09) pode mudar depois que a campanha é criada, com uma confirmação se alguém já ganhou XP.
 - **Regras da casa** são só um lembrete na página (por exemplo, beber uma poção é uma ação bônus); o app não as impõe. Flanquear está fora do escopo.
@@ -1197,6 +1201,7 @@ Um jogador lê só as próprias janelas, e os números do gatilho (um total de a
   Um truque com jogada de ataque é guardado do mesmo jeito.
   Liberada, a magia tem efeito como reação e não gasta espaço de novo; a Contramágica ainda pode barrá-la.
   Os alvos e a divisão dos dardos são escolhidos ao liberar a magia, não ao preparar.
+  Numa mesa com dados físicos, uma ação preparada liberada pela janela usa as faces digitadas, como no turno do jogador: o d20 (o par, com vantagem ou desvantagem) de um ataque e a soma dos dados de uma magia que rola um conjunto (Sono, Leque Cromático); uma magia com vários raios (Raio Ardente) pede um d20, ou um par, para cada raio.
   A criatura nomeada ao preparar é só uma sugestão para a liberação.
   Uma magia que pede uma habilidade, um tipo de dano, as criaturas de uma invocação ou a volta de uma criatura morta à vida não pode ser liberada, e o Preparar a recusa.
   Uma magia colocada no mapa (um ponto, uma direção, uma parede) ou que deixa uma zona nele é liberada no mapa enquanto a janela está aberta, lançando a magia ali, e não respondendo à janela.
@@ -1517,6 +1522,74 @@ Um jogador só pode passá-la a outro personagem de jogador da mesma campanha pe
 O desfazer do mestre desfaz uma concessão feita por engano.
 Um jogador lê só se os próprios personagens a têm.
 Outro jogador não lê quem a tem nem que ela mudou de mãos (RN-10).
+
+## RN-44: Infusões do artífice
+
+**Construída em parte.**
+Construído: o lado do servidor para os itens do próprio artífice: os registros, o limite, os números na ficha, a sintonização, o aviso da transmissão e os eventos da sessão da mesa.
+Não construído: as telas; um item de outro personagem; as cargas de um item infundido; o fim de uma infusão quando a subida de nível troca a escolha.
+Este é o comportamento pretendido:
+
+Um artífice (uma classe do conteúdo da mesa) conhece infusões, escolhidas como opções da característica da sua classe, e as põe em itens.
+Uma infusão num item é um registro: qual infusão, em qual item, desde quando, e se o item está sintonizado.
+A ficha lista os registros, valendo ou não, do mais antigo ao mais novo, e os números que uma infusão dá são calculados do registro e do nível na classe quando a ficha é lida.
+O app nunca confere se um descanso longo terminou: a mesa decide quando uma infusão é posta, e o mestre não aprova nada.
+
+**Quem.** O dono do artífice e o mestre põem uma infusão, a mudam de item e a encerram, também numa ficha trancada, como o equipar funciona.
+Nesta versão o item é do próprio artífice.
+Nenhum outro jogador as lê nem as muda.
+
+**O item.**
+Uma infusão vai no tipo de peça que ela pede (uma arma, uma arma de arremesso, uma arma com munição, uma armadura, um escudo, ou uma armadura ou um escudo).
+Uma que vai em qualquer objeto, ou num foco de conjuração, vai num objeto que o jogador nomeia, que a ficha não lista como peça.
+O nome é uma linha de 1 a 40 caracteres, e dois objetos podem ter o mesmo nome.
+Uma peça que já é mágica (um bônus mágico, ou a marca de mágica da arma) não recebe uma infusão, e uma peça guarda uma só infusão.
+A lista de peças diz, para cada uma, o motivo de ela não poder recebê-la, em palavras.
+
+**O limite e o fim da mais antiga.**
+A característica da classe diz quantas infusões ficam em uso ao mesmo tempo, por nível na classe.
+Pôr uma no limite encerra uma: o jogador pode escolher qual (uma que conta no limite), e sem escolha é a mais antiga.
+Pôr uma numa peça que já tem uma, escolhendo esse registro para encerrar, a substitui, no limite ou não.
+Uma escrita nunca tira um registro válido em silêncio: depois de pôr uma infusão ou mudar uma de peça, todo registro que valia continua valendo, menos o que o pedido encerra.
+Com o limite cheio, o registro a encerrar precisa ser um que conta no limite.
+Escolher um que está acima do limite é recusado e nada muda, porque encerrá-lo não libera lugar; o jogador o encerra sozinho, o que também não libera lugar.
+Com o limite cheio, pôr uma infusão numa peça que tem um registro acima do limite é recusado, com ou sem registro escolhido, pelo mesmo motivo.
+Com o limite cheio, mudar de peça um registro que não vale agora e passaria a contar depois da mudança é recusado: a mudança começa o tempo de novo, ele viraria o mais novo e o registro válido mais antigo cederia sem ser encerrado.
+Isso vale para um registro acima do limite e para um cuja peça saiu da ficha.
+Com um lugar livre, o mesmo registro muda de peça.
+Escolher o registro que está na peça que recebe a infusão, quando ele não vale por outro motivo (um pré-requisito perdido, ou de outro artífice), não pede nada a mais: ele termina como termina quando nenhum é escolhido, e o registro válido mais antigo cede com o seu encerramento.
+A ficha nunca aplica mais infusões do que o limite: quando mais registros valem (o mestre devolveu uma escolha, um pré-requisito voltou, ou um nível foi tirado), os mais antigos cedem, dizem "acima do limite", não dão número e não ocupam lugar de sintonização.
+Nada termina sozinho: o registro fica, para o dono ou o mestre encerrar ou manter.
+Uma infusão só de texto, que o app não calcula, conta como uma; as telas vão marcar o item como texto que a mesa aplica.
+Mudar uma infusão para outro item começa a contar o tempo de novo.
+
+**Números.**
+Uma infusão com bônus mágico segue as regras do bônus mágico do equipamento (RN-02): vale para uma peça equipada, um escudo não soma nada enquanto uma arma de duas mãos está equipada, e uma infusão que pede sintonização não soma nada até o item estar sintonizado.
+A ficha nomeia a infusão na peça, no ataque dela e nas linhas de modificadores.
+Um bônus manual na mesma peça vence: a infusão não dá número ali, e um bônus manual novo numa peça com infusão é recusado.
+Um registro que não vale agora (o nível na classe, a característica, a peça ou um pré-requisito sumiu, ou o limite não tem lugar para ele) não dá número e não ocupa lugar do limite.
+Uma opção que o mestre arquivou ou desligou depois da escolha continua infundindo.
+
+**Sintonização.**
+Uma infusão que a pede conta entre os três itens a que o personagem está sintonizado (RN-02), como um item mágico, e o jogador a sintoniza na janela de um descanso, como qualquer item.
+Ao pôr a infusão, quem a põe pode sintonizar na hora, dentro dessa janela.
+
+**O que encerra um registro.**
+O jogador ou o mestre o encerra (o item volta a ser o item comum).
+Uma infusão nova no limite encerra a que cede lugar.
+Uma peça que sai da ficha encerra o registro dela.
+Um registro antigo que não vale agora termina quando a peça dele ou a infusão dele é posta em uso de novo.
+Uma infusão que a subida de nível não deixa o personagem manter também encerra, e isso espera as telas da subida de nível.
+Um personagem que morre mantém os registros até o mestre encerrá-los: o mestre pode encerrar um, e o dono não.
+Um personagem morto não recebe infusão nova nem muda nenhuma de peça.
+
+**Quem lê o quê.**
+O dono e o mestre leem os registros na ficha.
+A sessão da mesa guarda um evento para cada mudança enquanto há uma sessão aberta, e nenhum quando não há sessão aberta.
+O registro do combate, os destaques e o resumo não fazem linha deles, e nenhum jogador os lê.
+O desfazer do mestre não desfaz uma infusão, e uma infusão fecha a cadeia do desfazer.
+O mestre e o dono são avisados, sem conteúdo, de que as infusões mudaram, e o combate que tem o artífice lê o turno de novo.
+Uma cópia da campanha (o pacote) não traz registros: um personagem importado não tem nenhum.
 
 ## Fluxos e estados
 

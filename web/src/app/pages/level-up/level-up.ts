@@ -136,7 +136,8 @@ export class LevelUpPage {
       !p.loading &&
       p.refusal &&
       this.step() !== 'summary' &&
-      refusalStep(p.refusal.reason, p.refusal.field) === this.step()
+      refusalStep(p.refusal.reason, p.refusal.field, s?.options.abilityScoreImprovement) ===
+        this.step()
     ) {
       return refusalMessage(p.refusal);
     }
@@ -371,7 +372,7 @@ export class LevelUpPage {
       };
       await this.router.navigate(this.sheetLink(), { replaceUrl: true, state: { levelUp: done } });
     } catch (err) {
-      const failure = describeLevelUpFailure(err);
+      const failure = describeLevelUpFailure(err, s.options.abilityScoreImprovement);
       if (failure.kind === 'stale' && (await this.levelAlreadyApplied(s))) {
         return;
       }

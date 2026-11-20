@@ -6,6 +6,7 @@ import {
   LevelUpFeatureChoiceSchema,
   LevelUpProficiencyKind,
   LevelUpSubclassSchema,
+  LevelUpSwapGroupSchema,
 } from '../../../gen/meurpg/characters/v1/characters_pb';
 import {
   cantripOptions,
@@ -51,6 +52,28 @@ describe('the steps of a level-up (MR-040)', () => {
     });
     expect(steps(cleric, '', 6, 4)).toEqual(['class', 'hp', 'spells', 'summary']);
     expect(steps(cleric, '', 4, 4)).toEqual(['class', 'hp', 'summary']);
+  });
+
+  it('adds Escolhas for the swap of a table feature at a level without Habilidades, and not otherwise', () => {
+    const group = create(LevelUpSwapGroupSchema, {
+      group: 'feature:infusoes@mesa',
+      namePt: 'Infusões',
+      picks: [{ key: 'a', namePt: 'A' }],
+      pool: [{ key: 'b', namePt: 'B' }],
+    });
+    expect(steps(fighterOptions({ swapGroups: [group] }))).toEqual([
+      'class',
+      'hp',
+      'picks',
+      'summary',
+    ]);
+    // With the ability step, the panel is that step's own.
+    expect(steps(fighterOptions({ abilityScoreImprovement: true, swapGroups: [group] }))).toEqual([
+      'class',
+      'abilities',
+      'hp',
+      'summary',
+    ]);
   });
 
   it('adds Escolhas for a subclass, a feature option, a skill or expertise', () => {

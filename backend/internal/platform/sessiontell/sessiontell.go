@@ -34,7 +34,7 @@ type Tell interface {
 	// VitalsChanged tells the master and the character's player the character's vitals as they stand once the transaction committed.
 	VitalsChanged(characterID string)
 	// CharacterEvent tells the master and the owner (ownerUserID, empty for none) that a review changed or a dead character lives again
-	// (event "changes_requested", "resubmitted" or "revived"); a content-free hint.
+	// (event "changes_requested", "resubmitted" or "revived"), or that the infusions of a character changed (event "infusions_changed"); a content-free hint.
 	CharacterEvent(ownerUserID, characterID, event string)
 	// Replay marks the call as the repeat of a write already made (an idempotency key stored): nothing was written, so the number
 	// does not move, and what the steps of After send carries the number as it stands.

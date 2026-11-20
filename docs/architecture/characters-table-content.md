@@ -212,6 +212,46 @@ A piece that is carried adds nothing, a shield behind a two-handed weapon adds n
 The combat reads the attack lines and the armor class of the same derivation.
 The bonus belongs to the key: two weapons with one key are one row and share it, so a plain and a +1 copy of one weapon cannot be told apart.
 
+### Infusion records in the derivation
+
+`rules.Build.Infusions` holds the live infusion records of the character as holder.
+The loader fills it, and the sheet never stores it.
+A record is valid when all of these hold.
+The content knows its infusion key, and the host feature has its limit rule.
+The character has the host feature and the key is among its `feature_choice_keys`.
+The option has not lost its prerequisite.
+A gear record's piece is on the sheet, and no older record holds the same piece.
+No manual bonus stands on the piece of an item bonus record.
+The host feature is on the class (and subclass) the content gives it.
+The class level for the bonus and the limit is the character's level in that class.
+When two records hold one gear key, the oldest stands and the other is not valid now.
+An item bonus record on a key that already has a manual bonus is not valid: the manual bonus stands and the record gives no number.
+A record that is not valid gives no number and no name, takes no slot of the limit, and takes no attunement place.
+It still has its row in `Derived.Infusions`, with the reason in `ReasonPT`.
+When it becomes valid again it can bring the attunement count above the maximum; nothing ends the attunement for it.
+`Computed` on a row means the app handles the infusion, with a number or a mark.
+`Computed` false is a text only infusion, which the table applies.
+`ITEM_BONUS` on a gear key becomes an `ItemBonus` of that key inside the deriver, at `BonusAt(class level)`.
+The armor class, the attack lines, `weaponMarks` and `Derived.ItemModifiers` read the one path a manual bonus takes.
+`Build.ItemBonuses` of the caller is not changed.
+A class level below the first bonus step gives no number and no line.
+The bonus follows the manual rules: a carried piece adds nothing, and an infusion that asks for attunement adds nothing until the record is attuned.
+The bonus of a key applies to every copy of the key.
+`SPELL_FOCUS_BONUS` adds the bonus to `Spellcasting.AttackBonus`, so the spell attack lines carry it.
+It lists a line with the target `spell_attack`.
+The best focus that counts is the one that applies.
+The bonus does not reach the attacks of granted spells.
+A focus does not change the numbers of its own weapon.
+`REPEATING_AMMUNITION` leaves the weapon's attack without an ammunition key and keeps its improvised melee line.
+`RETURNING`, `RESISTANCE_LABEL` and `NONE` change no number; the resistance label's damage type is the record's parameter.
+The infusion's name is on the gear entry of its piece, on the attack of its weapon, and on each item modifier line of the record with `infusion_id`.
+`Derived.InfusionHosts` has, for each host feature of the character, the live limit at the class level and how many valid records use it.
+`rules.AttunedCount` counts a valid record that asks for attunement and is attuned like an attuned magic item.
+`MaxAttunements` stays the one place for the maximum.
+`rules.Validate` accepts a sheet that has a manual bonus and an infusion on one key: the manual bonus stands.
+A save refuses a manual `item_bonuses` entry that is new or changed against the stored sheet on a key that a valid item bonus record infuses (`rules.CheckManualBonuses`).
+The refusal is at `full.item_bonuses[i].key` and says to end the infusion or leave the manual bonus off.
+
 ## Table options
 
 `TABLE_CONTENT_KIND_OPTION` (`option` rows of `campaign_content`, key `option:<set>:<slug>@mesa`) is an option the master adds to one of the SRD's option sets: an Eldritch Invocation, a Metamagic option, a fighting style, a Pact Boon, a Hunter's Prey, Defensive Tactics, Multiattack or Superior Hunter's Defense, or, in the set `table_feature`, an option of a table feature's option list (`table_option.offered_by` is that feature's key).
@@ -220,6 +260,14 @@ The key names the set and the set never changes (`table_option.set`, `immutable`
 It goes through the same writes, archive mark, switch (`SetOptionSwitches`, `ListOptionSwitches` lists it with the kind), pack, "A classe mudou" notice ("A opção mudou") and player view as the other kinds; a player's copy drops a hidden class, option, pact or spell from the prerequisite and from the effects.
 A player's copy of an option leaves `offered_by` blank when the offering feature is hidden to the player, (archived or switched off), so its key never reaches a player.
 The choice engine reads it with the SRD options: `GetLevelUpOptions`, `PreviewChoices`, `CompleteCharacterChoices` and the sheet's own save list it in the choice of its set, blocked with its reason when the character lacks a prerequisite, and refuse a pick that does not qualify (`PREREQUISITE_UNMET`) or that the master switched off for the players (`SWITCHED_OFF_CONTENT`).
+
+## Swapping the option of a table feature at a level-up
+
+`TableFeature.swap_levels` travels with the rest of the feature: `tableFeatureOf` copies it into `rules.TableFeature.SwapLevels` (`featureSwapLevelsOf`), and the content pack (`ExportTableContent`, `ImportTableContent`) carries it as protojson, so a pack round-trip keeps it (`TestTheSwapLevelsOfAFeatureTravelInAContentPack`).
+`GetLevelUpOptions` and `PreviewLevelUp` append the feature groups of `LevelUpOffer.FeatureSwaps` to `LevelUpOptions.swap_groups` (group = the feature's key, `name_pt` = its name), after the table rule has cleared the ASI swap groups and before the hide-from-player step.
+`LevelUpChoices.swap_feature_options` (`LevelUpPickSwap`, at most 20) is read by `levelUpChoicesFromProto` into `rules.LevelUpChoices.FeatureSwaps`; `checkLevelUpKeys` bounds its key lengths; `newLevelUpPlan` refuses with `SWAP_NOT_ALLOWED` (`choices.swap_feature_options`) what the offer does not allow.
+`levelUpNames` names the group, the given-up and the taken option, so the level-up's own row names the swap, and earlier `ListLevelUps` rows are not touched.
+`LevelUpCharacter` calls the optional `OptionSwaps` hook (`optionswaps.go`, `Service.SetOptionSwaps`) once per level that swaps at least one such option, in the level-up's transaction right after the sheet and the record are written; its error aborts the level, and nothing is connected by default. The hook may run more than once for one level (the transaction retries) and must do nothing outside `tx`. Before it, `endGivenUpOptions` clears in the same transaction what each given-up option had stored in the character's own tables: the used counts of its resources (`character_vitals.resources_used`, for the keys of the resources whose `Source` is the option and that the new sheet no longer defines) and the states it started (`characters.active_states`, keys of the states whose `Source` is the option); what other modules own is theirs to clear through the hook. `FeatureSwapLevels.levels` holds at most 20 entries.
 
 ## Table class features
 

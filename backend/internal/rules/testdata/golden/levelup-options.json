@@ -47,6 +47,7 @@
     "NewChoices": null,
     "CanSwapInvocation": false,
     "PickSwaps": null,
+    "FeatureSwaps": null,
     "ProficiencyBonusBefore": 2,
     "ProficiencyBonusAfter": 2,
     "SlotsBefore": [
@@ -116,6 +117,7 @@
     "NewChoices": null,
     "CanSwapInvocation": false,
     "PickSwaps": null,
+    "FeatureSwaps": null,
     "ProficiencyBonusBefore": 4,
     "ProficiencyBonusAfter": 4,
     "SlotsBefore": [
@@ -222,6 +224,7 @@
     "NewChoices": null,
     "CanSwapInvocation": false,
     "PickSwaps": null,
+    "FeatureSwaps": null,
     "ProficiencyBonusBefore": 2,
     "ProficiencyBonusAfter": 2,
     "SlotsBefore": [
@@ -622,6 +625,7 @@
         ]
       }
     ],
+    "FeatureSwaps": null,
     "ProficiencyBonusBefore": 2,
     "ProficiencyBonusAfter": 2,
     "SlotsBefore": [
@@ -849,6 +853,7 @@
     "NewChoices": null,
     "CanSwapInvocation": false,
     "PickSwaps": null,
+    "FeatureSwaps": null,
     "ProficiencyBonusBefore": 3,
     "ProficiencyBonusAfter": 3,
     "SlotsBefore": [
@@ -925,6 +930,7 @@
     "NewChoices": null,
     "CanSwapInvocation": false,
     "PickSwaps": null,
+    "FeatureSwaps": null,
     "ProficiencyBonusBefore": 3,
     "ProficiencyBonusAfter": 3,
     "SlotsBefore": [
@@ -1027,6 +1033,7 @@
     "NewChoices": null,
     "CanSwapInvocation": false,
     "PickSwaps": null,
+    "FeatureSwaps": null,
     "ProficiencyBonusBefore": 2,
     "ProficiencyBonusAfter": 2,
     "SlotsBefore": [
@@ -1239,6 +1246,7 @@
     "NewChoices": null,
     "CanSwapInvocation": true,
     "PickSwaps": null,
+    "FeatureSwaps": null,
     "ProficiencyBonusBefore": 2,
     "ProficiencyBonusAfter": 3,
     "SlotsBefore": [
@@ -1417,6 +1425,7 @@
         ]
       }
     ],
+    "FeatureSwaps": null,
     "ProficiencyBonusBefore": 2,
     "ProficiencyBonusAfter": 2,
     "SlotsBefore": [

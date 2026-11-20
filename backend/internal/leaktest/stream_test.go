@@ -218,6 +218,12 @@ func checkStream(t *testing.T, w *world, got *answers) {
 			t.Errorf("no stream received a %q event, and the script says nothing about it: make the script cause one, or list it in notTriggered with the reason (what each stream got: %v)", c, cases)
 		}
 	}
+	// the infusion the script put on the unclaimed character has no owner: the master alone hears it
+	for name, n := range cases {
+		if heard := n["character_infusions_changed"]; (name == w.master.name) != (heard > 0) {
+			t.Errorf("%s's stream heard %d character_infusions_changed events: only the master's stream hears the infusions of a character nobody owns", name, heard)
+		}
+	}
 	w.assertAttackHit(t, watchers)
 	w.streamSeen = cases
 }
@@ -400,6 +406,14 @@ func (w *world) streamScript() {
 
 	// -- the nudge: the master calls Ana's character; only Ana's stream hears it, an event with no content
 	must(m.play.NudgePlayer(ctx, rq(&playv1.NudgePlayerRequest{CampaignId: w.campaign, CharacterId: w.pens.GetId()})))
+
+	// -- an infusion on the gear of the character the master keeps for a player to claim: nobody owns it, so the hint
+	// goes to the master alone, as a hint with no content (the owner's own hint is in TestAnInfusionIsTheOwnersAndTheMastersAlone)
+	w.importArtificer(packBladeName, packPlateName, packSealName, packFocusName, false)
+	w.reserved = must(m.characters.UpdateCharacter(ctx, rq(&charactersv1.UpdateCharacterRequest{
+		CampaignId: w.campaign, CharacterId: w.reserved.GetId(), Revision: w.reserved.GetRevision(), Name: w.reserved.GetName(), Sheet: w.artificerSheet(false, dagger),
+	}))).GetCharacter()
+	w.infuse(m, w.reserved.GetId(), infusionBlade, dagger, "")
 
 	// -- the conversation: a line for Ana alone reaches her stream and the master's, not Caio's (RN-36); a hint
 	// that the master is typing goes to the players, with no content

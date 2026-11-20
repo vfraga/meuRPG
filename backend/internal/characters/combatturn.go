@@ -82,17 +82,30 @@ func (s *Service) fighterOf(ctx context.Context, tx pgx.Tx, campaignID, characte
 	}
 	switch {
 	case sheet.GetFull() != nil:
-		// A druid in Wild Shape fights as the beast (MR-037).
-		d := derive(content, sheet.GetFull(), rows[0].WildShapeBeast, rows[0].ActiveStates)
-		d.ArmorUntrained = armorTrainingOf(d, rows[0].Kind, rows[0].WildShapeBeast)
-		if rows[0].Kind != kindPlayer {
-			d = withoutStates(d) // only a player's character keeps states: they live in its vitals
+		d, err := s.fullFighter(ctx, q, content, sheet.GetFull(), rows[0].ID, rows[0].Kind, rows[0].WildShapeBeast, rows[0].ActiveStates)
+		if err != nil {
+			return "", rules.Derived{}, nil, s.dbError(ctx, "read the infusions of a character for a combat", err)
 		}
 		return rows[0].Kind, d, content, nil
 	case sheet.GetBasic() != nil:
 		return rows[0].Kind, basicDerived(content, sheet.GetBasic()), content, nil
 	}
 	return "", rules.Derived{}, nil, s.dbError(ctx, "read a character for a combat", fmt.Errorf("%w: the sheet of character %s has no content", errCorruptDocument, id))
+}
+
+// fullFighter derives a full sheet for a combat, with the live infusion records of the character: a druid in Wild Shape
+// fights as the beast (MR-037), and only a player's character keeps states, since they live in its vitals.
+func (s *Service) fullFighter(ctx context.Context, q *charactersdb.Queries, content *rules.Content, full *charactersv1.FullSheet, id, kind string, beast *string, active []byte) (rules.Derived, error) {
+	infusions, err := s.holderInfusions(ctx, q, id)
+	if err != nil {
+		return rules.Derived{}, err
+	}
+	d := derive(content, full, beast, active, id, infusions)
+	d.ArmorUntrained = armorTrainingOf(d, kind, beast)
+	if kind != kindPlayer {
+		d = withoutStates(d)
+	}
+	return d, nil
 }
 
 // withoutStates is the derived sheet of a character that cannot have temporary states: no

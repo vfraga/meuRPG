@@ -69,7 +69,7 @@ The fire event (`readied_fired` with `opened`) writes no log line.
 - **attack**: `RollAttack` as a reaction (`as_reaction`), with the cover and the fog as usual.
   `AnswerReaction` builds the request from the row.
   The target is the one named at Ready, or `creature_ids[0]`.
-  The d20 is the typed one, or the app's.
+  The d20 is the typed one (`typed`), the table's (`d20_faces`, with `roll_mode` and `mode_reason`), or the app's.
   `RollAttack` with `catch_window_id` set to the READIED window does the same.
   The roll waits for the windows any attack roll opens first: Cutting Words, Protection, the master's check of "Sempre" (`holdAttackRoll`).
   It also waits for its roller's answer about a die (a Bardic Inspiration die, Lucky, Stroke of Luck), kept in `inspiration_holds` (`readiedHeldForDie`).
@@ -285,6 +285,15 @@ The master ends such a hold without its player: it answers a roll held for a die
 The undo of a change that broke a held spell makes the row wait, but does not open its closed window again: the master fires it again.
 A fire whose window was answered comes back after the answer's undo.
 The lost line of a defeat or a dismissal is written before the change's own event; the undo of that change goes past it and the row stays lost.
+
+The answer carries the table's dice as the cast and the attack do.
+`typed` (one d20 face, kept for old clients), `pool_sum` (the sum of a pool: Sleep, Color Spray), `d20_faces` (the physical d20s, the pair for advantage or disadvantage), `roll_mode` and `mode_reason` are copied one to one into the `RollAttackRequest` or the `CastSpellRequest` the release builds (`useReadiedAttack`, `useReadiedSpell`).
+Every check of the cast or the attack applies: the number and range of the faces, the mode rules, the table's dice mode (`mustRollThisWay`).
+The answer refuses what the released action does not use (`releaseFieldsOf`, `castFlow.checkReleaseDice`, `diceNotUsed`) with `invalid_argument`, and the window stays open.
+`ray_rolls` (the physical d20s of each attack roll of a spell with several, the rays of Scorching Ray, one entry per attack roll in the order of the targets and of the rays each target takes) is copied too, into `CastSpellRequest.ray_rolls`, and the cast checks it (`readRayRolls`, `checkRayRolls`): a held Scorching Ray is released at a physical-dice table with one entry per ray, and `invalid_argument` on a pass, another kind of window, a non-spell row, a readied attack, a single-attack-roll spell or a roll beside it (`diceNotUsed`, `releaseFieldsOf`).
+A pool sum outside the range of the dice the spell rolls at its slot is refused in `prepare` (`checkPool`), before a Counterspell can hold the release, so nothing is spent and no window opens.
+The count of faces of a ray depends on that ray's mode, which is read when the ray is rolled (`d20With`): an earlier ray spends what it used, and the windows may change the mode, so a wrong count is met only at the replay of a held release.
+The replay runs in a savepoint (`releaseHold`): a refusal drops the held cast and takes with it everything the replay had written, so the slot, the action and the damage of the rays rolled are not spent and the readied row stays waiting with its READIED window open, for the readier to answer again.
 
 ## Events and log
 

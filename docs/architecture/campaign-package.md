@@ -20,6 +20,7 @@ The cleanup rules of the bucket are in [Operations](../operations/reference.md#c
 
 A package carries what a character's magic items spent (`character_item_charges`: the charges used, the loss, the dawns counted and the pending d20, one `PackageItemCharge` for each entry of the sheet) and the pieces of ammunition it holds (`character_ammunition`: one `PackageAmmunition` for each kind, the quantity only), inside the character's own entry.
 What a combat fired and the combat it belongs to do not travel.
+The infusions of an Artificer (`character_infusions`) do not travel either: the export reads the stored sheet, which never holds them, and the import drops the list from a sheet that brings one, so an imported character has no infusion records.
 A package never carries the players' private notes, the session history and logs, accounts (ids, e-mails, names), owners and members, invites and claim links, or a player's fog memory.
 A package also leaves play out: traps come back armed, treasures unfound, nothing a player found out or remembers.
 Which maps and points are revealed is preparation and stays.

@@ -20,7 +20,8 @@ import { createCapitaoRPC, createMiraRPC, playedCombatRPC, putOnStageRPC, upload
 import { printRoute, tableForPrinting } from './print-support';
 import { tableWithOpenChoices } from './choices-support';
 import { optionRowsTable } from './option-rows-support';
-import { classCard, passClassStep, tableForLevelUp, toren as levelUpToren } from './levelup-support';
+import { classCard, markMilestoneRPC, passClassStep, tableForLevelUp, toren as levelUpToren } from './levelup-support';
+import { allowRulePickSwapRPC, doran, postureSheetRPC } from './option-swap-support';
 import { aurora, auroraSheet, beginPlacedCombatRPC, nael, naelSheet, orla, orlaSheet, spendForRestRPC } from './rests-support';
 import { castSheet, choiceCard, openCastOf, pickChoice, pickSlotRadio, pickTargetOf, tableForCasting } from './casting-support';
 import { movingTable, paintRPC, pickRadio, tapSquare } from './move-support';
@@ -3584,6 +3585,82 @@ test('o subir de nível passa no axe e nas conferências de layout no tema claro
   test.setTimeout(900_000);
   await scanLevelUpScreens(browser, 'light', 320);
 });
+
+// "Trocar escolhas" with a table feature's group (#715): at a level with no ability step the one panel sits in "Escolhas"
+// (closed, a group open, half chosen, whole, then the summary); at an Ability Score Improvement level it holds the table rule's
+// group and the feature's together. Doran, Guerreiro 4 of the table's "Mestre das Posturas", goes to 5 and then to 6.
+async function scanOptionSwapScreens(browser: Browser, colorScheme: 'light' | 'dark', width: number): Promise<void> {
+  const where = `${colorScheme === 'light' ? 'no tema claro' : 'no tema escuro'}, a ${width} px`;
+  const height = width < 768 ? 844 : 800;
+  const master = await browser.newContext({ storageState: authStatePath('Mestre Teste'), colorScheme, viewport: { width, height } });
+  const player = await browser.newContext({ storageState: authStatePath('Jogador Teste'), colorScheme, viewport: { width, height } });
+  const m = await master.newPage();
+  const p = await player.newPage();
+  let campaignId = '';
+  try {
+    await m.goto('/');
+    await p.goto('/');
+    const table = await tableForLevelUp(m, p, `Acessibilidade troca de opção ${Date.now()}`, {
+      build: doran,
+      prepare: (id) => postureSheetRPC(m, id, 4, [5, 6]),
+    });
+    campaignId = table.campaignId;
+    const sheet = `/campaigns/${campaignId}/characters/${table.characterId}`;
+    await p.goto(`${sheet}/level-up`);
+    await passClassStep(p);
+    await p.getByRole('button', { name: 'Próximo' }).click();
+    await expect(p.getByText('Passo 3 de 4 · Escolhas')).toBeVisible();
+    const panel = p.getByRole('region', { name: 'Trocar escolhas' });
+    await expect(panel).toBeVisible();
+    await expectScreenPasses(p, `Escolhas, o painel "Trocar escolhas" sem troca ${where}`);
+    await panel.getByText('Posturas', { exact: true }).click();
+    await expect(panel.getByRole('radiogroup', { name: 'Abrir mão de' })).toBeVisible();
+    await expectScreenPasses(p, `Escolhas, a troca da característica aberta ${where}`);
+    await panel.getByRole('radiogroup', { name: 'Abrir mão de' }).getByText('Postura da Garça').click();
+    await expectScreenPasses(p, `Escolhas, a troca com meia escolha ${where}`);
+    await panel.getByRole('radiogroup', { name: 'Pegar no lugar' }).getByText('Postura do Lobo').click();
+    await expect(panel.getByRole('status')).toHaveText('Trocar Postura da Garça por Postura do Lobo');
+    await expectScreenPasses(p, `Escolhas, a troca escolhida ${where}`);
+    await p.getByRole('button', { name: 'Próximo' }).click();
+    await expect(p.getByText('Passo 4 de 4 · Resumo')).toBeVisible();
+    await expectScreenPasses(p, `Resumo com a troca da característica ${where}`);
+    await p.getByRole('button', { name: 'Confirmar o nível 5' }).click();
+    await expect(p.getByText('Doran subiu para o nível 5.').first()).toBeVisible();
+
+    // Level 6 has an Ability Score Improvement: the table's rule and the feature offer their groups in one panel.
+    await allowRulePickSwapRPC(m, campaignId);
+    await markMilestoneRPC(m, campaignId, 'Chegar ao Vale Seco 2', [table.characterId]);
+    await p.goto(`${sheet}/level-up`);
+    await passClassStep(p);
+    await expect(p.getByText('Passo 2 de 4 · Habilidades')).toBeVisible();
+    const both = p.getByRole('region', { name: 'Trocar escolhas' });
+    await expect(both.getByRole('radio', { name: 'Estilo de luta' })).toBeVisible();
+    await expect(both.getByRole('radio', { name: 'Posturas' })).toBeVisible();
+    await expectScreenPasses(p, `Habilidades, o painel com o conjunto da regra e o da característica ${where}`);
+    await both.locator('label.opt').filter({ hasText: 'Posturas' }).click();
+    await both.getByRole('radiogroup', { name: 'Abrir mão de' }).getByText('Postura do Touro').click();
+    await both.getByRole('radiogroup', { name: 'Pegar no lugar' }).getByText('Postura do Urso').click();
+    await both.getByText('Estilo de luta', { exact: true }).click();
+    await both.getByRole('radiogroup', { name: 'Abrir mão de' }).getByText('Defesa').click();
+    await both.getByRole('radiogroup', { name: 'Pegar no lugar' }).getByText('Duelismo').click();
+    await both.locator('label.opt').filter({ hasText: 'Posturas' }).click();
+    await expect(both.getByRole('status')).toHaveText('Trocar Postura do Touro por Postura do Urso');
+    await expectScreenPasses(p, `Habilidades, duas trocas, uma de cada tipo ${where}`);
+  } finally {
+    if (campaignId) {
+      await endOpenSessionRPC(m, campaignId);
+    }
+    await master.close();
+    await player.close();
+  }
+}
+
+for (const [scheme, width] of [['light', 1280], ['dark', 390], ['light', 768], ['dark', 1280]] as const) {
+  test(`a troca de uma opção de característica no subir de nível passa no axe e nas conferências de layout no tema ${scheme === 'light' ? 'claro' : 'escuro'}, a ${width} px`, { tag: ['@a11y', '@MR-040'] }, async ({ browser }) => {
+    test.setTimeout(300_000);
+    await scanOptionSwapScreens(browser, scheme, width);
+  });
+}
 
 // The choices a locked sheet left open (PM-05): the sheet's banner, the page "Completar escolhas pendentes" with the
 // choice missing, half picked and full, the save, the page with nothing left, and the master's tag on the campaign.

@@ -150,7 +150,7 @@ func (x *deriver) resourcesAndActions() {
 	// Max: a second class gives new effects but no extra use (SRD Multiclassing).
 	at := map[string]int{}
 	for _, a := range x.active {
-		if a.effect.Type != "resource" || !x.applies(a) {
+		if a.effect.Type != "resource" || !x.applies(a) || x.countedByInfusionRule(a) {
 			continue
 		}
 		if r, ok := x.resource(a); ok {
@@ -176,6 +176,14 @@ func (x *deriver) resourcesAndActions() {
 	}
 	x.states()
 	x.hooks()
+}
+
+// countedByInfusionRule says a resource effect belongs to a feature that has the typed infusion limit: the infusion
+// block counts the live records against that limit, so a counter of the same feature would be a second count of one
+// thing and the sheet does not show it. A feature with no infusion rule keeps its resource.
+func (x *deriver) countedByInfusionRule(a activeEffect) bool {
+	_, hasRule := x.c.infusions.rules[a.owner]
+	return hasRule
 }
 
 // extraAttacks sets AttacksPerAction from the extra_attack effects: the

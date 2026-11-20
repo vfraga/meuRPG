@@ -2068,7 +2068,7 @@ vitals Brisa | <nil> | 0 | {1,0,0,0,0,0,0,0,0} | 0
 refused failed_precondition: this is not how the campaign has you roll your dice
 state unchanged
 == refused a spell attack with a face for several targets ==
-refused invalid_argument: d20_face fits a single target: use roll_in_app for several
+refused invalid_argument: d20_face fits a single attack roll (ray): type ray_rolls for several, or use roll_in_app
 state unchanged
 == refused a spell attack with a pool ==
 refused invalid_argument: pool_sum is for a spell that rolls a pool of dice

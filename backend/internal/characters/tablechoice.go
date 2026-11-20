@@ -255,13 +255,16 @@ type reader struct {
 	master bool
 }
 
-// say is the issue's sentence for the reader: a lost prerequisite and a notice are built for the reader, any other is as stored.
+// say is the issue's sentence for the reader: a lost prerequisite and a notice are built for the reader, the master reads
+// an issue's named sentence, any other is as stored.
 func (r reader) say(is rules.Issue) string {
 	switch {
 	case is.Lost != nil:
 		return is.Lost.SentencePT(r.name, r.master)
 	case is.Idle != nil:
 		return is.Idle.SentencePT(r.name)
+	case is.Named != "" && r.master:
+		return is.Named
 	}
 	return is.Message
 }
@@ -271,7 +274,7 @@ func (r reader) say(is rules.Issue) string {
 // the derived sheet's issues, so the two lists stay aligned.
 func (r reader) tell(d *rulesv1.DerivedSheet, issues []rules.Issue) {
 	for i, is := range issues {
-		if is.Lost != nil && i < len(d.GetIssues()) {
+		if (is.Lost != nil || is.Named != "") && i < len(d.GetIssues()) {
 			d.Issues[i].Message = r.say(is)
 		}
 	}

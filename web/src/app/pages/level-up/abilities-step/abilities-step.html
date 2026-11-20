@@ -88,10 +88,6 @@
   }
 </section>
 
-@if (s().draft.swap.groups().length > 0) {
-  <app-swap-picker [swap]="s().draft.swap" />
-}
-
 <section class="mr-panel" aria-labelledby="asi-effect">
   <h2 class="mr-panel__title" id="asi-effect">{{ title() ? 'O que muda com ' + title() : 'O que muda com o aumento' }}</h2>
   @if (changes().length > 0) {
@@ -103,6 +99,10 @@
     <p class="note">Constituição, se fosse a escolhida, também muda os pontos de vida (passo 2).</p>
   }
 </section>
+
+@if (s().draft.swap.groups().length > 0) {
+  <app-swap-picker [swap]="s().draft.swap" />
+}
 
 @if (!hasFeats()) {
   <p class="srd" role="note">

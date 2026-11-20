@@ -159,6 +159,11 @@ type content struct {
 	// classFeatureOf says, for each table class feature, the class and the level it is at.
 	classFeatureOf map[string]ClassFeatureEntry
 	optionPrereq   map[string]TableOptionPrerequisite
+	// featureSwaps are the class levels at which the picks of a table feature's option pool may be swapped, by the
+	// feature's key (overlay_features.go); a feature that never allows it is not here.
+	featureSwaps map[string]FeatureSwapLevels
+	// infusions are the table's infusion options, their host features and the hosts' limits (overlay_infusion.go).
+	infusions infusionBook
 	// creatureOf says, for each table creature, the SRD creature it is made from (overlay_creature.go).
 	creatureOf map[string]CreatureTableEntry
 	// weaponOf lists the table's weapons by key (overlay_weapon.go).

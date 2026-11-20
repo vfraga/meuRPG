@@ -68,6 +68,29 @@ func groupPools(entries []*optionEntry) []*pool {
 	return pools
 }
 
+// poolOptionsOf is the options of the pool that holds the choice target among entries: the options of every choice
+// that shares one with it, one with a choice that does (and so on), in the order the choices list them. Only the
+// choices' options are read.
+func poolOptionsOf(entries []*optionEntry, target *optionEntry) []string {
+	var out []string
+	for _, p := range groupPools(entries) {
+		if !slices.Contains(p.entries, target) {
+			continue
+		}
+		for _, e := range entries {
+			if !slices.Contains(p.entries, e) {
+				continue
+			}
+			for _, o := range e.options {
+				if !slices.Contains(out, o) {
+					out = append(out, o)
+				}
+			}
+		}
+	}
+	return out
+}
+
 // offersAnyOf says the choice offers an option of the pool.
 func (p *pool) offersAnyOf(e *optionEntry) bool {
 	return slices.ContainsFunc(e.options, func(o string) bool { return p.options[o] })

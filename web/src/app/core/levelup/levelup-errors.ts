@@ -48,13 +48,25 @@ function retiredChoiceStep(field: string): StepKey | null {
   return /spell|cantrip/.test(field) ? 'spells' : null;
 }
 
-/** The step a refused rule belongs to, so the message can send the player there. */
-export function refusalStep(reason: LevelUpRefusalReason, field = ''): StepKey | null {
+/** The step a refused rule belongs to, so the message can send the player there; `abilityStep` says whether the level has
+ * the Habilidades step (where the swap panel is, if so). */
+export function refusalStep(
+  reason: LevelUpRefusalReason,
+  field = '',
+  abilityStep = true,
+): StepKey | null {
   if (
     reason === LevelUpRefusalReason.ARCHIVED_CHOICE ||
     reason === LevelUpRefusalReason.SWITCHED_OFF_CHOICE
   ) {
     return retiredChoiceStep(field);
+  }
+  if (
+    reason === LevelUpRefusalReason.SWAP_NOT_ALLOWED &&
+    field.startsWith('choices.swap_feature')
+  ) {
+    // The one panel "Trocar uma escolha" is in Habilidades where the level has that step, else in Escolhas.
+    return abilityStep ? 'abilities' : 'picks';
   }
   return REFUSAL_STEPS[reason] ?? null;
 }
@@ -155,7 +167,7 @@ export type LevelUpFailure =
  * that was broken (`LevelUpRefusal`) or why the character cannot level up
  * (`CharacterBlocked`), and the rest are plain codes.
  */
-export function describeLevelUpFailure(err: unknown): LevelUpFailure {
+export function describeLevelUpFailure(err: unknown, abilityStep = true): LevelUpFailure {
   const e = ConnectError.from(err, Code.Unavailable);
   if (e.code === Code.Aborted) {
     return {
@@ -170,7 +182,7 @@ export function describeLevelUpFailure(err: unknown): LevelUpFailure {
       return {
         kind: 'refusal',
         message: refusalMessage(refusal),
-        step: refusalStep(refusal.reason, refusal.field),
+        step: refusalStep(refusal.reason, refusal.field, abilityStep),
       };
     }
     const [blocked] = e.findDetails(CharacterBlockedSchema);

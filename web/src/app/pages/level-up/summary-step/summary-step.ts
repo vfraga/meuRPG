@@ -26,11 +26,6 @@ import { LevelUpSession } from '../level-up-session';
           }
         </p>
       }
-      @if (s().draft.swap.summary(); as swap) {
-        <p class="feat">
-          <strong>{{ swap }}</strong>
-        </p>
-      }
       <app-change-rows [rows]="s().rows()" />
     </section>
     <p class="rest">

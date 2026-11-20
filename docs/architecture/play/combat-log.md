@@ -137,6 +137,16 @@ The master's line says when no square next to the mount was free.
 The lines are the master's alone when the rider or the mount is hidden (RN-10).
 A rider that lands on its feet through the dismount window has the reaction line "usou a reação para desmontar de pé", and a rider that falls from it has the line of `rider_thrown` with no cause (`MOUNT_SAVE_CAUSE_UNSPECIFIED`) and no DC.
 The dismount's own answer writes `reaction_answered`, and a pass is no line of its own.
+The infusion events are `infusion_infused`, `infusion_moved` and `infusion_ended`.
+They are session events with no combat of their own.
+`Service.InfusionChanged` writes one for each change of an Artificer's records when the campaign has an open session, and none when it has none.
+Their payload is `infusion.Event` (`play/infusion`).
+They have no handler in `logHandlers`, so no line of the log is made from them.
+No read lists them: the log reads the events of a combat, and the highlights and the summary read the kinds they name.
+The undo meets them only as events that close its chain ([Undo](undo.md)).
+The combat that holds the artificer is touched and told as changed (`encounter_changed`).
+When the combatant is hidden, only the master is told.
+So an open screen reads its turn and its attack options again.
 A new kind is a row in `session_event_kinds` (a migration) and an `event...` constant in the code; `TestEveryEventKindOfTheCodeIsInTheTable` fails if one is missing.
 
 A payload is at most 16 KiB of the database's text of the JSON (a `CHECK` of `session_events`).

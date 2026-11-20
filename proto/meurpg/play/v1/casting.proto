@@ -343,9 +343,7 @@ message CastingSpell {
   // What the server does with it when it takes effect.
   CastingEffectKind effect = 12;
   // Whether the cast rolls dice (a healing spell, False Life): it needs `roll_in_app` or
-  // `typed_sum`. `roll_dice` is the dice at the spell's own level, "2d8".
-  // A cast through a grant rolls the dice at the grant's `cast_level` (`grants[].cast_level`), so a client that
-  // rolls physical dice reads the count at that level, not this one.
+  // `typed_sum`. `roll_dice` is the dice at the spell's own level, "2d8"; `dice_by_level` has the other levels.
   bool rolls_dice = 13;
   string roll_dice = 14;
   // How many targets the spell takes at its own level (0: any number, an area; the
@@ -369,6 +367,16 @@ message CastingSpell {
   // (CastSpellOutsideCombatRequest.granted_by = source_key). The spell is listed once, even
   // when the character's class has it too.
   repeated CastingGrant grants = 22;
+  // The dice a cast rolls at each level it can be cast at: the spell's own level to 9th, a cantrip's own only.
+  // A client reads the entry of the slot's level, else of the grant's `cast_level`, else of the spell's own.
+  // Empty when the cast rolls none.
+  repeated CastingDice dice_by_level = 23;
+}
+
+// CastingDice is the dice a cast rolls at one level, "3d8".
+message CastingDice {
+  int32 level = 1;
+  string dice = 2;
 }
 
 // CastingGrant is a granted_spell effect that gives a spell the character casts outside a combat.

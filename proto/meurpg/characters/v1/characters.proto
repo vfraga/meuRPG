@@ -1619,6 +1619,7 @@ message FullSheet {
   // A bonus counts only while the piece is equipped and, when it asks for attunement, attuned.
   // The bonus of a weapon key applies to every copy of that key.
   // A client that removes a piece from the sheet must remove its bonus in the same request, or the save is refused.
+  // A bonus the save adds or changes on a piece an infusion gives its bonus is refused (the entry's `key`): end the infusion first.
   repeated ItemBonus item_bonuses = 43;
   // The magic items the character carries that are not weapons, armor or a shield with a +N
   // (a ring, a cloak): at most 20, each `key` an `item:*` key of the catalog that is not a
@@ -1636,6 +1637,59 @@ message FullSheet {
   // A short rest was taken since the last long rest: a proficiency that lasts until a short rest is spent (TableEffect.duration).
   // Only a rest writes it.
   bool short_rested = 47;
+  // The infusions this character carries on its gear and the ones it put on gear or objects, the ones that ended not
+  // included. The server fills it on every read, and a save ignores it and never stores it. Only the character's owner
+  // and the master read it.
+  repeated SheetInfusion infusions = 48;
+}
+
+// SheetInfusion is one infusion a character put on a piece of gear or on an object.
+message SheetInfusion {
+  // The record's id.
+  string id = 1;
+  // The table content key of the infusion (an option of the artificer-like class's feature).
+  string infusion_key = 2;
+  // The infusion's name in Portuguese.
+  string name_pt = 3;
+  // The character whose gear carries the infusion. In this version only the infuser is accepted, so it is always the
+  // infuser itself.
+  string holder_character_id = 4;
+  // What the infusion is on: a piece of the holder's sheet, or a named object.
+  InfusionItemKind item_kind = 5;
+  // For GEAR: the gear key of the holder's sheet. Empty for an object.
+  string item_key = 6;
+  // For OBJECT: the name the player gave the object.
+  string object_name_pt = 7;
+  // The piece's name in Portuguese: the gear's name, or the object's.
+  string item_name_pt = 8;
+  // The damage type key the holder picked, for a resistance infusion; empty otherwise.
+  string parameter = 9;
+  // When the infusion was put on, or last moved: InfuseItem sets it and MoveInfusion sets it again. The oldest valid
+  // infusion of a holder is the first to end or to give way at the limit.
+  google.protobuf.Timestamp since = 10;
+  // The holder is attuned to the piece.
+  bool attuned = 11;
+  // The infusion needs attunement to count.
+  bool requires_attunement = 12;
+  // True when the app gives the infusion's numbers; false means text only.
+  bool computed = 13;
+  // False when the infusion gives no numbers and takes no slot. The reasons: the content no longer has the infusion, the
+  // sheet no longer has the feature that holds it or no longer knows it, the infusion lost a prerequisite, the piece is
+  // no longer on the sheet, the piece has a manual magic bonus, the record is of another artificer, an older valid
+  // infusion is on the same piece, or the character is over the limit (the oldest records give way, and none of them
+  // ends by itself).
+  bool valid_now = 14;
+  // The bonus the infusion gives now, 0 when it gives none.
+  int32 bonus = 15;
+}
+
+// InfusionItemKind says what an infusion is on.
+enum InfusionItemKind {
+  INFUSION_ITEM_KIND_UNSPECIFIED = 0;
+  // A piece of the holder's gear: armor, a shield or a weapon the sheet lists.
+  INFUSION_ITEM_KIND_GEAR = 1;
+  // An object the player names (a focus, a tool): the sheet has no row for it.
+  INFUSION_ITEM_KIND_OBJECT = 2;
 }
 
 // DailyPick is the answer to one daily choice.
@@ -2860,7 +2914,10 @@ message LevelUpOptions {
   // Improvement, when the table plays with the rule "Trocar uma escolha no aumento de
   // atributo" (TableRules.pick_swap_allowed). Empty at the other levels and where the
   // rule is off. The swap is LevelUpChoices.swap_pick; the warlock's own invocation
-  // swap stays can_swap_invocation.
+  // swap stays can_swap_invocation. The options of a table feature that allows a swap at this
+  // class level (TableFeature.swap_levels) are also here, one group for each feature, whatever
+  // the rule and whether the level has an Ability Score Improvement: `group` is the feature's key.
+  // Their swap is LevelUpChoices.swap_feature_options.
   repeated LevelUpSwapGroup swap_groups = 44;
 
   // Multiclassing (SRD 5.1, "Multiclassing"). is_new_class says the character
@@ -3034,7 +3091,8 @@ message LevelUpFeatureChoice {
 
 // LevelUpSwapGroup is a group of picks one of which the level may swap for another.
 message LevelUpSwapGroup {
-  // The group: "cantrip", "fighting_style", "metamagic", "invocation" or "pact_boon".
+  // The group: "cantrip", "fighting_style", "metamagic", "invocation" or "pact_boon", or the key of a
+  // table feature whose options may be swapped at this level (TableFeature.swap_levels).
   string group = 1;
   string name_pt = 2;
   // The picks the character has in the group, which it may give up.
@@ -3129,6 +3187,13 @@ message LevelUpChoices {
   // One pick given up for another of the same group, at a level with an Ability Score
   // Improvement, when the table allows it (TableRules.pick_swap_allowed). Unset for none.
   LevelUpPickSwap swap_pick = 16;
+  // The swaps of a table feature's options (TableFeature.swap_levels), at the class levels the feature
+  // allows. Each entry has `group` = the feature's key (the group of the same name in
+  // LevelUpOptions.swap_groups), `from_key` a pick of the feature's pool the character gives up and `to_key` another
+  // option of the pool it takes. At most one swap for each feature; the table's rule
+  // "Trocar uma escolha no aumento de atributo" does not matter, and it does not need an Ability Score Improvement.
+  // `swap_pick` and the other swaps of the level stay as they are. At most 20.
+  repeated LevelUpPickSwap swap_feature_options = 17 [(meurpg.options.v1.max_items) = 20];
 }
 
 // LevelUpRefusalReason says why the rules refuse a set of choices, so the app
@@ -3224,7 +3289,10 @@ enum LevelUpRefusalReason {
   LEVEL_UP_REFUSAL_REASON_LATE_CHOICE_MISSING = 29;
   // A swap of a pick was asked where the table does not use the rule, at a level with
   // no Ability Score Improvement, or for a pick or pool option the group does not offer.
-  // `field` is "choices.swap_pick".
+  // `field` is "choices.swap_pick". The same for a swap of a table feature's options
+  // (`field` "choices.swap_feature_options"): the feature does not allow a swap at this level,
+  // the swap names a pick or option the feature's pool does not offer, or two swaps repeat a
+  // feature, a given-up option or a taken one.
   LEVEL_UP_REFUSAL_REASON_SWAP_NOT_ALLOWED = 30;
 }
 

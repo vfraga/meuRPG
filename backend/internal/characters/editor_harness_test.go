@@ -19,6 +19,7 @@ import (
 
 	charactersv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/characters/v1"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/sessiontell"
+	"github.com/PuraFome/meuRPG/backend/internal/play/link"
 	"github.com/PuraFome/meuRPG/backend/internal/rules"
 )
 
@@ -357,6 +358,10 @@ func (g *gearHostSpy) GearChanged(_ context.Context, _ pgx.Tx, _, _ string, t se
 }
 
 func (*gearHostSpy) EquipInCombat(context.Context, pgx.Tx, string, string, string, EquipChange, sessiontell.Tell) error {
+	return nil
+}
+
+func (*gearHostSpy) InfusionChanged(context.Context, pgx.Tx, string, string, []link.InfusionChange, sessiontell.Tell) error {
 	return nil
 }
 

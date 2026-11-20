@@ -282,9 +282,19 @@ func (s *Service) useReadiedSpell(ctx context.Context, m authz.Membership, in an
 			return nil, err
 		}
 	}
-	if typed, ok := msg.GetRoll().(*playv1.AnswerReactionRequest_Typed); ok {
-		req.Roll = &playv1.CastSpellRequest_D20Face{D20Face: typed.Typed}
+	switch roll := msg.GetRoll().(type) {
+	case *playv1.AnswerReactionRequest_Typed:
+		req.Roll = &playv1.CastSpellRequest_D20Face{D20Face: roll.Typed}
+	case *playv1.AnswerReactionRequest_PoolSum:
+		req.Roll = &playv1.CastSpellRequest_PoolSum{PoolSum: roll.PoolSum}
 	}
+	if len(msg.GetD20Faces()) > 0 { // the table's dice instead of the app's: the cast reads them as it reads its own
+		req.Roll, req.D20Faces = nil, msg.GetD20Faces()
+	}
+	if len(msg.GetRayRolls()) > 0 { // the table's dice for each ray: the cast checks them as it checks its own
+		req.Roll, req.RayRolls = nil, msg.GetRayRolls()
+	}
+	req.RollMode, req.ModeReason = msg.GetRollMode(), msg.GetModeReason()
 	res, err := s.castSpell(ctx, m, connect.NewRequest(req), true)
 	if err != nil {
 		return nil, err

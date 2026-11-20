@@ -46,6 +46,7 @@ func TestConnectGETOnlyForRequestsWithoutData(t *testing.T) {
 		"meurpg.campaigns.v1.CampaignService",
 		"meurpg.campaigns.v1.CampaignDocumentService",
 		"meurpg.characters.v1.CharacterService",
+		"meurpg.characters.v1.InfusionService",
 		"meurpg.rules.v1.ContentService",
 		"meurpg.rules.v1.TableContentService",
 		"meurpg.play.v1.PlayService",

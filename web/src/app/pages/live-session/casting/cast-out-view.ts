@@ -108,6 +108,11 @@ export function diceOf(rollDice: string): { readonly count: number; readonly sid
   return m ? { count: Number(m[1]), sides: Number(m[2]) } : { count: 1, sides: 4 };
 }
 
+/** The dice the spell rolls cast at `level` ("3d8"): the entry of `diceByLevel`, else the spell's own `rollDice`. */
+export function diceTextAt(s: CastingSpell, level: number): string {
+  return s.diceByLevel.find((d) => d.level === level)?.dice ?? s.rollDice;
+}
+
 /** What the cast still needs from the picks so far. */
 export interface CastPicks {
   readonly way: CastWay;

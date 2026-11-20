@@ -274,8 +274,8 @@ func revivifyShape(in *playv1.CastSpellRequest) (string, error) {
 	if !in.GetMaterialConfirmed() {
 		return "", bad("material_confirmed is required: the spell consumes diamonds worth 300 gp")
 	}
-	if in.GetRoll() != nil || in.GetSummon() != nil || in.GetDamageTypeKey() != "" {
-		return "", bad("Revivify rolls nothing and takes no summon or damage type")
+	if in.GetRoll() != nil || in.GetSummon() != nil || in.GetDamageTypeKey() != "" || len(in.GetRayRolls()) > 0 {
+		return "", bad("Revivify rolls nothing and takes no summon, damage type or ray_rolls")
 	}
 	return targetID, nil
 }

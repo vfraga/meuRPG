@@ -100,6 +100,46 @@ A trait with options takes no `choice` of kind `feature` (refused at `.effects[i
 The character picks one option, never more.
 Refused, each at its field: options on a background feature, nested options, options on a class or subclass feature with no `choice` of features, a repeated option name or `from` key, a `from` key of another entry's list, a `choice` inside an option, more options than the limit.
 
+**Swapping an option at a level-up.**
+`TableFeature.swap_levels` (field 10, `FeatureSwapLevels`) on a class or subclass feature that has options (inline, or offered by `table_feature` options) lists the class levels at which a player who levels up in that class may swap a pick of the feature's option pool for another option of the pool.
+`levels` holds 1 to 20, each once; `every_level` means every class level from the feature's own level on; the two are not set together; unset or empty means never.
+The overlay refuses a repeated or out-of-range level (`.swap_levels.levels[i]`, `bad_value`), both fields (`.swap_levels.every_level`, `bad_value`), the field on a feature that is not a class or subclass feature or has no options (`.swap_levels`, `bad_value`), and on an option (`.options[i].swap_levels`).
+The pool is the feature's options plus the options of the entry's other features that share an option with it.
+The table rule "Trocar uma escolha no aumento de atributo" does not matter for it, and the level need not have an improvement.
+Level-up side: [rules-level-up.md](rules-level-up.md).
+
+**Infusions.**
+A class or subclass feature with options may be the host of infusions: options a character puts on a piece of gear or on an object.
+`TableFeature.infusion_rule` is on the host and `TableFeature.infusion` is on an option of that host.
+A `TableOption` of the set `table_feature` may carry `infusion` too, when its `offered_by` feature has the rule.
+Nothing else has either field.
+The rule is a list of `limit_steps` (`class_level`, `active`): how many infusions a character keeps live from that class level up.
+An infusion has `accepts` (the kind of piece), `requires_attunement`, `effect` (what the app computes), `bonus_steps` (`class_level`, `bonus`) and `damage_types`.
+An infusion with effect `none` is text only: the app counts it and the table plays its text.
+Later features of the same entry pick more infusions with a `choice` of kind `feature` whose `from` lists the host's option keys, like any later pick from an option list.
+Players read the infusions through the character sheet, so a player's copy of an entry drops `infusion` and `infusion_rule`.
+Pack import and export keep both.
+
+| Field | What is refused |
+| --- | --- |
+| `.infusion` | On a feature that is not an option, on an option whose host has no `infusion_rule`, or on a `TableOption` of another set than `table_feature` (`bad_value`). |
+| `.infusion_rule` | On an option, on a trait, or on a feature with no options (`bad_value`). |
+| `.infusion_rule.limit_steps` | Empty (`bad_value`). |
+| `.infusion_rule.limit_steps[i].class_level` | Outside 1 to 20 or not above the step before (`bad_value`). |
+| `.infusion_rule.limit_steps[i].active` | Below 1 (`bad_value`). |
+| `.infusion.accepts`, `.infusion.effect` | Missing, or a value the list does not have (`bad_value`; the message says which). |
+| `.infusion.accepts` | A kind the effect does not go on (`bad_value`): `repeating_ammunition` needs `ammunition_weapon`, `returning` needs `thrown_weapon`, `spell_focus_bonus` needs `spellcasting_focus`, `resistance_label` needs `armor`, and `item_bonus` needs a weapon, armor, shield, armor or shield, thrown weapon or ammunition weapon. `none` goes on any kind. |
+| `.infusion.bonus_steps` | Missing for `item_bonus` and `spell_focus_bonus`, present for any other effect (`bad_value`). |
+| `.infusion.bonus_steps[i].class_level`, `.bonus` | A level outside 1 to 20 or not above the step before; a bonus outside 1 to 3 (`bad_value`). |
+| `.infusion.damage_types` | Missing for `resistance_label`, present for any other effect (`bad_value`). |
+| `.infusion.damage_types[i]` | Not a damage type of the content (`dangling_reference`), or listed twice (`bad_value`). |
+
+The content answers three lookups: `Content.Infusion` (the data of an option key), `Content.InfusionHost` (the host feature of an option key) and `Content.InfusionLimit` (the live limit of a host at a class level).
+`TableInfusion.BonusAt` gives the bonus at a class level, and `TableInfusionRule.ActiveAt` gives the live limit at a class level (`Content.InfusionLimit` reads it).
+The refusal sentences in Portuguese are in `content-violation-texts-infusion.ts`.
+The web editor has no screen for the data and keeps it through an edit, as it keeps `prerequisite`.
+The invented class used by the tests is `backend/internal/characters/testdata/pack_engenhista.json`.
+
 **Feat options and picks.**
 A feat may carry `TableFeat.options`, at most 60 (`MaxFeatureOptions`), checked like a class feature's option list.
 Each option is a feature with a server-made key (`feature:<stem>--<option name>@mesa`).

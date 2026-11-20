@@ -20,7 +20,7 @@ The spell, the level (`slot`: level or pact, none for a cantrip) and the targets
 - **Scorching Ray's rays.** The rays (3 at the spell's level, one more per level above) go to the targets as the caster shares them out, all at one creature if they want: each target's `darts` is the rays it gets (none counts as one), and the rays together are at most what the slot makes (the master's at most 10).
   `GetTurnOptions` lists the rays of each slot level in `darts` (`DartsAtSlot`), beside Magic Missile's darts; unlike Magic Missile's, the rays need not add up exactly, and a listed target with no `darts` gets one ray.
   Each ray is its own spell attack with its own d20 and its own hit, miss or critical, an entry of its own in the cast's `targets` (the same combatant can appear more than once, in the order of the request and the rays of one target together; `darts` is 0 on each), and a hit opens its own pending damage, 2d6 fire (doubled dice on a critical), with no `cast_id`: each ray's damage is rolled and lands by itself, so concentration saves and damage steps run once per ray.
-  A typed `d20_face` fits one ray only (`roll_in_app` for several), and a cast with more than one ray is not held for a Bardic Inspiration die or Lucky (see [Held rolls](held-rolls.md)).
+  A typed `d20_face` fits one attack roll only; at a physical-dice table several (the rays, or one for each target of a spell that attacks several) take `ray_rolls`, one entry per attack roll in the order of the targets and of the rays each target takes (one face, or the pair for advantage or disadvantage; `d20_face`, `d20_faces` and `roll_in_app` beside it are refused, and so is `ray_rolls` on a cast with a single attack roll or none), and `roll_in_app` rolls them all in the app. A cast with more than one ray is not held for a Bardic Inspiration die or Lucky (see [Held rolls](held-rolls.md)).
 - **At most 10 listed targets**, the master's too: what each target suffered stays in the cast's event, and a `session_events` payload is at most 16 KiB.
   A placed area spell is not listed: it reaches who the server finds inside, up to the 40 combatants a combat holds.
   Past 10 listed is `invalid_argument`.
@@ -36,7 +36,7 @@ What the casting does depends on what the spell is:
 
 | The spell is | What the casting does | What is left for `RollDamage` |
 | --- | --- | --- |
-| Spell attack (Ray of Frost, with `attack_type`) | One d20 per target, or per ray for Scorching Ray (`roll_in_app`, or `d20_face` for a single attack, RN-18 on each roll), against the AC as in `RollAttack`; a hit opens the pending damage, and Shield can hold it; a spell of the `half_on_miss` kind (Acid Arrow) opens half of it on a miss, and its effect (`applies: hit`) takes hold only of the targets the attack hit | Each hit's damage |
+| Spell attack (Ray of Frost, with `attack_type`) | One d20 per target, or per ray for Scorching Ray (`roll_in_app`, `d20_face` for a single attack or `ray_rolls` for several, RN-18 on each roll), against the AC as in `RollAttack`; a hit opens the pending damage, and Shield can hold it; a spell of the `half_on_miss` kind (Acid Arrow) opens half of it on a miss, and its effect (`applies: hit`) takes hold only of the targets the attack hit | Each hit's damage |
 | Save (Burning Hands, Sacred Flame) | The server rolls each target's save: a full-sheet NPC uses `Derived.SavingThrows`, a basic sheet made from a creature uses the stat block's saves; a basic sheet typed by hand has no bonus, rolls d20 + 0, and the master's log says so (`bonus_known` false; for a player it is always false and the app never reads it). A player character is rolled in the app with the sheet's bonus (the master's `amount` has the last word). Whoever passes takes half (rounded down) or nothing, as the spell says; a target with Evasion (`Traits.Evasion`, not incapacitated) takes nothing on a passed Dexterity save that halves and half on a failed one (`combat.HalfSaveShare`) | One roll for the whole casting for each damage type: the pending damages of a casting share a `cast_id`, and rolling one settles all of the same type. A spell with two damage types (Ice Storm, Flame Strike, Meteor Swarm) opens one pending damage per type per target (`pending_damage_id`, `more_pending_damage_ids`), each read against the target's resistance to its own type |
 | Magic Missile | The darts (3, plus one per level above) are split among the targets, at least one in each, summing exactly; no attack roll | Each target's damage: 1d4 + 1 per dart |
 | Healing | A pending damage that is a heal | The roll with the casting modifier heals at once, up to the maximum, per NPC and per character (through `character_vitals`); whoever was at 0 HP rises and the death saves reset |
@@ -162,7 +162,11 @@ The slot, targets and dice are checked by the server alone: `invalid_argument` c
   A cast with no slot has the grant's `cast_level` (`CastingGrant.cast_level`, `SpellGrantOption.cast_level`), the spell's own level when the grant sets none: the dice, the healing and the targets the spell scales with follow it.
   A cast with a slot has the slot's level.
   In a combat the dice of a cast through a grant are those at its `cast_level`, rolled in the app or physically.
-  Outside a combat the server rolls and heals at the `cast_level`, and the cast sheet shows the spell's own dice (`CastingSpell.roll_dice`, the dice at the spell's own level).
+  Outside a combat the server rolls and heals at the `cast_level`.
+  The cast sheet shows the dice of the level it casts at: the slot's, else the grant's `cast_level`, else the spell's own.
+  `CastingSpell.dice_by_level` holds the dice of each level from the spell's own to 9th, a cantrip's own only, and is empty when the cast rolls none.
+  The server checks a typed sum against the dice of the level cast.
+  `roll_dice` is the dice at the spell's own level.
   The undo of a cast through a grant gives back no slot.
   A retried cast answers with the area at the cast level.
   `SpellTargets` lists one entry per enabled cast option of a spell, in the order of the options.

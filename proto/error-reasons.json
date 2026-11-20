@@ -46,6 +46,23 @@
     },
     {
       "module": "characters",
+      "message": "meurpg.characters.v1.InfusionBlocked",
+      "fields": [
+        {
+          "field": "reason",
+          "enum": "InfusionBlockedReason",
+          "reasons": [
+            "ITEM_ALREADY_INFUSED",
+            "ITEM_NOT_ACCEPTED",
+            "ITEM_CHANGED",
+            "INFUSION_NOT_KNOWN"
+          ],
+          "unsent": []
+        }
+      ]
+    },
+    {
+      "module": "characters",
       "message": "meurpg.characters.v1.InvalidField",
       "fields": []
     },

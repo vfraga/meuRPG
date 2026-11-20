@@ -1,9 +1,14 @@
 import { create } from '@bufbuild/protobuf';
 
 import {
+  FeatureSwapLevelsSchema,
+  InfusionAccepts,
+  InfusionEffect,
   OptionPrerequisiteSchema,
   TableBackgroundSchema,
   TableFeatureSchema,
+  TableInfusionRuleSchema,
+  TableInfusionSchema,
   TableRaceSchema,
   TableSubraceSchema,
 } from '../../../gen/meurpg/rules/v1/table_content_pb';
@@ -303,6 +308,66 @@ describe('the option list of a feature (a table feature the player picks from)',
       classLevel: { classKey: 'class:fighter', level: 7 },
       requiresOptionKeys: ['feature:postura-garca@mesa'],
     });
+  });
+
+  it('keeps the levels a pack allows the swap of its options at, through a load and a save (#715)', () => {
+    const f = withOptions();
+    f.swapLevels = create(FeatureSwapLevelsSchema, { levels: [3, 7], everyLevel: false });
+    const sent = draftToFeature(featureToDraft(f), m);
+    expect(sent.swapLevels).toMatchObject({ levels: [3, 7], everyLevel: false });
+    f.swapLevels = create(FeatureSwapLevelsSchema, { everyLevel: true });
+    expect(draftToFeature(featureToDraft(f), m).swapLevels).toMatchObject({ everyLevel: true });
+    expect(draftToFeature(featureToDraft(withOptions()), m).swapLevels).toBeUndefined();
+  });
+
+  it('keeps the infusion rule of a feature and the infusion of its options, through a load and a save', () => {
+    const f = withOptions();
+    f.infusionRule = create(TableInfusionRuleSchema, {
+      limitSteps: [
+        { classLevel: 2, active: 2 },
+        { classLevel: 6, active: 3 },
+      ],
+    });
+    f.options[0].infusion = create(TableInfusionSchema, {
+      accepts: InfusionAccepts.WEAPON,
+      effect: InfusionEffect.ITEM_BONUS,
+      requiresAttunement: true,
+      bonusSteps: [
+        { classLevel: 2, bonus: 1 },
+        { classLevel: 10, bonus: 2 },
+      ],
+    });
+    f.options[1].infusion = create(TableInfusionSchema, {
+      accepts: InfusionAccepts.ARMOR,
+      effect: InfusionEffect.RESISTANCE_LABEL,
+      damageTypes: ['damage-type:fire', 'damage-type:cold'],
+    });
+    const sent = draftToFeature(featureToDraft(f), m);
+    expect(sent.infusionRule?.limitSteps).toMatchObject([
+      { classLevel: 2, active: 2 },
+      { classLevel: 6, active: 3 },
+    ]);
+    expect(sent.infusion).toBeUndefined();
+    expect(sent.options?.[0].infusion).toMatchObject({
+      accepts: InfusionAccepts.WEAPON,
+      effect: InfusionEffect.ITEM_BONUS,
+      requiresAttunement: true,
+      bonusSteps: [
+        { classLevel: 2, bonus: 1 },
+        { classLevel: 10, bonus: 2 },
+      ],
+    });
+    expect(sent.options?.[1].infusion).toMatchObject({
+      effect: InfusionEffect.RESISTANCE_LABEL,
+      damageTypes: ['damage-type:fire', 'damage-type:cold'],
+    });
+    expect(sent.options?.[0].infusionRule).toBeUndefined();
+  });
+
+  it('sends no infusion data for a feature that has none', () => {
+    const sent = draftToFeature(featureToDraft(withOptions()), m);
+    expect(sent.infusionRule).toBeUndefined();
+    expect(sent.options?.[0].infusion).toBeUndefined();
   });
 
   it('a feature with no options sends none (an absent repeated field is an empty list), and the paths include each option', () => {

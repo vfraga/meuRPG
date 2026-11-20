@@ -189,8 +189,11 @@ func swapInGroup(before, after Build, g SwapGroup) (swap PickSwap, found bool) {
 
 // Offers says the offer lets the swap be made: the group is offered, from is one of its
 // picks and to is in its pool.
-func (o LevelUpOffer) Offers(s PickSwap) bool {
-	for _, g := range o.PickSwaps {
+func (o LevelUpOffer) Offers(s PickSwap) bool { return groupOffers(o.PickSwaps, s) }
+
+// groupOffers says the swap is one of the groups: its group is there, from is one of its picks and to is in its pool.
+func groupOffers(groups []SwapGroup, s PickSwap) bool {
+	for _, g := range groups {
 		if g.Group == s.Group {
 			return slices.ContainsFunc(g.Picks, func(n NamedKey) bool { return n.Key == s.From }) &&
 				slices.ContainsFunc(g.Pool, func(n NamedKey) bool { return n.Key == s.To })

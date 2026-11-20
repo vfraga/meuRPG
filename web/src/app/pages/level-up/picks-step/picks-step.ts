@@ -4,6 +4,7 @@ import type { PickItem } from '../../../core/levelup/levelup-flow';
 import { ChoiceGroups } from '../../../shared/choice-groups/choice-groups';
 import { PickList } from '../pick-list/pick-list';
 import { LevelUpSession } from '../level-up-session';
+import { SwapPicker } from '../swap-picker/swap-picker';
 
 /**
  * Step "Escolhas" of the guided level-up (MR-040): what a level offers that is neither
@@ -15,7 +16,7 @@ import { LevelUpSession } from '../level-up-session';
  */
 @Component({
   selector: 'app-picks-step',
-  imports: [ChoiceGroups, PickList],
+  imports: [ChoiceGroups, PickList, SwapPicker],
   template: `
     @if (s().options.lateChoices.length > 0) {
       <section class="choices" id="pick-late" aria-labelledby="late-title">
@@ -70,6 +71,9 @@ import { LevelUpSession } from '../level-up-session';
         [fullNote]="'Limite de ' + g.choose + ' opções'"
         (pick)="s().draft.toggleFeature($event, g.keys, g.choose)"
       />
+    }
+    @if (!s().options.abilityScoreImprovement && s().draft.swap.groups().length > 0) {
+      <app-swap-picker [swap]="s().draft.swap" />
     }
     @if (s().draft.skillsAsked() > 0) {
       <app-pick-list

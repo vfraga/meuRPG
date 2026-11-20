@@ -32,7 +32,7 @@ import (
 // that class.
 //
 // A character comes without what happened to it in play: no vitals, no
-// level-up history, no creatures, no lock, no story release, no player.
+// level-up history, no creatures, no infusions, no lock, no story release, no player.
 
 // PackagePart returns the characters' part of the package.
 func (s *Service) PackagePart() campaignpackage.Part { return &packagePart{s: s} }

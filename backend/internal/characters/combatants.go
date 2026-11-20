@@ -155,7 +155,7 @@ func combatCharacter(content *rules.Content, id, kind, name string, playerUserID
 	c := link.Character{ID: id, Name: name, Player: kind == "player", PlayerUserID: conv.OrZero(playerUserID)}
 	switch {
 	case sheet.GetFull() != nil:
-		d := derive(content, sheet.GetFull(), beast, active)
+		d := derive(content, sheet.GetFull(), beast, active, "", nil) // the initiative, the speeds, the size and the hit points read no infusion
 		c.InitiativeBonus, c.SpeedFt, c.HitPointsMax = d.Initiative, d.SpeedWalkFt, max(d.HitPointsMax, 0)
 		c.SpeedSwimFt, c.SpeedClimbFt, c.SpeedBurrowFt = d.SpeedSwimFt, d.SpeedClimbFt, d.SpeedBurrowFt
 		c.SpeedFlyFt, c.Size = d.SpeedFlyFt, raceSizeOf(content, d, sheet.GetFull().GetRaceKey())

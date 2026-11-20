@@ -377,3 +377,31 @@ func TestATableFeatureOptionSpendsAndReadsWhatItsFeatureDeclares(t *testing.T) {
 		t.Error("an option reading a state no effect declares was accepted")
 	}
 }
+
+// The identity of the issue of a pick that nothing offers is the sentence that names the entry whoever reads the sheet: a
+// sheet that stored it before the entry was switched off still holds the issue as known.
+func TestTheIdentityOfAPickNothingOffersDoesNotDependOnTheReader(t *testing.T) {
+	const blow = "option:table_feature:golpe-do-corvo@mesa"
+	o := postureOverlay()
+	o.Options = []TableOption{{TableEntry: TableEntry{Key: blow, NamePT: "Golpe do Corvo"}, Set: "table_feature", OfferedBy: postureFeature, DescPT: []string{"Um golpe."}}}
+	o.Off = append(o.Off, blow)
+	c := withOverlay(t, o)
+	b := postureBuild(3, postureHeron, blow)
+	b.Classes[0].Subclass = ""
+	const sentence = "Golpe do Corvo não vale para este personagem."
+	for name, view := range map[string]*Content{"master": c, "player": c.ForPlayer()} {
+		var got []Issue
+		for _, is := range Derive(b, view).Issues {
+			if is.Code == IssueUnknownKey && is.Field == "full.feature_choice_keys[1]" {
+				got = append(got, is)
+			}
+		}
+		if len(got) != 1 {
+			t.Fatalf("%s: issues = %+v, want one about the pick", name, got)
+		}
+		stored := []string{IssueUnknownKey + "|full.feature_choice_keys[1]|" + sentence}
+		if !KnownIssues(stored, got)[0] {
+			t.Errorf("%s: the stored identity %q does not hold the issue %q", name, stored[0], got[0].ID())
+		}
+	}
+}

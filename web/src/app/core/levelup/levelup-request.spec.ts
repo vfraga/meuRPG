@@ -79,4 +79,21 @@ describe('choicesRequest', () => {
       value: 3,
     });
   });
+
+  it('writes the rule swap in swap_pick and the feature swaps in swap_feature_options, together', () => {
+    const rule = { group: 'fighting_style', fromKey: 'a', toKey: 'b' };
+    const feature = { group: 'feature:infusoes@mesa', fromKey: 'c', toKey: 'd' };
+    const request = choicesRequest(
+      { ...source, swapPick: rule, swapFeatureOptions: [feature] },
+      null,
+    );
+    expect(request.swapPick).toEqual(rule);
+    expect(request.swapFeatureOptions).toEqual([feature]);
+  });
+
+  it('leaves both swap fields out when nothing is swapped', () => {
+    const request = choicesRequest({ ...source, swapFeatureOptions: [] }, null);
+    expect('swapPick' in request).toBe(false);
+    expect('swapFeatureOptions' in request).toBe(false);
+  });
 });

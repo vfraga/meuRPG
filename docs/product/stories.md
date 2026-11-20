@@ -70,6 +70,7 @@ Where a behaviour came from a product answer, the [archive](../archive/decisions
 | [MR-055](#mr-055-answer-a-creatures-rider) | Combat | MVP |
 | [MR-056](#mr-056-show-the-table-on-a-screen) | Session | MVP |
 | [MR-057](#mr-057-turn-the-sun-on-in-a-combat) | Combat | MVP |
+| [MR-059](#mr-059-infuse-an-item) | Character | MVP |
 | [MR-002](#mr-002-generate-an-invite) | Campaign | MVP (prerequisite) |
 | [MR-005](#mr-005-create-npcs) | Character | MVP (prerequisite) |
 | [MR-007](#mr-007-import-a-sheet-from-pdf) | Character | Later |
@@ -1825,6 +1826,45 @@ See [Architecture](../architecture/campaign-package.md).
 #### Related
 - [MR-042](#mr-042-bestiary), [RN-29](rules.md#rn-29-monsters-in-combat).
 
+
+### MR-059: Infuse an item
+
+**As an** artificer's player (or the master, for that character), **I want** to put an infusion I know on an item, move it and end it, **so that** the sheet shows the item with its infusion and the numbers it gives.
+
+- Priority: MVP
+- Rules: RN-44, RN-02
+- Modules: characters, rules, play
+
+**Partly built.**
+Built: the server side for the artificer's own items.
+Waits for the screens: the block "Infusões" of the sheet, the dialog "Infundir", the line of the infusion on the item, in the attack and in the modifiers, and the level-up picks of infusions.
+Not built: an item of another character, the charges of an infused item, and the end of an infusion by a level-up swap.
+
+#### Acceptance criteria
+- **Given** an artificer that knows an infusion, **when** I read the infusions, **then** I read the ones in use, the ones known and not in use, the limit and how many are in use; **given** I am another player, **then** the character does not exist for me.
+- **Given** an infusion, **when** I ask where it goes, **then** each piece of the sheet has a row, and a piece that cannot take it says why in words ("Pede uma arma com munição.", "Já é um item mágico (+1): a infusão pede um item comum.", "Já tem <infusão>: um item guarda uma infusão só."); an infusion for any object also offers one row to name an object.
+- **Given** an infusion and a piece that takes it, **when** I put it on, **then** the sheet lists it, names it on the piece, on the attack and on the modifier line, and the numbers include it as the manual bonus does; **given** the piece is carried, or asks for attunement and is not attuned, **then** it adds nothing and says why.
+- **Given** an infusion that asks for attunement, **when** I put it on with "Sintonizar agora" in the window of a rest, **then** it is attuned and counts among the three; **given** the window is closed, **then** the call is refused and nothing changes.
+- **Given** the limit is reached, **when** I put one more, **then** the one I choose ends, or the oldest; the sheet reads one change.
+- **Given** an infusion for an object, **when** I give a name of 1 to 40 characters, **then** the sheet lists the infusion with that name; two objects may have one name; **given** a name with a line break or a control character, **then** it is cleaned or refused.
+- **Given** I move an infusion to another piece, **then** its time begins again and its attunement is cleared; **given** I end it, **then** the piece is a plain piece again.
+- **Given** the piece leaves the sheet, **when** I save, **then** its infusion ends.
+- **Given** the same request with the same key, **then** the answer is the first one and nothing is written twice.
+- **Given** the limit is reached and I put one on the piece that already has one, choosing that one to end, **then** it is replaced, and the sheet reads one change.
+- **Given** more infusions are valid than the limit (a pick restored, or a level taken off), **then** the oldest say "acima do limite", give no number and take no attunement place, and none ends by itself.
+- **Given** the limit is reached, **when** I choose a record that is over the limit to end, **then** the call is refused and nothing changes, since ending it frees no place; **given** I end that record on its own, **then** it ends and no place is freed.
+- **Given** the limit is reached and a piece holds a record that is over the limit, **when** I put an infusion on that piece, with or without a record chosen, **then** the call is refused and nothing changes.
+- **Given** the limit is reached, **when** I move a record that is over the limit (or whose piece left the sheet), **then** the call is refused and nothing changes; **given** a place is free, **then** it moves.
+- **Given** a piece holds a record that is not valid for another reason (a lost prerequisite), **when** I put an infusion on that piece at the limit, choosing that record or not, **then** the answer is the same: it ends and the oldest valid record gives way with its ending.
+- **Given** a dead character, **then** putting on and moving are refused for everyone; **given** the master, **then** ending a record is allowed, and **given** the owner, **then** it is refused; **given** a sheet locked by the session, **then** the writes still work.
+- **Given** a combat that holds the artificer, **when** an infusion changes, **then** the combat's open screens read the turn and the attacks again; **given** the artificer is hidden, **then** only the master is told.
+- **Given** I am a player of another character, **then** I never read the infusion, an attack's result never names it, and no stream tells me what changed: an infusion change in a combat sends every player the ordinary "the combat changed" hint, with no content, and the infusion hint itself goes only to the master and the owner (RN-44).
+
+#### In the app
+- The block "Infusões" and the dialog "Infundir" are in the boards of the artificer; the screens wait for the web slice.
+
+#### Related
+- [MR-004](#mr-004-character-sheet-in-the-pdf-format), [MR-040](#mr-040-level-up-from-the-sheet), [RN-44](rules.md#rn-44-artificer-infusions).
 
 ## Priority: MVP (prerequisite)
 

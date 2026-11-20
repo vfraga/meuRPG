@@ -424,12 +424,16 @@ func (s *Service) d20With(in rollInput, modifier int, mode combat.RollMode) (d20
 	default:
 		faces = []int{in.typed}
 	}
+	at := ""
+	if in.ray > 0 { // the entry of ray_rolls the faces were typed in
+		at = fmt.Sprintf("ray_rolls[%d]: ", in.ray-1)
+	}
 	if len(faces) != n {
-		return d20Roll{}, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("the roll takes %d d20: type %d face(s) in d20_faces", n, n))
+		return d20Roll{}, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("%sthe roll takes %d d20: type %d face(s) in d20_faces", at, n, n))
 	}
 	for _, f := range faces {
 		if f < 1 || f > 20 {
-			return d20Roll{}, connect.NewError(connect.CodeInvalidArgument, errors.New("d20_face must be 1 to 20"))
+			return d20Roll{}, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("%sd20_face must be 1 to 20", at))
 		}
 	}
 	idx := mode.Pick(faces)

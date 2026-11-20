@@ -1681,6 +1681,16 @@ message WatchGameSessionResponse {
     // Only the master gets it; no player's stream does (RN-10). The master's app reads
     // TableScreenService.GetTableScreen again.
     TableScreenChanged table_screen_changed = 47;
+    // The infusions of a character changed (one was put on, moved or ended). Sent to the
+    // master and the character's owner only. The app reads the open sheet again.
+    CharacterInfusionsChanged character_infusions_changed = 49;
+  }
+
+  // CharacterInfusionsChanged says the infusions a character keeps or carries changed. It carries no detail: the
+  // sheet's infusions are read again.
+  message CharacterInfusionsChanged {
+    // The character whose infusions changed.
+    string character_id = 1;
   }
 
   // TableScreenChanged tells the master's panel that the TV at the table changed. Only the master's

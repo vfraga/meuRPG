@@ -70,6 +70,7 @@ Quando um comportamento veio de uma resposta do produto, o [arquivo](../../archi
 | [MR-055](#mr-055-responder-ao-efeito-extra-de-uma-criatura) | Combate | MVP |
 | [MR-056](#mr-056-mostrar-a-mesa-em-uma-tela) | Sessão | MVP |
 | [MR-057](#mr-057-ligar-o-sol-num-combate) | Combate | MVP |
+| [MR-059](#mr-059-infundir-um-item) | Personagem | MVP |
 | [MR-002](#mr-002-gerar-convite) | Campanha | MVP (pré-requisito) |
 | [MR-005](#mr-005-criar-npcs) | Personagem | MVP (pré-requisito) |
 | [MR-007](#mr-007-importar-ficha-em-pdf) | Personagem | Depois |
@@ -1824,6 +1825,45 @@ Ver [Arquitetura](../../architecture/campaign-package.md).
 #### Relacionadas
 - [MR-042](#mr-042-bestiário), [RN-29](regras.md#rn-29-monstros-no-combate).
 
+
+### MR-059: Infundir um item
+
+**Como** jogador de um artífice (ou o mestre, por esse personagem), **quero** pôr numa peça uma infusão que conheço, mudá-la de peça e encerrá-la, **para que** a ficha mostre o item com a infusão e os números que ela dá.
+
+- Prioridade: MVP
+- Regras: RN-44, RN-02
+- Módulos: characters, rules, play
+
+**Construída em parte.**
+Construído: o lado do servidor para os itens do próprio artífice.
+Espera as telas: o bloco "Infusões" da ficha, o diálogo "Infundir", a linha da infusão no item, no ataque e nos modificadores, e as escolhas de infusões na subida de nível.
+Não construído: um item de outro personagem, as cargas de um item infundido e o fim de uma infusão pela troca da subida de nível.
+
+#### Critérios de aceitação
+- **Dado** um artífice que conhece uma infusão, **quando** leio as infusões, **então** leio as que estão em uso, as conhecidas fora de uso, o limite e quantas estão em uso; **dado** que sou outro jogador, **então** o personagem não existe para mim.
+- **Dado** uma infusão, **quando** pergunto onde ela vai, **então** cada peça da ficha tem uma linha, e uma peça que não pode recebê-la diz por quê em palavras ("Pede uma arma com munição.", "Já é um item mágico (+1): a infusão pede um item comum.", "Já tem <infusão>: um item guarda uma infusão só."); uma infusão para qualquer objeto oferece também uma linha para nomear um objeto.
+- **Dado** uma infusão e uma peça que a recebe, **quando** a ponho, **então** a ficha a lista, a nomeia na peça, no ataque e na linha de modificador, e os números a incluem como o bônus manual faz; **dado** que a peça está guardada, ou pede sintonização e não está sintonizada, **então** ela não soma nada e diz por quê.
+- **Dado** uma infusão que pede sintonização, **quando** a ponho com "Sintonizar agora" na janela de um descanso, **então** ela fica sintonizada e conta entre os três; **dado** que a janela está fechada, **então** o pedido é recusado e nada muda.
+- **Dado** que o limite foi atingido, **quando** ponho mais uma, **então** a que eu escolher termina, ou a mais antiga; a ficha lê uma só mudança.
+- **Dado** uma infusão para um objeto, **quando** dou um nome de 1 a 40 caracteres, **então** a ficha lista a infusão com esse nome; dois objetos podem ter o mesmo nome; **dado** um nome com quebra de linha ou caractere de controle, **então** ele é limpo ou recusado.
+- **Dado** que mudo uma infusão para outra peça, **então** o tempo dela recomeça e a sintonização é limpa; **dado** que a encerro, **então** a peça volta a ser uma peça comum.
+- **Dado** que a peça sai da ficha, **quando** salvo, **então** a infusão dela termina.
+- **Dado** o mesmo pedido com a mesma chave, **então** a resposta é a primeira e nada é escrito duas vezes.
+- **Dado** que o limite foi atingido e ponho uma na peça que já tem uma, escolhendo essa para encerrar, **então** ela é substituída, e a ficha lê uma só mudança.
+- **Dado** que mais infusões valem do que o limite (uma escolha devolvida, ou um nível tirado), **então** as mais antigas dizem "acima do limite", não dão número nem ocupam lugar de sintonização, e nenhuma termina sozinha.
+- **Dado** que o limite foi atingido, **quando** escolho para encerrar um registro que está acima do limite, **então** o pedido é recusado e nada muda, pois encerrá-lo não libera lugar; **dado** que o encerro sozinho, **então** ele termina e nenhum lugar é liberado.
+- **Dado** que o limite foi atingido e uma peça tem um registro acima do limite, **quando** ponho uma infusão nessa peça, com ou sem registro escolhido, **então** o pedido é recusado e nada muda.
+- **Dado** que o limite foi atingido, **quando** mudo de peça um registro que está acima do limite (ou cuja peça saiu da ficha), **então** o pedido é recusado e nada muda; **dado** que há um lugar livre, **então** ele muda de peça.
+- **Dado** que uma peça tem um registro que não vale por outro motivo (um pré-requisito perdido), **quando** ponho uma infusão nessa peça no limite, escolhendo esse registro ou não, **então** a resposta é a mesma: ele termina e o registro válido mais antigo cede com o seu encerramento.
+- **Dado** um personagem morto, **então** pôr uma infusão e mudá-la de peça são recusados para todos; **dado** o mestre, **então** encerrar um registro é permitido, e **dado** o dono, **então** é recusado; **dado** uma ficha trancada pela sessão, **então** as escritas ainda funcionam.
+- **Dado** um combate que tem o artífice, **quando** uma infusão muda, **então** as telas abertas do combate leem o turno e os ataques de novo; **dado** que o artífice está escondido, **então** só o mestre é avisado.
+- **Dado** que sou jogador de outro personagem, **então** nunca leio a infusão, o resultado de um ataque nunca a nomeia, e nenhuma transmissão me diz o que mudou: uma mudança de infusão num combate manda a todos os jogadores o aviso comum de que "o combate mudou", sem conteúdo, e o aviso da própria infusão vai só ao mestre e ao dono (RN-44).
+
+#### No app
+- O bloco "Infusões" e o diálogo "Infundir" estão nos quadros do artífice; as telas esperam a fatia da web.
+
+#### Relacionadas
+- [MR-004](#mr-004-ficha-no-formato-do-pdf), [MR-040](#mr-040-subir-de-nível-pela-ficha), [RN-44](regras.md#rn-44-infusões-do-artífice).
 
 ## Prioridade: MVP (pré-requisito)
 
