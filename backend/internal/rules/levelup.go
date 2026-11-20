@@ -1372,13 +1372,13 @@ func (c *content) checkLevelUpSkills(before, after Build, classKey string, mc *M
 	got, removedSkills := added(before.SkillProficiencies, after.SkillProficiencies)
 	switch {
 	case removedSkills:
-		return refuse("full.skill_proficiency_keys", LevelUpReasonSkills, "a skill was removed")
+		return refuse(skillsField, LevelUpReasonSkills, "a skill was removed")
 	case mc != nil:
 		if lerr := c.checkMulticlassSkills(mc, got, wantSkills); lerr != nil {
 			return lerr
 		}
 	case len(got) != wantSkills:
-		return refuse("full.skill_proficiency_keys", LevelUpReasonSkills, "the new level lets the player choose %d skills", wantSkills)
+		return refuse(skillsField, LevelUpReasonSkills, "the new level lets the player choose %d skills", wantSkills)
 	}
 	if lerr := c.checkSkillSources(got, c.levelSkillSources(classKey, gains, mc)); lerr != nil {
 		return lerr
@@ -1845,8 +1845,8 @@ func checkDuplicates(b Build) *LevelUpError {
 		{"full.prepared_spell_keys", LevelUpReasonPrepared, b.SpellsPrepared},
 		{"full.feature_choice_keys", LevelUpReasonFeatureChoice, b.FeatureChoices},
 		{"full.feat_keys", LevelUpReasonFeat, b.Feats},
-		{"full.skill_proficiency_keys", LevelUpReasonSkills, b.SkillProficiencies},
-		{"full.expertise_skill_keys", LevelUpReasonExpertise, b.Expertise},
+		{skillsField, LevelUpReasonSkills, b.SkillProficiencies},
+		{expertiseField, LevelUpReasonExpertise, b.Expertise},
 	} {
 		seen := map[string]bool{}
 		for i, k := range l.keys {

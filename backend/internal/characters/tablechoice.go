@@ -123,18 +123,18 @@ func refuseUnfitPick(content *rules.Content, m authz.Membership, before func() *
 func unfitSentence(view *rules.Content, b rules.Build, field, key string) string {
 	listed := view.OnAList(b, field, key)
 	switch {
-	case strings.HasPrefix(field, "full.skill_proficiency_keys") && listed:
+	case strings.HasPrefix(field, rules.SkillsField) && listed:
 		name := view.NamePT(key)
 		return fmt.Sprintf("Não há vaga para a perícia %s: as listas que a oferecem já estão preenchidas pelas outras perícias marcadas. Desmarque uma delas para marcar %s.", name, name)
-	case strings.HasPrefix(field, "full.expertise_skill_keys") && listed:
+	case strings.HasPrefix(field, rules.ExpertiseField) && listed:
 		name := view.NamePT(key)
 		return fmt.Sprintf("Não há vaga para a especialização em %s: as listas que a oferecem já estão preenchidas pelas outras especializações marcadas. Desmarque uma delas para marcar a especialização em %s.", name, name)
 	case strings.HasPrefix(field, "full.feature_choice_keys") && listed:
 		name := view.ProficiencyNamePT(key)
 		return fmt.Sprintf("Não há vaga para a ferramenta %s: as listas que a oferecem já estão preenchidas pelas outras ferramentas marcadas. Desmarque uma delas para marcar %s.", name, name)
-	case strings.HasPrefix(field, "full.skill_proficiency_keys"):
+	case strings.HasPrefix(field, rules.SkillsField):
 		return fmt.Sprintf("A perícia %s não está em nenhuma das listas de onde o personagem escolhe perícias.", view.NamePT(key))
-	case strings.HasPrefix(field, "full.expertise_skill_keys"):
+	case strings.HasPrefix(field, rules.ExpertiseField):
 		return fmt.Sprintf("A especialização em %s não está em nenhuma das listas de onde o personagem escolhe especializações.", view.NamePT(key))
 	}
 	return fmt.Sprintf("A ferramenta %s não está em nenhuma das escolhas de ferramenta do personagem.", view.ProficiencyNamePT(key))

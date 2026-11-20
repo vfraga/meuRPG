@@ -385,7 +385,7 @@ func CasterLevel(b Build, c *Content) (level, casters int) {
 // class: Skills.Choose of them come from the class's list and are not skills the
 // character has. Anything else is a refusal of the level's skills.
 func (c *content) checkMulticlassSkills(offer *MulticlassOffer, got []string, extra int) *LevelUpError {
-	const field = "full.skill_proficiency_keys"
+	const field = skillsField
 	want := extra
 	if offer.Skills != nil {
 		want += offer.Skills.Choose

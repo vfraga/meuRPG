@@ -36,10 +36,10 @@ func (c *Content) UnplacedNewPick(stored *Build, now Build) (field, key string, 
 		stuckSkills = unplacedPicks(xs.skillSources(), pickList(held.SkillProficiencies, skill(xs)))
 		stuckExpertise = unplacedPicks(xs.expertiseSources(), pickList(held.Expertise, expertise))
 	}
-	if f, k, ok := unplacedNewList("full.skill_proficiency_keys", x.skillSources(), now.SkillProficiencies, held.SkillProficiencies, stuckSkills, skill(x)); ok {
+	if f, k, ok := unplacedNewList(skillsField, x.skillSources(), now.SkillProficiencies, held.SkillProficiencies, stuckSkills, skill(x)); ok {
 		return f, k, true
 	}
-	if f, k, ok := unplacedNewList("full.expertise_skill_keys", x.expertiseSources(), now.Expertise, held.Expertise, stuckExpertise, expertise); ok {
+	if f, k, ok := unplacedNewList(expertiseField, x.expertiseSources(), now.Expertise, held.Expertise, stuckExpertise, expertise); ok {
 		return f, k, true
 	}
 	return x.unplacedNewTool(held, xs)
@@ -184,9 +184,9 @@ func (c *Content) OnAList(b Build, field, key string) bool {
 	x := c.deriverFor(b)
 	var sources []pickSource
 	switch {
-	case strings.HasPrefix(field, "full.skill_proficiency_keys"):
+	case strings.HasPrefix(field, skillsField):
 		sources = x.skillSources()
-	case strings.HasPrefix(field, "full.expertise_skill_keys"):
+	case strings.HasPrefix(field, expertiseField):
 		sources = x.expertiseSources()
 	case strings.HasPrefix(field, choiceKeysField):
 		sources = x.toolSourcesAt(field)

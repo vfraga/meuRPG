@@ -16,6 +16,12 @@ const (
 	expertiseField = "full.expertise_skill_keys"
 )
 
+// The same fields, for the callers that name the list a pick is on.
+const (
+	SkillsField    = skillsField
+	ExpertiseField = expertiseField
+)
+
 // readsFit says the derivation is the master's: a player's view of the table never carries the fit issue.
 func (x *deriver) readsFit() bool {
 	return x.c.table && !x.c.player && len(x.classes) > 0
