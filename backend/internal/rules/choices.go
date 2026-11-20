@@ -202,7 +202,25 @@ func (x *deriver) skillSources() []pickSource {
 			out = append(out, traitSkillSource(f.Key, t))
 		}
 	}
-	return append(out, x.effectSources("skill")...)
+	return x.withDuplicateReplacements(append(out, x.effectSources("skill")...))
+}
+
+// withDuplicateReplacements gives a source whose list holds skills the sheet already has by another means the pick of
+// another skill in their place (SRD 5.1: a character who would gain the same proficiency from two sources chooses a
+// different one of the same kind). The source keeps the entries of its list the sheet lacks, and what it could not take
+// from them, up to the entries it lost, goes to a pick of any skill.
+func (x *deriver) withDuplicateReplacements(sources []pickSource) []pickSource {
+	out := slices.Clone(sources)
+	for _, s := range sources {
+		if s.Any {
+			continue
+		}
+		duplicates := len(slices.DeleteFunc(slices.Clone(s.From), func(k string) bool { return !x.automaticSkills[k] }))
+		if short := min(s.Count-(len(s.From)-duplicates), duplicates); short > 0 {
+			out = append(out, pickSource{Owner: s.Owner, Count: short, Any: true})
+		}
+	}
+	return out
 }
 
 // choiceSource is a "choose N of these" of the data as a pick source.

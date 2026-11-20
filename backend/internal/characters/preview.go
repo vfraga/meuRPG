@@ -76,8 +76,9 @@ func (s *Service) previewDerived(ctx context.Context, content *rules.Content, ch
 // checkEditedSheet is what UpdateCharacter checks before it writes, for the
 // character id: the caller sees it (otherwise not_found), may edit its sheet
 // now (RN-01), the sheet fits the row's kind, and no choice is new that is
-// archived or switched off, judged against the stored sheet. It returns the
-// checked sheet.
+// kept out, closed, unfit or archived or switched off, judged against the stored
+// sheet. The permission answers come first and the stored sheet is read once.
+// It returns the checked sheet.
 func (s *Service) checkEditedSheet(ctx context.Context, m authz.Membership, content *rules.Content, characterID string, raw *charactersv1.CharacterSheet) (*charactersv1.CharacterSheet, string, error) {
 	id, ok := uid.Canonical(characterID)
 	if !ok {
@@ -86,16 +87,6 @@ func (s *Service) checkEditedSheet(ctx context.Context, m authz.Membership, cont
 	sheet, err := checkSheet(content, raw)
 	if err != nil {
 		return nil, "", invalidArgument(err)
-	}
-	storedOf := s.storedSheetOf(ctx, m, id)
-	if err := refuseKeptOutPick(content, m, storedOf, sheet.GetFull()); err != nil {
-		return nil, "", err
-	}
-	if err := refuseClosedPick(content, m, id, storedOf, sheet.GetFull()); err != nil {
-		return nil, "", err
-	}
-	if err := refuseUnfitPick(content, m, storedOf, sheet.GetFull()); err != nil {
-		return nil, "", err
 	}
 	row, err := s.queries.GetCharacter(ctx, charactersdb.GetCharacterParams{CampaignID: m.CampaignID, ID: id})
 	if err != nil {
@@ -113,6 +104,16 @@ func (s *Service) checkEditedSheet(ctx context.Context, m authz.Membership, cont
 	stored, err := loadSheet(row.ID, row.Sheet)
 	if err != nil {
 		return nil, "", s.dbError(ctx, "read a character to preview its sheet", err)
+	}
+	storedOf := func() *charactersv1.FullSheet { return stored.GetFull() }
+	if err := refuseKeptOutPick(content, m, storedOf, sheet.GetFull()); err != nil {
+		return nil, "", err
+	}
+	if err := refuseClosedPick(content, m, id, storedOf, sheet.GetFull()); err != nil {
+		return nil, "", err
+	}
+	if err := refuseUnfitPick(content, m, storedOf, sheet.GetFull()); err != nil {
+		return nil, "", err
 	}
 	if err := refuseNewChoices(content, m, row.ID, stored.GetFull(), sheet.GetFull()); err != nil {
 		return nil, "", err

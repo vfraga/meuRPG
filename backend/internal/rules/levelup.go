@@ -858,11 +858,11 @@ type levelAsked struct{ skills, expertise int }
 // levelAsk is how many skills and how much expertise the level asks: what the sheet after the level (bare, nothing chosen
 // at the level) may pick in all, as the sheet reads it (skillAllowance, with the picks held counted), less what the sheet
 // before had: its own allowance or, when it holds more picks than that, the picks it holds. A level never asks for less
-// than none.
+// than none. Both sheets are judged as the sheet's derive does, without the feats and options they lose.
 func (c *content) levelAsk(before, bare Build) (skills, expertise int) {
-	x := deriverOf(bare, c, nil)
+	x := c.deriverFor(bare)
 	allowed, expertiseAllowed := x.skillAllowance()
-	was := deriverOf(before, c, nil)
+	was := c.deriverFor(before)
 	wasSkills, wasExpertise := was.skillAllowance()
 	heldSkills := map[string]bool{}
 	for _, k := range before.SkillProficiencies {

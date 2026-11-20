@@ -41,11 +41,13 @@ func (c *content) unplacedNewSkillPick(x, xs *deriver, held, now Build) (field, 
 	}
 	expertise := func(k string) bool { _, ok := c.skills[k]; return ok }
 	var stuckSkills, stuckExpertise []string
+	heldSkills := held.SkillProficiencies
 	if xs != nil {
+		heldSkills = pickList(held.SkillProficiencies, skill(xs)) // a skill the stored sheet had by another means is no held pick
 		stuckSkills = unplacedPicks(xs.shown(xs.skillSources()), pickList(held.SkillProficiencies, skill(xs)))
 		stuckExpertise = unplacedPicks(xs.shown(xs.expertiseSources()), pickList(held.Expertise, expertise))
 	}
-	if f, k, ok := unplacedNewList(skillsField, x.shown(x.skillSources()), now.SkillProficiencies, held.SkillProficiencies, stuckSkills, skill(x)); ok {
+	if f, k, ok := unplacedNewList(skillsField, x.shown(x.skillSources()), now.SkillProficiencies, heldSkills, stuckSkills, skill(x)); ok {
 		return f, k, true
 	}
 	return unplacedNewList(expertiseField, x.shown(x.expertiseSources()), now.Expertise, held.Expertise, stuckExpertise, expertise)
@@ -80,30 +82,30 @@ func pickList(list []string, counted func(string) bool) []string {
 	return picks
 }
 
-// unplacedNewList is UnplacedNewPick for one list of the sheet: counted says an entry is a pick of the sources, and stuck are
-// the held picks the stored sheet could not place.
+// unplacedNewList is UnplacedNewPick for one list of the sheet: counted says an entry is a pick of the sources, held are the
+// picks the stored sheet holds and stuck are the held picks it could not place.
 func unplacedNewList(field string, sources []pickSource, list, held, stuck []string, counted func(string) bool) (string, string, bool) {
 	picks := pickList(list, counted)
+	left := unplacedNewPicks(sources, competing(picks, held, stuck), held)
 	for i, k := range list {
-		if slices.Contains(held, k) || !slices.Contains(picks, k) {
-			continue
-		}
-		if !placesAlone(sources, competing(picks, held, stuck), k) {
+		if slices.Contains(left, k) {
 			return fmt.Sprintf("%s[%d]", field, i), k, true
 		}
 	}
 	return "", "", false
 }
 
+// unplacedNewPicks are the new picks that the sources leave out when the held picks are placed first and the new ones follow
+// in order: each is a pick the sources have no room for, whatever its place in the sheet.
+func unplacedNewPicks(sources []pickSource, picks, held []string) []string {
+	isHeld := func(k string) bool { return slices.Contains(held, k) }
+	ordered := slices.Concat(slices.DeleteFunc(slices.Clone(picks), func(k string) bool { return !isHeld(k) }), slices.DeleteFunc(slices.Clone(picks), isHeld))
+	return slices.DeleteFunc(unplacedPicks(sources, ordered), isHeld)
+}
+
 // competing are the picks that take part in the placement of a new pick: the new ones and the held ones the stored sheet could place.
 func competing(picks, held, stuck []string) []string {
 	return slices.DeleteFunc(slices.Clone(picks), func(k string) bool { return slices.Contains(held, k) && slices.Contains(stuck, k) })
-}
-
-// placesAlone says the largest placement is bigger with the pick than without it.
-func placesAlone(sources []pickSource, picks []string, pick string) bool {
-	without := slices.DeleteFunc(slices.Clone(picks), func(k string) bool { return k == pick })
-	return placedCount(sources, picks) > placedCount(sources, without)
 }
 
 // placedCount is how many of the picks a placement in the sources takes.
@@ -147,7 +149,7 @@ func (x *deriver) unplacedNewTool(held Build, xs *deriver) (string, string, bool
 		}
 		heldValues := slices.DeleteFunc(slices.Clone(byOwner[owner]), func(k string) bool { return !slices.Contains(held.FeatureChoices, ScopedChoice(choiceKey, k)) })
 		sources := x.shown(x.c.toolSources(owner))
-		if !placesAlone(sources, competing(byOwner[owner], heldValues, stuck[owner]), value) {
+		if slices.Contains(unplacedNewPicks(sources, competing(byOwner[owner], heldValues, stuck[owner]), heldValues), value) {
 			return fmt.Sprintf("full.feature_choice_keys[%d]", i), value, true
 		}
 	}

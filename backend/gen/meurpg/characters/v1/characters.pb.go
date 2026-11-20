@@ -9305,7 +9305,8 @@ type LevelUpOptions struct {
 	// The lists the level's new skills come from: the class's multiclass pick when the
 	// level takes a new class, and each feature of the level that lets the player choose
 	// skills. skill_choices stays the total.
-	// LevelUpCharacter refuses a new skill no source of the level allows (SKILLS).
+	// LevelUpCharacter judges the sources of the sheet after the level and refuses a player's
+	// new skill that none of them has room for (SKILLS). The master's level is not refused.
 	SkillSources []*LevelUpSkillSource `protobuf:"bytes,45,rep,name=skill_sources,json=skillSources,proto3" json:"skill_sources,omitempty"`
 	// Multiclassing (SRD 5.1, "Multiclassing"). is_new_class says the character
 	// does not have class_key: the level is the class's first (from_level 0), the hit

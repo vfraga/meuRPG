@@ -261,7 +261,7 @@ func TestASkillOnAListWithNoRoomLeftIsRefusedWithTheSentenceOfNoRoom(t *testing.
 	_, err := u.player.api.CreateCharacter(t.Context(), connect.NewRequest(&charactersv1.CreateCharacterRequest{
 		CampaignId: u.campaign, Kind: charactersv1.CharacterKind_CHARACTER_KIND_PLAYER, Name: "Pensantus", Sheet: u.sheet("skill:investigation", "skill:insight", "skill:medicine"),
 	}))
-	wantUnfitSentence(t, err, "sheet.full.skill_proficiency_keys[0]", "Não há vaga para a perícia Investigação: as listas que a oferecem já estão preenchidas pelas outras perícias marcadas. Desmarque uma delas para marcar Investigação.")
+	wantUnfitSentence(t, err, "sheet.full.skill_proficiency_keys[2]", "Não há vaga para a perícia Medicina: as listas que a oferecem já estão preenchidas pelas outras perícias marcadas. Desmarque uma delas para marcar Medicina.")
 }
 
 func TestAnExpertiseOnAListWithNoRoomLeftIsRefusedWithItsOwnSentenceOfNoRoom(t *testing.T) {
@@ -277,5 +277,22 @@ func TestAnExpertiseOnAListWithNoRoomLeftIsRefusedWithItsOwnSentenceOfNoRoom(t *
 	_, err := u.player.api.CreateCharacter(t.Context(), connect.NewRequest(&charactersv1.CreateCharacterRequest{
 		CampaignId: u.campaign, Kind: charactersv1.CharacterKind_CHARACTER_KIND_PLAYER, Name: "Pensantus", Sheet: s,
 	}))
-	wantUnfitSentence(t, err, "sheet.full.expertise_skill_keys[0]", "Não há vaga para a especialização em Investigação: as listas que a oferecem já estão preenchidas pelas outras especializações marcadas. Desmarque uma delas para marcar a especialização em Investigação.")
+	wantUnfitSentence(t, err, "sheet.full.expertise_skill_keys[1]", "Não há vaga para a especialização em Intuição: as listas que a oferecem já estão preenchidas pelas outras especializações marcadas. Desmarque uma delas para marcar a especialização em Intuição.")
+}
+
+func TestACallerWhoMayNotSeeTheSheetGetsThePermissionAnswerBeforeTheFit(t *testing.T) {
+	t.Parallel()
+	h := newHarness(t)
+	master, owner, other := h.newUser("Samuel"), h.newUser("Dona"), h.newUser("Bia")
+	campaign := h.newCampaign(master, "Mirathel", owner, other)
+	race := master.addEntry(t, campaign, skillTraitRace("skill:survival"))
+	u := &unfitTable{h: h, master: master, player: owner, campaign: campaign, race: race}
+	pc := owner.create(t, campaign, charactersv1.CharacterKind_CHARACTER_KIND_PLAYER, "Pensantus", u.sheet("skill:investigation", "skill:insight", "skill:survival"))
+	unfit := u.sheet("skill:investigation", "skill:insight", "skill:nature")
+	_, err := other.update(t, pc, "Pensantus", unfit)
+	wantCode(t, "another player's UpdateCharacter() with an unfit pick", err, connect.CodeNotFound)
+	_, err = other.preview(t, campaign, pc.GetId(), charactersv1.CharacterKind_CHARACTER_KIND_PLAYER, unfit)
+	wantCode(t, "another player's PreviewCharacter() with an unfit pick", err, connect.CodeNotFound)
+	_, err = owner.update(t, pc, "Pensantus", unfit)
+	wantUnfit(t, err, "sheet.full.skill_proficiency_keys[2]", "Natureza")
 }
