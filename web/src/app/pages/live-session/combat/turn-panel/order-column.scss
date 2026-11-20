@@ -92,7 +92,8 @@
 
 .row__word {
   display: flex;
-  align-items: center;
+  // The icon sits on the first line of its text, which may wrap.
+  align-items: flex-start;
   gap: 4px;
   font-size: var(--mr-font-14);
   line-height: 18px;
@@ -104,6 +105,8 @@
 }
 
 .mat-icon {
+  flex: none;
+  margin-top: 2px;
   width: 14px;
   height: 14px;
   font-size: var(--mr-font-14);

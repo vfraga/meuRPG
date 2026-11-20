@@ -226,6 +226,38 @@ describe('OrderColumn', () => {
     expect(getComputedStyle(mount!).paddingLeft).toBe('22px');
   });
 
+  it('on the pair\'s turn the box says "Vez" once and no row carries "Ainda age"', () => {
+    const fixture = TestBed.createComponent(OrderColumn);
+    fixture.componentRef.setInput(
+      'encounter',
+      encounter({
+        currentCombatantId: 'tor',
+        turnGroupIds: ['tor', 'h'],
+        combatants: [
+          combatant({
+            id: 'tor',
+            label: 'Tor',
+            kind: CombatantKind.PLAYER,
+            mine: true,
+            initiative: 17,
+            mountedOnId: 'h',
+          }),
+          combatant({
+            id: 'h',
+            label: 'Cavalo de guerra',
+            riderId: 'tor',
+            mountKind: 'controlled',
+            initiative: 17,
+          }),
+        ],
+      }),
+    );
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.textContent).not.toContain('Ainda age');
+    expect(el.querySelectorAll('.vez').length).toBe(1);
+  });
+
   it('names the rider once when the mount is the rider\'s own creature: "Montaria de Tor · Ileso"', () => {
     const fixture = TestBed.createComponent(OrderColumn);
     fixture.componentRef.setInput(

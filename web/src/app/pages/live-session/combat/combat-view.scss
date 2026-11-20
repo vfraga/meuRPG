@@ -358,7 +358,7 @@
 // From 1280px the order is a column on the left (E6-14): order | map and log | the actions rail (or the vitals, off turn).
 @media (min-width: 1280px) {
   .player {
-    grid-template-columns: 232px minmax(0, 1fr) 400px;
+    grid-template-columns: 288px minmax(0, 1fr) 368px;
     grid-template-areas:
       'order map side'
       'order log side';

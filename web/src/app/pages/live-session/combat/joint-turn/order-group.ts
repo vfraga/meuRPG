@@ -18,10 +18,10 @@ import { MatIconModule } from '@angular/material/icon';
         <mat-icon aria-hidden="true">link</mat-icon>
         <b>{{ mounted() ? 'Montado' : 'Turno conjunto' }}</b>
         @if (names()) {
-          <span>{{ names() }} ·</span>
+          <span class="part">· {{ names() }}</span>
         }
         @if (total() !== null) {
-          <span>{{ mounted() ? '· ' : '' }}iniciativa {{ total() }}</span>
+          <span class="part">· iniciativa {{ total() }}</span>
         }
         @if (onTurn()) {
           <span class="vez">Vez</span>
@@ -59,7 +59,8 @@ import { MatIconModule } from '@angular/material/icon';
       display: flex;
       flex-wrap: wrap;
       align-items: center;
-      gap: 4px 8px;
+      // One separator, the middle dot, between the parts of the head: "Montado · iniciativa 17".
+      gap: 4px 6px;
       margin: 0;
       padding: 10px 12px 4px;
       font-size: var(--mr-font-14);
@@ -79,6 +80,9 @@ import { MatIconModule } from '@angular/material/icon';
     }
 
     .vez {
+      // The pill keeps its line: it takes the end of the head and never wraps under the words.
+      flex: none;
+      margin-left: auto;
       display: inline-flex;
       align-items: center;
       box-sizing: border-box;
@@ -90,6 +94,10 @@ import { MatIconModule } from '@angular/material/icon';
       font-size: var(--mr-font-13);
       font-weight: 700;
       line-height: 1;
+    }
+
+    .part {
+      min-width: 0;
     }
 
     // "os dois agem no mesmo turno" is for the desktop.

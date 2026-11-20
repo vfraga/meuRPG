@@ -15,6 +15,7 @@ import { isCreature, ofOwner, ownerOf } from '../../../../core/combat/creature-n
 import {
   type OrderItem,
   jointTurn,
+  pairTurn,
   orderItems,
   groupAriaLabel,
 } from '../../../../core/combat/joint-turn';
@@ -122,9 +123,11 @@ export class OrderColumn {
   /** Boxes only for groups that hold a player's character (RN-20). */
   protected readonly items = computed(() => orderItems(this.encounter(), false));
   private readonly joint = computed(() => jointTurn(this.encounter()));
+  /** A rider and the mount it directs on turn: one turn for the pair, the box's "Vez" says so and no row repeats it. */
+  private readonly pair = computed(() => pairTurn(this.encounter()));
 
   protected current(c: Combatant): boolean {
-    return !this.joint() && c.id === this.encounter().currentCombatantId;
+    return !this.joint() && !this.pair() && c.id === this.encounter().currentCombatantId;
   }
 
   /** Its place in the whole order, from 1. */
@@ -133,7 +136,7 @@ export class OrderColumn {
   }
 
   protected inTurn(c: Combatant): boolean {
-    return !!this.joint()?.members.some((m) => m.id === c.id);
+    return !this.pair() && !!this.joint()?.members.some((m) => m.id === c.id);
   }
 
   protected key(item: OrderItem): string {
