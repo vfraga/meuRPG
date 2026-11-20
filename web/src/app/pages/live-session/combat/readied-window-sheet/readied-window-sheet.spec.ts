@@ -5,6 +5,8 @@ import { Code, ConnectError } from '@connectrpc/connect';
 
 import { timestampFromMs } from '@bufbuild/protobuf/wkt';
 
+import { DiceMode, DicePreference } from '../../../../../gen/meurpg/campaigns/v1/campaigns_pb';
+
 import {
   AreaPlacement,
   AttackTargetsSchema,
@@ -136,6 +138,8 @@ describe('ReadiedWindowSheet (#582, boards 582-06 to 582-08)', () => {
       reactorLabel: 'Tor',
       state,
       toMap: opts.toMap as ReadiedWindowSheetData['toMap'],
+      diceMode: DiceMode.APP,
+      preference: DicePreference.APP,
     };
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({

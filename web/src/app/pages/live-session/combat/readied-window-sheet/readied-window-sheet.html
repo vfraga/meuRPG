@@ -21,7 +21,41 @@
           {{ goneText() }}
         }
       </p>
+    } @else if (stage() === 'result') {
+      @if (result(); as r) {
+        @if (r.state.error()) {
+          <div class="mr-notice mr-notice--danger" role="alert">
+            <mat-icon aria-hidden="true">error</mat-icon>
+            <p>{{ r.state.error() }}</p>
+          </div>
+        }
+        @if (r.cast) {
+          <app-cast-result [rows]="r.castRows()" [sentence]="r.castSentence()" [pool]="r.castPool()" />
+        } @else {
+          <app-attack-result
+            [targetLabel]="r.targetLabel()"
+            [roll]="r.state.roll()"
+            [d20Formula]="r.d20Formula()"
+            [outcome]="r.outcome()"
+            [showDamage]="r.state.stage() === 'done'"
+            [damage]="r.state.damage()"
+            [waiting]="r.waiting()"
+            [damageLine]="r.damage.line()"
+          />
+          @if (r.asksDamage()) {
+            <app-attack-damage-step
+              [state]="r.state"
+              [damage]="r.damage"
+              [actions]="r.rolls"
+              [canApp]="canApp"
+              [canType]="canType"
+              [preferApp]="preferApp"
+            />
+          }
+        }
+      }
     } @else {
+      <div class="step-one" [class.step-one--off]="stage() !== 'ask'">
       @if (useHeld()) {
         <p class="what" role="status">
           A sua jogada espera as reações de outros. Assim que responderem, ela acontece.
@@ -41,6 +75,7 @@
           [(target)]="target"
           [(release)]="release"
           [(plan)]="plan"
+          [(options)]="options"
           (touched)="choosing()"
         />
       }
@@ -74,6 +109,86 @@
           <mat-icon aria-hidden="true">block</mat-icon>{{ moveOffLine() }}
         </p>
       }
+      </div>
+      @if (stage() === 'roll' && roll(); as rl) {
+        <div class="step-two" data-roll>
+          @if (chosen(); as c) {
+            <app-chosen-row [icon]="c.icon" [caption]="c.caption"><b>{{ c.lead }}</b>{{ c.rest }}</app-chosen-row>
+          }
+          @if (rl.kind === 'attack') {
+            <app-roll-mode-sources [sources]="rl.sources" [label]="modeLabel()" />
+            @if (modeNote()) {
+              <p class="small" role="status">{{ modeNote() }}</p>
+            }
+            @if (hasExtras() && (typing() || !canApp)) {
+              <app-extra-dice [fields]="extraFields()" [(faces)]="extraFaces" />
+            }
+            @if (rl.faces === 1) {
+              <app-roll-picker
+                [compact]="true"
+                [canApp]="canApp"
+                [canType]="canType"
+                [preferApp]="preferApp"
+                [label]="rl.label"
+                [hint]="rl.hint"
+                [totalNote]="rl.totalNote"
+                [modifier]="rl.bonus"
+                [typedFormula]="hasExtras() ? typedFormula : null"
+                [confirmTotal]="hasExtras()"
+                [waiting]="extrasPending()"
+                [busy]="busy()"
+                [sticky]="true"
+                [typeOutlined]="true"
+                backLabel="Voltar"
+                [(typing)]="typing"
+                (app)="answerRoll('app')"
+                (typed)="answerRoll([$event])"
+                (back)="back()"
+              />
+            } @else {
+              <app-multi-roll
+                [fields]="d20Fields"
+                [canApp]="canApp"
+                [canType]="canType"
+                [preferApp]="preferApp"
+                [combine]="rl.combine"
+                [modifier]="pairModifier()"
+                [waiting]="extrasPending()"
+                [totalNote]="rl.totalNote"
+                appLabel="Rolar 2d20 no app"
+                [hint]="rl.hint"
+                [busy]="busy()"
+                backLabel="Voltar"
+                [(typing)]="typing"
+                (app)="answerRoll('app')"
+                (typed)="answerRoll($event)"
+                (back)="back()"
+              />
+            }
+          } @else {
+            <app-roll-picker
+              [compact]="true"
+              [canApp]="canApp"
+              [canType]="canType"
+              [preferApp]="preferApp"
+              [label]="rl.label"
+              [hint]="rl.hint"
+              [totalNote]="rl.totalNote"
+              [min]="rl.min"
+              [max]="rl.max"
+              [modifier]="0"
+              [busy]="busy()"
+              [sticky]="true"
+              [typeOutlined]="true"
+              backLabel="Voltar"
+              [(typing)]="typing"
+              (app)="answerRoll('app')"
+              (typed)="answerRoll([$event])"
+              (back)="back()"
+            />
+          }
+        </div>
+      }
     }
   </div>
   <div foot>
@@ -81,6 +196,16 @@
       <button matButton="outlined" type="button" class="foot__one" data-initial-focus (click)="sheet.close()">
         Fechar
       </button>
+    } @else if (stage() === 'result') {
+      @if (result(); as r) {
+        @if (r.asksDamage()) {
+          <p class="small foot__clock">O ataque já saiu e a reação foi usada. O dano não tem relógio.</p>
+        } @else {
+          <button matButton="filled" type="button" class="foot__one" data-testid="release-done" (click)="done()">
+            Voltar à sessão
+          </button>
+        }
+      }
     } @else {
       <p class="small foot__clock" role="status" data-testid="readied-clock">
         @if (otherDevice()) {
@@ -88,45 +213,48 @@
         }
         {{ autoPass() }}
       </p>
-      <div class="pair">
-        <button
-          matButton="outlined"
-          type="button"
-          class="pair__btn"
-          data-initial-focus
-          [disabled]="busy()"
-          (click)="answer(false)"
-        >
-          {{ view.declineLabel }}
-        </button>
-        @if (mapRelease()) {
+      @if (stage() === 'ask') {
+        <div class="pair">
           <button
-            matButton="filled"
+            matButton="outlined"
             type="button"
             class="pair__btn"
-            [class.pair__btn--off]="moveOff()"
-            [attr.aria-describedby]="moveOff() ? 'readied-limit' : null"
-            [disabled]="!ready() || busy() || moveOff()"
-            disabledInteractive
-            data-testid="release-to-map"
-            (click)="goToMap()"
+            data-initial-focus
+            [disabled]="busy()"
+            (click)="answer(false)"
           >
-            <mat-icon aria-hidden="true">{{ isMove ? 'directions_walk' : 'map' }}</mat-icon
-            >{{ isMove ? view.useLabel : 'Soltar no mapa' }}
+            {{ view.declineLabel }}
           </button>
-        } @else if (view.releasable) {
-          <button
-            matButton="filled"
-            type="button"
-            class="pair__btn"
-            [disabled]="!ready() || busy()"
-            disabledInteractive
-            (click)="answer(true)"
-          >
-            {{ busy() ? 'Usando…' : useLabel() }}
-          </button>
-        }
-      </div>
+          @if (mapRelease()) {
+            <button
+              matButton="filled"
+              type="button"
+              class="pair__btn"
+              [class.pair__btn--off]="moveOff()"
+              [attr.aria-describedby]="moveOff() ? 'readied-limit' : null"
+              [disabled]="!ready() || busy() || moveOff()"
+              disabledInteractive
+              data-testid="release-to-map"
+              (click)="goToMap()"
+            >
+              <mat-icon aria-hidden="true">{{ isMove ? 'directions_walk' : 'map' }}</mat-icon
+              >{{ isMove ? view.useLabel : 'Soltar no mapa' }}
+            </button>
+          } @else if (view.releasable) {
+            <button
+              matButton="filled"
+              type="button"
+              class="pair__btn"
+              data-use
+              [disabled]="!ready() || busy()"
+              disabledInteractive
+              (click)="answer(true)"
+            >
+              {{ busy() ? 'Usando…' : useLabel() }}
+            </button>
+          }
+        </div>
+      }
     }
   </div>
 </app-sheet-frame>

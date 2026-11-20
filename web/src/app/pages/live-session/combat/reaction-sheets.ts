@@ -151,6 +151,8 @@ export class ReactionSheets {
       reactorLabel: window.reactorLabel,
       state: this.ctx.state(),
       toMap: () => this.openRelease(window.id),
+      diceMode: this.ctx.diceMode(),
+      preference: this.ctx.preference(),
     };
     trackOpen(
       this.reactionOpen,

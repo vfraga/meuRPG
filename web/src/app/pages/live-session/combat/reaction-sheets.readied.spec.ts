@@ -1,3 +1,4 @@
+import { DiceMode, DicePreference } from '../../../../gen/meurpg/campaigns/v1/campaigns_pb';
 import { create } from '@bufbuild/protobuf';
 import { of } from 'rxjs';
 
@@ -55,6 +56,8 @@ function setup(windows: 'open' | 'none' = 'open') {
     state: () => state,
     own: () => null,
     vitals: () => [],
+    diceMode: () => DiceMode.PHYSICAL,
+    preference: () => DicePreference.PHYSICAL,
   } as unknown as CombatSheetsContext;
   const release = vi.fn();
   return { sheets: new ReactionSheets(ctx, () => undefined, release), opened, release };
@@ -66,6 +69,13 @@ describe('ReactionSheets, the window of a readied action (#857, #856)', () => {
     sheets.reaction(encounterWindow());
     opened[0].data.toMap?.(null);
     expect(release).toHaveBeenCalledWith('w1');
+  });
+
+  it("hands the window the table's dice mode and the player's preference, as the reaction sheet has them (#938)", () => {
+    const { sheets, opened } = setup();
+    sheets.reaction(encounterWindow());
+    expect(opened[0].data.diceMode).toBe(DiceMode.PHYSICAL);
+    expect(opened[0].data.preference).toBe(DicePreference.PHYSICAL);
   });
 
   it('shows the window again for a player who went back from the map', () => {
