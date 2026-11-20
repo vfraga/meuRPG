@@ -127,6 +127,20 @@ describe('PairCard', () => {
     );
   });
 
+  it("ends the mount's economy on the line's right edge: the empty live region adds no gap", () => {
+    const { el } = setup({ options: three(true, { economy: { action: { used: false } } }) });
+    el.style.display = 'block';
+    el.style.width = '360px';
+    document.body.appendChild(el);
+    onTestFinished(() => el.remove());
+    const line = el.querySelector('.pair__mount')!.getBoundingClientRect();
+    const shapes = el.querySelector('.pair__mount app-economy-shapes')!.getBoundingClientRect();
+    const region = el.querySelector('.pair__loading')!;
+    expect(region.getAttribute('role')).toBe('status');
+    expect(getComputedStyle(region).position).toBe('absolute');
+    expect(Math.abs(line.right - shapes.right)).toBeLessThanOrEqual(1);
+  });
+
   it('labels the shapes with the article of the mount', () => {
     const { el } = setup();
     expect(el.querySelector('.pair__mount app-economy-shapes')?.innerHTML).toContain(

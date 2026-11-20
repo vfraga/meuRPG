@@ -52,7 +52,7 @@ import { EconomyShapes, economyShapes } from '../../../../shared/economy-shapes/
           <app-economy-shapes variant="inline" [shapes]="s" [label]="'O que ' + theMount() + ' tem'" />
         }
         <!-- The region is in the card from the start, with or without words, so "Carregando…" is announced when it comes. -->
-        <span class="pair__loading mr-muted" role="status">{{ shapes() ? '' : 'Carregando…' }}</span>
+        <span class="pair__loading mr-muted" [class.pair__loading--idle]="!!shapes()" role="status">{{ shapes() ? '' : 'Carregando…' }}</span>
       </div>
       @if (!master()) {
       <div class="pair__actions">

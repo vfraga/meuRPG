@@ -45,8 +45,21 @@
   border-bottom: 1px solid var(--mr-line);
 }
 
+.pair__mount {
+  position: relative;
+}
+
 .pair__loading {
   font-size: var(--mr-font-13);
+
+  // The live region is in the card from the start. With nothing to say (`--idle`), it is out of the flow, so it adds no gap to the line and
+  // the mount's economy ends on the card's right edge.
+  &--idle {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    overflow: hidden;
+  }
 }
 
 .pair__name {
