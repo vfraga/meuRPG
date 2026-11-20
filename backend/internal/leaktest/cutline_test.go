@@ -2,6 +2,7 @@ package leaktest
 
 import (
 	"regexp"
+	"slices"
 	"strings"
 	"testing"
 
@@ -252,5 +253,210 @@ func TestAHiddenRollersCutLineStaysNeutralForThePlayers(t *testing.T) {
 		for _, f := range ct.inspect(p, since, nil) {
 			t.Errorf("the delta of %s: %s", p.name, f)
 		}
+	}
+}
+
+// Two lore bards cut one held roll of the skeleton, each in a change of its own: the first answer is written before the roll is, and the
+// roll completes the line of each bard, with or without a question for the master's die. The master reads both completed lines (the
+// positive control), and each player reads the neutral line of each bard, completed in words only for a player who hears the roller.
+//
+// The bards are Ana's Pensantus and Caio's Toren, who the skeleton attacks; in the fogged table (cutline_rollers_test.go) they are
+// Pensantus and Brisa, both Ana's, east of the wall.
+
+// twoCutTable is a table with two bards that cut the skeleton's attack with a die of 5 and one of 3.
+type twoCutTable struct {
+	*rollsTable
+	// bards are the labels of the two bards, the one that answered first first.
+	bards []string
+	// name is the skeleton's name as the players read it, and asks whether its roll asks the master about its die.
+	name  string
+	asks  bool
+	offer *playv1.HeldRollOffer
+}
+
+// loreBardSheet is the sheet of a lore bard of the level 3.
+func loreBardSheet() *charactersv1.CharacterSheet {
+	return &charactersv1.CharacterSheet{Content: &charactersv1.CharacterSheet_Full{Full: &charactersv1.FullSheet{
+		BaseScores: &rulesv1.AbilityScores{Strength: 8, Dexterity: 14, Constitution: 14, Intelligence: 10, Wisdom: 10, Charisma: 16}, RaceKey: "race:human",
+		Classes:    []*charactersv1.ClassLevel{{ClassKey: "class:bard", Level: 3, Subclass: &charactersv1.ClassLevel_SubclassKey{SubclassKey: "subclass:lore"}}},
+		WeaponKeys: []string{dagger},
+	}}}
+}
+
+// newTwoCutTable builds the table of two bards and the skeleton's attack they cut. east puts the skeleton and the bards on the east side
+// of the wall, where Caio does not see them: the second bard is then a character of Ana's (Brisa), and the skeleton attacks Pensantus.
+// asks gives the skeleton a Bardic Inspiration die, so that its roll asks the master after the second cut; without it the second answer
+// writes the roll.
+func newTwoCutTable(t *testing.T, east, asks bool) *twoCutTable {
+	t.Helper()
+	second := labelToren
+	rt := newRollsTableWith(t, func(rt *rollsTable) {
+		w := rt.world
+		for _, c := range []struct {
+			owner *person
+			char  *charactersv1.Character
+		}{{w.ana, w.pens}, {w.caio, w.toren}} {
+			must(c.owner.characters.UpdateCharacter(t.Context(), rq(&charactersv1.UpdateCharacterRequest{
+				CampaignId: w.campaign, CharacterId: c.char.GetId(), Revision: c.char.GetRevision(), Name: c.char.GetName(), Sheet: loreBardSheet(),
+			})))
+		}
+	})
+	tt := &twoCutTable{rollsTable: rt, asks: asks}
+	defer func() {
+		if r := recover(); r != nil {
+			t.Fatalf("the table: %v", r)
+		}
+	}()
+	ctx := t.Context()
+	at := map[string][2]int32{labelPens: {3, 6}}
+	target := labelToren
+	if east {
+		second, target = "Brisa", labelPens
+		brisa := must(rt.ana.characters.CreateCharacter(ctx, rq(&charactersv1.CreateCharacterRequest{
+			CampaignId: rt.campaign, Kind: charactersv1.CharacterKind_CHARACTER_KIND_PLAYER, Name: second, Sheet: loreBardSheet(),
+		}))).GetCharacter()
+		added := must(rt.master.combat.AddCombatants(ctx, rq(&playv1.AddCombatantsRequest{
+			CampaignId: rt.campaign, EncounterId: rt.encounter.GetId(), IdempotencyKey: newKey(), Participants: []*playv1.Participant{{CharacterId: brisa.GetId()}},
+		}))).GetEncounter()
+		for _, c := range added.GetCombatants() {
+			if c.GetCharacterId() == brisa.GetId() {
+				rt.ids[second] = c.GetId()
+			}
+		}
+		if rt.ids[second] == "" {
+			t.Fatal("Brisa is not in the combat")
+		}
+		rt.encounter = added
+		at = map[string][2]int32{"Esqueleto": {14, 5}, labelPens: {14, 6}, second: {14, 7}}
+	} else {
+		at[labelToren] = [2]int32{3, 5}
+	}
+	for label, sq := range at {
+		must(rt.master.combat.MoveCombatant(ctx, rq(&playv1.MoveCombatantRequest{
+			CampaignId: rt.campaign, EncounterId: rt.encounter.GetId(), CombatantId: rt.ids[label], IdempotencyKey: newKey(), Col: sq[0], Row: sq[1], Forced: true,
+		})))
+	}
+	rt.toTurn("Esqueleto")
+	if asks {
+		rt.giveDie("Esqueleto")
+	}
+	tt.name = rt.combatantOf(rt.master, "Esqueleto").GetLabel()
+	key := ""
+	for _, a := range rt.optionsOf(rt.master, "Esqueleto").GetOptions().GetAttacks() {
+		if a.GetEnabled() && a.GetAttack().GetKey() != "" && a.GetAttack().GetSaveDc() == 0 {
+			key = a.GetAttack().GetKey()
+			break
+		}
+	}
+	if key == "" {
+		t.Fatal("the skeleton has no attack to make")
+	}
+	if !rt.mustAttack(rt.master, "Esqueleto", key, target, []int32{8}, nil).GetRoll().GetHeldForReaction() {
+		t.Fatal("the skeleton's attack is not held for the bards' windows")
+	}
+	cutters := []*person{rt.ana, rt.caio}
+	if east {
+		cutters = []*person{rt.ana, rt.ana}
+	}
+	for i, p := range cutters {
+		win := windowOfKind(p, rt.world, playv1.ReactionKind_REACTION_KIND_CUTTING_WORDS)
+		if win == nil {
+			t.Fatalf("bard %d has no Cutting Words window", i+1)
+		}
+		must(p.combat.AnswerReaction(ctx, rq(&playv1.AnswerReactionRequest{
+			CampaignId: rt.campaign, EncounterId: rt.encounter.GetId(), WindowId: win.GetId(), Answer: playv1.ReactionChoice_REACTION_CHOICE_USE,
+			Roll: &playv1.AnswerReactionRequest_Typed{Typed: int32(5 - 2*i)}, IdempotencyKey: newKey(),
+		})))
+	}
+	tt.bards = []string{labelPens, second}
+	if asks {
+		offers := rt.listHeld(rt.master)
+		if len(offers) != 1 || offers[0].GetDie() == nil {
+			t.Fatalf("the master's questions after the cuts = %v, want the skeleton's die", offers)
+		}
+		tt.offer = offers[0]
+	}
+	return tt
+}
+
+// answer is the master's answer to the skeleton's die: kept.
+func (tt *twoCutTable) answer() {
+	must(tt.master.resources.AnswerHeldRoll(tt.t.Context(), rq(&playv1.AnswerHeldRollRequest{
+		CampaignId: tt.campaign, HoldId: tt.offer.GetHoldId(), IdempotencyKey: newKey(),
+		Answer: &playv1.AnswerHeldRollRequest_Die{Die: &playv1.DieAnswer{Use: false}},
+	})))
+}
+
+// neutralLines are the lines a player reads of the two bards while the roll is not heard: "diminuiu", with the skeleton's name.
+func (tt *twoCutTable) neutralLines() []string {
+	var want []string
+	for _, b := range tt.bards {
+		want = append(want, b+" usou Palavras de Interrupção: o ataque de "+tt.name+" diminuiu.")
+	}
+	slices.Sort(want)
+	return want
+}
+
+// wantReactionLines checks the reaction lines of a reader (in any order), and names the reader and the moment for a failure.
+func wantReactionLines(t *testing.T, who, when string, rs []reply, want []string) {
+	t.Helper()
+	got := reactionTexts(logReplyOf(rs).body)
+	slices.Sort(got)
+	if !slices.Equal(got, want) {
+		t.Errorf("%s reads %q %s, want %q", who, got, when, want)
+	}
+}
+
+// completed reads the master's two completed lines of the bards: the positive control, and the words the players read of the outcome.
+func (tt *twoCutTable) completed(t *testing.T) (words []string) {
+	t.Helper()
+	done := tt.readsOfLog(tt.master)
+	fragments := completedCut.FindAllString(string(logReplyOf(done).body), -1)
+	if len(fragments) != 2 || fragments[0] != fragments[1] {
+		t.Fatalf("the master's log holds the completed fragments %q, want the same one for both bards: %s", fragments, logReplyOf(done).body)
+	}
+	tt.needle(t, "two-cuts-completed-master-line", strings.TrimSuffix(fragments[0], "."), done)
+	verb := "errou"
+	if strings.HasSuffix(fragments[0], "acertou.") {
+		verb = "ainda acertou"
+	}
+	for _, b := range tt.bards {
+		words = append(words, b+" usou Palavras de Interrupção: o ataque de "+tt.name+" "+verb+".")
+	}
+	slices.Sort(words)
+	return words
+}
+
+// Two bards cut one roll: while its question waits (when it asks) both players read the neutral line of each bard and the master the
+// pending ones; once the roll is written the master reads both completed, and both players, who hear the skeleton, read the outcome in
+// words for both. No read of a player holds the numbers of the master's lines.
+func TestTwoCutLinesOfOneRollReachPlayersWithNoNumbers(t *testing.T) {
+	for _, asks := range []bool{true, false} {
+		t.Run(map[bool]string{true: "asks", false: "asks nothing"}[asks], func(t *testing.T) {
+			tt := newTwoCutTable(t, false, asks)
+			players := []*person{tt.ana, tt.caio}
+			if asks {
+				pending := map[*person][]reply{}
+				for _, p := range players {
+					pending[p] = tt.readsOfLog(p)
+					wantReactionLines(t, p.name, "while the question waits", pending[p], tt.neutralLines())
+				}
+				master := tt.readsOfLog(tt.master)
+				tt.needle(t, "two-cuts-pending-master-line", cutPendingNeedle, master)
+				if n := strings.Count(string(logReplyOf(master).body), cutPendingNeedle); n != 2 {
+					t.Errorf("the master reads %d pending lines, want one for each bard", n)
+				}
+				tt.checkNothingOf(t, "while the question waits", pending)
+				tt.answer()
+				defer tt.checkNothingOf(t, "while the question waited, against the numbers the answer wrote", pending)
+			}
+			want := tt.completed(t)
+			after := map[*person][]reply{}
+			for _, p := range players {
+				after[p] = tt.readsOfLog(p)
+				wantReactionLines(t, p.name, "after the roll is written", after[p], want)
+			}
+			tt.checkNothingOf(t, "after the roll is written", after)
+		})
 	}
 }

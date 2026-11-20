@@ -93,15 +93,18 @@ They are unrelated to the live stream's `session_seq`, the hint number ([Live se
 
 ### A reaction line that waits for a roll
 
-A Cutting Words line is pending while the replay of the held attack or spell attack waits for its roller (a Bardic die or Lucky).
-The master reads the die and "(aguardando a rolagem)"; no one reads a total, an armor class or an outcome.
-Every player reads the same neutral "diminuiu", whatever the question.
-The final `attack_rolled` or `spell_cast` of the held roll completes the line, linked to it by the reaction's group.
-A player's line is completed only when that player hears the final event; for a hidden roller it stays neutral.
-Undoing the final event puts the line back to pending.
-A held roll whose answer is refused or never given keeps its line waiting.
+A Cutting Words answer that cuts a held attack or spell attack is marked when it is written: `reactionEvent.Waiting`, with the hold's `Group` and the answer's own `Reduction`, the points that bard took off (`markWaiting`).
+Events are immutable, so the answer says nothing of the roll, which is not written yet: the numbers come at read time.
+Every bard of the group is marked in the change of its own answer, and the roll is written by the last answer, or later by the roller's answer when the replay asks (a Bardic die or Lucky).
+The final `attack_rolled` or `spell_cast` names the group (`CutGroup`), and the log builder completes every waiting line of the group from it (`completeCuts`): the outcome, the armor class, the total, and `Before` as the total with the whole group's reduction back on it.
+While the roll is not written, the master reads the die and "(aguardando a rolagem)" and no one reads a total, an armor class or an outcome; every player reads the same neutral "diminuiu", whatever the question.
+A player's line is completed only when that player hears the final event (`heardBy`); for a hidden roller or one the player does not see, it stays neutral.
+Undoing the final event puts every line of the group back to waiting.
+A held roll whose answer is refused or never given keeps its lines waiting.
 The reaction's own event cannot be undone.
 A fresh read and a `since_seq` delta give the same line, because the builder decides it, not the stream.
+A cast of more than one ray (a Scorching Ray with two or more rays at one target) can be cut but is not marked: no one roll says what the cut did, so its answer keeps the line it was written with, which reads no total of the roll.
+Events that #949 stored carry the group's mark as `asked`; it is read as `waiting`.
 Only Cutting Words writes a line that depends on the replay; a held check (a contest, Hide) is not completed this way: its line keeps what the answer wrote when the replay asked, which has no total yet.
 
 ### When the answer is the whole log

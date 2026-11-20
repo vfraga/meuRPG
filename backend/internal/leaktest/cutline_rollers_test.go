@@ -198,3 +198,30 @@ func TestAFoggedRollersCutLineIsNotCompletedForWhoDidNotSeeIt(t *testing.T) {
 	ct.checkNothingOf(t, "after the answer", map[*person][]reply{ct.caio: caio})
 	ct.checkNothingOf(t, "while the question waited", map[*person][]reply{ct.caio: pendingCaio})
 }
+
+// Two bards of Ana's cut a roll Caio does not see through the fog: the master reads both lines completed and Ana, who hears the roller,
+// reads the outcome in words for both; Caio reads what he read before, for both bards, and none of the numbers.
+func TestTwoCutLinesOfAFoggedRollerAreNotCompletedForWhoDidNotSeeIt(t *testing.T) {
+	for _, asks := range []bool{true, false} {
+		t.Run(map[bool]string{true: "asks", false: "asks nothing"}[asks], func(t *testing.T) {
+			tt := newTwoCutTable(t, true, asks)
+			if asks {
+				tt.needle(t, "two-cuts-pending-master-line", cutPendingNeedle, tt.readsOfLog(tt.master))
+			}
+			caioBefore := tt.readsOfLog(tt.caio)
+			before := reactionTexts(logReplyOf(caioBefore).body)
+			if asks {
+				tt.answer()
+			}
+			want := tt.completed(t)
+			ana := tt.readsOfLog(tt.ana)
+			wantReactionLines(t, "Ana", "after the roll is written (the positive control)", ana, want)
+			caio := tt.readsOfLog(tt.caio)
+			if lines := reactionTexts(logReplyOf(caio).body); strings.Join(lines, "\n") != strings.Join(before, "\n") {
+				t.Errorf("Caio reads %q after the roll is written and read %q before: a roller he does not see must change nothing for him", lines, before)
+			}
+			tt.checkNothingOf(t, "after the roll is written", map[*person][]reply{tt.caio: caio})
+			tt.checkNothingOf(t, "before the roll is written", map[*person][]reply{tt.caio: caioBefore})
+		})
+	}
+}

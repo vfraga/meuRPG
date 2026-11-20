@@ -166,7 +166,8 @@ The Help action rolls nothing.
 A damage roll opens its window in `damageWindows`, for every damage that is not healing: a weapon's, a cantrip's and a spell's.
 The window is the same for a player's creature and for an NPC.
 The log line of the cut names the die, what it came off (the attack, the test or the damage) and the roll before and after; a player's line says only whether the attack still hit.
-When the replay asks its roller (a Bardic die or Lucky), the line waits for that roll: the master reads the die and "(aguardando a rolagem)", every player reads "diminuiu", and the final `attack_rolled` or `spell_cast` completes it ([Combat log](combat-log.md#a-reaction-line-that-waits-for-a-roll)).
+Every cutter's answer to a held attack or spell attack is marked when it answers (`markWaiting`), whether or not the replay asks its roller (a Bardic die or Lucky): the line waits for the roll, the master reads the die and "(aguardando a rolagem)", every player reads "diminuiu", and the final `attack_rolled` or `spell_cast` of the group completes every one of the lines when the log is read, and undoing it puts every line back to waiting ([Combat log](combat-log.md#a-reaction-line-that-waits-for-a-roll)).
+A spell attack of two or more rays at one target (Scorching Ray) can be cut but is not marked, and its line keeps what the answer wrote.
 Only Cutting Words on an attack or a spell attack waits this way; a held check (a contest, Hide) is not completed this way: its line keeps what the answer wrote when the replay asked, which has no total yet.
 
 ## The feature window
