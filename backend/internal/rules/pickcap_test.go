@@ -174,3 +174,107 @@ func TestTheLevelAsksForWhatTheListCanSupply(t *testing.T) {
 		}
 	}
 }
+
+// The level asks what the sheet after it may pick, less what the sheet holds: a held key can move to the new source.
+
+func subclassWithFeature(effects ...Effect) TableSubclass {
+	return TableSubclass{
+		TableEntry: TableEntry{Key: sourceSub, NamePT: "Mestre do saber"}, Class: "class:fighter",
+		Levels: []TableSubclassLevel{{Level: 3, Features: []TableFeature{{Key: "feature:estudo@mesa", NamePT: "Estudo", DescPT: []string{"Uma à escolha."}, Effects: effects}}}},
+	}
+}
+
+func subclassAsked(t *testing.T, c *Content, b Build) (skills, expertise int) {
+	t.Helper()
+	o, err := LevelUpOptions(b, "class:fighter", c)
+	if err != nil {
+		t.Fatal(err)
+	}
+	i := slices.IndexFunc(o.Subclasses, func(s LevelUpSubclass) bool { return s.Key == sourceSub })
+	if i < 0 {
+		t.Fatal("subclass missing")
+	}
+	return o.SkillChoices + o.Subclasses[i].SkillChoices, o.ExpertiseChoices + o.Subclasses[i].ExpertiseChoices
+}
+
+func TestAHeldSkillThatMovesToTheNewSourceFreesAPick(t *testing.T) {
+	t.Parallel()
+	c := withOverlay(t, Overlay{Revision: 1, Subclasses: []TableSubclass{subclassWithFeature(Effect{Type: "choice", Choice: "skill", Count: 1, From: []string{"skill:athletics"}})}})
+	before := sweepUp(t, c, sweepBase(t, c, "class:fighter", ""), "class:fighter", sourceSub, 2)
+	before.SkillProficiencies = []string{"skill:athletics", "skill:acrobatics"}
+	for name, view := range map[string]*Content{"master": c, "player": c.ForPlayer()} {
+		if got, _ := subclassAsked(t, view, before); got != 1 {
+			t.Errorf("%s: the level asks %d skills, want 1", name, got)
+		}
+	}
+	ch := satisfy(t, c, before, "class:fighter", sourceSub)
+	ch.SkillProficiencies = nil
+	if err := CheckLevelUpOf(before, mustApply(t, c, before, ch), ch, c); err == nil {
+		t.Error("the level with no skill is accepted")
+	}
+	ch.SkillProficiencies = []string{"skill:survival"}
+	after := mustApply(t, c, before, ch)
+	if err := CheckLevelUpOf(before, after, ch, c); err != nil {
+		t.Fatalf("the level with the freed pick is refused: %v", err)
+	}
+	if got := missingOf(Derive(after, c), OpenChoiceSkills); got != 0 {
+		t.Errorf("open skills after the level = %d, want none", got)
+	}
+}
+
+func TestAHeldExpertiseThatMovesToTheNewSourceFreesAPick(t *testing.T) {
+	t.Parallel()
+	race := TableRace{
+		Key: "race:perito@mesa", NamePT: "Perito", Revision: 1, Size: "Medium", SpeedFt: 30,
+		Traits: []TableFeature{capTrait("trait:faro@mesa", "expertise", 1, "skill:athletics", "skill:acrobatics")},
+	}
+	c := withOverlay(t, Overlay{Revision: 1, Races: []TableRace{race}, Subclasses: []TableSubclass{subclassWithFeature(Effect{Type: "choice", Choice: "expertise", Count: 1, From: []string{"skill:athletics"}})}})
+	before := sweepUp(t, c, sweepBase(t, c, "class:fighter", ""), "class:fighter", sourceSub, 2)
+	before.Race = race.Key
+	before.SkillProficiencies = []string{"skill:athletics", "skill:acrobatics"}
+	before.Expertise = []string{"skill:athletics"}
+	for name, view := range map[string]*Content{"master": c, "player": c.ForPlayer()} {
+		if _, got := subclassAsked(t, view, before); got != 1 {
+			t.Errorf("%s: the level asks %d expertise, want 1", name, got)
+		}
+	}
+	ch := satisfy(t, c, before, "class:fighter", sourceSub)
+	ch.Expertise = []string{"skill:acrobatics"}
+	after := mustApply(t, c, before, ch)
+	if err := CheckLevelUpOf(before, after, ch, c); err != nil {
+		t.Fatalf("the level with the freed expertise is refused: %v", err)
+	}
+	if got := missingOf(Derive(after, c), OpenChoiceExpertise); got != 0 {
+		t.Errorf("open expertise after the level = %d, want none", got)
+	}
+}
+
+func TestAMulticlassListOverlappingTheLevelsFeatureAsksForWhatCanBePicked(t *testing.T) {
+	t.Parallel()
+	srd := loadForTest(t)
+	class := genClass(srd, genKind{name: "ambos"})
+	class.MulticlassSkillChoose, class.SkillFrom = 1, []string{"skill:arcana", "skill:nature"}
+	class.Minimums = map[Ability]int{CON: 11}
+	class.Levels[0].Features = append(class.Levels[0].Features, TableFeature{
+		Key: "feature:estudo-um@mesa", NamePT: "Estudo", DescPT: []string{"Uma perícia."},
+		Effects: []Effect{{Type: "choice", Choice: "skill", Count: 1, From: []string{"skill:arcana"}}},
+	})
+	c := withOverlayOn(t, srd, Overlay{Revision: 1, Classes: []TableClass{class}, Subclasses: genSubclasses(class)})
+	b := wizardWith(map[Ability]int{STR: 10, DEX: 10, CON: 12, INT: 13, WIS: 10, CHA: 10})
+	b.SkillProficiencies = []string{"skill:history", "skill:investigation", "skill:nature"}
+	for name, view := range map[string]*Content{"master": c, "player": c.ForPlayer()} {
+		o, err := LevelUpOptions(b, class.Key, view)
+		if err != nil {
+			t.Fatalf("%s: %v", name, err)
+		}
+		if o.Multiclass == nil || o.Multiclass.Skills == nil || o.Multiclass.Skills.Choose+o.SkillChoices != 1 {
+			t.Errorf("%s: the level asks %+v and %d, want one skill in all", name, o.Multiclass, o.SkillChoices)
+		}
+	}
+	ch := satisfy(t, c, b, class.Key, "")
+	ch.SkillProficiencies = []string{"skill:arcana"}
+	after := mustApply(t, c, b, ch)
+	if err := CheckLevelUpOf(b, after, ch, c); err != nil {
+		t.Fatalf("the level with arcana is refused: %v", err)
+	}
+}

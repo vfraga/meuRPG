@@ -617,15 +617,3 @@ func (c *content) levelSkillSources(classKey string, g levelGains, mc *Multiclas
 	}
 	return out
 }
-
-// checkSkillSources refuses a new skill that the level's sources cannot place together with the others.
-func (c *content) checkSkillSources(got []string, sources []LevelSkillSource) *LevelUpError {
-	picks := make([]pickSource, len(sources))
-	for i, s := range sources {
-		picks[i] = pickSource{Owner: s.Owner, Count: s.Count, From: s.From, Any: len(s.From) == 0}
-	}
-	if left := unplacedPicks(picks, got); len(left) > 0 {
-		return refuse(skillsField, LevelUpReasonSkills, "no choice of the new level lets the player choose %s", left[0])
-	}
-	return nil
-}
