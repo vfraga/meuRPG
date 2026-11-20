@@ -9,8 +9,9 @@ import (
 	playv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/play/v1"
 )
 
-// Find Steed in a combat (#588 slice 3): the steed joins as a controlled mount with the caster on it, on the caster's square; at 0 hit
-// points it goes through the dismount window of the rider and then disappears, and its bond stays for the next cast.
+// Find Steed in a combat: the steed joins as a controlled mount with the caster on it, on the caster's square.
+// At 0 hit points it goes through the dismount window of the rider and then disappears.
+// Its bond stays for the next cast.
 
 // steedRow is what the table keeps of a combatant in the ride columns.
 type steedRow struct {

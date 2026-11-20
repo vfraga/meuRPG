@@ -1209,9 +1209,9 @@ func (e *logEntry) ownersOnly(v combatViewer, actor, target playdb.Combatant) bo
 	return false
 }
 
-// actedForPlayerKinds are the lines of what a character does on its turn: when the master's hand
-// made one for a player's character, the line says so (his corrections of hit points, conditions
-// and the like are the master's own tools, not an act for the character).
+// actedForPlayerKinds are the lines of what a character does: its acts on its turn and the dismissal or release of its steed.
+// When the master's hand made one for a player's character, the line says so.
+// The master's corrections of hit points, conditions and the like are his own tools, not an act for the character.
 var actedForPlayerKinds = map[playv1.CombatLogKind]bool{
 	playv1.CombatLogKind_COMBAT_LOG_KIND_ATTACK:                  true,
 	playv1.CombatLogKind_COMBAT_LOG_KIND_SPELL_CAST:              true,

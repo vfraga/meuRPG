@@ -12,7 +12,7 @@ import (
 	"github.com/PuraFome/meuRPG/backend/internal/platform/db"
 )
 
-// Find Steed (#588 slice 3): a paladin casts it outside a combat and gets a steed that stays bonded to the character.
+// Find Steed: a paladin casts it outside a combat and gets a steed that stays bonded to the character.
 
 const (
 	findSteed = "spell:find-steed"

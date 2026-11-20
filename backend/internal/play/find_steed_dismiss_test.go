@@ -9,8 +9,9 @@ import (
 	playv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/play/v1"
 )
 
-// Dismiss and Release of a steed (#588 slice 3): a dismissal keeps the bond, a release ends it; in a combat the owner's player spends the
-// action of its turn, out of a combat it is free.
+// Dismiss and Release of a steed: a dismissal keeps the bond, a release ends it.
+// In a combat the owner's player spends the action of its turn.
+// Out of a combat it is free.
 
 func (a *armed) dismissSteedAs(t *testing.T, u *user, id string, how charactersv1.CreatureDismissal) error {
 	t.Helper()
@@ -82,8 +83,9 @@ func TestFindSteedReleaseIsTheOwnersAndTheMastersOnly(t *testing.T) {
 	}
 }
 
-// TestFindSteedDismissInACombatSpendsTheOwnersAction: on the owner's turn the dismissal costs the action and puts the rider on foot; off turn
-// or with the action spent it is refused with nothing changed; the master does it free.
+// TestFindSteedDismissInACombatSpendsTheOwnersAction: on the owner's turn the dismissal costs the action and puts the rider on foot.
+// Off turn, or with the action spent, it is refused with nothing changed.
+// The master does it free.
 func TestFindSteedDismissInACombatSpendsTheOwnersAction(t *testing.T) {
 	t.Parallel()
 	a, e := riderInFight(t)
@@ -187,8 +189,9 @@ func (a *armed) steedLine(t *testing.T, u *user, e *playv1.Encounter, kind playv
 	return found
 }
 
-// TestFindSteedDismissAndReleaseInACombatAreLines: sending the steed away in a running combat writes one line, with the owner's character as
-// the actor and the steed as the one sent away, read by the master and every player who sees the steed.
+// TestFindSteedDismissAndReleaseInACombatAreLines: sending the steed away in a running combat writes one line.
+// The owner's character is the actor and the steed is the one sent away.
+// The master and every player who sees the steed read it.
 func TestFindSteedDismissAndReleaseInACombatAreLines(t *testing.T) {
 	t.Parallel()
 	for _, tc := range []struct {
@@ -243,8 +246,9 @@ func (a *armed) anySteedLine(t *testing.T, e *playv1.Encounter) map[string]bool 
 	return read
 }
 
-// TestFindSteedLineFollowsTheVisibilityOfWhoIsInIt: a steed or an owner's combatant that is hidden when the steed is sent away makes the
-// line the master's alone. The API never hides a player's creature, so the test hides it in the table.
+// TestFindSteedLineFollowsTheVisibilityOfWhoIsInIt: a hidden steed or owner makes the line the master's alone.
+// This holds when the steed is sent away while one of them is hidden.
+// The API never hides a player's creature, so the test hides it in the table.
 func TestFindSteedLineFollowsTheVisibilityOfWhoIsInIt(t *testing.T) {
 	t.Parallel()
 	for _, hidden := range []string{"Trovão", "Aurélio"} {
@@ -264,8 +268,10 @@ func TestFindSteedLineFollowsTheVisibilityOfWhoIsInIt(t *testing.T) {
 	}
 }
 
-// TestFindSteedSendingAwayWritesNoLineWhenItIsNotASteedOrNotARunningCombat: a creature that is not a bonded steed, a combat in setup and a
-// combat that is over leave no line; a steed removed by the master or fallen at 0 hit points leaves none either.
+// TestFindSteedSendingAwayWritesNoLineWhenItIsNotASteedOrNotARunningCombat: some cases leave no line.
+// A creature that is not a bonded steed leaves none.
+// A combat in setup leaves none, and so does a combat that is over.
+// A steed removed by the master or fallen at 0 hit points leaves none either.
 func TestFindSteedSendingAwayWritesNoLineWhenItIsNotASteedOrNotARunningCombat(t *testing.T) {
 	t.Parallel()
 	dismiss := charactersv1.CreatureDismissal_CREATURE_DISMISSAL_DISMISS
@@ -330,7 +336,8 @@ func TestFindSteedSendingAwayWritesNoLineWhenItIsNotASteedOrNotARunningCombat(t 
 	}
 }
 
-// TestFindSteedDismissByTheMasterIsMarkedAsTheMastersAct: the master sends the owner's steed away and every reader of the line is told it was the master's act.
+// TestFindSteedDismissByTheMasterIsMarkedAsTheMastersAct: the master sends the owner's steed away.
+// Every reader of the line is told it was the master's act.
 func TestFindSteedDismissByTheMasterIsMarkedAsTheMastersAct(t *testing.T) {
 	t.Parallel()
 	a, e := riderInFight(t)

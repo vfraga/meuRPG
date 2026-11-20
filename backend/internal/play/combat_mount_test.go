@@ -105,8 +105,8 @@ func TestMountedCombat_SetCombatantMount(t *testing.T) {
 
 func dropEncounter(_ *playv1.Encounter, err error) error { return err }
 
-// TestMountedCombat_ViewLinks: the links and the mark are read by who may read them (RN-10, RN-20). A visible pair shows its links to
-// every player.
+// TestMountedCombat_ViewLinks: the links and the mark are read by who may read them (RN-10, RN-20).
+// A visible pair shows its links to every player.
 // Every player who sees the pair reads the mark of a ridden mount.
 // The mark of an unridden one and the used move stay with the master and the owner.
 // A hidden mount leaves its rider plain, with nothing of the mount in the player's copy.
@@ -189,8 +189,8 @@ func TestMountedCombat_ViewLinks(t *testing.T) {
 	}
 }
 
-// TestMountedCombat_ViewOfAnOwnedSteed: the player who controls the mount reads its mark and its link, and a rider that is theirs reads
-// its own used move.
+// TestMountedCombat_ViewOfAnOwnedSteed: the player who controls the mount reads its mark and its link.
+// A rider that is theirs reads its own used move.
 // Another player who sees the pair reads the link and the mark, and none of the rest.
 // The view functions are the ones every copy is built with.
 func TestMountedCombat_ViewOfAnOwnedSteed(t *testing.T) {

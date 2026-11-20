@@ -35,7 +35,7 @@ func TestNoteFor(t *testing.T) {
 	if NoteFor(true) != TargetNote || NoteFor(false) != TableNote || TargetNote == TableNote {
 		t.Error("the note of a cast does not follow whether the effect reached the steed")
 	}
-	// The app writes "o mestre" in lower case in a sentence (board 588-26 card 6).
+	// The app writes "o mestre" in lower case in a sentence.
 	if want := "O corcel também é alvo da magia: o mestre aplica o efeito a ele."; NoteFor(false) != want {
 		t.Errorf("NoteFor(false) = %q, want %q", NoteFor(false), want)
 	}
