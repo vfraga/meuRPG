@@ -7641,7 +7641,7 @@ for (const [scheme, theme] of [['light', 'claro'], ['dark', 'escuro']] as const)
  */
 async function scanPickLists(browser: Browser, colorScheme: 'light' | 'dark', width: number): Promise<void> {
   test.setTimeout(240_000);
-  const masterContext = await newSignedInContext(browser, 'Mestre Teste');
+  const masterContext = await newSignedInContext(browser, 'Mestre Teste', { colorScheme, viewport: { width, height: 900 } });
   const context = await browser.newContext({ storageState: authStatePath('Jogador Teste'), colorScheme, viewport: { width, height: 900 } });
   const m = await masterContext.newPage();
   const page = await context.newPage();
@@ -7715,12 +7715,16 @@ async function scanPickLists(browser: Browser, colorScheme: 'light' | 'dark', wi
     await expect(skills.locator('.skill__name').filter({ has: page.getByRole('checkbox', { name: 'Furtividade', exact: true }) })).toHaveText(/^\s*Furtividade\s*$/);
     await expectScreenPasses(page, `Editor, uma ficha guardada com uma perícia que nenhuma lista permite ${where}`);
 
-    // The master reads the same sheet with the fit notice in "Pendências de regra"; the player is shown none.
+    // The master reads the same sheet with the fit sentence told in the notice of each changed entry (the race and the class), not again
+    // in "Pendências de regra"; the player is shown none.
+    const fitSentence = 'A perícia Furtividade não cabe em nenhuma das listas de onde o personagem escolhe perícias.';
     const sheet = `/campaigns/${campaignId}/characters/${characterId}`;
     await open(m, sheet);
-    await expect(m.getByRole('note', { name: 'Pendências de regra' }).getByText('Escolha fora das listas.')).toHaveCount(1);
+    await expect(m.getByText(fitSentence)).toHaveCount(2);
+    await expect(m.getByRole('note', { name: 'Pendências de regra' }).getByText('Escolha fora das listas.')).toHaveCount(0);
     await expectScreenPasses(m, `Ficha, o aviso do mestre de uma escolha fora das listas ${where}`);
     await open(page, sheet);
+    await expect(page.getByText(fitSentence)).toHaveCount(0);
     await expect(page.getByText('Escolha fora das listas.')).toHaveCount(0);
   } finally {
     await masterContext.close();
