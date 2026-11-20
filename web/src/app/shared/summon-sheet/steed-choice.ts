@@ -1,11 +1,4 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  input,
-  signal,
-  output,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, signal, output } from '@angular/core';
 
 import { MatIconModule } from '@angular/material/icon';
 

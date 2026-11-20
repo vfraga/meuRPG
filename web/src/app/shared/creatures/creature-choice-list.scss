@@ -79,6 +79,16 @@
   max-height: none;
   contain: none;
   overflow: visible;
+
+  // Every row shows: a tighter row, so a short list leaves the sheet's other fields in view.
+  .row {
+    min-height: 48px;
+    padding-block: 4px;
+  }
+
+  .row__title {
+    line-height: 22px;
+  }
 }
 
 .row {
