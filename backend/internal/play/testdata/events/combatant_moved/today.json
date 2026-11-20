@@ -1191,7 +1191,7 @@
   "reaction": {
     "hold": true,
     "group": "x",
-    "asked": true,
+    "waiting": true,
     "kind": "x",
     "window": "x",
     "held": "x",
