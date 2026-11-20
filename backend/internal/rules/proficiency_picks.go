@@ -2,6 +2,7 @@ package rules
 
 import (
 	"fmt"
+	"maps"
 	"slices"
 	"strings"
 )
@@ -165,10 +166,12 @@ func (c *content) placeToolPicks(picks []proficiencyPick) (placed, unplaced []pr
 // proficiencyPicks reads the language and tool picks of the sheet, once the effects are collected.
 func (x *deriver) proficiencyPicks() {
 	onSheet := ownedBy(x.b, *x.d)
+	x.proficientApart = maps.Clone(x.proficient)
 	var placed []proficiencyPick
 	x.pickedLanguages, placed, x.unplacedTools = x.c.pickedProficiencies(x.b, func(k string) bool { return x.owned[k] || onSheet(k) })
 	x.pickedTools = slices.Concat(placed, x.unplacedTools)
-	x.altPicks = x.c.pickedAlternatives(x.b, func(k string) bool { return x.owned[k] || onSheet(k) })
+	x.dropDuplicateAlternativePicks()
+	x.altPicks = x.withoutDuplicateAlternatives(x.c.pickedAlternatives(x.b, func(k string) bool { return x.owned[k] || onSheet(k) }))
 }
 
 // listedNames adds to the sheet's list the names the player typed in a free field, once each: a name the sheet

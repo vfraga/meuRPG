@@ -391,6 +391,11 @@ func (sk *skillTally) raise(skill string, to ProficiencyLevel) {
 // automaticSkillKeys are the skills the background (an SRD or table one, or the
 // custom one's known skills) and the traits give, in that order.
 func (x *deriver) automaticSkillKeys() []string {
+	return append(x.automaticSkillKeysApart(), alternativePicksOfKind(x.altPicks, altSkill)...)
+}
+
+// automaticSkillKeysApart are the automatic skills that no choice of alternatives gave.
+func (x *deriver) automaticSkillKeysApart() []string {
 	var out []string
 	if bg, ok := x.c.backgrounds[x.b.Background]; ok {
 		out = append(out, bg.Skills...)
@@ -410,7 +415,7 @@ func (x *deriver) automaticSkillKeys() []string {
 			}
 		}
 	}
-	return append(out, alternativePicksOfKind(x.altPicks, altSkill)...)
+	return out
 }
 
 // skillEffect applies a skill proficiency effect: "skill:*" raises every skill

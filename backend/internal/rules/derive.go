@@ -56,6 +56,8 @@ type deriver struct {
 	pickedLanguages, pickedTools []proficiencyPick
 	// altPicks are the picks of the choices of alternatives that count (choicealternatives.go).
 	altPicks []altPick
+	// proficientApart are the proficiencies the sheet has before any pick: the picks do not make a tool held "from another source".
+	proficientApart map[string]bool
 	// unplacedTools are the tool picks of pickedTools that the placement in the owner's choices leaves out (pickfit.go).
 	unplacedTools []proficiencyPick
 	// groups are the picks of the background's groups (background_groups.go), read once; groupTyped are the labels of the

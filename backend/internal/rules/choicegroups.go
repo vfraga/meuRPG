@@ -393,6 +393,7 @@ type choiceBuilder struct {
 	order   int
 
 	derived *Derived
+	dx      *deriver
 	// typedLanguages and typedTools count the entries of the free fields that earlier choices took as answers.
 	typedLanguages, typedTools int
 	// legacyTaken counts the surplus cantrips choices already claimed.
@@ -433,6 +434,14 @@ func (cb *choiceBuilder) derive() *Derived {
 		cb.derived = &d
 	}
 	return cb.derived
+}
+
+// deriver is the deriver of the Build, once, for what the choices of alternatives ask of the sheet's sources.
+func (cb *choiceBuilder) deriver() *deriver {
+	if cb.dx == nil {
+		cb.dx = deriverOf(cb.b, cb.c, nil)
+	}
+	return cb.dx
 }
 
 // group finds or makes the group of a source at a level. classIndex orders the

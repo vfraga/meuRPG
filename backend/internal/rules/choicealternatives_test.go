@@ -101,7 +101,7 @@ func TestAPickOutsideEveryAlternativeIsAKeyThatDoesNotExist(t *testing.T) {
 	t.Parallel()
 	c := withOverlayOn(t, loadForTest(t), filterBackgroundWith(skillOrLanguage))
 	key := altKey(skillOrLanguage)
-	for _, value := range []string{"skill:arcana", "language:giant", "proficiency:thieves-tools", "skill:nao-existe"} {
+	for _, value := range []string{"skill:arcana", "language:giant", "proficiency:disguise-kit", "skill:nao-existe"} {
 		if c.c.choiceValueOK(ScopedChoice(key, value)) {
 			t.Errorf("a pick of %s is carried: no alternative offers it", value)
 		}
@@ -155,25 +155,25 @@ func TestAToolAlternativeTakesAFilter(t *testing.T) {
 	t.Parallel()
 	e := Effect{Type: "choice", Choice: choiceAlternatives, Count: 1, Alternatives: []ChoiceAlternative{
 		{Kind: altSkill, From: []string{"skill:stealth", "skill:deception"}},
-		{Kind: altTool, Filter: toolFilter("weapon")},
+		{Kind: altTool, Filter: toolFilter("tool")},
 	}}
 	c := withOverlayOn(t, loadForTest(t), filterBackgroundWith(e))
 	ch := choiceOf(t, c.Choices(altBuild()), altKey(e))
-	want := append([]string{"skill:deception", "skill:stealth"}, c.c.proficiencyKeysOfKinds("weapon")...)
+	want := append([]string{"skill:deception", "skill:stealth"}, c.c.proficiencyKeysOfKinds("tool")...)
 	slices.Sort(want)
 	if got := sortedOptionKeys(ch); !slices.Equal(got, want) {
-		t.Fatalf("%d options, want the 2 skills and the %d weapons", len(got), len(want)-2)
+		t.Fatalf("%d options, want the 2 skills and the %d tools", len(got), len(want)-2)
 	}
-	b := altBuild(altStored(e, "proficiency:glaives"))
+	b := altBuild(altStored(e, "proficiency:disguise-kit"))
 	d := Derive(b, c)
-	if !slices.ContainsFunc(d.Proficiencies, func(p Proficiency) bool { return p.Key == "proficiency:glaives" }) {
+	if !slices.ContainsFunc(d.Proficiencies, func(p Proficiency) bool { return p.Key == "proficiency:disguise-kit" }) {
 		t.Errorf("the tool pick gave no proficiency: %v", d.Proficiencies)
 	}
 	if got := c.Choices(b); len(got.NotOffered) != 0 || choiceOf(t, got, altKey(e)).Missing() != 0 || missingIssues(d) != 0 || openOf(d, OpenChoiceTools) != 0 {
-		t.Errorf("the tool pick is not counted: not offered %v, open tools %d", got.NotOffered, openOf(d, OpenChoiceTools))
+		t.Errorf("the tool pick is not counted: not offered %v, open tools %d, missing %d, issues %d %v", got.NotOffered, openOf(d, OpenChoiceTools), choiceOf(t, got, altKey(e)).Missing(), missingIssues(d), d.Issues)
 	}
 	// A tool the filter leaves out is no key a pick may carry.
-	if c.c.choiceValueOK(altStored(e, "proficiency:thieves-tools")) {
+	if c.c.choiceValueOK(altStored(e, "proficiency:glaives")) {
 		t.Error("a tool outside the filter's kinds is carried")
 	}
 }
@@ -305,5 +305,73 @@ func TestAChoiceOfAlternativesIsCarriedByTheOverlay(t *testing.T) {
 	c := withOverlayOn(t, base, back)
 	if got := sortedOptionKeys(choiceOf(t, c.Choices(altBuild()), altKey(skillOrLanguage))); len(got) != 4 {
 		t.Errorf("the options after the round trip = %v, want four", got)
+	}
+}
+
+// A pick that repeats what another source gives the sheet is one the character would have twice: the option is blocked, a
+// held pick on it is unmet, and the sheet does not count it. The choice's own picks are not "another source".
+func TestAPickOfWhatAnotherSourceGivesIsRefused(t *testing.T) {
+	t.Parallel()
+	toolsOrSkill := Effect{Type: "choice", Choice: choiceAlternatives, Count: 1, Alternatives: []ChoiceAlternative{
+		{Kind: altSkill, From: []string{"skill:perception", "skill:stealth"}},
+		{Kind: altTool, From: []string{"proficiency:disguise-kit", "proficiency:herbalism-kit"}},
+	}}
+	skillOrLanguage := Effect{Type: "choice", Choice: choiceAlternatives, Count: 1, Alternatives: skillOrLanguage.Alternatives}
+	rows := []struct {
+		name   string
+		effect Effect
+		build  func() Build
+		value  string
+		other  string
+	}{
+		{"a race language", skillOrLanguage, func() Build {
+			b := altBuild()
+			b.Race = "race:dwarf"
+			return b
+		}, "language:dwarvish", "skill:stealth"},
+		{"a class skill", skillOrLanguage, func() Build {
+			b := altBuild()
+			b.SkillProficiencies = []string{"skill:perception", "skill:insight"}
+			return b
+		}, "skill:perception", "skill:stealth"},
+		{"a background tool", toolsOrSkill, func() Build {
+			b := altBuild()
+			return b
+		}, "proficiency:disguise-kit", "skill:stealth"},
+	}
+	for _, r := range rows {
+		t.Run(r.name, func(t *testing.T) {
+			t.Parallel()
+			o := filterBackgroundWith(r.effect)
+			if r.name == "a background tool" {
+				o.Backgrounds[0].Tools = []string{"proficiency:disguise-kit"}
+			}
+			c := withOverlayOn(t, loadForTest(t), o)
+			b := r.build()
+			b.FeatureChoices = []string{altStored(r.effect, r.value)}
+			set := c.Choices(b)
+			ch := choiceOf(t, set, altKey(r.effect))
+			if !optionOf(t, ch, r.value).Blocked() {
+				t.Errorf("%s: the option the sheet has from another source is offered", r.value)
+			}
+			if !slices.Contains(ch.Unmet, r.value) {
+				t.Errorf("%s: the pick is not unmet (unmet %v)", r.value, ch.Unmet)
+			}
+			if !slices.ContainsFunc(set.ChoiceProblems(false), func(p ChoiceProblem) bool {
+				return p.Code == ChoiceProblemPrerequisite && p.OptionKey == r.value
+			}) {
+				t.Errorf("%s: the pick is no problem of the save: %v", r.value, set.ChoiceProblems(false))
+			}
+			// The pick counts for nothing: the choice asks again.
+			if d := Derive(b, c); missingIssues(d) != 1 {
+				t.Errorf("%s: the sheet counts the pick: missing issues %d, want 1", r.value, missingIssues(d))
+			}
+			// A pick of another key of the choice is whole, and stays so when the sheet is saved again.
+			b.FeatureChoices = []string{altStored(r.effect, r.other)}
+			set = c.Choices(b)
+			if len(set.ChoiceProblems(false)) != 0 || missingIssues(Derive(b, c)) != 0 {
+				t.Errorf("%s: the choice's own pick is refused: %v", r.other, set.ChoiceProblems(false))
+			}
+		})
 	}
 }

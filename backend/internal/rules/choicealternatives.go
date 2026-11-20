@@ -265,23 +265,61 @@ func (c *content) alternativeToolSources(owner string) []pickSource {
 	return out
 }
 
-// alternativeHad says the sheet has the skill, the language or the tool the value names, from some source.
-func alternativeHad(d *Derived, value string) bool {
+// heldApart says the sheet has the skill, the language or the tool the value names from a source that is not a choice of
+// alternatives: a pick of this kind is one the character would have twice.
+func (x *deriver) heldApart(value string) bool {
 	switch {
 	case strings.HasPrefix(value, "skill:"):
-		return slices.ContainsFunc(d.Skills, func(s Skill) bool { return s.Key == value && s.Proficiency >= ProficiencyFull })
+		return x.skillHeldApart(value)
 	case strings.HasPrefix(value, "language:"):
-		return slices.ContainsFunc(d.Languages, func(n NamedKey) bool { return n.Key == value })
+		return x.languageHeldApart(value)
 	}
-	return slices.ContainsFunc(d.Proficiencies, func(p Proficiency) bool { return p.Key == value })
+	return x.proficientApart[value] || hasPick(withoutAlternatives(x.pickedTools), value)
 }
 
-// alternativeRequired is requiredPicks for a choice of alternatives: the keys it offers that the sheet does not have are
-// the picks to make, and the picks it holds (held) are made. It is the one number the screen and the sheet's issue read.
-func (c *content) alternativeRequired(d *Derived, e *Effect, held []string) int {
+// skillHeldApart says the automatic skills, the player's own list or an effect give the skill.
+func (x *deriver) skillHeldApart(skill string) bool {
+	if slices.Contains(x.automaticSkillKeysApart(), skill) || slices.Contains(x.b.SkillProficiencies, skill) {
+		return true
+	}
+	return slices.ContainsFunc(x.active, func(a activeEffect) bool {
+		e := a.effect
+		return e.Type == "proficiency" && e.Proficiency == skill && len(e.Tags) == 0 && x.applies(a)
+	})
+}
+
+// languageHeldApart says the race, a plain pick or the custom background gives the language.
+func (x *deriver) languageHeldApart(language string) bool {
+	if x.race != nil && slices.Contains(x.race.Languages, language) {
+		return true
+	}
+	if x.b.Background == "" && slices.Contains(x.b.CustomBackgroundProficiencies, language) {
+		return true
+	}
+	return hasPick(withoutAlternatives(x.pickedLanguages), language)
+}
+
+// withoutDuplicateAlternatives drops the picks of the choices of alternatives that repeat what another source gives.
+func (x *deriver) withoutDuplicateAlternatives(picks []altPick) []altPick {
+	return slices.DeleteFunc(picks, func(p altPick) bool { return x.heldApart(p.Value) })
+}
+
+// dropDuplicateAlternativePicks takes out of the language and tool picks the ones a choice of alternatives took that another
+// source gives the sheet too.
+func (x *deriver) dropDuplicateAlternativePicks() {
+	repeated := func(p proficiencyPick) bool { return p.Alt && x.heldApart(p.Value) }
+	x.pickedLanguages = slices.DeleteFunc(x.pickedLanguages, repeated)
+	x.pickedTools = slices.DeleteFunc(x.pickedTools, repeated)
+	x.unplacedTools = slices.DeleteFunc(x.unplacedTools, repeated)
+}
+
+// alternativeRequired is requiredPicks for a choice of alternatives: the keys it offers that the sheet does not have
+// from another source are the picks to make, and the picks it holds (held) are made. It is the one number the screen
+// and the sheet's issue read.
+func (x *deriver) alternativeRequired(e *Effect, held []string) int {
 	var pickable []string
-	for _, v := range c.alternativeValues(e) {
-		if !slices.Contains(held, v) && !alternativeHad(d, v) {
+	for _, v := range x.c.alternativeValues(e) {
+		if !slices.Contains(held, v) && !x.heldApart(v) {
 			pickable = append(pickable, v)
 		}
 	}
@@ -311,7 +349,7 @@ func (x *deriver) checkAlternativePicks() {
 		key := AlternativesKey(a.owner, e)
 		seen[key] = true
 		held := alternativeHeld(x.altPicks, key)
-		missing += max(x.c.alternativeRequired(x.d, e, held)-len(held), 0)
+		missing += max(x.alternativeRequired(e, held)-len(held), 0)
 	}
 	if missing > 0 {
 		x.issue(IssueMissing, choiceKeysField, "Falta escolher %d: faça a escolha no passo “Escolhas”.", missing)
@@ -357,7 +395,8 @@ func (cb *choiceBuilder) alternativeChoiceOptions(e *Effect, key string) (option
 			o := ChoiceOption{Key: k, Stored: ScopedChoice(key, k), NamePT: cb.c.alternativeOptionName(k), SummaryPT: alternativeKindNames[a.Kind] + "."}
 			if slices.Contains(cb.scoped[key], k) {
 				held = append(held, k)
-			} else if alternativeHad(cb.derive(), k) {
+			}
+			if cb.deriver().heldApart(k) {
 				blockOption(&o, "Você já tem isto.")
 			}
 			options = append(options, o)
@@ -376,7 +415,7 @@ func (cb *choiceBuilder) alternativeChoices(g *groupBuild, owner string) {
 		if e.Count > 1 {
 			hint = fmt.Sprintf("%d escolhas entre tipos diferentes. O que o personagem já tem não entra.", e.Count)
 		}
-		ch := cb.addChoice(g, &Choice{Key: key, FeatureKey: owner, Kind: ChoiceKindOptions, TitlePT: alternativesTitle(e), HintPT: hint, Picks: cb.c.alternativeRequired(cb.derive(), e, held), family: familyAlternativePick, Options: options})
+		ch := cb.addChoice(g, &Choice{Key: key, FeatureKey: owner, Kind: ChoiceKindOptions, TitlePT: alternativesTitle(e), HintPT: hint, Picks: cb.deriver().alternativeRequired(e, held), family: familyAlternativePick, Options: options})
 		cb.takeScoped(ch)
 		unmeetBlockedPicks(ch)
 	}
