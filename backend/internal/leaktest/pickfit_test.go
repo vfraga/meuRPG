@@ -41,8 +41,11 @@ func TestOnlyTheMasterReadsTheFitIssueOfAStoredSheet(t *testing.T) {
 		CampaignId: w.campaign, Kind: charactersv1.CharacterKind_CHARACTER_KIND_PLAYER, Name: "Perita", Sheet: stored,
 	}))).GetCharacter()
 	// The table narrows the list: the held pick is in no list now.
-	must(w.master.table.UpdateTableEntry(ctx, rq(&rulesv1.UpdateTableEntryRequest{CampaignId: w.campaign, Key: race.GetKey(), ExpectedRevision: race.GetRevision(),
-		Body: &rulesv1.UpdateTableEntryRequest_TableRace{TableRace: fitRace("skill:perception")}})))
+	narrowed := &rulesv1.UpdateTableEntryRequest{
+		CampaignId: w.campaign, Key: race.GetKey(), ExpectedRevision: race.GetRevision(),
+		Body: &rulesv1.UpdateTableEntryRequest_TableRace{TableRace: fitRace("skill:perception")},
+	}
+	must(w.master.table.UpdateTableEntry(ctx, rq(narrowed)))
 
 	levelUp := &charactersv1.PreviewLevelUpRequest{CampaignId: w.campaign, CharacterId: pc.GetId(), Choices: &charactersv1.LevelUpChoices{
 		ClassKey: class, HitPoints: &charactersv1.LevelUpHitPoints{Method: charactersv1.LevelUpHitPointsMethod_LEVEL_UP_HIT_POINTS_METHOD_AVERAGE},
