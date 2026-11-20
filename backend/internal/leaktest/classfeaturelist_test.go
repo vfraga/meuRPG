@@ -252,3 +252,47 @@ func TestAnArchivedClassFeatureIsNoSourceOfExpertiseForAPlayer(t *testing.T) {
 		}
 	}
 }
+
+// The list of the skills expertise may go on, which PreviewChoices returns, holds no skill of an archived class feature for a
+// player: the master reads it, Ana's list is the one she reads when the feature does not exist.
+func TestAnArchivedClassFeatureAddsNoExpertiseKeyToAPlayersListForADraft(t *testing.T) {
+	p := newChoicesProbe(t)
+	w, ctx := p.w, t.Context()
+	const inside = "skill:arcana"
+	draft := func() *charactersv1.CharacterSheet {
+		s := sheet("class:wizard", 1)
+		s.GetFull().SkillProficiencyKeys = []string{inside}
+		return s
+	}
+	held := must(w.ana.characters.CreateCharacter(ctx, rq(&charactersv1.CreateCharacterRequest{
+		CampaignId: w.campaign, Kind: charactersv1.CharacterKind_CHARACTER_KIND_PLAYER, Name: "Perita", Sheet: draft(),
+	}))).GetCharacter()
+	listed := func(who *person) string {
+		r := who.call(charactersv1connect.CharacterServicePreviewChoicesProcedure, &charactersv1.PreviewChoicesRequest{
+			CampaignId: w.campaign, CharacterId: held.GetId(), Kind: charactersv1.CharacterKind_CHARACTER_KIND_PLAYER, Sheet: draft(),
+		})
+		if !r.ok() {
+			t.Fatalf("PreviewChoices: HTTP %d %s", r.status, shorten(r.body))
+		}
+		return strings.Join(choicesOf(t, r).GetExpertiseAllowed().GetKeys(), ",")
+	}
+	without := listed(w.ana)
+	feature := must(w.master.table.CreateTableEntry(ctx, rq(&rulesv1.CreateTableEntryRequest{
+		CampaignId: w.campaign, Body: &rulesv1.CreateTableEntryRequest_TableClassFeature{TableClassFeature: &rulesv1.TableClassFeature{
+			NamePt: "Mestria arquivada", DescPt: []string{"Texto de teste."}, ClassKey: "class:wizard", Level: 1,
+			Effects: []*rulesv1.TableEffect{{Type: "choice", Choice: "expertise", Count: 1, From: []string{inside}}},
+		}},
+	}))).GetEntry()
+	for name, who := range map[string]*person{"the master": w.master, "Ana": w.ana} {
+		if got := listed(who); !strings.Contains(got, inside) {
+			t.Fatalf("%s: before the archive the expertise list is %q, without %s: the positive control", name, got, inside)
+		}
+	}
+	must(w.master.table.ArchiveTableEntry(ctx, rq(&rulesv1.ArchiveTableEntryRequest{CampaignId: w.campaign, Key: feature.GetKey()})))
+	if got := listed(w.master); !strings.Contains(got, inside) {
+		t.Errorf("the master reads what is archived, and the expertise list is %q", got)
+	}
+	if got := listed(w.ana); got != without {
+		t.Errorf("Ana's expertise list with the archived feature is %q, without the feature %q", got, without)
+	}
+}
