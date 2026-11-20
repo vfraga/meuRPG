@@ -26,6 +26,10 @@ func TestASwitchedOffTableClassAddsNoSkillKeyToAPlayersListForADraft(t *testing.
 	held := must(w.ana.characters.CreateCharacter(t.Context(), rq(&charactersv1.CreateCharacterRequest{
 		CampaignId: w.campaign, Kind: charactersv1.CharacterKind_CHARACTER_KIND_PLAYER, Name: "Menestrel", Sheet: sheet("class:wizard", 1),
 	}))).GetCharacter()
+	// Caio's sheet holds the class before the switch.
+	caiosHeld := must(w.caio.characters.CreateCharacter(t.Context(), rq(&charactersv1.CreateCharacterRequest{
+		CampaignId: w.campaign, Kind: charactersv1.CharacterKind_CHARACTER_KIND_PLAYER, Name: "Cantor", Sheet: sheet(class.GetKey(), 1),
+	}))).GetCharacter()
 	// listed reads the lists of the draft as who sees them: whether the answer came, and whether it lists the key.
 	listed := func(t *testing.T, who reader, draft *charactersv1.CharacterSheet) (listed, answered bool, body string) {
 		t.Helper()
@@ -57,5 +61,19 @@ func TestASwitchedOffTableClassAddsNoSkillKeyToAPlayersListForADraft(t *testing.
 	}
 	if l, ok, _ := listed(t, ana, ownDraft); l || !ok {
 		t.Errorf("Ana's draft of her own class: answered %v with %s listed %v, want the lists without it", ok, extra, l)
+	}
+	// A draft of a sheet that holds the class is accepted after the switch, and its lists are the ones of the master's read of the
+	// same draft: the sheet keeps what it holds, and so its keys; no other key of the class reaches the player.
+	read := func(who *person) *charactersv1.PreviewChoicesResponse {
+		r := who.call(charactersv1connect.CharacterServicePreviewChoicesProcedure, &charactersv1.PreviewChoicesRequest{
+			CampaignId: w.campaign, CharacterId: caiosHeld.GetId(), Kind: charactersv1.CharacterKind_CHARACTER_KIND_PLAYER, Sheet: sheet(class.GetKey(), 1),
+		})
+		if !r.ok() {
+			t.Fatalf("a draft of the sheet that holds the class: HTTP %d %s", r.status, shorten(r.body))
+		}
+		return choicesOf(t, r)
+	}
+	if got, want := read(w.caio), read(w.master); !slices.Equal(got.GetSkillsAllowed().GetKeys(), want.GetSkillsAllowed().GetKeys()) || !slices.Contains(got.GetSkillsAllowed().GetKeys(), extra) {
+		t.Errorf("the owner's lists of the sheet that holds the class: skills %v, the master's %v", got.GetSkillsAllowed().GetKeys(), want.GetSkillsAllowed().GetKeys())
 	}
 }

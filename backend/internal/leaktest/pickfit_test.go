@@ -184,10 +184,10 @@ func TestTheSkillSourcesOfALevelNameNothingTheTableKeepsOut(t *testing.T) {
 	}
 }
 
-// A skill or an expertise whose value is the key of an entry the table keeps out (or no key at all) is answered alike for the
-// player, on create, update and preview: the answer names neither the entry nor its key. A tool pick whose value is the key of
-// such an entry is answered as the closed entry it is, as it is without the check of the picks; and a tool pick of a language,
-// which the sheet takes as a proficiency but no tool choice offers, is answered as a key that does not exist.
+// A tool pick whose value is the key of an entry the table keeps out is answered as the closed entry it is, as main answers it,
+// on create, update and preview, and the answer does not name the entry. A tool pick of a language, which the sheet takes as a
+// proficiency but no tool choice offers, is answered as a key that does not exist. (A skill or an expertise of an entry's key is
+// an unknown key on main too, for any entry, so no row of it can fail without this branch.)
 func TestAPickOfAnEntryKeyIsAnsweredAsAKeyThatDoesNotExist(t *testing.T) {
 	p := newChoicesProbe(t)
 	w, ctx := p.w, t.Context()
@@ -212,19 +212,6 @@ func TestAPickOfAnEntryKeyIsAnsweredAsAKeyThatDoesNotExist(t *testing.T) {
 		s := base()
 		s.GetFull().FeatureChoiceKeys = []string{rules.ScopedChoice(rules.ToolPickKey("trait:tool-proficiency"), key)}
 		return s
-	}
-	shapes := map[string]func(key string) *charactersv1.CharacterSheet{
-		"a tool pick": toolPick,
-		"a skill": func(key string) *charactersv1.CharacterSheet {
-			s := base()
-			s.GetFull().SkillProficiencyKeys = []string{key}
-			return s
-		},
-		"an expertise": func(key string) *charactersv1.CharacterSheet {
-			s := base()
-			s.GetFull().ExpertiseSkillKeys = []string{key}
-			return s
-		},
 	}
 	held := must(w.ana.characters.CreateCharacter(ctx, rq(&charactersv1.CreateCharacterRequest{
 		CampaignId: w.campaign, Kind: charactersv1.CharacterKind_CHARACTER_KIND_PLAYER, Name: "Anã", Sheet: base(),
@@ -254,23 +241,15 @@ func TestAPickOfAnEntryKeyIsAnsweredAsAKeyThatDoesNotExist(t *testing.T) {
 		}
 		return w.ana
 	}
-	for what, build := range shapes {
-		for call, send := range callsOf(build) {
-			for closing, entry := range map[string]*rulesv1.TableEntry{"CHARACTER_BLOCKED_REASON_SWITCHED_OFF_CONTENT": off, "CHARACTER_BLOCKED_REASON_ARCHIVED_CONTENT": archived} {
-				named, none := send(asker(call), entry.GetKey()), send(asker(call), absent)
-				if strings.Contains(string(named.body), canary) {
-					t.Errorf("%s, %s: the answer names the entry: %s", what, call, shorten(named.body))
-				}
-				if what == "a tool pick" {
-					// The key is a pick of the sheet that the table keeps out: the answer is the closed choice's, whatever the picks.
-					if named.status != 400 || !strings.Contains(string(named.body), closing) || !strings.Contains(string(named.body), entry.GetKey()) {
-						t.Errorf("%s, %s: the entry's key: HTTP %d %s, want the refusal of a closed choice %s", what, call, named.status, shorten(named.body), closing)
-					}
-					continue
-				}
-				if !sameAnswer(named, entry.GetKey(), none, absent) {
-					t.Errorf("%s, %s: the entry's key: HTTP %d %s\na key that does not exist: HTTP %d %s", what, call, named.status, shorten(named.body), none.status, shorten(none.body))
-				}
+	for call, send := range callsOf(toolPick) {
+		for closing, entry := range map[string]*rulesv1.TableEntry{"CHARACTER_BLOCKED_REASON_SWITCHED_OFF_CONTENT": off, "CHARACTER_BLOCKED_REASON_ARCHIVED_CONTENT": archived} {
+			named := send(asker(call), entry.GetKey())
+			if strings.Contains(string(named.body), canary) {
+				t.Errorf("a tool pick, %s: the answer names the entry: %s", call, shorten(named.body))
+			}
+			// The key is a pick of the sheet that the table keeps out: the answer is the closed choice's, whatever the picks.
+			if named.status != 400 || !strings.Contains(string(named.body), closing) || !strings.Contains(string(named.body), entry.GetKey()) {
+				t.Errorf("a tool pick, %s: the entry's key: HTTP %d %s, want the refusal of a closed choice %s", call, named.status, shorten(named.body), closing)
 			}
 		}
 	}
