@@ -115,12 +115,20 @@ func refuseUnfitPick(content *rules.Content, m authz.Membership, before func() *
 	if strings.HasPrefix(field, "full.feature_choice_keys") && !view.IsToolProficiency(key) {
 		return errUnknownKey("sheet." + field) // a tool pick of anything but a tool is a key the content does not have
 	}
-	return invalidArgument(&fieldError{field: "sheet." + field, err: errors.New(unfitSentence(view, field, key))})
+	return invalidArgument(&fieldError{field: "sheet." + field, err: errors.New(unfitSentence(view, buildOf(after), field, key))})
 }
 
-// unfitSentence is the sentence of a pick no list allows, by the kind of pick the field holds.
-func unfitSentence(view *rules.Content, field, key string) string {
+// unfitSentence is the sentence of a pick that cannot be placed, by the kind of pick the field holds: a skill or an
+// expertise that some list allows has no room left in the lists that offer it; any other pick is on no list.
+func unfitSentence(view *rules.Content, b rules.Build, field, key string) string {
+	listed := view.OnAList(b, field, key)
 	switch {
+	case strings.HasPrefix(field, "full.skill_proficiency_keys") && listed:
+		name := view.NamePT(key)
+		return fmt.Sprintf("Não há vaga para a perícia %s: as listas que a oferecem já estão preenchidas pelas outras perícias marcadas. Desmarque uma delas para marcar %s.", name, name)
+	case strings.HasPrefix(field, "full.expertise_skill_keys") && listed:
+		name := view.NamePT(key)
+		return fmt.Sprintf("Não há vaga para a especialização em %s: as listas que a oferecem já estão preenchidas pelas outras especializações marcadas. Desmarque uma delas para marcar a especialização em %s.", name, name)
 	case strings.HasPrefix(field, "full.skill_proficiency_keys"):
 		return fmt.Sprintf("A perícia %s não está em nenhuma das listas de onde o personagem escolhe perícias.", view.NamePT(key))
 	case strings.HasPrefix(field, "full.expertise_skill_keys"):

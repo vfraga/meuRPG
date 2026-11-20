@@ -176,3 +176,17 @@ func allowedBy(sources []pickSource) PickAllowed {
 	}
 	return out
 }
+
+// OnAList says whether some source of the sheet b lists key for the pick field ("full.skill_proficiency_keys" or
+// "full.expertise_skill_keys"). A source that names no list lists every key. A field of another kind is never on a list.
+func (c *Content) OnAList(b Build, field, key string) bool {
+	x := c.deriverFor(b)
+	var sources []pickSource
+	switch {
+	case strings.HasPrefix(field, "full.skill_proficiency_keys"):
+		sources = x.skillSources()
+	case strings.HasPrefix(field, "full.expertise_skill_keys"):
+		sources = x.expertiseSources()
+	}
+	return slices.ContainsFunc(sources, func(s pickSource) bool { return s.allows(key) })
+}
