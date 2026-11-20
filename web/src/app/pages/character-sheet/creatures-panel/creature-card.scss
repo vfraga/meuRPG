@@ -194,23 +194,17 @@
 }
 
 .acts--steed {
-  // The row is one line with the ⋮ at its end, whatever the card's width: the actions give way before it wraps.
+  // The row is one line with the ⋮ at its end: a real gap keeps the focus ring clear of the next button, every button
+  // stretches to the same height, and a narrow card with "Dispensar" off drops the icons before a word wraps.
   flex-wrap: nowrap;
-  gap: 0 4px;
+  align-items: stretch;
+  gap: 0 var(--mr-space-2);
 }
 
-.acts--steed .act:not(.act--more) {
-  min-width: 0;
-  gap: 4px;
-  white-space: nowrap;
-}
-
-.acts--steed .act--off {
-  font-size: var(--mr-font-14);
-}
-
-.acts--steed .act__off {
-  font-size: var(--mr-font-14);
+@container (max-width: 420px) {
+  .acts--steed:has(.act--off) .act:not(.act--more) .mat-icon {
+    display: none;
+  }
 }
 
 // A bonded steed's card: "Renomear" and "Corrigir PV" in ink; only "Dispensar" keeps its danger.

@@ -312,7 +312,11 @@ describe('CreatureCard, a bonded steed', () => {
     // "⊘ Dispensar · desligado", and the reason with the block icon.
     expect(flat(off)).toBe('Dispensar · desligado');
     // One row with the ⋮ on it, and a rounded focus ring (the app's) around the word.
-    expect(getComputedStyle(el.querySelector('.acts')!).flexWrap).toBe('nowrap');
+    const row = getComputedStyle(el.querySelector('.acts')!);
+    expect(row.flexWrap).toBe('nowrap');
+    expect(row.gap).toBe('0 var(--mr-space-2)');
+    expect(getComputedStyle(off).whiteSpace).not.toBe('nowrap');
+    expect(getComputedStyle(off).minWidth).not.toBe('0px');
     expect(getComputedStyle(off).borderRadius).toBe('var(--mr-radius-md)');
     const why = el.querySelector(`#${off.getAttribute('aria-describedby')}`);
     expect(flat(why)).toBe('Só na vez de Lia: dispensar gasta a ação.');
