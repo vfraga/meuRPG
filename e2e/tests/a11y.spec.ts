@@ -99,6 +99,7 @@ import {
   createSheetRPC,
   emptyTable,
   icaroSheetBody,
+  icaroSheetWith,
   lockAndMilestone,
   skillTraitRaceBody,
 } from './table-sheet-support';
@@ -7679,10 +7680,7 @@ async function scanPickLists(browser: Browser, colorScheme: 'light' | 'dark', wi
 
     // The sheet editor: the class takes athletics and nature, the trait takes stealth. Taking stealth off and picking animal handling
     // leaves a pick the sources cannot hold together: the server's sentence is on the step.
-    const body = icaroSheetBody(guardian);
-    (body.sheet as any).full.raceKey = raceKey;
-    (body.sheet as any).full.skillProficiencyKeys = ['skill:athletics', 'skill:nature', 'skill:stealth'];
-    const characterId = await createSheetRPC(page, campaignId, body);
+    const characterId = await createSheetRPC(page, campaignId, icaroSheetWith(guardian, raceKey, ['skill:athletics', 'skill:nature', 'skill:stealth']));
     const edit = `/campaigns/${campaignId}/characters/${characterId}/edit`;
     await open(page, edit);
     skills = await openSkills();
