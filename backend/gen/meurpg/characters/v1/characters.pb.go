@@ -3451,9 +3451,9 @@ type FullSheet struct {
 	// "Medium"); empty is the race's own size. A size the race does not offer is an issue
 	// of the sheet (`race_size`), and the race's own counts.
 	Size string `protobuf:"bytes,41,opt,name=size,proto3" json:"size,omitempty"`
-	// Marks on the weapons carried: which of them is silvered, adamantine or magical.
+	// Marks on the weapons carried: which of them is silvered, adamantine or magical, and which is the pact weapon.
 	// At most 20, each `weapon_key` one of weapon_keys, no key twice, and a mark must
-	// set at least one of the three (an empty mark is refused). A marked weapon's
+	// set at least one of the four (an empty mark is refused). At most one mark has `pact_weapon`. A marked weapon's
 	// attack counts as silvered, adamantine or magical for the resistances and
 	// immunities to nonmagical attacks. Unmarked weapons are plain steel. A client that
 	// removes a weapon from weapon_keys must remove its mark in the same request, or the
@@ -4638,8 +4638,8 @@ func (x *ItemBonus) GetItemNamePt() string {
 	return ""
 }
 
-// WeaponMark says what a carried weapon is made of or enchanted with. Rule: set at
-// least one of the three booleans, and `weapon_key` must be in FullSheet.weapon_keys.
+// WeaponMark says what a carried weapon is made of or enchanted with, or that it is the pact weapon. Rule: set at
+// least one of the four booleans, and `weapon_key` must be in FullSheet.weapon_keys.
 type WeaponMark struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Content key of the weapon marked: one of FullSheet.weapon_keys.
@@ -4649,7 +4649,10 @@ type WeaponMark struct {
 	// The weapon is adamantine.
 	Adamantine bool `protobuf:"varint,3,opt,name=adamantine,proto3" json:"adamantine,omitempty"`
 	// The weapon is magical: its attacks count as magical.
-	Magical       bool `protobuf:"varint,4,opt,name=magical,proto3" json:"magical,omitempty"`
+	Magical bool `protobuf:"varint,4,opt,name=magical,proto3" json:"magical,omitempty"`
+	// The weapon is the character's pact weapon: the line a table effect with `line` "pact" goes with.
+	// At most one weapon of the sheet has it.
+	PactWeapon    bool `protobuf:"varint,5,opt,name=pact_weapon,json=pactWeapon,proto3" json:"pact_weapon,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -4708,6 +4711,13 @@ func (x *WeaponMark) GetAdamantine() bool {
 func (x *WeaponMark) GetMagical() bool {
 	if x != nil {
 		return x.Magical
+	}
+	return false
+}
+
+func (x *WeaponMark) GetPactWeapon() bool {
+	if x != nil {
+		return x.PactWeapon
 	}
 	return false
 }
@@ -14866,7 +14876,7 @@ const file_meurpg_characters_v1_characters_proto_rawDesc = "" +
 	"\x11same_item_attuned\x18\t \x01(\bR\x0fsameItemAttuned\x12 \n" +
 	"\fitem_name_pt\x18\n" +
 	" \x01(\tR\n" +
-	"itemNamePt\"\x81\x01\n" +
+	"itemNamePt\"\xa2\x01\n" +
 	"\n" +
 	"WeaponMark\x12\x1d\n" +
 	"\n" +
@@ -14875,7 +14885,9 @@ const file_meurpg_characters_v1_characters_proto_rawDesc = "" +
 	"\n" +
 	"adamantine\x18\x03 \x01(\bR\n" +
 	"adamantine\x12\x18\n" +
-	"\amagical\x18\x04 \x01(\bR\amagical\"\x9e\x01\n" +
+	"\amagical\x18\x04 \x01(\bR\amagical\x12\x1f\n" +
+	"\vpact_weapon\x18\x05 \x01(\bR\n" +
+	"pactWeapon\"\x9e\x01\n" +
 	"\rAbilityOrigin\x12;\n" +
 	"\x06method\x18\x01 \x01(\x0e2#.meurpg.characters.v1.AbilityMethodR\x06method\x12:\n" +
 	"\x05rolls\x18\x02 \x03(\v2$.meurpg.characters.v1.AbilityRollSetR\x05rolls\x12\x14\n" +

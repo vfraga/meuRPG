@@ -509,6 +509,13 @@ message TableEffect {
   // the cast spends no slot. A cast of the same spell with a slot (`also_with_slot`) uses the slot's
   // level. Refused on a cantrip, with `ritual_only` and on any other effect type.
   int32 cast_level = 95;
+  // extra_damage and weapon_rule: the one attack line the effect goes with, on top of `weapon`
+  // (both must hold). It is "pact" (the weapon line the sheet marks as the pact weapon,
+  // WeaponMark.pact_weapon), the key of a weapon of the SRD or of the table ("equipment:..."), the key
+  // of the unarmed strike, or the `attack_name` (or the line key, "pseudo:..." or "natural:...") of a
+  // pseudo_weapon or natural_attack of the same entry. A value that names no such line is refused
+  // at this field; two lines of the entry with the same name make the name ambiguous.
+  string line = 99;
   // Field 90 is not used.
   reserved 90;
 }

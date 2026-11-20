@@ -237,12 +237,13 @@ func validateCarried(b *Build) error {
 }
 
 // checkWeaponMarks checks the marks on the weapons carried: at most MaxWeapons, each on a
-// weapon of the sheet, none twice, none empty.
+// weapon of the sheet, none twice, none empty, at most one of them the pact weapon.
 func checkWeaponMarks(b *Build) error {
 	if len(b.WeaponMarks) > MaxWeapons {
 		return invalid("full.weapon_marks", "must have at most %d entries", MaxWeapons)
 	}
 	seen := make(map[string]bool, len(b.WeaponMarks))
+	pact := false
 	for i, m := range b.WeaponMarks {
 		f := fmt.Sprintf("full.weapon_marks[%d]", i)
 		switch {
@@ -250,8 +251,11 @@ func checkWeaponMarks(b *Build) error {
 			return invalid(f+".weapon_key", "is not one of the weapon_keys")
 		case seen[m.Weapon]:
 			return invalid(f+".weapon_key", "repeats an entry")
-		case !m.Silvered && !m.Adamantine && !m.Magical:
-			return invalid(f, "marks nothing: set silvered, adamantine or magical")
+		case !m.Silvered && !m.Adamantine && !m.Magical && !m.PactWeapon:
+			return invalid(f, "marks nothing: set silvered, adamantine, magical or pact_weapon")
+		}
+		if err := checkPactMark(m, f, &pact); err != nil {
+			return err
 		}
 		seen[m.Weapon] = true
 	}

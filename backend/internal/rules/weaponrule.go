@@ -184,7 +184,7 @@ func (x effectCompiler) weaponRule() error {
 	if p := checkWeaponRule(x.e); p.found() {
 		return x.fail("%s", p.msg)
 	}
-	return nil
+	return x.line()
 }
 
 // pseudoWeapon is the compile-time check of a pseudo_weapon.
@@ -201,10 +201,16 @@ type weaponFacts struct {
 	name           string
 	melee, finesse bool
 	magical        bool
+	// key is the line's key and pact says the sheet marks it as the pact weapon: what `line` asks.
+	key  string
+	pact bool
 }
 
 // matchesWeapon says whether the weapon rule chooses the line.
 func (e *Effect) matchesWeapon(f weaponFacts) bool {
+	if !LineMatches(e.Line, f.key, f.pact) {
+		return false
+	}
 	switch e.Weapon {
 	case WeaponAny:
 		return true
@@ -293,7 +299,7 @@ func (x *deriver) pseudoWeapon(a activeEffect, n int) {
 	e := a.effect
 	melee := e.Weapon == WeaponMelee
 	ab := Ability(e.Ability)
-	t := x.tuneWeapon(ab, weaponFacts{name: foldPT(strings.TrimSpace(e.AttackName)), melee: melee})
+	t := x.tuneWeapon(ab, weaponFacts{name: foldPT(strings.TrimSpace(e.AttackName)), melee: melee, key: PseudoWeaponKey(a.owner, n)})
 	prof := x.prof // a pseudo-weapon counts as a weapon the character is proficient with
 	line := Attack{
 		Key: PseudoWeaponKey(a.owner, n), Name: e.AttackName, NamePT: e.AttackName, Kind: "weapon", Ability: t.attackAbility,
@@ -334,6 +340,9 @@ func (b *overlayBuilder) checkWeaponEffects(site effectSite, e *Effect) error {
 	}
 	if p.found() {
 		return site.fail(p.attr, p.reason, "%s", p.msg)
+	}
+	if e.Type == "weapon_rule" {
+		return b.checkLine(site, e)
 	}
 	return nil
 }

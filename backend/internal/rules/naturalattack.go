@@ -80,7 +80,7 @@ func (x *deriver) naturalAttack(a activeEffect, n int) {
 	if e.Ability == NaturalAbilityBest {
 		ab = x.betterAbility(STR, DEX)
 	}
-	t := x.tuneWeapon(ab, weaponFacts{name: foldPT(strings.TrimSpace(e.AttackName)), melee: true})
+	t := x.tuneWeapon(ab, weaponFacts{name: foldPT(strings.TrimSpace(e.AttackName)), melee: true, key: NaturalAttackKey(a.owner, n)})
 	line := Attack{
 		Key: NaturalAttackKey(a.owner, n), Name: e.AttackName, NamePT: e.AttackName, Kind: "weapon", Ability: t.attackAbility,
 		AttackBonus: x.mods[t.attackAbility] + x.prof + t.attackBonus, Proficient: true,

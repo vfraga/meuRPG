@@ -249,7 +249,7 @@ var menuTypes = []MenuType{
 		{Name: "when", Kind: "condition"},
 		{Name: "text_pt", Kind: "text"},
 	}},
-	{Type: "extra_damage", NamePT: "Dano extra", HintPT: "Dano somado a um ataque com arma que acertou, quando o alvo é o que o texto pede (qualquer um, ou maior que o personagem): um número fixo (o valor, uma fórmula), dados, ou os dois. Sem tipo, o dano é do tipo da arma. Por padrão vale uma vez por turno; pode valer em todo acerto. Os dados dobram no acerto crítico, a menos que a entrada diga que não. Se a entrada define um recurso, cada uso gasta um (por descanso curto ou longo). O jogador escolhe usar na hora de rolar o dano.", Fields: []MenuField{
+	{Type: "extra_damage", NamePT: "Dano extra", HintPT: "Dano somado a um ataque com arma que acertou, quando o alvo é o que o texto pede (qualquer um, ou maior que o personagem): um número fixo (o valor, uma fórmula), dados, ou os dois. Sem tipo, o dano é do tipo da arma. Por padrão vale uma vez por turno; pode valer em todo acerto. Os dados dobram no acerto crítico, a menos que a entrada diga que não. A linha de ataque (opcional) limita o dano a uma só linha da ficha: a arma do pacto (escreva pact), uma arma pela chave, ou o nome de uma arma da característica ou de um ataque natural da mesma entrada; vale junto com o tipo de arma. Se a entrada define um recurso, cada uso gasta um (por descanso curto ou longo). O jogador escolhe usar na hora de rolar o dano.", Fields: []MenuField{
 		{Name: "applies", Required: true, Kind: "choice", List: ListExtraDamageApplies},
 		{Name: "value", Kind: "formula", AlwaysShown: true},
 		{Name: "dice", Kind: "formula", AlwaysShown: true},
@@ -257,6 +257,7 @@ var menuTypes = []MenuType{
 		{Name: "damage_type", Kind: "choice", List: ListDamageTypes, AlwaysShown: true},
 		{Name: "weapon", Kind: "choice", List: ListExtraDamageWeapons, AlwaysShown: true},
 		{Name: "frequency", Kind: "choice", List: ListExtraDamageFrequencies, AlwaysShown: true},
+		{Name: "line", Kind: "text", AlwaysShown: true},
 		{Name: "no_crit_doubling", Kind: "yes_no"},
 		{Name: "resource", Kind: "resource_ref"},
 		{Name: "when", Kind: "condition"},
@@ -317,9 +318,10 @@ var menuTypes = []MenuType{
 		{Name: "when", Kind: "condition"},
 		{Name: "text_pt", Kind: "text"},
 	}},
-	{Type: "weapon_rule", NamePT: "Regra de arma", HintPT: "Muda as armas que o filtro escolhe: outra habilidade para atacar ou para o dano (vale a melhor entre a da arma e as da regra), um bônus na jogada de ataque ou no dano, um alcance maior no corpo a corpo, ou a marca de mágica, de prata ou de adamantina nas armas que o filtro escolhe, o golpe desarmado incluído (vale contra as resistências a ataques não mágicos). Vale também para as armas da característica, menos as marcas.", Fields: []MenuField{
+	{Type: "weapon_rule", NamePT: "Regra de arma", HintPT: "Muda as armas que o filtro escolhe: outra habilidade para atacar ou para o dano (vale a melhor entre a da arma e as da regra), um bônus na jogada de ataque ou no dano, um alcance maior no corpo a corpo, ou a marca de mágica, de prata ou de adamantina nas armas que o filtro escolhe, o golpe desarmado incluído (vale contra as resistências a ataques não mágicos). Vale também para as armas da característica, menos as marcas. A linha de ataque (opcional) limita a regra a uma só linha da ficha: a arma do pacto (escreva pact), uma arma pela chave, ou o nome de uma arma da característica ou de um ataque natural da mesma entrada; vale junto com o filtro.", Fields: []MenuField{
 		{Name: "weapon", Required: true, Kind: "choice", List: ListWeaponFilters},
 		{Name: "weapon_name", Kind: "text"},
+		{Name: "line", Kind: "text", AlwaysShown: true},
 		{Name: "attack_ability", Kind: "choice", List: ListAbilities, AlwaysShown: true},
 		{Name: "damage_ability", Kind: "choice", List: ListAbilities, AlwaysShown: true},
 		{Name: "attack_bonus", Kind: "number", Min: -MaxWeaponPenalty, Max: MaxWeaponBonus, AlwaysShown: true},

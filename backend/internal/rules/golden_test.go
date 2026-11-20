@@ -162,6 +162,11 @@ func TestValidate(t *testing.T) {
 			b.Weapons = []string{"equipment:dagger"}
 			b.WeaponMarks = []WeaponMark{{Weapon: "equipment:dagger"}}
 		}, "full.weapon_marks[0]"},
+		{"two pact weapons", func(b *Build) {
+			b.Weapons = []string{"equipment:dagger", "equipment:rapier"}
+			b.WeaponMarks = []WeaponMark{{Weapon: "equipment:dagger", PactWeapon: true}, {Weapon: "equipment:rapier", PactWeapon: true}}
+		}, "full.weapon_marks[1].pact_weapon"},
+		{"pact mark on a weapon not carried", func(b *Build) { b.WeaponMarks = []WeaponMark{{Weapon: "equipment:dagger", PactWeapon: true}} }, "full.weapon_marks[0].weapon_key"},
 		{"too many marks", func(b *Build) { b.WeaponMarks = make([]WeaponMark, MaxWeapons+1) }, "full.weapon_marks"},
 		{"option that is not an option", func(b *Build) { b.FeatureChoices = []string{"feature:arcane-recovery"} }, "full.feature_choice_keys[0]"},
 	}
@@ -189,9 +194,13 @@ func TestValidate(t *testing.T) {
 				b.Background = "background:acolyte"
 				b.dropCustomBackground()
 			},
-			"no background yet":       func(b *Build) { b.dropCustomBackground() },
-			"manual bonus of -10":     func(b *Build) { b.ExtraAbilityBonuses = map[Ability]int{STR: -10} },
-			"a roll above the d6":     func(b *Build) { b.HitPoints = HitPoints{Method: HitPointsRolled, Rolls: []int{12, 1}} },
+			"no background yet":   func(b *Build) { b.dropCustomBackground() },
+			"manual bonus of -10": func(b *Build) { b.ExtraAbilityBonuses = map[Ability]int{STR: -10} },
+			"a roll above the d6": func(b *Build) { b.HitPoints = HitPoints{Method: HitPointsRolled, Rolls: []int{12, 1}} },
+			"a pact mark alone": func(b *Build) {
+				b.Weapons = []string{"equipment:dagger"}
+				b.WeaponMarks = []WeaponMark{{Weapon: "equipment:dagger", PactWeapon: true}}
+			},
 			"a fighting style option": func(b *Build) { b.FeatureChoices = []string{"feature:fighter-fighting-style-defense"} },
 			"a twinned spell option":  func(b *Build) { b.FeatureChoices = []string{"feature:metamagic-twinned-spell"} },
 			"a trait option":          func(b *Build) { b.FeatureChoices = []string{"trait:draconic-ancestry-red"} },

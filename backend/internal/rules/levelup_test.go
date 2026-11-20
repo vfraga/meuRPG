@@ -371,6 +371,7 @@ func TestLevelUpRefusals(t *testing.T) {
 		{"locked: shield", torenLevelUp(), func(b *Build) { b.Shield = false }, asi, LevelUpReasonLocked, "full.shield"},
 		{"locked: weapons", torenLevelUp(), func(b *Build) { b.Weapons = nil }, asi, LevelUpReasonLocked, "full.weapon_keys"},
 		{"locked: weapon marks", torenLevelUp(), func(b *Build) { b.WeaponMarks = []WeaponMark{{Weapon: "x", Magical: true}} }, asi, LevelUpReasonLocked, "full.weapon_marks"},
+		{"locked: pact weapon mark", torenLevelUp(), func(b *Build) { b.WeaponMarks = []WeaponMark{{Weapon: "x", PactWeapon: true}} }, asi, LevelUpReasonLocked, "full.weapon_marks"},
 		{"locked: background", torenLevelUp(), func(b *Build) { b.Background = "background:criminal" }, asi, LevelUpReasonLocked, "full.background_key"},
 		{"no level gained", torenLevelUp(), func(b *Build) { b.Classes[0].Level = 3 }, asi, LevelUpReasonClass, "full.classes"},
 		{"two levels", torenLevelUp(), func(b *Build) { b.Classes[0].Level = 5 }, asi, LevelUpReasonClass, "full.classes[0].level"},

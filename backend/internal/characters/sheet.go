@@ -587,7 +587,7 @@ func buildOf(f *charactersv1.FullSheet) rules.Build {
 	}
 	for _, m := range f.GetWeaponMarks() {
 		b.WeaponMarks = append(b.WeaponMarks, rules.WeaponMark{
-			Weapon: m.GetWeaponKey(), Silvered: m.GetSilvered(), Adamantine: m.GetAdamantine(), Magical: m.GetMagical(),
+			Weapon: m.GetWeaponKey(), Silvered: m.GetSilvered(), Adamantine: m.GetAdamantine(), Magical: m.GetMagical(), PactWeapon: m.GetPactWeapon(),
 		})
 	}
 	for _, ib := range f.GetItemBonuses() {

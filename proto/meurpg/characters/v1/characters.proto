@@ -1605,9 +1605,9 @@ message FullSheet {
   // "Medium"); empty is the race's own size. A size the race does not offer is an issue
   // of the sheet (`race_size`), and the race's own counts.
   string size = 41;
-  // Marks on the weapons carried: which of them is silvered, adamantine or magical.
+  // Marks on the weapons carried: which of them is silvered, adamantine or magical, and which is the pact weapon.
   // At most 20, each `weapon_key` one of weapon_keys, no key twice, and a mark must
-  // set at least one of the three (an empty mark is refused). A marked weapon's
+  // set at least one of the four (an empty mark is refused). At most one mark has `pact_weapon`. A marked weapon's
   // attack counts as silvered, adamantine or magical for the resistances and
   // immunities to nonmagical attacks. Unmarked weapons are plain steel. A client that
   // removes a weapon from weapon_keys must remove its mark in the same request, or the
@@ -1881,8 +1881,8 @@ message ItemBonus {
   string item_name_pt = 10;
 }
 
-// WeaponMark says what a carried weapon is made of or enchanted with. Rule: set at
-// least one of the three booleans, and `weapon_key` must be in FullSheet.weapon_keys.
+// WeaponMark says what a carried weapon is made of or enchanted with, or that it is the pact weapon. Rule: set at
+// least one of the four booleans, and `weapon_key` must be in FullSheet.weapon_keys.
 message WeaponMark {
   // Content key of the weapon marked: one of FullSheet.weapon_keys.
   string weapon_key = 1;
@@ -1892,6 +1892,9 @@ message WeaponMark {
   bool adamantine = 3;
   // The weapon is magical: its attacks count as magical.
   bool magical = 4;
+  // The weapon is the character's pact weapon: the line a table effect with `line` "pact" goes with.
+  // At most one weapon of the sheet has it.
+  bool pact_weapon = 5;
 }
 
 // CuttingWordsAsk is when the combat asks a bard to use Cutting Words.

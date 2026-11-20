@@ -699,7 +699,7 @@ var ownFields = map[string][]string{
 	// An ability_increase is a feat's alone (checkEffect).
 	"ability_increase": {"value", "count", "from"},
 	// An extra_damage adds its value to a weapon hit, when its applies holds, from a resource if it names one.
-	"extra_damage": {"applies", "value", "resource", "dice", "dice_sides", "damage_type", "weapon", "frequency", "no_crit_doubling", "while"},
+	"extra_damage": {"applies", "value", "resource", "dice", "dice_sides", "damage_type", "weapon", "frequency", "no_crit_doubling", "line", "while"},
 	// A power_attack trades a penalty on the attack roll for flat damage, for the weapons its filters choose.
 	"power_attack": {"attack_penalty", "damage_bonus", "weapon", "weapon_properties", "only_proficient", "resource"},
 	// An ambush gives an edge against a target, by its applies alone.
@@ -722,7 +722,7 @@ var ownFields = map[string][]string{
 	// A state: its name in the entry, how long it lasts and how it ends, what starting it spends and costs.
 	"state": {"state_name", "duration_rounds", "ends_on", "resource", "economy"},
 	// A weapon rule changes the weapons its filter chooses; a pseudo-weapon is an attack line of its own.
-	"weapon_rule":   {"weapon", "weapon_name", "attack_ability", "damage_ability", "attack_bonus", "damage_bonus", "reach_ft", "magical", "silvered", "adamantine", "while"},
+	"weapon_rule":   {"weapon", "weapon_name", "attack_ability", "damage_ability", "attack_bonus", "damage_bonus", "reach_ft", "magical", "silvered", "adamantine", "line", "while"},
 	"pseudo_weapon": {"attack_name", "weapon", "damage_dice", "damage_type", "ability", "reach_ft", "range_ft", "while"},
 	// A natural attack: the name, the dice, the damage type, the ability and the reach; the when that gates it.
 	"natural_attack": {"attack_name", "damage_dice", "damage_type", "ability", "reach_ft"},
@@ -830,6 +830,7 @@ var effectFields = []effectField{
 	{"state_name", func(e *Effect) bool { return e.StateName != "" }, func(e *Effect) { e.StateName = "" }},
 	{"duration_rounds", func(e *Effect) bool { return e.DurationRounds != "" }, func(e *Effect) { e.DurationRounds = "" }},
 	{"ends_on", func(e *Effect) bool { return len(e.EndsOn) > 0 }, func(e *Effect) { e.EndsOn = nil }},
+	{"line", func(e *Effect) bool { return e.Line != "" }, func(e *Effect) { e.Line = "" }},
 	{"weapon_name", func(e *Effect) bool { return e.WeaponName != "" }, func(e *Effect) { e.WeaponName = "" }},
 	{"attack_ability", func(e *Effect) bool { return e.AttackAbility != "" }, func(e *Effect) { e.AttackAbility = "" }},
 	{"damage_ability", func(e *Effect) bool { return e.DamageAbility != "" }, func(e *Effect) { e.DamageAbility = "" }},
@@ -927,6 +928,7 @@ func fieldAttr(attr string) func(*Effect, func(...string) bool) string {
 var effectErrorRules = []effectErrorRule{
 	{[]string{"formula "}, formulaAttr, ReasonFormula},
 	{[]string{"cast_level: "}, fieldAttr(".cast_level"), ReasonValue},
+	{[]string{"line \""}, fieldAttr(".line"), ReasonReference},
 	{[]string{"unknown target"}, func(e *Effect, _ func(...string) bool) string {
 		if e.Type == "roll_mode" {
 			return ".targets"

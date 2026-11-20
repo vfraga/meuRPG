@@ -1024,12 +1024,15 @@ type PactMagic struct {
 	Slots     int
 }
 
-// WeaponMark says a carried weapon is silvered, adamantine or magical (the sheet's
+// WeaponMark says a carried weapon is silvered, adamantine or magical, or is the pact weapon (the sheet's
 // full.weapon_marks). A valid mark names a weapon of Build.Weapons and sets at least
-// one of the three.
+// one of the four.
 type WeaponMark struct {
 	Weapon                        string
 	Silvered, Adamantine, Magical bool
+	// PactWeapon marks the weapon as the character's pact weapon, the line a table effect with `line` "pact"
+	// goes with. At most one mark has it.
+	PactWeapon bool
 }
 
 // ItemBonus is the magic bonus of one piece of the sheet's gear (Build.ItemBonuses). Key
@@ -1176,6 +1179,9 @@ type Attack struct {
 	// strike from a weapon_rule; a creature's attack has neither.
 	Silvered   bool `json:",omitempty"`
 	Adamantine bool `json:",omitempty"`
+	// Pact says the sheet marks the weapon as the pact weapon (WeaponMark.PactWeapon): the line a table effect
+	// with `line` "pact" goes with (LineMatches).
+	Pact bool `json:",omitempty"`
 	// AmmunitionKey is the key of the ammunition a character's ranged weapon fires ("equipment:arrow"); empty for
 	// every other line. The combat spends a piece of it for each attack roll made with the line.
 	AmmunitionKey string `json:",omitempty"`

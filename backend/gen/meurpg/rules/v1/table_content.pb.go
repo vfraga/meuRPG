@@ -2206,7 +2206,14 @@ type TableEffect struct {
 	// the spell's own level). The spell scales with that level (damage, healing, targets), and
 	// the cast spends no slot. A cast of the same spell with a slot (`also_with_slot`) uses the slot's
 	// level. Refused on a cantrip, with `ritual_only` and on any other effect type.
-	CastLevel     int32 `protobuf:"varint,95,opt,name=cast_level,json=castLevel,proto3" json:"cast_level,omitempty"`
+	CastLevel int32 `protobuf:"varint,95,opt,name=cast_level,json=castLevel,proto3" json:"cast_level,omitempty"`
+	// extra_damage and weapon_rule: the one attack line the effect goes with, on top of `weapon`
+	// (both must hold). It is "pact" (the weapon line the sheet marks as the pact weapon,
+	// WeaponMark.pact_weapon), the key of a weapon of the SRD or of the table ("equipment:..."), the key
+	// of the unarmed strike, or the `attack_name` (or the line key, "pseudo:..." or "natural:...") of a
+	// pseudo_weapon or natural_attack of the same entry. A value that names no such line is refused
+	// at this field; two lines of the entry with the same name make the name ambiguous.
+	Line          string `protobuf:"bytes,99,opt,name=line,proto3" json:"line,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2897,6 +2904,13 @@ func (x *TableEffect) GetCastLevel() int32 {
 		return x.CastLevel
 	}
 	return 0
+}
+
+func (x *TableEffect) GetLine() string {
+	if x != nil {
+		return x.Line
+	}
+	return ""
 }
 
 // TableFeature is a class or subclass feature, a race or subrace trait, or a
@@ -9935,7 +9949,7 @@ const file_meurpg_rules_v1_table_content_proto_rawDesc = "" +
 	" \x01(\x05R\vlongRangeFt\x12\x1b\n" +
 	"\tweight_oz\x18\v \x01(\x05R\bweightOz\x12\x19\n" +
 	"\bprice_cp\x18\f \x01(\x05R\apriceCp\x129\n" +
-	"\x19two_handed_since_revision\x18\r \x01(\x05R\x16twoHandedSinceRevision\"\xa2\x16\n" +
+	"\x19two_handed_since_revision\x18\r \x01(\x05R\x16twoHandedSinceRevision\"\xb6\x16\n" +
 	"\vTableEffect\x12\x12\n" +
 	"\x04type\x18\x01 \x01(\tR\x04type\x12\x16\n" +
 	"\x06target\x18\x02 \x01(\tR\x06target\x12\x12\n" +
@@ -10047,7 +10061,8 @@ const file_meurpg_rules_v1_table_content_proto_rawDesc = "" +
 	"\bduration\x18] \x01(\tR\bduration\x12!\n" +
 	"\fdaily_choice\x18^ \x01(\bR\vdailyChoice\x12\x1d\n" +
 	"\n" +
-	"cast_level\x18_ \x01(\x05R\tcastLevelJ\x04\bZ\x10[\"\x94\x04\n" +
+	"cast_level\x18_ \x01(\x05R\tcastLevel\x12\x12\n" +
+	"\x04line\x18c \x01(\tR\x04lineJ\x04\bZ\x10[\"\x94\x04\n" +
 	"\fTableFeature\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x17\n" +
 	"\aname_pt\x18\x02 \x01(\tR\x06namePt\x12\x1f\n" +

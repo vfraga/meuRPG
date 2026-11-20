@@ -204,7 +204,10 @@ type Effect struct {
 	// an attack line of its own: AttackName, Weapon (WeaponMelee or WeaponRanged),
 	// DamageDice (plain dice, "1d6"), DamageType (a "damage-type:" key), Ability, ReachFt
 	// for a melee one and RangeFt (above) for a ranged one.
-	WeaponName    string `json:"weapon_name,omitempty"`
+	WeaponName string `json:"weapon_name,omitempty"`
+	// Line (weapon_rule and extra_damage) narrows the effect to one attack line (line.go). On the effect
+	// the engine compiles it is the line's key (LinePact, a weapon key, PseudoWeaponKey or NaturalAttackKey).
+	Line          string `json:"line,omitempty"`
 	AttackAbility string `json:"attack_ability,omitempty"`
 	DamageAbility string `json:"damage_ability,omitempty"`
 	AttackBonus   int    `json:"attack_bonus,omitempty"`
@@ -641,6 +644,9 @@ func (x effectCompiler) strayExtraDamage() error {
 	}
 	if !slices.Contains(damageTypeEffects, e.Type) && e.DamageType != "" {
 		return x.fail("damage_type belongs to extra_damage, spell_modifier, pseudo_weapon, natural_attack and roll_minimum")
+	}
+	if e.Type != "extra_damage" && e.Type != "weapon_rule" && e.Line != "" {
+		return x.fail("line belongs to extra_damage and weapon_rule")
 	}
 	if !slices.Contains(weaponEffects, e.Type) && e.Weapon != "" {
 		return x.fail("weapon belongs to extra_damage, weapon_rule, pseudo_weapon and power_attack")

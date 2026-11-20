@@ -77,6 +77,9 @@ type ExtraDamage struct {
 	Resource string
 	// TextPT is the line the master reads.
 	TextPT string
+	// Line is the key of the one attack line it goes with, LinePact for the pact weapon, empty for every line
+	// the Weapon filter chooses (LineMatches).
+	Line string
 }
 
 // extraDamage checks the fields of an extra_damage effect.
@@ -101,7 +104,7 @@ func (x effectCompiler) extraDamage() error {
 	if e.dice, err = x.compile(e.Dice, formula.Int); err != nil {
 		return err
 	}
-	return nil
+	return x.line()
 }
 
 // extraDamageShape names the field of an extra_damage's closed values that is wrong and why
@@ -143,7 +146,7 @@ func (x *deriver) extraDamages() {
 		x.d.ExtraDamages = append(x.d.ExtraDamages, ExtraDamage{
 			Key: a.owner, NamePT: x.c.namePT(a.owner), Amount: flat, Dice: dice, NoCritDoubling: e.NoCritDoubling, DamageType: e.DamageType,
 			Weapon: cmp.Or(e.Weapon, ExtraDamageAnyWeapon), Frequency: cmp.Or(e.Frequency, ExtraDamageOncePerTurn),
-			Applies: e.Applies, Resource: e.Resource, TextPT: e.TextPT,
+			Applies: e.Applies, Resource: e.Resource, TextPT: e.TextPT, Line: e.Line,
 		})
 	}
 }
@@ -186,7 +189,7 @@ func (b *overlayBuilder) checkExtraDamage(site effectSite, e *Effect) error {
 	if e.Resource != "" && !b.resourceDefined(site.owner, e.Resource) {
 		return site.fail(".resource", ReasonReference, "the extra damage spends %q, which no resource effect of this entry or its class defines", e.Resource)
 	}
-	return nil
+	return b.checkLine(site, e)
 }
 
 func extraDamageValues() []MenuValue {

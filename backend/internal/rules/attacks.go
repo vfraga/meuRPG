@@ -65,7 +65,7 @@ func (x *deriver) weaponAttack(i int, key string, martialArts bool, martialDie i
 	sheetMagical, _, _ := x.sheetMarks(key)
 	facts := weaponFacts{
 		name: foldPT(strings.TrimSpace(c.namePT(key))), melee: kind == "melee", finesse: has("finesse"),
-		magical: sheetMagical,
+		magical: sheetMagical, key: key, pact: x.sheetPact(key),
 	}
 	t := x.tuneWeapon(x.weaponAbility(kind, has("finesse") || monkWeapon), facts)
 	if has("heavy") {
@@ -95,6 +95,7 @@ func (x *deriver) weaponAttack(i int, key string, martialArts bool, martialDie i
 		DamageNotePT: note,
 	}
 	a.Magical, a.Silvered, a.Adamantine = x.weaponMarks(key, facts)
+	a.Pact = facts.pact
 	fillWeaponDamage(&a, w, monkWeapon, martialDie, oneHanded, dmg)
 	if a.VersatileDamage != "" {
 		a.Grip = x.versatileGrip(i)
@@ -185,6 +186,11 @@ func (x *deriver) sheetMarks(key string) (magical, silvered, adamantine bool) {
 		}
 	}
 	return magical, silvered, adamantine
+}
+
+// sheetPact says the sheet marks the carried weapon as the pact weapon.
+func (x *deriver) sheetPact(key string) bool {
+	return slices.ContainsFunc(x.b.WeaponMarks, func(m WeaponMark) bool { return m.Weapon == key && m.PactWeapon })
 }
 
 // weaponMarks is the ONE place that says whether a carried weapon's attack is magical, silvered or adamantine.
@@ -347,7 +353,7 @@ func (x *deriver) unarmedStrike(martialArts bool, martialDie int) {
 	}
 	ki := HasFeature(*x.d, kiEmpoweredStrikes)
 	namePT := x.c.namePT(UnarmedStrikeKey)
-	facts := weaponFacts{name: foldPT(strings.TrimSpace(namePT)), melee: true, magical: ki}
+	facts := weaponFacts{name: foldPT(strings.TrimSpace(namePT)), melee: true, magical: ki, key: UnarmedStrikeKey}
 	t := x.tuneWeapon(ab, facts)
 	magical, silvered, adamantine := x.weaponMarks(UnarmedStrikeKey, facts)
 	mod := x.mods[t.damageAbility]
