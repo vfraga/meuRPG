@@ -105,27 +105,37 @@ type EffectMenu struct {
 
 // Names of the closed lists of the menu.
 const (
-	ListModifierTargets    = "modifier_targets"
-	ListModifierModes      = "modifier_modes"
-	ListProficiencies      = "proficiency_targets"
-	ListProficiencyLevels  = "proficiency_levels"
-	ListRollModes          = "roll_modes"
-	ListRollTargets        = "roll_targets"
-	ListSenses             = "senses"
-	ListRecharges          = "recharges"
-	ListRestDurations      = "rest_durations"
-	ListEvents             = "events"
-	ListEconomies          = "economies"
-	ListManeuverApplies    = "maneuver_applies"
-	ListChoiceKinds        = "choice_kinds"
-	ListSkills             = "skills"
-	ListLanguages          = "languages"
-	ListTools              = "tools"
-	ListTagPrefixes        = "tag_prefixes"
-	ListAbilities          = "abilities"
-	ListIncreaseAmounts    = "ability_increase_amounts"
-	ListRangedAttacks      = "ranged_attack_applies"
-	ListExtraDamageApplies = "extra_damage_applies"
+	ListModifierTargets   = "modifier_targets"
+	ListModifierModes     = "modifier_modes"
+	ListProficiencies     = "proficiency_targets"
+	ListProficiencyLevels = "proficiency_levels"
+	ListRollModes         = "roll_modes"
+	ListRollTargets       = "roll_targets"
+	ListSenses            = "senses"
+	ListRecharges         = "recharges"
+	ListRestDurations     = "rest_durations"
+	ListEvents            = "events"
+	ListEconomies         = "economies"
+	ListManeuverApplies   = "maneuver_applies"
+	ListChoiceKinds       = "choice_kinds"
+	ListSkills            = "skills"
+	ListLanguages         = "languages"
+	ListTools             = "tools"
+	// ListToolChoices are the proficiencies the list of a choice of tools may name: the tools, vehicles and kits of
+	// ListTools and the weapons (a background's tools, the other user of ListTools, name no weapon).
+	ListToolChoices = "tool_choices"
+	// ListProficiencyKinds are the kinds a filter of a choice of tools names, and ListWeaponProficiencies,
+	// ListToolProficiencies and ListOtherProficiencies the proficiencies of each kind, so the editor counts what a filter
+	// matches with no other call.
+	ListProficiencyKinds    = "proficiency_kinds"
+	ListWeaponProficiencies = "weapon_proficiencies"
+	ListToolProficiencies   = "tool_proficiencies"
+	ListOtherProficiencies  = "other_proficiencies"
+	ListTagPrefixes         = "tag_prefixes"
+	ListAbilities           = "abilities"
+	ListIncreaseAmounts     = "ability_increase_amounts"
+	ListRangedAttacks       = "ranged_attack_applies"
+	ListExtraDamageApplies  = "extra_damage_applies"
 	// ListExtraDamageWeapons and ListExtraDamageFrequencies are the closed values of an
 	// extra_damage's weapon and frequency.
 	ListExtraDamageWeapons     = "extra_damage_weapons"
@@ -431,6 +441,8 @@ var menuTypes = []MenuType{
 		{Name: "choice", Required: true, Kind: "choice", List: ListChoiceKinds},
 		{Name: "count", Required: true, Kind: "number", Min: 1, Max: MaxChoiceCount},
 		{Name: "from", Kind: "choices"},
+		{Name: "filter", Kind: "choice_filter", List: ListProficiencyKinds},
+		{Name: "from_feature", Kind: "feature_ref"},
 		{Name: "name", Kind: "text"},
 		{Name: "set", Kind: "choice", List: ListFeatOptionSets},
 		{Name: "daily_choice", Kind: "yes_no"},
@@ -689,6 +701,13 @@ func (c *content) menuProficiencies() (profs, skills, tools []MenuValue) {
 	return profs, skills, tools
 }
 
+// menuToolChoices are the tools and the weapons a choice of tools may list, by Portuguese name.
+func (c *content) menuToolChoices(tools []MenuValue) []MenuValue {
+	out := append(slices.Clone(tools), c.menuProficienciesOfKind(filterKindWeapon)...)
+	sortMenuByName(out)
+	return out
+}
+
 // sortMenuByName sorts values by their Portuguese name, ignoring case.
 func sortMenuByName(vs []MenuValue) {
 	slices.SortStableFunc(vs, func(a, b MenuValue) int { return strings.Compare(strings.ToLower(a.NamePT), strings.ToLower(b.NamePT)) })
@@ -747,6 +766,11 @@ func (c *content) menuLists() []MenuList {
 		{Name: ListSkills, Values: skills},
 		{Name: ListLanguages, Values: languages},
 		{Name: ListTools, Values: tools},
+		{Name: ListToolChoices, Values: c.menuToolChoices(tools)},
+		{Name: ListProficiencyKinds, Values: namedMenu(filterKinds, func(k string) string { return proficiencyKindNames[k] })},
+		{Name: ListWeaponProficiencies, Values: c.menuProficienciesOfKind(filterKindWeapon)},
+		{Name: ListToolProficiencies, Values: c.menuProficienciesOfKind(filterKindTool)},
+		{Name: ListOtherProficiencies, Values: c.menuProficienciesOfKind(filterKindOther)},
 		{Name: ListTagPrefixes, Values: tagPrefixes},
 		{Name: ListAbilities, Values: abilityValues},
 		{Name: ListIncreaseAmounts, Values: []MenuValue{{Key: "1", NamePT: "+1"}, {Key: "2", NamePT: "+2"}}},

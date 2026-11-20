@@ -117,9 +117,22 @@ export interface EffectDraft {
   name: string;
   set: string;
   cap: number;
+  /** choice of tools: the kinds of proficiency it offers in place of a `from` list ("weapon", "tool", "other"), and whether the filter is the
+   * source of the options (kept apart from the kinds so a filter with no kind ticked yet is still the filter). Only the kinds are sent. */
+  filter: string[];
+  filterOn: boolean;
+  /** choice of features: the key of the feature whose options it offers, instead of its own, a `from` list or a `set`. */
+  fromFeature: string;
   /** aura: the effect the holder carries into a combat, as the spell editor's block draws it. */
   aura?: SpellEffectDraft;
 }
 
 /** The fields a request carries for one effect: the type, and only what that type reads. */
 export type EffectInit = Partial<Omit<TableEffect, '$typeName' | '$unknown'>>;
+
+/** A feature of the table that lists options of its own, named with the entry it is in. */
+export interface FeatureWithOptions {
+  readonly key: string;
+  readonly namePt: string;
+  readonly count: number;
+}

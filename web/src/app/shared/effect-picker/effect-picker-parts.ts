@@ -297,6 +297,12 @@ export function fieldView(type: string, f: EffectMenuField, ownResources: boolea
   if (f.name === 'rolls' && f.kind === 'choices') {
     return 'rolls';
   }
+  if (f.kind === 'choice_filter') {
+    return 'filter';
+  }
+  if (f.kind === 'feature_ref') {
+    return 'feature';
+  }
   if (f.kind === 'resource_ref' && (type === 'reroll' || type === 'power_attack') && ownResources) {
     return 'uses';
   }

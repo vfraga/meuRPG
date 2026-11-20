@@ -168,6 +168,10 @@ func (s *Service) planLevelUp(ctx context.Context, tx pgx.Tx, q *charactersdb.Qu
 	if err := planLevelUpSheet(t, choices, hp, &plan); err != nil {
 		return levelUpPlan{}, err
 	}
+	// A new pick the table keeps out of the caller's offer reads as a key the content does not have.
+	if err := refuseKeptOutPick(t.content, m, func() *charactersv1.FullSheet { return t.full }, plan.sheet); err != nil {
+		return levelUpPlan{}, err
+	}
 	markRetiredChoices(t, m, &plan)
 	if err := checkPlannedLevel(t, &plan); err != nil {
 		return levelUpPlan{}, err

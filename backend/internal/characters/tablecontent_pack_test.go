@@ -802,3 +802,41 @@ func TestAFeatWithOptionsSurvivesAPackRoundTrip(t *testing.T) {
 		t.Errorf("the option keys changed: %v", in.GetTableFeat().GetOptions())
 	}
 }
+
+// A choice of tools that lists a key of another kind is refused in an import as it is in a write: the same field and the
+// same reason, in the preview and in the apply, and nothing is written.
+func TestAnImportRefusesAKeyOfAnotherKindInAToolListAsAWriteDoes(t *testing.T) {
+	t.Parallel()
+	pt := newPackTable(t)
+	body := testBackground("Cais do farol")
+	body.Feature = &rulesv1.TableFeature{NamePt: "Rede do cais", DescPt: []string{"Texto de teste."}, Effects: []*rulesv1.TableEffect{{
+		Type: "choice", Choice: "tool", Count: 1, From: []string{"proficiency:smiths-tools", "skill:athletics"},
+	}}}
+	const field = "table_background.feature.effects[0].from"
+	hasViolation := func(vs []*rulesv1.TableContentViolation) bool {
+		return slices.ContainsFunc(vs, func(v *rulesv1.TableContentViolation) bool {
+			return v.GetField() == field && v.GetReason() == "bad_value"
+		})
+	}
+
+	_, err := pt.master.table.CreateTableEntry(t.Context(), connect.NewRequest(createReq(pt.to, body)))
+	if !hasViolation(violationsOfErr(t, err)) {
+		t.Fatalf("the write: %v %v, want a violation of reason bad_value at %s", err, violationsOfErr(t, err), field)
+	}
+
+	pack := &rulesv1.TableContentPack{Format: "meurpg.table-content", Version: 1, Entries: []*rulesv1.TableEntry{{
+		Key: "background:cais-do-farol@mesa", Kind: rulesv1.TableContentKind_TABLE_CONTENT_KIND_BACKGROUND, NamePt: "Cais do farol",
+		Body: &rulesv1.TableEntry_TableBackground{TableBackground: body},
+	}}}
+	pv := pt.preview(t, pt.to, pack)
+	if e := pv.GetEntries()[0]; e.GetStatus() != rulesv1.TableImportStatus_TABLE_IMPORT_STATUS_REFUSED || !hasViolation(e.GetViolations()) {
+		t.Errorf("the preview: status %v, violations %v; want it refused with the reason bad_value at %s", e.GetStatus(), e.GetViolations(), field)
+	}
+	_, err = pt.importPack(pt.master, pt.to, pack, rulesv1.TableImportMode_TABLE_IMPORT_MODE_APPLY, "tool-list")
+	if !hasViolation(violationsOfErr(t, err)) {
+		t.Errorf("the apply: %v, want a violation of reason bad_value at %s", err, field)
+	}
+	if got := pt.entries(t, pt.to); len(got) != 0 {
+		t.Errorf("a refused import left %d entries", len(got))
+	}
+}

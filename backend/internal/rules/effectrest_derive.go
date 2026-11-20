@@ -40,6 +40,9 @@ func (c *content) dailyKeyFits(e *Effect, key string) bool {
 		_, ok := c.skills[key]
 		return ok
 	}
+	if len(e.From) > 0 {
+		return c.isToolPickKey(key)
+	}
 	return c.isToolKey(key)
 }
 

@@ -32,6 +32,18 @@
     <ng-container *ngTemplateOutlet="moreButton" />
   }
   @for (f of fields(); track f.name) {
+    @if (source.cardsAt(f)) {
+      <div class="frow frow--wide">
+        <div class="frow__field">
+          <app-radio-cards
+            [label]="source.legend"
+            [options]="source.cards"
+            [value]="source.tool()"
+            (valueChange)="source.setTool($event)"
+          />
+        </div>
+      </div>
+    }
     <div class="frow" [class.frow--wide]="wide(f)">
       <div class="frow__field">
         @switch (viewOf(f)) {
@@ -48,6 +60,27 @@
               [groups]="groupsOf(f)"
               [footer]="footerOf(f)"
               (valueChange)="setChoice(f, $event)"
+            />
+          }
+          @case ('filter') {
+            <app-check-group
+              [label]="labelOf(f)"
+              [options]="source.kinds()"
+              [values]="list(f.name)"
+              [path]="path(f.name)"
+              [issues]="issues(f.name)"
+              [hint]="source.filterNote()"
+              (valuesChange)="source.setKinds($event)"
+            />
+          }
+          @case ('feature') {
+            <app-select-field
+              [label]="labelOf(f)"
+              [options]="source.features()"
+              [value]="read(f.name)"
+              [path]="path(f.name)"
+              [issues]="issues(f.name)"
+              (valueChange)="source.setFeature($event)"
             />
           }
           @case ('rolls') {

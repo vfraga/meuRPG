@@ -188,7 +188,14 @@ type content struct {
 	tableRevision int
 	listFrom      map[string]string
 	offeredBy     map[string][]string
-	archived      map[string]bool
+	// fromFeature maps a table feature whose choice offers the options of another feature (from_feature) to that
+	// feature, and askedBy each of those options to the features that ask for it. A feature that asks for an option
+	// is no owner of it: it lends its pool, not its place in the table.
+	fromFeature map[string]string
+	askedBy     map[string][]string
+	// kept are the things a stored entry holds that the content leaves out, though the entry loads (Content.StoredIssues).
+	kept     []*OverlayError
+	archived map[string]bool
 	// off are the keys (the SRD's and the table's) the master switched off for the
 	// players ("Opções para os jogadores", RN-23); empty without a table layer.
 	off          map[string]bool

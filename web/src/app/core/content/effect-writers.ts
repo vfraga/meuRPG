@@ -1,3 +1,6 @@
+import { create } from '@bufbuild/protobuf';
+
+import { TableChoiceFilterSchema } from '../../../gen/meurpg/rules/v1/table_content_pb';
 import { metersToFeet } from '../units';
 import { type EffectDraft, type EffectInit } from './effect-draft.types';
 import { draftToEffect as draftToSpellEffect } from './spell-effect-draft';
@@ -101,7 +104,8 @@ const pickedText =
       | 'kind'
       | 'againstCondition'
       | 'attackAbility'
-      | 'damageAbility',
+      | 'damageAbility'
+      | 'fromFeature',
   ): EffectWriter =>
   (d) =>
     d[key] ? ({ [key]: d[key] } as EffectInit) : {};
@@ -148,6 +152,14 @@ export const EFFECT_WRITERS: ReadonlyMap<string, EffectWriter> = new Map<string,
   ['choice', pickedText('choice')],
   ['count', positiveNumber('count')],
   ['from', pickedList('from')],
+  [
+    'filter',
+    (d) =>
+      d.filter.length > 0
+        ? { filter: create(TableChoiceFilterSchema, { proficiencyKinds: [...d.filter] }) }
+        : {},
+  ],
+  ['from_feature', pickedText('fromFeature')],
   ['economy', pickedText('economy')],
   ['applies', pickedText('applies')],
   ['ability', pickedText('ability')],

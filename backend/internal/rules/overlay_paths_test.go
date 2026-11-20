@@ -90,6 +90,18 @@ var entryViolationRows = []struct {
 	{"a tool", "backgrounds", 0, func(o *Overlay) { o.Backgrounds[0].Tools = []string{"proficiency:light-armor"} }, "table_background.tools[0]", ReasonReference},
 	{"the languages to choose of a background", "backgrounds", 0, func(o *Overlay) { o.Backgrounds[0].LanguageChoices = 9 }, "table_background.language_choices", ReasonLimit},
 	{"the equipment", "backgrounds", 0, func(o *Overlay) { o.Backgrounds[0].EquipmentPT = strings.Repeat("x", 5000) }, "table_background.equipment_pt", ReasonText},
+	{"a filter of a choice of tools", "backgrounds", 0, func(o *Overlay) {
+		o.Backgrounds[0].Feature.Effects[0] = Effect{Type: "choice", Choice: "tool", Count: 1, Filter: &ChoiceFilter{ProficiencyKinds: []string{"armor"}}}
+	}, "table_background.feature.effects[0].filter.proficiency_kinds", ReasonValue},
+	{"a filter of a choice of skills", "backgrounds", 0, func(o *Overlay) {
+		o.Backgrounds[0].Feature.Effects[0] = Effect{Type: "choice", Choice: "skill", Count: 1, Filter: &ChoiceFilter{ProficiencyKinds: []string{"tool"}}}
+	}, "table_background.feature.effects[0].filter", ReasonValue},
+	{"the options of a feature on a background", "backgrounds", 0, func(o *Overlay) {
+		o.Backgrounds[0].Feature.Effects[0] = Effect{Type: "choice", Choice: "feature", Count: 1, FromFeature: "feature:fighter-fighting-style"}
+	}, "table_background.feature.effects[0].from_feature", ReasonValue},
+	{"too many picks of a filter", "backgrounds", 0, func(o *Overlay) {
+		o.Backgrounds[0].Feature.Effects[0] = Effect{Type: "choice", Choice: "tool", Count: 99, Filter: &ChoiceFilter{ProficiencyKinds: []string{"tool"}}}
+	}, "table_background.feature.effects[0].count", ReasonValue},
 	{"the feature effect", "backgrounds", 0, func(o *Overlay) { o.Backgrounds[0].Feature.Effects[0].Type = "handler" }, "table_background.feature.effects[0].type", ReasonEffect},
 }
 

@@ -73,7 +73,7 @@ A table feature has effects of these types only; anything else is `forbidden_eff
 | `granted_spell` | See [Granted spells](#granted-spells). |
 | `extra_damage` | See [Extra damage](#extra-damage). May carry `while`. |
 | `power_attack` | See [Power attack](#power-attack). |
-| `choice` | Picks among SRD options (a key the SRD has) or, for kind `feature`, among the option list of a table feature. Kinds: `skill`, `expertise`, `cantrip`, `spell`, `language`, `tool`, `feature`, `feat`, and, in a feat only, `ability` and `damage_type` (see [Feat options and picks](#feat-options-and-picks)). A `feature` choice never asks for more than the options it lists. |
+| `choice` | Picks among SRD options (a key the SRD has) or, for kind `feature`, among the option list of a table feature. Kinds: `skill`, `expertise`, `cantrip`, `spell`, `language`, `tool`, `feature`, `feat`, and, in a feat only, `ability` and `damage_type` (see [Feat options and picks](#feat-options-and-picks)). A `feature` choice never asks for more than the options it lists. A `tool` choice may carry `filter.proficiency_kinds` (`weapon`, `tool`, `other`, each once, at most 3) in place of `from`, and offers every catalog proficiency of those kinds, computed at read time; its `from` may name proficiencies of those kinds too, and a write, an import or a package that names a key of another kind there is refused (at `.from`, `bad_value`; a package reports an invalid entry), while an entry stored with one loads: the pool leaves the key out and the master reads an issue on the entry (`loaded_with_issues`). A `feature` choice may carry `from_feature`, the key of a class or subclass feature with options (never an option, itself, the invocations or a feature that offers another's options), and offers that feature's options; at read time the pool of that choice leaves out the options of an entry the table switched off (for a player; the master reads them) or archived (for everyone) unless the sheet holds the entry, and asks for no more than it lists; a sheet that already holds such a pick keeps it, and a new pick naming one is refused as an unknown key. `filter` and `from_feature` are refused together with `from`, `set` and each other. |
 | `ability_increase` | Feats only. `count` different abilities from `from`, `value` 1 or 2; at most one per feat. The sheet keeps the result in `ExtraAbilityBonuses`. |
 | `ambush` | See [Ambush](#ambush). |
 | `reroll` | See [Reroll](#reroll). |
@@ -98,12 +98,15 @@ Each option is a trait with a server-made key (`trait:<stem>--<option name>@mesa
 The pick is stored with the sheet's choices and checked against the options; one outside them is reported as not offered.
 A trait with options takes no `choice` of kind `feature` (refused at `.effects[i].choice`, `bad_value`).
 The character picks one option, never more.
+A feature may offer another feature's options with `from_feature` instead: it carries no options of its own, the option keys stay the source feature's, and the content records which features ask for each option (`askedBy`, apart from `offeredBy`: an asker is no owner, so the option stays hidden with the entry it belongs to), and read time leaves out of the asking choice's pool, and of no other pool, the options of an entry the table keeps out. A pick the sheet already holds stays; a new pick of such an option is refused by the server, where the stored sheet is known, with the answer of a key the content does not have. A pool left with fewer options asks for no more than it lists.
 Refused, each at its field: options on a background feature, nested options, options on a class or subclass feature with no `choice` of features, a repeated option name or `from` key, a `from` key of another entry's list, a `choice` inside an option, more options than the limit.
 
 **Swapping an option at a level-up.**
 `TableFeature.swap_levels` (field 10, `FeatureSwapLevels`) on a class or subclass feature that has options (inline, or offered by `table_feature` options) lists the class levels at which a player who levels up in that class may swap a pick of the feature's option pool for another option of the pool.
 `levels` holds 1 to 20, each once; `every_level` means every class level from the feature's own level on; the two are not set together; unset or empty means never.
 The overlay refuses a repeated or out-of-range level (`.swap_levels.levels[i]`, `bad_value`), both fields (`.swap_levels.every_level`, `bad_value`), the field on a feature that is not a class or subclass feature or has no options (`.swap_levels`, `bad_value`), and on an option (`.options[i].swap_levels`).
+A feature that offers another feature's options with `from_feature` takes no swap levels (`.swap_levels`, `bad_value`).
+A bad or repeated level, or both fields, is refused before it.
 The pool is the feature's options plus the options of the entry's other features that share an option with it.
 The table rule "Trocar uma escolha no aumento de atributo" does not matter for it, and the level need not have an improvement.
 Level-up side: [rules-level-up.md](rules-level-up.md).
@@ -890,6 +893,9 @@ A live child leaves with its archived parent only when every violation it has is
 Archiving ("Remover" in the app) clears an entry from the list; fixing it in place does too.
 `ListTableEntriesResponse.left_out` gives it to the master of the campaign and to nobody else.
 A sheet that uses a left-out entry gets `unknown_key`, as for an entry that does not exist.
+An entry stored with a key of another kind in a tool choice's `from` is not left out: it loads, the pool leaves the key out, and the master reads the key's field on the entry.
+`ListTableEntriesResponse.loaded_with_issues` gives it to the master of the campaign and to nobody else.
+A write that holds such a key is refused, and the master clears the issue by fixing the field.
 A write of the master that repairs a left-out entry is accepted, as are archiving, unarchiving and the option switches; a write is refused for its own violations and for the healthy entries it breaks.
 An import is checked over the stored entries as they are stored, so a pack that breaks one is refused.
 Rows that cannot be decoded fail the listing, the export, the import and every write.

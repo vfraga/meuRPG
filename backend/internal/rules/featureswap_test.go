@@ -529,3 +529,22 @@ func TestASwapCannotGiveUpTheOptionAnotherPickAsksFor(t *testing.T) {
 		t.Errorf("a swap that leaves the Heron: %v", err)
 	}
 }
+
+// A feature that offers the options of another feature (from_feature) cannot allow swaps: the refusal says so at the swap levels,
+// and not that the feature has no options. A bad or repeated level, or a list together with every level, is refused first.
+func TestAFeatureThatOffersAnotherFeaturesOptionsCannotAllowSwaps(t *testing.T) {
+	t.Parallel()
+	o := fromFeatureOverlay(askPostures(2))
+	o.Subclasses[1].Levels[0].Features[0].SwapLevels = FeatureSwapLevels{EveryLevel: true}
+	_, err := loadForTest(t).With(o)
+	oe, ok := errors.AsType[*OverlayError](err)
+	if !ok {
+		t.Fatalf("err = %v, want an overlay error", err)
+	}
+	const field = "subclasses[1].levels[0].features[0].swap_levels"
+	if !slices.ContainsFunc(oe.Violations(), func(v *OverlayError) bool {
+		return v.Field == field && v.Reason == ReasonValue && strings.Contains(v.Message, "offers the options of another feature cannot allow swaps")
+	}) {
+		t.Errorf("no violation at %s about the options of another feature: %v", field, err)
+	}
+}

@@ -6,7 +6,7 @@ import type {
   GetEffectMenuResponse,
   TableEffect,
 } from '../../../gen/meurpg/rules/v1/table_content_pb';
-import type { EffectDraft, EffectInit } from './effect-draft.types';
+import type { EffectDraft, EffectInit, FeatureWithOptions } from './effect-draft.types';
 import { keptOf, keptToInit } from './effect-kept';
 import { offeredTypes, visibleFields } from './effect-visible';
 import { CHOICE_EMPTY } from './effect-required';
@@ -16,7 +16,7 @@ import { effectToDraft as spellEffectToDraft, featureAuraDraft } from './spell-e
 import { EFFECT_WRITERS, rangeFeet } from './effect-writers';
 import { rangeMeters, unreadableRange } from './effect-range';
 
-export type { EffectDraft, EffectInit } from './effect-draft.types';
+export type { EffectDraft, EffectInit, FeatureWithOptions } from './effect-draft.types';
 export { rangeMeters, unreadableRange } from './effect-range';
 export { onlyProficientApplies, rangeFeet, splitTags } from './effect-writers';
 export {
@@ -132,6 +132,9 @@ export function emptyEffect(type = ''): EffectDraft {
     name: '',
     set: '',
     cap: 0,
+    filter: [],
+    filterOn: false,
+    fromFeature: '',
     ...(type === 'aura' ? { aura: featureAuraDraft() } : {}),
   };
 }
@@ -220,6 +223,9 @@ export function effectToDraft(e: TableEffect): EffectDraft {
     name: e.name,
     set: e.set,
     cap: e.cap,
+    filter: [...(e.filter?.proficiencyKinds ?? [])],
+    filterOn: e.filter !== undefined,
+    fromFeature: e.fromFeature,
     ...(e.aura ? { aura: spellEffectToDraft(e.aura) } : {}),
   };
 }
@@ -265,6 +271,9 @@ export class EffectMenuVm {
   classNamePt: (key: string) => string = (key) => key.replace(/^class:/, '');
   /** The feats a "feat" choice may list in `from` (the table's own, set by the page from the entries); the SRD's are not in the catalog. */
   featOptions: readonly MenuOption[] = [];
+  /** The table's class and subclass features that list options of their own (set by the page from the entries): what a "feature" choice may offer
+   * besides the SRD's (`optionSets`). `count` is the number of options the feature lists today. */
+  tableFeatures: readonly FeatureWithOptions[] = [];
 
   constructor(res: GetEffectMenuResponse) {
     this.types = res.types;
@@ -328,7 +337,7 @@ export class EffectMenuVm {
       case 'language':
         return this.list('languages');
       case 'tool':
-        return this.list('tools');
+        return this.list('tool_choices');
       case 'damage_type':
         return this.list('damage_types');
       case 'cantrip':
@@ -453,6 +462,10 @@ export function missingRequired(d: EffectDraft, menu: EffectMenuVm): string[] {
     if (empty) {
       out.push(f.name);
     }
+  }
+  // A filter is the source of a choice of tools only with a kind ticked: with none it would offer every tool, the opposite of what was asked.
+  if (d.type === 'choice' && d.choice === 'tool' && d.filterOn && d.filter.length === 0) {
+    out.push('filter');
   }
   return out;
 }
