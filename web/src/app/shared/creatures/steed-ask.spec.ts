@@ -73,7 +73,7 @@ describe('SteedAsk: "Dispensar Estrela?" and "Libertar Estrela?", asked in place
   it('in a combat that holds the steed, adds the chip "Gasta a sua ação", with its dot', async () => {
     const { el } = await setup('dismiss', { where: { combat: true, spends: true, mounted: true } });
     expect(flat(el.querySelector('.ask__d'))).toBe(
-      'Estrela some do mapa e da sua ficha, e você desce de pé no quadrado dela. O vínculo fica: Convocar Montaria traz Estrela de volta.',
+      'Estrela some do mapa e da sua ficha, e você desce de pé no quadrado onde Estrela estava. O vínculo fica: Convocar Montaria traz Estrela de volta.',
     );
     const chip = el.querySelector('.ask__chip');
     expect(flat(chip)).toBe('● Gasta a sua ação');
@@ -150,7 +150,7 @@ describe('SteedAsk: "Dispensar Estrela?" and "Libertar Estrela?", asked in place
       where: { combat: true, spends: true, mounted: true },
     });
     expect(flat(el.querySelector('.ask__d'))).toContain(
-      'da ficha de Lia, e Lia desce de pé no quadrado dela',
+      'da ficha de Lia, e Lia desce de pé no quadrado onde Estrela estava',
     );
     expect(el.querySelector('.ask__chip')).toBeNull();
   });

@@ -62,7 +62,7 @@ describe('OrderList with a rider and its mount', () => {
     const el = setup('independent');
     expect(el.querySelector('app-order-group')).toBeNull();
     expect(text(el.querySelector('[data-combatant="h"] .row__sub'))).toContain(
-      'Leva o Tor · independente',
+      'Leva Tor · independente',
     );
     // The line is a flex row, where a plain space at an item's edge is dropped: the dot between the link and the numbers keeps
     // its spaces (seen as "leva Isolda·CA 11" in the render).
@@ -90,7 +90,7 @@ describe('OrderList with a rider and its mount', () => {
     expect(el.querySelector('app-order-group')).not.toBeNull();
     expect(el.querySelector('.row--mount')).toBeNull();
     expect(text(el.querySelector('[data-combatant="h"] .row__sub'))).toContain(
-      'Leva o Tor · independente',
+      'Leva Tor · independente',
     );
   });
 

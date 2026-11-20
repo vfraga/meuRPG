@@ -51,6 +51,13 @@ describe('Convocar Montaria, the words of the summon sheet (#588, boards 588-21 
     expect(steedTypes(spell({ typeChoices: [] }))).toEqual([]);
   });
 
+  it('never shows the key of a type the app has no word for', () => {
+    expect(steedTypes(spell({ typeChoices: ['fey', 'ooze_prime'] }))).toEqual([
+      { value: 'fey', label: 'Fada' },
+      { value: 'ooze_prime', label: 'Outro tipo' },
+    ]);
+  });
+
   it('writes the type in the lower case of a subtitle, and nothing for a type it does not know', () => {
     expect(steedTypeWord('celestial')).toBe('celestial');
     expect(steedTypeWord('fey')).toBe('fada');
@@ -63,7 +70,7 @@ describe('Convocar Montaria, the words of the summon sheet (#588, boards 588-21 
     expect(steedHowLines(spell())).toEqual([
       'Vocês se falam por telepatia a até 1,5 km.',
       'Ele entende um idioma que você fala.',
-      'A Inteligência dele é no mínimo 6.',
+      'A Inteligência mínima do corcel é 6.',
     ]);
     expect(steedHowLines(spell({ minInt: 0, notes: [] }))).toEqual([]);
   });
@@ -85,7 +92,7 @@ describe('Convocar Montaria, the words of the summon sheet (#588, boards 588-21 
     expect(steedSubtitleTail(true)).toBe('o seu corcel vinculado');
     expect(steedSetupLine(2, 2)).toBe('Espaço de 2º\u00a0nível\u00a0· 2 livres');
     expect(steedSetupLine(3, 1)).toBe('Espaço de 3º\u00a0nível\u00a0· 1 livre');
-    expect(STEED_TOO_SMALL).toBe('Pequeno demais para você montar');
+    expect(STEED_TOO_SMALL).toBe('Tamanho pequeno demais para você montar');
   });
 
   it('reads the two refusals of a ten-minute casting in its own words, and the rest as any summon', () => {

@@ -8,7 +8,6 @@ import {
 } from '../../../gen/meurpg/play/v1/combat_pb';
 import { ContestBlockedReason } from '../../../gen/meurpg/play/v1/contest_types_pb';
 import { contestBlocked, contestBlockedMessage, encounterBlocked } from '../combat/combat-errors';
-import { article } from '../format/article';
 import { joinDots } from '../format/text';
 import { creatureErrorMessage } from './creature-errors';
 import { steedTypeWord } from './steed';
@@ -65,7 +64,6 @@ export function steedAskText(
   owner: string,
   where: SteedWhere,
 ): string {
-  const fem = article(name) === 'a';
   const free = !owner && !where.combat ? ' Fora de combate, não gasta nada.' : '';
   if (going === 'release') {
     const sheet = owner ? `da ficha de ${owner}` : 'da ficha';
@@ -73,7 +71,7 @@ export function steedAskText(
   }
   const sheet = owner ? `da ficha de ${owner}` : 'da sua ficha';
   const lands = where.mounted
-    ? `, e ${owner || 'você'} desce de pé no quadrado ${fem ? 'dela' : 'dele'}`
+    ? `, e ${owner || 'você'} desce de pé no quadrado onde ${name} estava`
     : '';
   return `${name} some do mapa e ${sheet}${lands}. O vínculo fica: Convocar Montaria traz ${name} de volta.${free}`;
 }
@@ -97,7 +95,7 @@ export function steedRefusal(err: unknown, owner: string): string {
     case EncounterBlockedReason.ACTION_USED:
       return 'Você já usou a ação desta vez.';
     case EncounterBlockedReason.COMBATANT_DOWN:
-      return 'Quem está caído não age.';
+      return 'Com 0 PV, não age.';
     case EncounterBlockedReason.CANNOT_ACT:
       return 'Não dá para agir agora.';
     default:
@@ -125,8 +123,7 @@ export function steedAwaySubtitle(form: string, type: string): string {
 
 /** Under the cast button of Convocar Montaria: what the cast does for a steed that is away, or for one that is here. */
 export function steedCastHint(name: string, away: boolean): string {
-  const fem = article(name) === 'a';
   return away
-    ? `Traz ${name} de volta, com a forma e o tipo ${fem ? 'dela' : 'dele'} e os PV cheios.`
-    : `Com ${name} aqui, ${fem ? 'ela' : 'ele'} volta aos PV cheios.`;
+    ? `Traz ${name} de volta, com a mesma forma e o mesmo tipo e os PV cheios.`
+    : `Com ${name} aqui, os PV voltam cheios.`;
 }

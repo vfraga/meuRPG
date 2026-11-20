@@ -5,3 +5,17 @@ export function article(name: string): 'o' | 'a' {
   const first = name.trim().split(/\s+/)[0].split('-')[0].toLowerCase();
   return /a$/.test(first) || /^(foice|rede|clava|mace|nuvem|glaive)$/.test(first) ? 'a' : 'o';
 }
+
+const FORMS = {
+  '': ['o', 'a'],
+  de: ['do', 'da'],
+  em: ['no', 'na'],
+  a: ['ao', 'à'],
+  por: ['pelo', 'pela'],
+} as const;
+
+/** The name after its article, for a creature or an item: "o Cavalo de guerra", "da Aranha" (`'de'`), "no" (`'em'`), "ao"/"à"
+ * (`'a'`), "pelo"/"pela" (`'por'`). A character is named with no article: never pass one here. */
+export function theName(name: string, preposition: keyof typeof FORMS = ''): string {
+  return `${FORMS[preposition][article(name) === 'a' ? 1 : 0]} ${name}`;
+}

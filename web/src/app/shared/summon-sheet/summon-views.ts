@@ -269,7 +269,13 @@ export function missingOf(i: MissingInput): string {
     parts.push(`tire ${creaturesText(-need)}`);
   }
   if (i.needsType) {
-    parts.push('escolha o tipo do corcel');
+    // "Escolha a forma e o tipo do corcel.": one verb for both choices.
+    const form = parts.indexOf('escolha a forma');
+    if (form >= 0) {
+      parts[form] = 'escolha a forma e o tipo do corcel';
+    } else {
+      parts.push('escolha o tipo do corcel');
+    }
   }
   if (parts.length === 0) {
     return '';

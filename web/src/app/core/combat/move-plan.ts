@@ -6,7 +6,7 @@ import {
 } from '../../../gen/meurpg/play/v1/combat_pb';
 import { tieNumbers } from '../format/text';
 import { metersFixed } from '../units';
-import { article } from './combat-log';
+import { article, theName } from '../format/article';
 import type { Square } from './combat-grid';
 
 /**
@@ -252,6 +252,6 @@ export function leftLine(
       ? ''
       : ` (${squares} ${squares === 1 ? 'quadrado' : 'quadrados'} de 1,5\u00a0m)`;
   const walked = usedDft > 0 ? ` Você já andou ${metersFixed(usedDft / 10)}.` : '';
-  const owner = mount ? ` ${article(mount) === 'a' ? 'à' : 'ao'} ${mount}` : '';
+  const owner = mount ? ` ${theName(mount, 'a')}` : '';
   return `Restam ${metersFixed(leftDft / 10)} de ${metersFixed(totalDft / 10)}${owner}${count}.${walked}`;
 }

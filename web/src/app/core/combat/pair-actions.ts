@@ -1,6 +1,6 @@
 import type { Combatant, GetTurnOptionsResponse } from '../../../gen/meurpg/play/v1/combat_pb';
 import { DisabledReasonCode } from '../../../gen/meurpg/rules/v1/rules_pb';
-import { article } from '../format/article';
+import { theName } from '../format/article';
 import { reasonText } from './combat-options';
 
 /** One of the three actions a controlled mount takes while it carries its rider (SRD 5.1, "Mounted Combat"). */
@@ -25,7 +25,6 @@ const THREE: readonly { key: string; name: string; icon: string }[] = [
  */
 export function pairActions(
   res: GetTurnOptionsResponse | null,
-  rider: Combatant,
   mount: Combatant,
 ): { actions: PairAction[]; why: string } {
   const rows = res?.options?.standardActions ?? [];
@@ -36,7 +35,7 @@ export function pairActions(
     if (row && off && !why) {
       why =
         row.reason?.code === DisabledReasonCode.COMBATANT_DOWN
-          ? `${article(rider.label) === 'a' ? 'Caída' : 'Caído'}: o mestre conduz ${article(mount.label) === 'a' ? 'a' : 'o'} ${mount.label}.`
+          ? `Caído: o mestre conduz ${theName(mount.label)}.`
           : reasonText(row.reason);
     }
     return { key: t.key, name: row?.action?.namePt || t.name, icon: t.icon, off };

@@ -66,9 +66,9 @@ describe("the rider's save to stay on the mount (#588, boards 588-06, 588-08 and
     const v = mountSaveView(fight(), prompt(), true);
     expect(v.title).toBe('Você cai da montaria?');
     expect(v.subtitle).toBe('Teste de resistência de Destreza');
-    expect(v.cause).toBe('O Cavalo de guerra foi empurrado.');
+    expect(v.cause).toBe('O Cavalo de guerra sofreu um empurrão.');
     expect(v.body).toBe(
-      'Passe para seguir na montaria; se falhar, você cai Derrubado num quadrado ao lado dele.',
+      'Passe para seguir na montaria; se falhar, você cai Derrubado num quadrado ao lado do Cavalo de guerra.',
     );
     expect(v.tags).toEqual(['1d20 + 2', 'Destreza +2']);
     expect(v.wait).toBe('A vez do Wight espera este teste.');
@@ -89,18 +89,18 @@ describe("the rider's save to stay on the mount (#588, boards 588-06, 588-08 and
     expect(mountSaveView(fight(), prompt({ dc: 0 }), true).tags.join(' ')).not.toContain('CD');
   });
 
-  it('says "Você cai da montaria." for the other cause, and takes the gender of the mount from its name', () => {
+  it('says "Você cai da montaria." for the other cause, and names the mount with the article of its name', () => {
     const mare = combatant({ id: 'horse', label: 'Égua', riderId: 'tor' });
     const e = fight(prompt({ cause: MountSaveCause.PRONE }), { combatants: [tor(), mare, wight] });
     const prone = mountSaveView(e, prompt({ cause: MountSaveCause.PRONE }), true);
     expect(prone.cause).toBe('Você cai da montaria.');
-    expect(prone.body).toContain('num quadrado ao lado dela.');
-    expect(mountSaveView(e, prompt(), true).cause).toBe('A Égua foi empurrada.');
+    expect(prone.body).toContain('num quadrado ao lado da Égua.');
+    expect(mountSaveView(e, prompt(), true).cause).toBe('A Égua sofreu um empurrão.');
   });
 
   it('names no mount the player does not see', () => {
     const v = mountSaveView(fight(), prompt({ mountId: '' }), true);
-    expect(v.cause).toBe('A sua montaria foi empurrada.');
+    expect(v.cause).toBe('A sua montaria sofreu um empurrão.');
     expect(v.body).toContain('num quadrado ao lado da montaria.');
   });
 
@@ -158,7 +158,7 @@ describe("the rider's save to stay on the mount (#588, boards 588-06, 588-08 and
     ).toBe('O Wight cai da montaria (Derrubado).');
     expect(v.cause).toBe('Tor cai da montaria (Derrubado).');
     expect(v.body).toBe(
-      'Se passar, segue na montaria; se falhar, cai Derrubado num quadrado ao lado dele.',
+      'Se passar, segue na montaria; se falhar, cai Derrubado num quadrado ao lado do Cavalo de guerra.',
     );
   });
 
@@ -240,7 +240,7 @@ describe("the rider's save to stay on the mount (#588, boards 588-06, 588-08 and
     const w = mountSaveWait(fight(prompt({ dc: 10 })))!;
     expect(w.title).toBe('Esperando o teste de Tor');
     expect(plain(w.detail)).toBe(
-      'Teste de resistência de Destreza CD 10: o Cavalo de guerra foi empurrado. Tor está respondendo no celular.',
+      'Teste de resistência de Destreza CD 10: o Cavalo de guerra sofreu um empurrão. Tor está respondendo no celular.',
     );
     expect(w.rollLabel).toBe('Rolar por Tor');
     expect(w.why).toBe('Espera o teste de Tor');

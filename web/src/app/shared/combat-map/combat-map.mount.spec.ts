@@ -101,7 +101,7 @@ describe('CombatMap: a rider on its mount (588-04)', () => {
     const items = [...map().querySelectorAll('ul.mr-visually-hidden li')].map((li) =>
       li.textContent?.trim(),
     );
-    expect(items).toContain('Tor, montado no Cavalo de guerra, coluna 6, linha 6');
+    expect(items).toContain('Tor, cavalgando o Cavalo de guerra, coluna 6, linha 6');
     expect(items).toContain('Cavalo de guerra, coluna 6, linha 6');
   });
 });

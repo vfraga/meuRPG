@@ -45,10 +45,10 @@ describe("the bonded steed's card, in words (#588, boards 588-23 to 588-26)", ()
 
   it("says what a dismissal does to the rider in a combat, in board 588-24's words: the bond stays", () => {
     expect(steedAskText('dismiss', 'Estrela', '', riding)).toBe(
-      'Estrela some do mapa e da sua ficha, e você desce de pé no quadrado dela. O vínculo fica: Convocar Montaria traz Estrela de volta.',
+      'Estrela some do mapa e da sua ficha, e você desce de pé no quadrado onde Estrela estava. O vínculo fica: Convocar Montaria traz Estrela de volta.',
     );
     expect(steedAskText('dismiss', 'Trovão', 'Lia', riding)).toBe(
-      'Trovão some do mapa e da ficha de Lia, e Lia desce de pé no quadrado dele. O vínculo fica: Convocar Montaria traz Trovão de volta.',
+      'Trovão some do mapa e da ficha de Lia, e Lia desce de pé no quadrado onde Trovão estava. O vínculo fica: Convocar Montaria traz Trovão de volta.',
     );
   });
 
@@ -114,7 +114,7 @@ describe("the bonded steed's card, in words (#588, boards 588-23 to 588-26)", ()
     );
     // The rest of the server's gate, in the combat's own words.
     expect(steedRefusal(blocked(EncounterBlockedReason.COMBATANT_DOWN), 'Lia')).toBe(
-      'Quem está caído não age.',
+      'Com 0 PV, não age.',
     );
     expect(steedRefusal(blocked(EncounterBlockedReason.CANNOT_ACT), 'Lia')).toBe(
       'Não dá para agir agora.',
@@ -138,13 +138,13 @@ describe("the bonded steed's card, in words (#588, boards 588-23 to 588-26)", ()
       'Cavalo de guerra\u00a0· celestial\u00a0· fora da mesa',
     );
     expect(steedCastHint('Estrela', true)).toBe(
-      'Traz Estrela de volta, com a forma e o tipo dela e os PV cheios.',
+      'Traz Estrela de volta, com a mesma forma e o mesmo tipo e os PV cheios.',
     );
     expect(steedCastHint('Trovão', true)).toBe(
-      'Traz Trovão de volta, com a forma e o tipo dele e os PV cheios.',
+      'Traz Trovão de volta, com a mesma forma e o mesmo tipo e os PV cheios.',
     );
-    expect(steedCastHint('Estrela', false)).toBe('Com Estrela aqui, ela volta aos PV cheios.');
-    expect(steedCastHint('Trovão', false)).toBe('Com Trovão aqui, ele volta aos PV cheios.');
+    expect(steedCastHint('Estrela', false)).toBe('Com Estrela aqui, os PV voltam cheios.');
+    expect(steedCastHint('Trovão', false)).toBe('Com Trovão aqui, os PV voltam cheios.');
   });
 
   it('any other refusal of the combat stays in the question without sending the person to close a sheet: the card is no sheet', () => {

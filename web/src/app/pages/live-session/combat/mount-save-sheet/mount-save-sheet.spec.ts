@@ -130,7 +130,7 @@ describe('MountSaveSheet (#588, boards 588-06 and 588-10 card 6)', () => {
       'Teste de resistência de Destreza',
     );
     expect(plain(el.querySelector('.what')?.textContent)).toBe(
-      'O Cavalo de guerra foi empurrado. Passe para seguir na montaria; se falhar, você cai Derrubado num quadrado ao lado dele.',
+      'O Cavalo de guerra sofreu um empurrão. Passe para seguir na montaria; se falhar, você cai Derrubado num quadrado ao lado do Cavalo de guerra.',
     );
     expect(Array.from(el.querySelectorAll('.tag')).map((t) => plain(t.textContent))).toEqual([
       '1d20 + 2',
@@ -420,7 +420,7 @@ describe('MountSaveSheet (#588, boards 588-06 and 588-10 card 6)', () => {
     const { el } = setup(prompt({ dc: 10 }), { byMaster: true });
     expect(plain(el.querySelector('h2')?.textContent)).toBe('Tor cai da montaria? · CD 10');
     expect(plain(el.querySelector('.what')?.textContent)).toContain(
-      'Se passar, segue na montaria; se falhar, cai Derrubado num quadrado ao lado dele.',
+      'Se passar, segue na montaria; se falhar, cai Derrubado num quadrado ao lado do Cavalo de guerra.',
     );
     expect(el.querySelector('.frame__close')).not.toBeNull();
   });

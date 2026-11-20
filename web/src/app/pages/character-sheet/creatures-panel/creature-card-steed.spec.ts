@@ -252,7 +252,7 @@ describe('CreatureCard, a bonded steed (#588, boards 588-23 to 588-26)', () => {
     acts()[1].click();
     await settle();
     expect(flat(el.querySelector('.ask__d'))).toBe(
-      'Estrela some do mapa e da sua ficha, e você desce de pé no quadrado dela. O vínculo fica: Convocar Montaria traz Estrela de volta.',
+      'Estrela some do mapa e da sua ficha, e você desce de pé no quadrado onde Estrela estava. O vínculo fica: Convocar Montaria traz Estrela de volta.',
     );
   });
 

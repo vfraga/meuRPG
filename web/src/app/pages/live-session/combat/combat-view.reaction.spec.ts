@@ -348,7 +348,7 @@ describe('CombatView, the reaction windows', () => {
       const card = el.querySelector('[data-testid="mount-save-wait"]')!;
       expect(plain(card.querySelector('h3')?.textContent)).toBe('Esperando o teste de Toren');
       expect(plain(card.querySelector('p')?.textContent)).toBe(
-        'Teste de resistência de Destreza CD 10: a montaria foi empurrada. Toren está respondendo no celular.',
+        'Teste de resistência de Destreza CD 10: a montaria sofreu um empurrão. Toren está respondendo no celular.',
       );
       const next = Array.from(el.querySelectorAll<HTMLButtonElement>('button')).find((b) =>
         plain(b.textContent).includes('Próximo turno'),

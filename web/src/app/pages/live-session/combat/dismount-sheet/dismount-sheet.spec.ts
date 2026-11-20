@@ -100,7 +100,7 @@ describe('DismountSheet (#588, board 588-07)', () => {
     );
     const answers = Array.from(el.querySelectorAll('.pair button'));
     expect(answers.map((b) => flat(b.querySelector('.mdc-button__label')))).toEqual([
-      'Cair derrubado',
+      'Cair (Derrubado)',
       'Desmontar de pé',
     ]);
     expect(answers[0].classList.contains('mat-mdc-outlined-button')).toBe(true);
@@ -140,11 +140,11 @@ describe('DismountSheet (#588, board 588-07)', () => {
     expect(close).toHaveBeenCalled();
   });
 
-  it('"Cair derrubado" answers PASS', async () => {
+  it('"Cair (Derrubado)" answers PASS', async () => {
     answerReaction.mockResolvedValue({ encounter: encounter({ revision: 6 } as never) });
     const { settle, button } = setup();
     await settle();
-    button('Cair derrubado').click();
+    button('Cair (Derrubado)').click();
     await settle();
     expect(answerReaction).toHaveBeenCalledWith(
       'c',

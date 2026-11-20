@@ -92,7 +92,7 @@ describe('RowMount, the master\'s "Montaria" select of a row (#588, 588-08)', ()
     const { el } = await setup({});
     expect(text(el.querySelector('.mount__hint'))).toBe('Não aceita cavaleiro.');
     expect(text(el.querySelector('.mount__note'))).toBe(
-      'Marcado, o Cavalo de guerra aceita um cavaleiro, que monta na própria vez. Você monta qualquer criatura.',
+      'Com a marca, o Cavalo de guerra aceita um cavaleiro, que monta na própria vez. Você monta qualquer criatura.',
     );
   });
 

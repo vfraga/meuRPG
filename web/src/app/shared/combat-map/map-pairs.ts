@@ -28,7 +28,7 @@ export class MapPairs {
     return out;
   });
 
-  /** What the map's visually hidden list says of each token: "Tor, montado no Cavalo de guerra, coluna 6, linha 6". */
+  /** What the map's visually hidden list says of each token: "Tor, cavalgando o Cavalo de guerra, coluna 6, linha 6". */
   readonly listed = computed(() =>
     this.shown().map((c) => {
       const mount = this.rides(c) ? this.shown().find((m) => m.id === c.mountedOnId) : undefined;

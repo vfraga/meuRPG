@@ -50,12 +50,12 @@ describe('SteedChoice: the steed part of the summon sheet (#588, boards 588-21 a
     phone.fixture.detectChanges();
     expect(phone.fold()?.getAttribute('aria-expanded')).toBe('true');
     expect(phone.el.textContent).toContain('Vocês se falam por telepatia a até 1,5 km.');
-    expect(phone.el.textContent).toContain('A Inteligência dele é no mínimo 6.');
+    expect(phone.el.textContent).toContain('A Inteligência mínima do corcel é 6.');
 
     TestBed.resetTestingModule();
     const desktop = setup({ phone: false });
     expect(desktop.fold()?.getAttribute('aria-expanded')).toBe('true');
-    expect(desktop.el.textContent).toContain('A Inteligência dele é no mínimo 6.');
+    expect(desktop.el.textContent).toContain('A Inteligência mínima do corcel é 6.');
   });
 
   it('leaves "Como funciona" out when the spell says nothing', () => {

@@ -86,7 +86,7 @@ async function steedScreens(t: MountedTable, l: Look): Promise<void> {
   const cast = await openCastOf(p, 'Convocar Montaria');
   await cast.getByRole('button', { name: 'Escolher a criatura' }).click();
   const summon = summonSheet(p);
-  await expect(summon.getByText('Escolha a forma e escolha o tipo do corcel.')).toBeVisible();
+  await expect(summon.getByText('Escolha a forma e o tipo do corcel.')).toBeVisible();
   await see(p, 'convocar-vazio', l);
   await summon.locator('label', { hasText: STEED }).click();
   await summon.getByRole('radiogroup', { name: 'Tipo do corcel' }).getByText('Celestial').click();
@@ -253,7 +253,7 @@ async function rideScreens(t: MountedTable, l: Look): Promise<void> {
   enc = await passTurnsToAndWait(m, campaignId, 'Goblin 1', [m, p]);
   await shoveSteedRPC(t, enc, 'SHOVE_OUTCOME_PUSH', l.width >= 768);
   const save = p.getByRole('alertdialog', { name: /Você cai da montaria\?/ });
-  await expect(save.getByText(`O ${STEED} foi empurrado.`)).toBeVisible();
+  await expect(save.getByText(`O ${STEED} sofreu um empurrão.`)).toBeVisible();
   await see(p, 'teste', l);
   const wait = m.getByTestId('mount-save-wait');
   await expect(wait).toBeVisible();

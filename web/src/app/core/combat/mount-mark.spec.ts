@@ -33,11 +33,11 @@ describe("the master's mount mark (#588, boards 588-08 and 588-09)", () => {
   it('with no mark yet, says what marking does, naming the creature (board 588-09)', () => {
     const mastim = combatant({ id: 'm', label: 'Mastim' });
     expect(mountMarkView(encounter({ combatants: [mastim] }), 'm')?.note).toBe(
-      'Marcado, o Mastim aceita um cavaleiro, que monta na própria vez. Você monta qualquer criatura.',
+      'Com a marca, o Mastim aceita um cavaleiro, que monta na própria vez. Você monta qualquer criatura.',
     );
     const aranha = combatant({ id: 'a', label: 'Aranha gigante' });
     expect(mountMarkView(encounter({ combatants: [aranha] }), 'a')?.note).toBe(
-      'Marcada, a Aranha gigante aceita um cavaleiro, que monta na própria vez. Você monta qualquer criatura.',
+      'Com a marca, a Aranha gigante aceita um cavaleiro, que monta na própria vez. Você monta qualquer criatura.',
     );
   });
 

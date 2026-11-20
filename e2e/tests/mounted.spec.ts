@@ -67,7 +67,7 @@ test(
       await contestRPC(m, 'ResolveShove', { campaignId, encounterId: enc.id, contestId, outcome: 'SHOVE_OUTCOME_PUSH' });
 
       const save = p.getByRole('alertdialog', { name: /Você cai da montaria\?/ });
-      await expect(save.getByText(`O ${STEED} foi empurrado.`)).toBeVisible();
+      await expect(save.getByText(`O ${STEED} sofreu um empurrão.`)).toBeVisible();
       await save.getByRole('button', { name: 'Digitar o resultado' }).click();
       await save.getByLabel('Face do d20 (1 a 20)').fill('4');
       await save.getByRole('button', { name: /^Confirmar/ }).click();

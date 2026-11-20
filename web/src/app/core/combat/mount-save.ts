@@ -6,16 +6,16 @@ import {
   type MountSaveResult,
 } from '../../../gen/meurpg/play/v1/combat_pb';
 import { RollMode } from '../../../gen/meurpg/play/v1/combat_rolls_pb';
-import { article } from '../format/article';
+import { theName } from '../format/article';
 import { dcLabel } from '../format/save-dc';
 import { joinDots } from '../format/text';
 import { modifierText } from './combat-dice';
 import { isPlayer, signed } from './combat-view';
-import { whoseTurn } from './reaction-dismount';
+import { whoseTurn } from './whose-turn';
 
 /**
  * The Dexterity saving throw of a rider whose mount was moved against its will, or that was knocked prone while it rode
- * (#588; SRD 5.1, "Mounted Combat"): `Encounter.mount_save`, read by the rider's player and the master and answered with
+ * (SRD 5.1, "Mounted Combat"): `Encounter.mount_save`, read by the rider's player and the master and answered with
  * `RollMountSave`. Everything written here comes from the prompt and the result: the DC is shown only when the server sent
  * one (a player gets it only on a table with `show_save_dc`, RN-24), and a mount the player does not see is never named.
  * Pure functions, tested without a DOM.
@@ -39,12 +39,12 @@ export function ownMountSave(e: Encounter): MountSavePrompt | undefined {
 
 /** "de Tor" for a character, "do Wight" for a creature. */
 function ofWho(c: Combatant): string {
-  return isPlayer(c) ? `de ${c.label}` : `d${article(c.label)} ${c.label}`;
+  return isPlayer(c) ? `de ${c.label}` : theName(c.label, 'de');
 }
 
 /** The subject of a sentence about the rider: "Tor" for a character, "O Wight" for a creature. */
 function theRider(c: Combatant): string {
-  return isPlayer(c) ? c.label : `${article(c.label) === 'a' ? 'A' : 'O'} ${c.label}`;
+  return isPlayer(c) ? c.label : capital(theName(c.label));
 }
 
 /** The sum of the d20 that counted: "15 + 2 = 17", with what a die added after it (a Bardic Inspiration die) as one more term; the bare d20 when nothing is added. */
@@ -59,17 +59,14 @@ function sumOf(r: MountSaveResult): string {
   return added ? `${kept}${added} = ${roll.total}` : `${kept}`;
 }
 
-/** "empurrado" or "empurrada", by the name. */
-function ending(label: string): string {
-  return article(label) === 'a' ? 'a' : 'o';
-}
+const capital = (text: string): string => `${text.charAt(0).toUpperCase()}${text.slice(1)}`;
 
 /** What the sheet of the save says before the roll (board 588-06). */
 export interface MountSaveView {
   readonly title: string;
   /** "Teste de resistência de Destreza", with "· CD 10" when the server sent the DC. */
   readonly subtitle: string;
-  /** "O Cavalo de guerra foi empurrado." or "Você cai da montaria." */
+  /** "O Cavalo de guerra sofreu um empurrão." or "Você cai da montaria." */
   readonly cause: string;
   /** What a pass keeps and what a failure does. */
   readonly body: string;
@@ -115,7 +112,7 @@ function tagsOf(p: MountSavePrompt, mode: MountSaveView['mode']): string[] {
   ];
 }
 
-/** "O Cavalo de guerra foi empurrado." or "Você cai da montaria.", for the reader (`who` is "Você" or the rider as a subject). */
+/** "O Cavalo de guerra sofreu um empurrão." or "Você cai da montaria.", for the reader (`who` is "Você" or the rider as a subject). */
 function causeOf(
   p: MountSavePrompt,
   mount: Combatant | undefined,
@@ -126,8 +123,8 @@ function causeOf(
     return mine ? 'Você cai da montaria.' : `${who} cai da montaria (Derrubado).`;
   }
   return mount
-    ? `${article(mount.label) === 'a' ? 'A' : 'O'} ${mount.label} foi empurrad${ending(mount.label)}.`
-    : `A ${mine ? 'sua ' : ''}montaria foi empurrada.`;
+    ? `${capital(theName(mount.label))} sofreu um empurrão.`
+    : `A ${mine ? 'sua ' : ''}montaria sofreu um empurrão.`;
 }
 
 /** "Você tem desvantagem neste teste. Role dois d20; vale o menor."; empty for a normal roll. */
@@ -139,12 +136,9 @@ function modeLineOf(mode: MountSaveView['mode'], who: string): string {
   return `${who} tem ${adv ? 'vantagem' : 'desvantagem'} neste teste. Role dois d20; vale o ${adv ? 'maior' : 'menor'}.`;
 }
 
-/** "dele", "dela", or "da montaria" for a mount the reader does not see. */
+/** "do Cavalo de guerra", or "da montaria" for a mount the reader does not see. */
 function besideOf(mount: Combatant | undefined): string {
-  if (!mount) {
-    return 'da montaria';
-  }
-  return article(mount.label) === 'a' ? 'dela' : 'dele';
+  return mount ? theName(mount.label, 'de') : 'da montaria';
 }
 
 /** `mine`: the reader is the rider's player ("Você"); the master reads the rider by name. */
@@ -192,9 +186,7 @@ export function mountSaveResultView(
   names: { readonly rider: string; readonly mount: string },
 ): MountSaveResultView {
   const who = mine ? 'você' : names.rider;
-  const beside = names.mount
-    ? `ao lado d${article(names.mount)} ${names.mount}`
-    : 'ao lado da montaria';
+  const beside = names.mount ? `ao lado ${theName(names.mount, 'de')}` : 'ao lado da montaria';
   if (r.autoFail || !r.save) {
     const fell = `${who} caiu Derrubado ${beside}, sem rolar.`;
     return {
@@ -244,7 +236,7 @@ export function mountSaveWait(e: Encounter): MountSaveWait | null {
     detail: `${SAVE}${dc ? ` ${dc}` : ''}: ${cause} ${
       player ? `${rider.label} está respondendo no celular.` : 'O teste é seu.'
     }`,
-    rollLabel: `Rolar ${player ? `por ${rider.label}` : `pel${article(rider.label)} ${rider.label}`}`,
+    rollLabel: `Rolar ${player ? `por ${rider.label}` : theName(rider.label, 'por')}`,
     why: `Espera o teste ${ofWho(rider)}`,
   };
 }

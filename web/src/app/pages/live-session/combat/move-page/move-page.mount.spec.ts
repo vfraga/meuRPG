@@ -146,7 +146,7 @@ describe('MovePage, on foot', () => {
     page.fixture.detectChanges();
     expect(page.el.querySelector('.move__why')).toBeNull();
     expect(
-      page.el.querySelector('[role="radiogroup"][aria-label="Como se mover montado"]'),
+      page.el.querySelector('[role="radiogroup"][aria-label="Como se mover na montaria"]'),
     ).toBeNull();
   });
 });
@@ -256,7 +256,7 @@ describe('MovePage, mounted', () => {
     });
     expect(plain(el)).toContain('Restam 18,0 m de 18,0 m ao Cavalo de guerra');
     expect(plain(el.querySelector('[data-testid="mounted-notice"]'))).toContain(
-      'Montado no Cavalo de guerra. O movimento é do Cavalo de guerra, e Tor vai junto no mesmo quadrado.',
+      'Cavalgando o Cavalo de guerra. O movimento é do Cavalo de guerra, e Tor vai junto no mesmo quadrado.',
     );
     expect(plain(el.querySelector('.mr-legend'))).toContain('O Cavalo de guerra alcança');
     choose(8, 5);
@@ -276,7 +276,7 @@ describe('MovePage, mounted', () => {
     expect(notice.getAttribute('role')).toBeNull();
     expect(notice.closest('[role="status"]')?.classList.contains('move__live')).toBe(true);
     expect(el.querySelector('[role="radiogroup"]')!.getAttribute('aria-label')).toBe(
-      'Como se mover montado',
+      'Como se mover na montaria',
     );
   });
 
@@ -353,7 +353,9 @@ describe('MovePage, mounted', () => {
       combatants: [tor({ mountedOnId: 'cav' }), horse({ mountKind: 'independent' })],
       mounts: create(MountOptionsSchema, { mountedOnId: 'cav', dismountCostDft: 150 }),
     });
-    expect(plain(el.querySelector('.move__why'))).toBe('Montaria independente: anda na vez dela.');
+    expect(plain(el.querySelector('.move__why'))).toBe(
+      'Montaria independente: anda na vez da montaria.',
+    );
     expect(plain(el)).toContain('Desmontar custa 4,5 m');
     const ride = Array.from(el.querySelectorAll<HTMLInputElement>('input[type="radio"]')).find(
       (i) => plain(i.closest('label')).includes('Cavalgar'),
@@ -367,7 +369,9 @@ describe('MovePage, mounted', () => {
       combatants: [tor({ mountedOnId: 'cav' }), horse({ mountKind: '' })],
       mounts: create(MountOptionsSchema, { mountedOnId: 'cav', dismountCostDft: 150 }),
     });
-    expect(plain(el.querySelector('.move__why'))).toBe('Montaria independente: anda na vez dela.');
+    expect(plain(el.querySelector('.move__why'))).toBe(
+      'Montaria independente: anda na vez da montaria.',
+    );
   });
 
   it("rides the mount the master marked, for the rider's player and for the master", () => {

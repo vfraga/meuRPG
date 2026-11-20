@@ -17,7 +17,7 @@
       <p class="move__lead">{{ lead() }}</p>
       <div class="move__ride">
         @if (ride.mountedOn()) {
-          <app-segmented class="move__seg" label="Como se mover montado" [segments]="ride.modes()" [value]="ride.dismounting() ? 'dismount' : 'ride'" (choose)="ride.pick($event)" />
+          <app-segmented class="move__seg" label="Como se mover na montaria" [segments]="ride.modes()" [value]="ride.dismounting() ? 'dismount' : 'ride'" (choose)="ride.pick($event)" />
         } @else if (jumps()) {
           <app-segmented class="move__seg" label="Como se mover" [segments]="modes" [value]="mode()" (choose)="setMode($event)" />
         }

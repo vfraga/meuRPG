@@ -5,7 +5,7 @@ import { combatant, encounter } from '../../../../core/combat/combat-testing';
 import { TurnPanel } from './turn-panel';
 
 describe('TurnPanel: the rider with the mount it directs (588-04, 588-05)', () => {
-  it('is the rider\'s own turn, "Montado no Cavalo de guerra", with no joint pill and one "Encerrar turno"', () => {
+  it('is the rider\'s own turn, "Cavalgando o Cavalo de guerra", with no joint pill and one "Encerrar turno"', () => {
     const fixture = TestBed.createComponent(TurnPanel);
     fixture.componentRef.setInput(
       'encounter',
@@ -36,7 +36,7 @@ describe('TurnPanel: the rider with the mount it directs (588-04, 588-05)', () =
     const el = fixture.nativeElement as HTMLElement;
     expect(el.querySelector('.turn__title')?.textContent).toBe('Sua vez, Tor');
     expect(el.querySelector('.turn__sub')?.textContent?.replace(/\s+/g, ' ')).toContain(
-      'Montado no Cavalo de guerra · em seguida: Zumbi 1',
+      'Cavalgando o Cavalo de guerra · em seguida: Zumbi 1',
     );
     // Boards 588-04 and 588-05: the token of the turn is the pair's, the mount with the rider's small disc on its corner.
     const pair = el.querySelector('.turn__banner app-pair-token')!;

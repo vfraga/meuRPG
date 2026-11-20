@@ -113,7 +113,7 @@ describe('CreaturesPanel, a bonded steed that is away: the dashed "Fora" row (#5
     expect(row.querySelector('.away__line')).toBeNull();
     expect(getComputedStyle(row.querySelector('.mr-tag')!).borderTopStyle).toBe('dashed');
     expect(flat(el.querySelector('.cast__cost'))).toBe(
-      'Traz Estrela de volta, com a forma e o tipo dela e os PV cheios.',
+      'Traz Estrela de volta, com a mesma forma e o mesmo tipo e os PV cheios.',
     );
     expect(getComputedStyle(row.querySelector('.away')!).borderTopStyle).toBe('dashed');
     expect(row.querySelector('.tiles')).toBeNull();
@@ -125,7 +125,7 @@ describe('CreaturesPanel, a bonded steed that is away: the dashed "Fora" row (#5
     expect(here.el.querySelectorAll('app-creature-card').length).toBe(1);
     // Board 588-23: with the steed here, the cast only fills its hit points.
     expect(flat(here.el.querySelector('.cast__cost'))).toBe(
-      'Gasta um espaço de 2º nível ou maior. Só durante uma sessão, fora de combate. Com Estrela aqui, ela volta aos PV cheios.',
+      'Gasta um espaço de 2º nível ou maior. Só durante uma sessão, fora de combate. Com Estrela aqui, os PV voltam cheios.',
     );
 
     TestBed.resetTestingModule();

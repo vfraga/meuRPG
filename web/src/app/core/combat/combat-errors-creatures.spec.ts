@@ -29,7 +29,7 @@ describe('the refusals of the creatures and Wild Shape, by reason (MR-037)', () 
     ],
     [
       EncounterBlockedReason.ALREADY_MOUNTED,
-      'Quem já está montado não monta de novo nem serve de montaria. Desmonte antes. Nada foi mudado.',
+      'Quem já está na montaria não monta de novo nem serve de montaria. Desmonte antes. Nada foi mudado.',
     ],
     [
       EncounterBlockedReason.MOUNT_TAKEN,
@@ -53,7 +53,7 @@ describe('the refusals of the creatures and Wild Shape, by reason (MR-037)', () 
     ],
     [
       EncounterBlockedReason.MOUNTED,
-      'Quem está montado anda com a montaria. Desmonte antes de andar sozinho. Nada foi mudado.',
+      'Quem está na montaria anda com a montaria. Desmonte antes de andar a pé. Nada foi mudado.',
     ],
     [
       EncounterBlockedReason.NO_ROOM_TO_DISMOUNT,

@@ -1,5 +1,9 @@
-import type { Combatant, Encounter } from '../../../gen/meurpg/play/v1/combat_pb';
-import { article } from './combat-log';
+import {
+  type Combatant,
+  CombatantKind,
+  type Encounter,
+} from '../../../gen/meurpg/play/v1/combat_pb';
+import { theName } from '../format/article';
 
 /**
  * A rider and its mount in the order and on the map (RN-21, RN-10). The server sends `mounted_on_id` and `rider_id` only to
@@ -34,18 +38,15 @@ export function boxedPair(a: Combatant, b: Combatant): boolean {
   return mount.mountKind === 'controlled';
 }
 
-/** The combatant is a mount the order boxes under its rider: its row is indented (588-04, 588-08). */
+/** The combatant is a mount the order boxes under its rider: its row is indented. */
 export function followsRider(e: Encounter, c: Combatant): boolean {
   const rider = riderOn(e, c);
   return !!rider && boxedPair(rider, c);
 }
 
-const the = (name: string): string => `${article(name) === 'a' ? 'a' : 'o'} ${name}`;
-const onThe = (name: string): string => `${article(name) === 'a' ? 'na' : 'no'} ${name}`;
-
 /**
  * What a row of the order says first about the link: "Montaria de Tor" under a pair's box (the master reads "Adestrada · leva
- * Tor"), "Montado no Esqueleto" and "Leva o Wight · independente" for a mount that keeps its own turn. Empty for a combatant
+ * Tor"), "Cavalgando o Esqueleto" and "Leva o Wight · independente" for a mount that keeps its own turn. Empty for a combatant
  * that is not part of a pair. `boxed` says the row is inside the pair's box, where the rider needs no line.
  */
 export function mountLine(e: Encounter, c: Combatant, master: boolean, boxed: boolean): string {
@@ -61,7 +62,7 @@ export function mountLine(e: Encounter, c: Combatant, master: boolean, boxed: bo
   if (boxed) {
     return master ? `Adestrada · leva ${rider.label}` : `Montaria de ${rider.label}`;
   }
-  return `Leva ${the(rider.label)}${kind === 'independent' || master ? ' · independente' : ''}`;
+  return `Leva ${rider.kind === CombatantKind.PLAYER ? rider.label : theName(rider.label)}${kind === 'independent' || master ? ' · independente' : ''}`;
 }
 
 /** `mountLine` for a combatant in the order, working out whether the order boxes it with its partner. */
@@ -70,12 +71,12 @@ export function mountLineOf(e: Encounter, c: Combatant, master: boolean): string
   return mountLine(e, c, master, partner !== undefined && boxedPair(c, partner));
 }
 
-/** "Montado no Cavalo de guerra": the rider's line, in the order and under "Sua vez, Tor" (588-04). */
+/** "Cavalgando o Cavalo de guerra": the rider's line, in the order and under "Sua vez, Tor". */
 export function mountedOn(mount: Combatant): string {
-  return `Montado ${onThe(mount.label)}`;
+  return `Cavalgando ${theName(mount.label)}`;
 }
 
-/** "montado no Cavalo de guerra": the same, inside a sentence ("Tor, montado no Cavalo de guerra, coluna 6"). */
+/** "cavalgando o Cavalo de guerra": the same, inside a sentence ("Tor, cavalgando o Cavalo de guerra, coluna 6"). */
 export function ridingOn(mount: Combatant): string {
-  return `montado ${onThe(mount.label)}`;
+  return `cavalgando ${theName(mount.label)}`;
 }

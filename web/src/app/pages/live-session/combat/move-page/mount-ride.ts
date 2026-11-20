@@ -85,7 +85,7 @@ export class MountRide {
     const lines = [
       {
         id: 'move-why-ride',
-        text: this.controlled() ? '' : 'Montaria independente: anda na vez dela.',
+        text: this.controlled() ? '' : 'Montaria independente: anda na vez da montaria.',
       },
       { id: 'move-why-dismount', text: this.dismountWhy() },
     ];

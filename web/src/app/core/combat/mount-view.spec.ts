@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { CombatantKind } from '../../../gen/meurpg/play/v1/combat_pb';
 import { combatant, encounter } from './combat-testing';
 import {
   boxedPair,
@@ -18,7 +19,7 @@ const horse = (kind = 'controlled') =>
 const wight = combatant({ id: 'w', label: 'Wight', mountedOnId: 'esq' });
 const skeleton = combatant({ id: 'esq', label: 'Esqueleto de cavalo', mountKind: 'independent' });
 const spider = combatant({ id: 'ara', label: 'Aranha', mountKind: 'controlled' });
-const rider = combatant({ id: 'r', label: 'Lia', mountedOnId: 'ara' });
+const rider = combatant({ id: 'r', label: 'Lia', mountedOnId: 'ara', kind: CombatantKind.PLAYER });
 
 describe('the link of a rider and its mount', () => {
   const e = encounter({ combatants: [tor, horse()] });
@@ -60,10 +61,10 @@ describe('the line a row says about the link', () => {
   });
 
   it("links the two rows of a mount that keeps its own turn, with the mount name's article", () => {
-    expect(mountLine(e, wight, true, false)).toBe('Montado no Esqueleto de cavalo');
+    expect(mountLine(e, wight, true, false)).toBe('Cavalgando o Esqueleto de cavalo');
     expect(mountLine(e, skeleton, true, false)).toBe('Leva o Wight · independente');
-    expect(mountLine(e, rider, true, false)).toBe('Montado na Aranha');
-    expect(mountLine(e, spider, true, false)).toBe('Leva a Lia · independente');
+    expect(mountLine(e, rider, true, false)).toBe('Cavalgando a Aranha');
+    expect(mountLine(e, spider, true, false)).toBe('Leva Lia · independente');
   });
 
   it('says "independente" only when the kind is known', () => {
@@ -89,9 +90,15 @@ describe('the line a row says about the link', () => {
 });
 
 describe('the words of who rides what', () => {
-  it('opens a line with "Montado no Cavalo de guerra" and goes on inside a sentence with "montado no"', () => {
-    expect(mountedOn(horse())).toBe('Montado no Cavalo de guerra');
-    expect(ridingOn(horse())).toBe('montado no Cavalo de guerra');
-    expect(ridingOn(spider)).toBe('montado na Aranha');
+  it('opens a line with "Cavalgando o Cavalo de guerra" and goes on inside a sentence with "cavalgando"', () => {
+    expect(mountedOn(horse())).toBe('Cavalgando o Cavalo de guerra');
+    expect(ridingOn(horse())).toBe('cavalgando o Cavalo de guerra');
+    expect(ridingOn(spider)).toBe('cavalgando a Aranha');
+  });
+
+  it('puts no article before a character and no gendered participle in the line', () => {
+    const e = encounter({ combatants: [rider, spider] });
+    expect(mountLine(e, spider, true, false)).toBe('Leva Lia · independente');
+    expect(mountLine(e, spider, true, false)).not.toMatch(/Montad[oa]/);
   });
 });

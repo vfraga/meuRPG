@@ -4,7 +4,7 @@ import { metersFixed } from '../units';
 import { type Square } from './combat-grid';
 import { combatantInitial, isPlayer } from './combat-view';
 import { isCreature } from './creature-names';
-import { article } from './combat-log';
+import { theName } from '../format/article';
 import { lineLengthDft } from './jump-plan';
 import { ofThe } from './move-plan';
 
@@ -31,10 +31,8 @@ export interface MountRow {
   readonly refused: boolean;
 }
 
+const capital = (text: string): string => `${text.charAt(0).toUpperCase()}${text.slice(1)}`;
 const cost = (dft: number): string => metersFixed(dft / DFT_PER_FT);
-/** "o"/"a" for a name, as the rest of the combat words it. */
-const feminine = (name: string): boolean => article(name) === 'a';
-
 /** Who sits on the combatant, if the viewer sees them. */
 function riderOf(mountId: string, combatants: readonly Combatant[]): string {
   return combatants.find((c) => c.mountedOnId === mountId)?.label ?? '';
@@ -46,7 +44,7 @@ export function mountRefusalText(choice: MountChoice, combatants: readonly Comba
   const name = combatants.find((c) => c.id === choice.combatantId)?.label ?? '';
   switch (choice.refusal) {
     case MountRefusal.TOO_SMALL:
-      return `${feminine(name) ? 'Pequena' : 'Pequeno'} demais para você: precisa ser maior.`;
+      return 'Tamanho pequeno demais para você: precisa ser maior.';
     case MountRefusal.TOO_FAR:
       // The server's own distance: the measure that refuses (whole squares in feet). A rider that is not placed has none.
       return `${choice.distanceFt > 0 ? `A ${metersFixed(choice.distanceFt)}` : 'Longe demais'}: chegue ao lado ${ofThe([name])} primeiro.`;
@@ -59,7 +57,7 @@ export function mountRefusalText(choice: MountChoice, combatants: readonly Comba
     case MountRefusal.TAKEN:
       return `Já leva ${riderOf(choice.combatantId, combatants) || 'alguém'}.`;
     case MountRefusal.ALREADY_MOUNTED:
-      return 'Você já está montado.';
+      return 'Você já está na montaria.';
     default:
       return '';
   }
@@ -113,12 +111,9 @@ export function dismountRefusalText(
   }
 }
 
-const on = (mount: string, feminine: string, masculine: string): string =>
-  `${article(mount) === 'a' ? feminine : masculine} ${mount}`;
-
-/** "Montado no Cavalo de guerra." */
+/** "Cavalgando o Cavalo de guerra." */
 export function mountedNotice(mount: string): string {
-  return `Montado ${on(mount, 'na', 'no')}.`;
+  return `Cavalgando ${theName(mount)}.`;
 }
 
 /** What follows it: whose movement it is, and that the rider goes along. */
@@ -133,7 +128,7 @@ export function rideDetail(
   riderLeftDft: number,
   rider: string,
 ): string {
-  return `Depois restam ${cost(leftAfterDft)} ${on(mount, 'à', 'ao')}. Os ${cost(riderLeftDft)} de ${rider} ficam para desmontar.`;
+  return `Depois restam ${cost(leftAfterDft)} ${theName(mount, 'a')}. Os ${cost(riderLeftDft)} de ${rider} ficam para desmontar.`;
 }
 
 /** The card of a chosen landing square. */
@@ -145,9 +140,7 @@ export function dismountCard(
   controlled: boolean,
 ): { readonly title: string; readonly detail: string } {
   const after = Math.max(riderLeftDft - costDft, 0);
-  const back = controlled
-    ? ` ${feminine(mount) ? 'A' : 'O'} ${mount} volta à iniciativa própria.`
-    : '';
+  const back = controlled ? ` ${capital(theName(mount))} volta à iniciativa própria.` : '';
   return {
     title: `Desmontar aqui · ${cost(costDft)}`,
     detail: `Depois restam ${cost(after)} a ${rider}, a pé.${back}`,
@@ -156,7 +149,7 @@ export function dismountCard(
 
 /** The line under the title while the rider picks where to get off. */
 export function dismountLead(costDft: number, rider: string, mount: string): string {
-  return `Desmontar custa ${cost(costDft)}, metade do deslocamento ${on(rider, 'da', 'de')}. Toque num quadrado ao lado ${ofThe([mount])}.`;
+  return `Desmontar custa ${cost(costDft)}, metade do deslocamento de ${rider}. Toque num quadrado ao lado ${ofThe([mount])}.`;
 }
 
 /** The landing square nearest to where the arrows pointed, so a nudge never lands on a square that cannot be chosen. */

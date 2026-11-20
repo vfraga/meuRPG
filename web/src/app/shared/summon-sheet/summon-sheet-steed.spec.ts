@@ -96,7 +96,7 @@ describe('SummonSheet: Convocar Montaria (#588, boards 588-21 and 588-22)', () =
       'Pônei',
     ]);
     expect(rows[1].querySelector('.row__warn')?.textContent).toContain(
-      'Pequeno demais para você montar',
+      'Tamanho pequeno demais para você montar',
     );
     // Board 588-21: the subtitle, the slot folded from the start, the list named "Forma", each row with its silhouette and numbers.
     expect(flat(el.querySelector('.frame__sub'))).toBe(
@@ -110,7 +110,7 @@ describe('SummonSheet: Convocar Montaria (#588, boards 588-21 and 588-22)', () =
     expect(flat(rows[0].querySelector('.row__sub'))).toBe('Grande · 18 m · CA 11 · PV 19');
     expect(isOff(go())).toBe(true);
     expect(flat(go())).toBe('Convocar a montaria');
-    expect(foot()).toContain('Escolha a forma e escolha o tipo do corcel.');
+    expect(foot()).toContain('Escolha a forma e o tipo do corcel.');
 
     await pick('Cavalo de guerra');
     expect(flat(go())).toBe('Convocar Cavalo de guerra');
@@ -216,6 +216,6 @@ describe('SummonSheet: Convocar Montaria (#588, boards 588-21 and 588-22)', () =
 
   it('opens "Como funciona" in a dialog (tablet and up)', async () => {
     const { el } = await setup();
-    expect(el.textContent).toContain('A Inteligência dele é no mínimo 6.');
+    expect(el.textContent).toContain('A Inteligência mínima do corcel é 6.');
   });
 });

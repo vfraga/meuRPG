@@ -16,11 +16,14 @@ import { metersText } from '../units';
 import { creatureErrorMessage } from './creature-errors';
 import { CREATURE_TYPES } from './creature-types';
 
-/** Convocar Montaria's key: the summon whose creature is the character's bonded steed (#588). */
+/** Convocar Montaria's key: the summon whose creature is the character's bonded steed . */
 export const FIND_STEED = 'spell:find-steed';
 
 /** The warning of a form the caster cannot ride (`SummonOption.too_small_for_you`): the cast still works. */
-export const STEED_TOO_SMALL = 'Pequeno demais para você montar';
+export const STEED_TOO_SMALL = 'Tamanho pequeno demais para você montar';
+
+/** What a type the app has no word for is called: a server key is never shown. */
+export const OTHER_TYPE = 'Outro tipo';
 
 /** "Tipo do corcel": the types the server lets the cast pick, with the app's words (Celestial, Fada, Ínfero). */
 export function steedTypes(
@@ -28,7 +31,7 @@ export function steedTypes(
 ): readonly { readonly value: string; readonly label: string }[] {
   return spell.typeChoices.map((value) => ({
     value,
-    label: CREATURE_TYPES.find((t) => t.value === value)?.label ?? value,
+    label: CREATURE_TYPES.find((t) => t.value === value)?.label ?? OTHER_TYPE,
   }));
 }
 
@@ -41,7 +44,7 @@ export function steedTypeWord(type: string): string {
 export function steedHowLines(spell: SummonSpellOptions): readonly string[] {
   return [
     ...spell.notes,
-    ...(spell.minInt > 0 ? [`A Inteligência dele é no mínimo ${spell.minInt}.`] : []),
+    ...(spell.minInt > 0 ? [`A Inteligência mínima do corcel é ${spell.minInt}.`] : []),
   ];
 }
 

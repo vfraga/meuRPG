@@ -56,7 +56,7 @@ describe("the rider's dismount as its mount falls (#588, board 588-07)", () => {
     );
     expect(v.chips).toEqual(['Gasta a sua reação', 'Volta no começo da sua vez']);
     expect(v.wait).toBe('A vez do Zumbi 1 espera a resposta. O mestre também pode responder.');
-    expect(v.declineLabel).toBe('Cair derrubado');
+    expect(v.declineLabel).toBe('Cair (Derrubado)');
     expect(v.useLabel).toBe('Desmontar de pé');
     expect(v.ariaLabel).toBe('O Cavalo de guerra caiu: usar a reação para desmontar de pé?');
   });

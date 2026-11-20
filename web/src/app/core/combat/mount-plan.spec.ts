@@ -53,7 +53,7 @@ describe('mount rows', () => {
 
   it('words each refusal the server gives', () => {
     expect(why({ refusal: MountRefusal.TOO_SMALL })).toBe(
-      'Pequeno demais para você: precisa ser maior.',
+      'Tamanho pequeno demais para você: precisa ser maior.',
     );
     expect(why({ combatantId: 'm', refusal: MountRefusal.TOO_FAR, distanceFt: 15 })).toBe(
       'A 4,5 m: chegue ao lado do Mastim primeiro.',
@@ -70,10 +70,10 @@ describe('mount rows', () => {
   it('agrees with the mount it names, and does not guess a gender', () => {
     const spider = [combatant('a', 'Aranha gigante'), combatant('m', 'Mastim')];
     expect(why({ combatantId: 'a', refusal: MountRefusal.TOO_SMALL }, spider)).toBe(
-      'Pequena demais para você: precisa ser maior.',
+      'Tamanho pequeno demais para você: precisa ser maior.',
     );
     expect(why({ combatantId: 'm', refusal: MountRefusal.TOO_SMALL }, spider)).toBe(
-      'Pequeno demais para você: precisa ser maior.',
+      'Tamanho pequeno demais para você: precisa ser maior.',
     );
     expect(why({ combatantId: 'a', refusal: MountRefusal.TOO_FAR, distanceFt: 10 }, spider)).toBe(
       'A 3,0 m: chegue ao lado da Aranha gigante primeiro.',
@@ -134,8 +134,8 @@ describe('mount rows', () => {
 
 describe('the words of a ride and of a landing', () => {
   it('says whose movement it is and what is left for getting off', () => {
-    expect(plain(mountedNotice('Cavalo de guerra'))).toBe('Montado no Cavalo de guerra.');
-    expect(plain(mountedNotice('Aranha'))).toBe('Montado na Aranha.');
+    expect(plain(mountedNotice('Cavalo de guerra'))).toBe('Cavalgando o Cavalo de guerra.');
+    expect(plain(mountedNotice('Aranha'))).toBe('Cavalgando a Aranha.');
     expect(mountedDetail('Tor', 'Cavalo de guerra')).toBe(
       'O movimento é do Cavalo de guerra, e Tor vai junto no mesmo quadrado.',
     );

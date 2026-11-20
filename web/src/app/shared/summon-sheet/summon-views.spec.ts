@@ -189,7 +189,7 @@ describe('summon views: the lines of the sheet', () => {
     expect(plain(missingOf({ ...ready, total: 3, count: 1 }))).toBe('Tire 2 criaturas.');
     // Convocar Montaria (#588): the form and the steed's type, each named until it is picked.
     expect(missingOf({ ...ready, steed: true, needsType: true, total: 0 })).toBe(
-      'Escolha a forma e escolha o tipo do corcel.',
+      'Escolha a forma e o tipo do corcel.',
     );
     expect(missingOf({ ...ready, steed: true, needsType: true })).toBe('Escolha o tipo do corcel.');
     expect(missingOf({ ...ready, steed: true, needsType: false })).toBe('');
@@ -267,7 +267,7 @@ describe('summon views: the list, the keys and the dice', () => {
     });
     expect(rowsOf({ ...none, option: steeds }).map((r) => [r.title, r.warning])).toEqual([
       ['Cavalo de guerra', undefined],
-      ['Pônei', 'Pequeno demais para você montar'],
+      ['Pônei', 'Tamanho pequeno demais para você montar'],
     ]);
     const beasts = create(SummonOptionSchema, { type: 'beast', maxCr: '1' });
     expect(rowsOf({ ...none, option: beasts })).toEqual([]);

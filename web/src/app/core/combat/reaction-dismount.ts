@@ -4,9 +4,9 @@ import {
   ReactionKind,
   type ReactionWindow,
 } from '../../../gen/meurpg/play/v1/combat_pb';
-import { article } from '../format/article';
-import { currentCombatant, isPlayer } from './combat-view';
+import { theName } from '../format/article';
 import { mountOf } from './mount-view';
+import { whoseTurn } from './whose-turn';
 
 /**
  * The window of a rider whose mount was knocked prone or dropped to 0 hit points (#588, `ReactionKind.DISMOUNT`; SRD 5.1,
@@ -23,6 +23,8 @@ const PRONE = 'condition:prone';
 export function isDismountWindow(w: ReactionWindow): boolean {
   return w.kind === ReactionKind.DISMOUNT;
 }
+
+const capital = (text: string): string => `${text.charAt(0).toUpperCase()}${text.slice(1)}`;
 
 /** What the rider's prompt says, ready to draw (board 588-07). */
 export interface DismountView {
@@ -45,24 +47,10 @@ export interface DismountView {
   readonly ariaLabel: string;
 }
 
-/** "A vez do Zumbi 1", "A vez de Tor", "A sua vez" (the reader's own combatant is `selfId`), or "A vez" when the one on turn is hidden from the reader. */
-export function whoseTurn(e: Encounter, selfId: string): string {
-  const on = currentCombatant(e);
-  if (!on) {
-    return 'A vez';
-  }
-  if (on.id === selfId) {
-    return 'A sua vez';
-  }
-  return `A vez ${isPlayer(on) ? `de ${on.label}` : `d${article(on.label)} ${on.label}`}`;
-}
-
 export function dismountView(e: Encounter, w: ReactionWindow): DismountView {
   const rider = e.combatants.find((c) => c.id === w.reactorId);
   const mount = rider ? mountOf(e, rider) : undefined;
-  const lead = mount
-    ? `${article(mount.label) === 'a' ? 'A' : 'O'} ${mount.label} caiu.`
-    : 'A sua montaria caiu.';
+  const lead = mount ? `${capital(theName(mount.label))} caiu.` : 'A sua montaria caiu.';
   const question = 'Usar a reação para desmontar de pé?';
   return {
     title: 'A montaria caiu',
@@ -73,7 +61,7 @@ export function dismountView(e: Encounter, w: ReactionWindow): DismountView {
     note: 'Com a reação, você desce de pé num quadrado ao lado da montaria. Sem ela, cai Derrubado a até 1,5 m.',
     chips: ['Gasta a sua reação', 'Volta no começo da sua vez'],
     wait: `${whoseTurn(e, w.reactorId)} espera a resposta. O mestre também pode responder.`,
-    declineLabel: 'Cair derrubado',
+    declineLabel: 'Cair (Derrubado)',
     useLabel: 'Desmontar de pé',
     ariaLabel: `${lead.replace(/\.$/, '')}: ${question.charAt(0).toLowerCase()}${question.slice(1)}`,
   };
