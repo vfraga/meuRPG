@@ -3,7 +3,9 @@ package characters
 import (
 	"context"
 	"errors"
+	"fmt"
 	"slices"
+	"strings"
 	"time"
 	"unicode"
 	"unicode/utf8"
@@ -91,6 +93,51 @@ func refuseKeptOutPick(content *rules.Content, m authz.Membership, before func()
 		return errUnknownKey("sheet." + field)
 	}
 	return nil
+}
+
+// refuseUnfitPick refuses a new skill, expertise or tool pick that no list the character chooses from allows, with the
+// field of the pick and a sentence that names only the key's own name. A pick the stored sheet holds stays, whether it
+// fits or not; before is nil for a sheet that does not exist yet.
+func refuseUnfitPick(content *rules.Content, m authz.Membership, before func() *charactersv1.FullSheet, after *charactersv1.FullSheet) error {
+	if after == nil {
+		return nil
+	}
+	view := viewContent(content, m)
+	var stored *rules.Build
+	if was := before(); was != nil {
+		b := buildOf(was)
+		stored = &b
+	}
+	field, key, found := view.UnplacedNewPick(stored, buildOf(after))
+	if !found {
+		return nil
+	}
+	if strings.HasPrefix(field, rules.ChoiceKeysField) && !view.IsToolProficiency(key) {
+		return errUnknownKey("sheet." + field) // a tool pick of anything but a tool is a key the content does not have
+	}
+	return invalidArgument(&fieldError{field: "sheet." + field, err: errors.New(unfitSentence(view, buildOf(after), field, key))})
+}
+
+// unfitSentence is the sentence of a pick that cannot be placed, by the kind of pick the field holds: a skill or an
+// expertise or a tool that some list allows has no room left in the lists that offer it; any other pick is on no list.
+func unfitSentence(view *rules.Content, b rules.Build, field, key string) string {
+	listed := view.OnAList(b, field, key)
+	switch {
+	case strings.HasPrefix(field, rules.SkillsField) && listed:
+		name := view.NamePT(key)
+		return fmt.Sprintf("Não há vaga para a perícia %s: as listas que a oferecem já estão preenchidas pelas outras perícias marcadas. Desmarque uma delas para marcar %s.", name, name)
+	case strings.HasPrefix(field, rules.ExpertiseField) && listed:
+		name := view.NamePT(key)
+		return fmt.Sprintf("Não há vaga para a especialização em %s: as listas que a oferecem já estão preenchidas pelas outras especializações marcadas. Desmarque uma delas para marcar a especialização em %s.", name, name)
+	case strings.HasPrefix(field, rules.ChoiceKeysField) && listed:
+		name := view.ProficiencyNamePT(key)
+		return fmt.Sprintf("Não há vaga para a ferramenta %s: as listas que a oferecem já estão preenchidas pelas outras ferramentas marcadas. Desmarque uma delas para marcar %s.", name, name)
+	case strings.HasPrefix(field, rules.SkillsField):
+		return fmt.Sprintf("A perícia %s não está em nenhuma das listas de onde o personagem escolhe perícias.", view.NamePT(key))
+	case strings.HasPrefix(field, rules.ExpertiseField):
+		return fmt.Sprintf("A especialização em %s não está em nenhuma das listas de onde o personagem escolhe especializações.", view.NamePT(key))
+	}
+	return fmt.Sprintf("A ferramenta %s não está em nenhuma das escolhas de ferramenta do personagem.", view.ProficiencyNamePT(key))
 }
 
 // noSheet is the stored sheet of a character that does not exist yet.
@@ -288,6 +335,9 @@ func addChangedContent(d *rulesv1.DerivedSheet, issues []rules.Issue, content *r
 		name := content.NamePT(f.entry.Key)
 		var messages, codes []string
 		for _, is := range f.issues {
+			if is.Code == rules.IssuePickFit && !r.master {
+				continue // the fit issue is the master's advisory alone
+			}
 			codes = append(codes, is.Code)
 			// The sentence as a change reads it ("agora dá 2 perícias"), when the
 			// engine has one for this issue; otherwise the issue's own.
@@ -296,6 +346,9 @@ func addChangedContent(d *rulesv1.DerivedSheet, issues []rules.Issue, content *r
 				continue
 			}
 			messages = append(messages, changeSentence(is, f.entry.Key, name))
+		}
+		if len(codes) == 0 {
+			continue
 		}
 		d.ChangedContent = append(d.ChangedContent, &rulesv1.ChangedContent{
 			Key: f.entry.Key, NamePt: name, Field: f.entry.Field, Revision: i32(f.entry.Revision), SavedRevision: i32(f.entry.Since),
@@ -338,6 +391,10 @@ func (r reader) tell(d *rulesv1.DerivedSheet, issues []rules.Issue) {
 		if (is.Lost != nil || is.Named != "") && i < len(d.GetIssues()) {
 			d.Issues[i].Message = r.say(is)
 		}
+	}
+	if !r.master {
+		// The fit of the picks to their lists is the master's advisory alone.
+		d.Issues = slices.DeleteFunc(d.Issues, func(is *rulesv1.Issue) bool { return is.GetCode() == rules.IssuePickFit })
 	}
 }
 

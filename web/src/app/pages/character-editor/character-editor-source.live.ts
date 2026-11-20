@@ -270,6 +270,8 @@ export class CharacterEditorSourceLive implements CharacterEditorSource {
       total: res.total,
       notOffered: res.notOffered,
       spellSources: res.spellSources,
+      skillsAllowed: res.skillsAllowed ?? null,
+      expertiseAllowed: res.expertiseAllowed ?? null,
     };
   }
 

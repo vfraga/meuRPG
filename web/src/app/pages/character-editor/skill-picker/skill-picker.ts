@@ -28,6 +28,8 @@ export class SkillPicker {
   /** Skill key to its source in Portuguese ("da raça", "do antecedente"). */
   readonly granted = input<ReadonlyMap<string, string>>(new Map());
   readonly expertise = input.required<ReadonlySet<string>>();
+  /** The skills expertise may go on; `null` when it is not cut. A skill that already holds expertise stays enabled. */
+  readonly expertiseAllowed = input<ReadonlySet<string> | null>(null);
 
   readonly toggleSkill = output<string>();
   readonly toggleExpertise = output<string>();
@@ -40,6 +42,13 @@ export class SkillPicker {
     const half = Math.ceil(skills.length / 2);
     return [skills.slice(0, half), skills.slice(half)].filter((column) => column.length > 0);
   });
+  protected expertiseDisabled(key: string): boolean {
+    if (!this.isProficient(key)) {
+      return true;
+    }
+    const allowed = this.expertiseAllowed();
+    return allowed !== null && !allowed.has(key) && !this.expertise().has(key);
+  }
   protected isProficient(key: string): boolean {
     return this.proficient().has(key) || this.granted().has(key);
   }

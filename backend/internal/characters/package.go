@@ -448,7 +448,7 @@ func (p *packagePart) stageChecked(in *campaignpackage.Import, content *rules.Co
 	if !ok {
 		return nil, packageInvalid
 	}
-	checked, err := checkNewSheet(content, master, kind, sheet)
+	checked, err := checkImportedSheet(content, master, kind, sheet)
 	if err != nil {
 		return nil, sheetReason(err)
 	}

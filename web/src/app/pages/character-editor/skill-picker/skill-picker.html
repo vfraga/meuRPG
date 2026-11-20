@@ -24,7 +24,7 @@
           <mat-checkbox
             class="skill__expertise"
             [checked]="expertise().has(skill.key)"
-            [disabled]="!isProficient(skill.key)"
+            [disabled]="expertiseDisabled(skill.key)"
             [aria-label]="'Especialização em ' + skill.namePt"
             (change)="toggleExpertise.emit(skill.key)"
           />

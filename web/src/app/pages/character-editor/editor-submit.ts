@@ -6,7 +6,7 @@ import type { ChoiceGroups } from '../../shared/choice-groups/choice-groups';
 import { offControlOf } from './catalog-changes';
 import type { EditorCatalog } from './editor-catalog';
 import type { EditorDraft } from './editor-draft';
-import { EDITOR_STEP_LABELS } from './editor-labels';
+import { EDITOR_STEP_LABELS, type EditorStepKey } from './editor-labels';
 import type { EditorCore } from './editor-core';
 import type { EditorStepper } from './editor-stepper/editor-stepper';
 import type { SaveFlow } from './save-flow';
@@ -77,6 +77,15 @@ export class EditorSubmit {
     afterNextRender(() => this.host.choiceGroups()?.focusFirstPending(), {
       injector: this.host.injector,
     });
+  }
+
+  /** Opens a step by its key; nothing when the page has no stepper or the step. */
+  openStep(step: EditorStepKey): void {
+    const stepper = this.host.stepper();
+    const index = this.stepIndexOf(EDITOR_STEP_LABELS[step]);
+    if (stepper && index >= 0 && index !== stepper.selectedIndex) {
+      stepper.goTo(index);
+    }
   }
 
   /** After a submit with an invalid field: opens the step of the first one

@@ -3,6 +3,7 @@ import { signal } from '@angular/core';
 import {
   describeCharacterError,
   invalidFieldPath,
+  pickRefusalOf,
   switchedOffKey,
 } from '../../core/characters/character-errors';
 import { ActionKey } from '../../core/connect/idempotency';
@@ -16,6 +17,7 @@ import type {
   UpdateCharacterInput,
 } from './character-editor.types';
 import type { ReadyState } from './editor-state';
+import type { EditorStepKey } from './editor-labels';
 
 /** The class block a refusal points at (`full.classes[i]`), so the block says so; `null` for any other refusal. */
 export function classBlockOfRefusal(err: unknown): number | null {
@@ -68,6 +70,8 @@ export interface SaveFlowContext {
   /** Gives the field holding a switched-off key its error; false when no field holds it. */
   readonly markSwitchedOff: (key: string) => boolean;
   readonly refreshCatalog: () => Promise<void>;
+  /** Opens a step of the editor, so a refusal that is about its field is on screen. */
+  readonly openStep?: (step: EditorStepKey) => void;
 }
 
 /**
@@ -78,19 +82,32 @@ export class SaveFlow {
   readonly state = signal<SavingState>(IDLE_SAVING);
   /** The class block a refusal points at (`full.classes[i]`), so the block says so. */
   readonly classProblem = signal<number | null>(null);
+  /** The server's sentence for a skill or an expertise no list allows, shown on the "Perícias" step; empty when none. */
+  readonly pickProblem = signal('');
   private readonly createKey = new ActionKey();
 
   constructor(private readonly host: SaveFlowContext) {}
 
+  /** The refusal of a pick goes, and so does the notice that points to it. */
+  clearPickProblem(): void {
+    if (this.pickProblem() === '') {
+      return;
+    }
+    this.pickProblem.set('');
+    this.state.update((s) => (s.status === 'error' ? { status: 'idle' } : s));
+  }
+
   /** A reused page starts from nothing. */
   reset(): void {
     this.classProblem.set(null);
+    this.pickProblem.set('');
     this.state.set({ status: 'idle' });
   }
 
   /** Saves; the person may have left meanwhile, and then the save still ends on the server but nothing else happens. */
   async run(s: ReadyState, isBasic: boolean): Promise<void> {
     this.state.set({ status: 'saving' });
+    this.pickProblem.set('');
     // The save finishes on the server whatever the person does meanwhile; only the navigation depends on still being here.
     const stillHere = this.host.stillHere();
     try {
@@ -156,6 +173,11 @@ export class SaveFlow {
   /** The server refused: a refusal that names a key says it by name; one that points at a class block marks that block. */
   private refused(err: unknown): void {
     this.classProblem.set(classBlockOfRefusal(err));
+    const pick = pickRefusalOf(err);
+    this.pickProblem.set(pick ?? '');
+    if (pick) {
+      this.host.openStep?.('pericias');
+    }
     // An option the master switched off after the lists were read is an error on its field (E10-01 state 5). The name is
     // taken before the lists are read again, because the entry may be gone from them.
     const refused = switchedOffKey(err);
@@ -165,7 +187,9 @@ export class SaveFlow {
     }
     this.state.set({
       status: 'error',
-      message: describeCharacterError(err, (key) => this.host.nameOfKey(key)),
+      message: pick
+        ? 'Veja o passo Perícias.'
+        : describeCharacterError(err, (key) => this.host.nameOfKey(key)),
     });
   }
 }

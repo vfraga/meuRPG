@@ -13,6 +13,7 @@ import {
   describeCharacterError,
   invalidFieldPath,
   livingRefusal,
+  pickRefusalOf,
   switchedOffKey,
 } from './character-errors';
 
@@ -237,6 +238,48 @@ describe('the content the master retired (RN-23, 10.1d)', () => {
     expect(invalidFieldPath(err)).toBe('full.classes[1].class_key');
     expect(describeCharacterError(err)).toContain('Classe 2: essa classe se repete ou não existe');
     expect(invalidFieldPath(new ConnectError('x', Code.NotFound))).toBeNull();
+  });
+});
+
+describe('pickRefusalOf', () => {
+  const refused = (field: string, sentence: string) =>
+    new ConnectError(`${field} ${sentence}`, Code.InvalidArgument, undefined, [
+      { desc: InvalidFieldSchema, value: { field } },
+    ]);
+  const SKILL = 'sheet.full.skill_proficiency_keys[2]';
+  const EXPERTISE = 'sheet.full.expertise_skill_keys[0]';
+  const sentences: [string, string][] = [
+    [
+      SKILL,
+      'A perícia Furtividade não está em nenhuma das listas de onde o personagem escolhe perícias.',
+    ],
+    [
+      SKILL,
+      'Não há vaga para a perícia Furtividade: as listas que a oferecem já estão preenchidas pelas outras perícias marcadas. Desmarque uma delas para marcar Furtividade.',
+    ],
+    [
+      EXPERTISE,
+      'A especialização em Furtividade não está em nenhuma das listas de onde o personagem escolhe especializações.',
+    ],
+    [
+      EXPERTISE,
+      'Não há vaga para a especialização em Furtividade: as listas que a oferecem já estão preenchidas pelas outras especializações marcadas. Desmarque uma delas para marcar a especialização em Furtividade.',
+    ],
+  ];
+
+  it.each(sentences)('gives the server sentence of %s without the field', (field, sentence) => {
+    const err = refused(field, sentence);
+    expect(pickRefusalOf(err)).toBe(sentence);
+    expect(describeCharacterError(err)).toBe(sentence);
+  });
+
+  it('is null for any other sentence at those fields, and for any other refusal', () => {
+    const other = refused(SKILL, 'Qualquer outra frase do servidor.');
+    expect(pickRefusalOf(other)).toBeNull();
+    expect(describeCharacterError(other)).toBe('Confira os campos da ficha.');
+    expect(pickRefusalOf(refused('sheet.full.classes[0]', 'x y'))).toBeNull();
+    expect(pickRefusalOf(new ConnectError('x', Code.InvalidArgument))).toBeNull();
+    expect(pickRefusalOf(new Error('x'))).toBeNull();
   });
 });
 

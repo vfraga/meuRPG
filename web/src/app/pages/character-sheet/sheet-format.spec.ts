@@ -130,6 +130,7 @@ describe('sheet-format', () => {
         'formula',
         'feat_prerequisite',
         'option_prerequisite',
+        'pick_fit',
       ].map(title),
     ).toEqual([
       'Magias a revisar.',
@@ -144,6 +145,7 @@ describe('sheet-format', () => {
       'Efeito ignorado.',
       'Pré-requisito perdido.',
       'Pré-requisito perdido.',
+      'Escolha fora das listas.',
     ]);
   });
 

@@ -3,6 +3,7 @@ import { expect, type Page } from '@playwright/test';
 import { startSessionRPC } from './live-session-support';
 import { markMilestoneRPC } from './levelup-support';
 import { createInkBladeRPC } from './spells-support';
+import { listEntriesJSON } from './content-support';
 import { callRPC, createCharacterRPC } from './support';
 
 // Setup for the character editor and level-up specs with the table's own content (MR-025, RN-23, MR-040, slice
@@ -200,4 +201,33 @@ export async function changeGuardianSkillsRPC(master: Page, campaignId: string, 
   const entry = (listed.entries as any[]).find((e) => e.key === key)!;
   const body = { ...entry.tableClass, skillChoose };
   await post(master, 'UpdateTableEntry', { campaignId, key, expectedRevision: entry.revision, tableClass: body });
+}
+
+/** A table race whose trait lets the player choose one skill from `from`, and one expertise from athletics or nature (#574, part D). */
+export function skillTraitRaceBody(from: string[]): Record<string, unknown> {
+  return {
+    namePt: 'Rastreador',
+    size: 'Medium',
+    speedFt: 30,
+    abilityBonuses: { wisdom: 1 },
+    languages: ['language:common'],
+    traits: [
+      { namePt: 'Olho de rastro', descPt: ['Você aprende a achar o que se esconde.'], effects: [{ type: 'choice', choice: 'skill', count: 1, from }] },
+      { namePt: 'Estudo de campo', descPt: ['Você domina o que já sabe.'], effects: [{ type: 'choice', choice: 'expertise', count: 1, from: ['skill:athletics', 'skill:nature'] }] },
+    ],
+  };
+}
+
+/** The guardian's skill list, as the master changes it. */
+export async function changeGuardianSkillListRPC(master: Page, campaignId: string, key: string, skillFrom: string[]): Promise<void> {
+  const entry = (await listEntriesJSON(master, campaignId)).entries!.find((e) => e.key === key)!;
+  await post(master, 'UpdateTableEntry', { campaignId, key, expectedRevision: entry.revision, tableClass: { ...entry.tableClass, skillFrom } });
+}
+
+/** Ícaro's sheet with a table race and the skills he picks (the skill lists of #574, part D). */
+export function icaroSheetWith(classKey: string, raceKey: string, skillProficiencyKeys: string[]): Record<string, unknown> {
+  const body = icaroSheetBody(classKey);
+  const sheet = body.sheet as { full: Record<string, unknown> };
+  sheet.full = { ...sheet.full, raceKey, skillProficiencyKeys };
+  return body;
 }
