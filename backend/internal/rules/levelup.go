@@ -478,6 +478,7 @@ func levelUpOptionsWith(b Build, idx int, classKey string, c *content, sub *srd5
 	// What the class gives, and the subclass when it is already chosen.
 	gains := c.levelGains(classKey, sub, newLevel)
 	o.FeatureChoices = c.namedChoices(bare, gains.choices)
+	gains = c.cappedGains(gains, b)
 	o.SkillChoices, o.ExpertiseChoices = gains.skills, gains.expertise
 	o.SkillSources = c.levelSkillSources(classKey, gains, o.Multiclass)
 
@@ -567,7 +568,7 @@ func (o *LevelUpOffer) addSubclasses(c *content, b Build, idx int, class *srd51.
 // nil), its casting numbers.
 func (o *LevelUpOffer) subclassPart(c *content, b Build, idx int, s, sub *srd51.Subclass) LevelUpSubclass {
 	key := s.Key
-	g := c.subclassGains(s, o.ToLevel)
+	g := c.cappedGains(c.subclassGains(s, o.ToLevel), b)
 	ls := LevelUpSubclass{
 		Key: key, NamePT: c.namePT(key), Archived: c.archived[key], Off: c.off[key], FeatureChoices: c.namedChoices(bareLevelUp(b, idx, o.Class, o.ToLevel, s), g.choices),
 		Cantrips: g.cantrips, SkillChoices: g.skills, ExpertiseChoices: g.expertise, SkillSources: c.levelSkillSources("", g, nil),
@@ -846,6 +847,18 @@ func (g levelGains) plus(o levelGains) levelGains {
 		expertise: g.expertise + o.expertise, cantrips: g.cantrips + o.cantrips,
 		skillSources: slices.Concat(g.skillSources, o.skillSources), expertiseSources: slices.Concat(g.expertiseSources, o.expertiseSources),
 	}
+}
+
+// cappedGains is g with the skills and the expertise it asks cut to what its sources can take: the largest matching of the
+// sources to the keys the sheet before the level can still pick.
+func (c *content) cappedGains(g levelGains, before Build) levelGains {
+	x := deriverOf(before, c, nil)
+	free := func(keys []string, held []string) []string {
+		return slices.DeleteFunc(slices.Clone(keys), func(k string) bool { return slices.Contains(held, k) })
+	}
+	g.skills = min(g.skills, placedCount(g.skillSources, free(x.pickableSkills(), before.SkillProficiencies)))
+	g.expertise = min(g.expertise, placedCount(g.expertiseSources, free(c.skillOrder, before.Expertise)))
+	return g
 }
 
 // featureGains reads the choices of the features with these keys: their
@@ -1354,6 +1367,7 @@ func duplicatesOf(before, after Build, newClass bool) Build {
 // checkLevelUpSkills checks the new skills (the multiclass pick of a new class, mc
 // not nil) and the new expertise against what the level gives.
 func (c *content) checkLevelUpSkills(before, after Build, classKey string, mc *MulticlassOffer, gains levelGains) *LevelUpError {
+	gains = c.cappedGains(gains, before)
 	wantSkills, wantExpertise := gains.skills, gains.expertise
 	got, removedSkills := added(before.SkillProficiencies, after.SkillProficiencies)
 	switch {
