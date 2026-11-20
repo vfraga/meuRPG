@@ -112,6 +112,9 @@ func refuseUnfitPick(content *rules.Content, m authz.Membership, before func() *
 	if !found {
 		return nil
 	}
+	if strings.HasPrefix(field, "full.feature_choice_keys") && !view.IsToolProficiency(key) {
+		return errUnknownKey("sheet." + field) // a tool pick of anything but a tool is a key the content does not have
+	}
 	return invalidArgument(&fieldError{field: "sheet." + field, err: errors.New(unfitSentence(view, field, key))})
 }
 

@@ -10,6 +10,7 @@ import (
 	charactersv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/characters/v1"
 	"github.com/PuraFome/meuRPG/backend/gen/meurpg/characters/v1/charactersv1connect"
 	rulesv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/rules/v1"
+	"github.com/PuraFome/meuRPG/backend/internal/rules"
 )
 
 // fitRace is a table race whose trait lets the player choose one skill from a list.
@@ -68,8 +69,9 @@ func TestOnlyTheMasterReadsTheFitIssueOfAStoredSheet(t *testing.T) {
 		},
 	}
 	const marker = "não cabe em nenhuma das listas"
-	masterReadsIt := false
 	for what, read := range reads {
+		listsNoIssues := what == "the characters list" || what == "the level-up options"
+		masterReadsIt := false
 		for _, who := range p.readers() {
 			if !who.member {
 				continue
@@ -87,9 +89,9 @@ func TestOnlyTheMasterReadsTheFitIssueOfAStoredSheet(t *testing.T) {
 				t.Errorf("%s reads %s: it carries the fit issue: ...%s", who.name, what, body[max(i-200, 0):min(i+300, len(body))])
 			}
 		}
-	}
-	if !masterReadsIt {
-		t.Error("the master reads the fit issue on none of the reads")
+		if !masterReadsIt && !listsNoIssues {
+			t.Errorf("the master reads the fit issue on %s: no", what)
+		}
 	}
 
 	// The owner saves the sheet untouched under another name and levels it up.
@@ -111,7 +113,13 @@ func TestTheSkillSourcesOfALevelNameNothingTheTableKeepsOut(t *testing.T) {
 	p := newChoicesProbe(t)
 	w, ctx := p.w, t.Context()
 	const canary = "Zorvak4321"
-	class := p.createClass(tableClass("Escola dos Rios"))
+	must(w.master.campaigns.SetCampaignXpMode(ctx, rq(&campaignsv1.SetCampaignXpModeRequest{CampaignId: w.campaign, XpMode: campaignsv1.XpMode_XP_MODE_ENEMIES})))
+	own := tableClass("Escola dos Rios")
+	own.Levels[2].Features = []*rulesv1.TableFeature{{
+		NamePt: "Estudo do rio", DescPt: []string{"Texto de teste."},
+		Effects: []*rulesv1.TableEffect{{Type: "choice", Choice: "skill", Count: 1, From: []string{"skill:history"}}},
+	}}
+	class := p.createClass(own)
 	sub := must(w.master.table.CreateTableEntry(ctx, rq(&rulesv1.CreateTableEntryRequest{CampaignId: w.campaign, Body: &rulesv1.CreateTableEntryRequest_TableSubclass{TableSubclass: &rulesv1.TableSubclass{
 		NamePt: canary, ClassKey: class,
 		Levels: []*rulesv1.TableSubclassLevel{{Level: 3, Features: []*rulesv1.TableFeature{{
@@ -127,35 +135,39 @@ func TestTheSkillSourcesOfALevelNameNothingTheTableKeepsOut(t *testing.T) {
 	}))).GetCharacter()
 	must(w.master.table.SetOptionSwitches(ctx, rq(&rulesv1.SetOptionSwitchesRequest{CampaignId: w.campaign, Switches: []*rulesv1.OptionSwitch{{Key: sub.GetKey(), Off: true}}})))
 
-	options := func(who reader) reply {
-		return who.person.call(charactersv1connect.CharacterServiceGetLevelUpOptionsProcedure, &charactersv1.GetLevelUpOptionsRequest{CampaignId: w.campaign, CharacterId: pc.GetId()})
-	}
 	for _, who := range p.readers() {
 		if !who.member {
 			continue
 		}
-		r := options(who)
+		r := who.person.call(charactersv1connect.CharacterServiceGetLevelUpOptionsProcedure, &charactersv1.GetLevelUpOptionsRequest{CampaignId: w.campaign, CharacterId: pc.GetId()})
+		if who.person != w.master && who.person != w.ana {
+			continue // another reader gets no level-up of this character
+		}
 		if !r.ok() {
-			continue
+			t.Fatalf("%s: HTTP %d %s", who.name, r.status, shorten(r.body))
 		}
 		var res charactersv1.GetLevelUpOptionsResponse
 		if err := protojson.Unmarshal(r.body, &res); err != nil {
 			t.Fatalf("%s: %v", who.name, err)
 		}
-		text := protojson.Format(res.GetOptions())
+		opts := res.GetOptions()
+		if len(opts.GetSkillSources()) != 1 || opts.GetSkillSources()[0].GetNamePt() != "Estudo do rio" || opts.GetSkillSources()[0].GetFrom()[0].GetKey() != "skill:history" {
+			t.Errorf("%s: the level's skill sources = %v, want the class feature's", who.name, opts.GetSkillSources())
+		}
+		text := protojson.Format(opts)
 		named := strings.Contains(text, sub.GetKey()) || strings.Contains(text, canary)
 		if who.person == w.master {
-			if !named || len(res.GetOptions().GetSubclasses()) == 0 || len(res.GetOptions().GetSubclasses()[0].GetSkillSources()) != 1 {
-				t.Errorf("the master reads %s, want the subclass with its skill source", shorten(r.body))
+			if !named || len(opts.GetSubclasses()) == 0 || len(opts.GetSubclasses()[0].GetSkillSources()) != 1 {
+				t.Fatalf("the master reads %s, want the subclass with its skill source", shorten(r.body))
 			}
-			src := res.GetOptions().GetSubclasses()[0].GetSkillSources()[0]
+			src := opts.GetSubclasses()[0].GetSkillSources()[0]
 			if src.GetNamePt() != canary+" estudo" || src.GetCount() != 1 || len(src.GetFrom()) != 1 || src.GetFrom()[0].GetKey() != "skill:stealth" || src.GetFrom()[0].GetNamePt() != "Furtividade" {
 				t.Errorf("the master's skill source = %v", src)
 			}
 			continue
 		}
 		if named {
-			t.Errorf("%s reads the level-up options: they name the subclass the table keeps out: %s", who.name, shorten(r.body))
+			t.Errorf("%s: the options list the entry %q: %s", who.name, canary, shorten(r.body))
 		}
 	}
 
@@ -169,5 +181,83 @@ func TestTheSkillSourcesOfALevelNameNothingTheTableKeepsOut(t *testing.T) {
 	body := string(r.body)
 	if r.ok() || !strings.Contains(body, "Furtividade") || strings.Contains(body, canary) || strings.Contains(body, sub.GetKey()) {
 		t.Errorf("the refusal of the pick: HTTP %d %s", r.status, shorten(r.body))
+	}
+}
+
+// A skill, an expertise or a tool pick whose value is the key of an entry the table keeps out (or no key at all) is answered
+// alike for the player, on create, update and preview: the answer names neither the entry nor its key.
+func TestAPickOfAnEntryKeyIsAnsweredAsAKeyThatDoesNotExist(t *testing.T) {
+	p := newChoicesProbe(t)
+	w, ctx := p.w, t.Context()
+	const canary = "Zorvak4321"
+	class := p.createClass(tableClass("Escola dos Rios"))
+	feat := func(name string) *rulesv1.TableEntry {
+		return must(w.master.table.CreateTableEntry(ctx, rq(&rulesv1.CreateTableEntryRequest{CampaignId: w.campaign, Body: &rulesv1.CreateTableEntryRequest_TableFeat{TableFeat: &rulesv1.TableFeat{
+			NamePt: name, DescPt: []string{"Texto de teste."},
+		}}}))).GetEntry()
+	}
+	off, archived := feat(canary+" dádiva"), feat(canary+" bênção")
+	must(w.master.table.SetOptionSwitches(ctx, rq(&rulesv1.SetOptionSwitchesRequest{CampaignId: w.campaign, Switches: []*rulesv1.OptionSwitch{{Key: off.GetKey(), Off: true}}})))
+	must(w.master.table.ArchiveTableEntry(ctx, rq(&rulesv1.ArchiveTableEntryRequest{CampaignId: w.campaign, Key: archived.GetKey()})))
+	const absent = "feat:nao-existe-zz@mesa"
+
+	base := func() *charactersv1.CharacterSheet {
+		s := sheet(class, 1)
+		s.GetFull().RaceKey, s.GetFull().SubraceKey = "race:dwarf", "subrace:hill-dwarf"
+		return s
+	}
+	shapes := map[string]func(key string) *charactersv1.CharacterSheet{
+		"a tool pick": func(key string) *charactersv1.CharacterSheet {
+			s := base()
+			s.GetFull().FeatureChoiceKeys = []string{rules.ScopedChoice(rules.ToolPickKey("trait:tool-proficiency"), key)}
+			return s
+		},
+		"a skill": func(key string) *charactersv1.CharacterSheet {
+			s := base()
+			s.GetFull().SkillProficiencyKeys = []string{key}
+			return s
+		},
+		"an expertise": func(key string) *charactersv1.CharacterSheet {
+			s := base()
+			s.GetFull().ExpertiseSkillKeys = []string{key}
+			return s
+		},
+	}
+	held := must(w.ana.characters.CreateCharacter(ctx, rq(&charactersv1.CreateCharacterRequest{
+		CampaignId: w.campaign, Kind: charactersv1.CharacterKind_CHARACTER_KIND_PLAYER, Name: "Anã", Sheet: base(),
+	}))).GetCharacter()
+	for what, build := range shapes {
+		calls := map[string]func(who *person, key string) reply{
+			"create": func(who *person, key string) reply {
+				return who.call(charactersv1connect.CharacterServiceCreateCharacterProcedure, &charactersv1.CreateCharacterRequest{
+					CampaignId: w.campaign, Kind: charactersv1.CharacterKind_CHARACTER_KIND_PLAYER, Name: "Nova", Sheet: build(key),
+				})
+			},
+			"preview": func(who *person, key string) reply {
+				return who.call(charactersv1connect.CharacterServicePreviewCharacterProcedure, &charactersv1.PreviewCharacterRequest{
+					CampaignId: w.campaign, Kind: charactersv1.CharacterKind_CHARACTER_KIND_PLAYER, Sheet: build(key),
+				})
+			},
+			"update": func(who *person, key string) reply {
+				return who.call(charactersv1connect.CharacterServiceUpdateCharacterProcedure, &charactersv1.UpdateCharacterRequest{
+					CampaignId: w.campaign, CharacterId: held.GetId(), Revision: held.GetRevision(), Name: held.GetName(), Sheet: build(key),
+				})
+			},
+		}
+		for call, send := range calls {
+			for _, closed := range []*rulesv1.TableEntry{off, archived} {
+				who := w.ana
+				if call == "create" {
+					who = w.caio
+				}
+				named, none := send(who, closed.GetKey()), send(who, absent)
+				if !sameAnswer(named, closed.GetKey(), none, absent) {
+					t.Errorf("%s, %s: the entry's key: HTTP %d %s\na key that does not exist: HTTP %d %s", what, call, named.status, shorten(named.body), none.status, shorten(none.body))
+				}
+				if strings.Contains(string(named.body), canary) {
+					t.Errorf("%s, %s: the answer names the entry: %s", what, call, shorten(named.body))
+				}
+			}
+		}
 	}
 }
