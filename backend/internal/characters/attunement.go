@@ -62,8 +62,9 @@ func keepAttunement(content *rules.Content, stored, saved *charactersv1.FullShee
 	saved.Infusions = nil
 }
 
-// keepMagicItems keeps the ids and the `attuned` of the entries a saved sheet shares with the stored one, and gives an
-// id to every other entry: a client that repeats an id or sends one the sheet never had gets a new entry.
+// keepMagicItems keeps the ids, the `attuned` and the scroll spell of the entries a saved sheet shares with the stored
+// one, and gives an id to every other entry: a client that repeats an id or sends one the sheet never had gets a new entry,
+// which holds no spell. Only SetScrollSpell sets a spell.
 func keepMagicItems(stored, saved *charactersv1.FullSheet) {
 	was := map[string]*charactersv1.SheetMagicItem{}
 	used := map[string]bool{}
@@ -82,14 +83,15 @@ func keepMagicItems(stored, saved *charactersv1.FullSheet) {
 				next++
 			}
 			used[entryID(next)] = true
-			it.Id, it.Attuned = entryID(next), false
+			it.Id, it.Attuned, it.SpellKey = entryID(next), false, ""
 		} else {
-			it.Attuned = old.GetAttuned()
+			it.Attuned, it.SpellKey = old.GetAttuned(), old.GetSpellKey()
 		}
 		taken[it.GetId()] = true
 		it.RequiresAttunement, it.RestrictionPt, it.Restriction, it.SameItemAttuned, it.NamePt = false, "", charactersv1.AttunementRestriction_ATTUNEMENT_RESTRICTION_UNSPECIFIED, false, ""
 		it.ChargesMax, it.ChargesLeft, it.Lost, it.LastRollPending = 0, 0, charactersv1.ItemLoss_ITEM_LOSS_UNSPECIFIED, false
 		it.Consumable = nil
+		it.SpellNamePt, it.SpellGonePt, it.SpellOff = "", "", false
 	}
 }
 

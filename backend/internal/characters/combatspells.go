@@ -68,14 +68,6 @@ func (s *Service) GrantedCombatSpell(ctx context.Context, tx pgx.Tx, campaignID,
 	return out, nil
 }
 
-// castEconomy is the part of the turn a casting time spends; a longer one
-// (a minute, a ritual) spends none of it.
-var castEconomy = map[string]string{
-	rules.CastAction:      rules.EconomyAction,
-	rules.CastBonusAction: rules.EconomyBonusAction,
-	rules.CastReaction:    rules.EconomyReaction,
-}
-
 // spellBasics is what the spell is: its key, name, level, range and the turn
 // economy its casting time spends.
 func spellBasics(d rules.Derived, det *rules.SpellDetails) link.Spell {
@@ -84,7 +76,7 @@ func spellBasics(d rules.Derived, det *rules.SpellDetails) link.Spell {
 	out := link.Spell{
 		Key: det.Spell.Key, Name: det.Spell.NamePT, Level: det.Spell.Level, School: det.Spell.School, Concentration: det.Duration.Concentration, Verbal: det.Components.Verbal,
 		RangeKind: det.Range.Kind, RangeFt: d.SpellRangeFt(det.AttackType, det.Range.Kind, det.Range.DistanceFt), AttackType: det.AttackType,
-		Economy: castEconomy[det.CastingTime.Unit],
+		Economy: det.CastingTime.Economy(),
 	}
 	if out.Name == "" {
 		out.Name = det.Spell.Name

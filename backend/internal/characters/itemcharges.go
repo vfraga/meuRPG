@@ -31,7 +31,9 @@ func (s *Service) fillItemCharges(ctx context.Context, content *rules.Content, c
 	}
 	for _, it := range full.GetMagicItems() {
 		it.EffectPt = content.PotionEffectLinePT(it.GetKey())
-		it.Consumable = sheetConsumableOf(content, it.GetKey())
+		if it.GetConsumable() == nil { // a scroll with a spell has its own, with the reader's numbers (fillScrollSpells)
+			it.Consumable = sheetConsumableOf(content, it.GetKey())
+		}
 		ic, ok := content.ItemCharges(it.GetKey())
 		if !ok {
 			continue

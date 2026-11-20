@@ -430,17 +430,7 @@ func economyOption(economy string, turn TurnState) Option {
 }
 
 // spellEconomy maps a casting time to an economy, "" when it is too long.
-func spellEconomy(ct rules.CastingTime) string {
-	switch ct.Unit {
-	case rules.CastAction:
-		return rules.EconomyAction
-	case rules.CastBonusAction:
-		return rules.EconomyBonusAction
-	case rules.CastReaction:
-		return rules.EconomyReaction
-	}
-	return ""
-}
+func spellEconomy(ct rules.CastingTime) string { return ct.Economy() }
 
 // sortSpells puts the spells in the order "O que você pode fazer" lists them
 // (MR-014): the ones that can be cast now first, then the rest;

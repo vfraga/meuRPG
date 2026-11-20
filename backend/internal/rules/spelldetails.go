@@ -34,6 +34,20 @@ type CastingTime struct {
 	Raw     string
 }
 
+// Economy is the part of the turn the casting time spends: an Economy* constant for an action, a bonus action or a reaction,
+// and "" for a longer casting (a minute, a ritual), which spends none of it.
+func (ct CastingTime) Economy() string {
+	switch ct.Unit {
+	case CastAction:
+		return EconomyAction
+	case CastBonusAction:
+		return EconomyBonusAction
+	case CastReaction:
+		return EconomyReaction
+	}
+	return ""
+}
+
 // Range kinds.
 const (
 	RangeSelf      = "self"

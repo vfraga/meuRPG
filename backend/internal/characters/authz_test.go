@@ -547,6 +547,13 @@ func TestAuthorizationMatrix(t *testing.T) {
 			_, err := u.api.SetAttunement(ctx, connect.NewRequest(&charactersv1.SetAttunementRequest{CampaignId: campaign, CharacterId: pc.GetId(), EntryId: "m99", Attuned: true}))
 			return err
 		}, [6]connect.Code{connect.CodeInvalidArgument, connect.CodeInvalidArgument, connect.CodeNotFound, connect.CodeNotFound, connect.CodeUnauthenticated, connect.CodeNotFound}},
+		// A spell on a scroll: the master reaches the rule (the entry is none of the sheet's, so it is told so); the owner is
+		// refused because the table's sheets are locked, as a save is; another player, a stranger and a pending member are
+		// told the character is not there.
+		{"SetScrollSpell", "", nil, func(ctx context.Context, u *user) error {
+			_, err := u.api.SetScrollSpell(ctx, connect.NewRequest(&charactersv1.SetScrollSpellRequest{CampaignId: campaign, CharacterId: pc.GetId(), EntryId: "m99", SpellKey: "spell:fireball"}))
+			return err
+		}, [6]connect.Code{connect.CodeInvalidArgument, connect.CodeFailedPrecondition, connect.CodeNotFound, connect.CodeNotFound, connect.CodeUnauthenticated, connect.CodeNotFound}},
 		// A daily choice's pick: the master and the owner reach the rule (the sheet has no such choice, so both are told so);
 		// another player, a stranger and a pending member are told the character is not there.
 		{"SetDailyChoice", "", nil, func(ctx context.Context, u *user) error {

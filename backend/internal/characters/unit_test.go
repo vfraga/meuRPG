@@ -138,6 +138,7 @@ func TestEveryMethodNeedsASession(t *testing.T) {
 	_, calls["SetDailyChoice"] = c.SetDailyChoice(ctx, connect.NewRequest(&charactersv1.SetDailyChoiceRequest{CampaignId: id, CharacterId: id}))
 	_, calls["SetEquipped"] = c.SetEquipped(ctx, connect.NewRequest(&charactersv1.SetEquippedRequest{CampaignId: id, CharacterId: id}))
 	_, calls["SetAttunement"] = c.SetAttunement(ctx, connect.NewRequest(&charactersv1.SetAttunementRequest{CampaignId: id, CharacterId: id}))
+	_, calls["SetScrollSpell"] = c.SetScrollSpell(ctx, connect.NewRequest(&charactersv1.SetScrollSpellRequest{CampaignId: id, CharacterId: id}))
 	_, calls["SetStoryEditing"] = c.SetStoryEditing(ctx, connect.NewRequest(&charactersv1.SetStoryEditingRequest{CampaignId: id, CharacterId: id}))
 	_, calls["MarkCharacterDead"] = c.MarkCharacterDead(ctx, connect.NewRequest(&charactersv1.MarkCharacterDeadRequest{CampaignId: id, CharacterId: id}))
 	_, calls["GetMasterNotes"] = c.GetMasterNotes(ctx, connect.NewRequest(&charactersv1.GetMasterNotesRequest{CampaignId: id, CharacterId: id}))

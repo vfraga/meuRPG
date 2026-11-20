@@ -86,6 +86,9 @@ const (
 	// CharacterServiceSetAttunementProcedure is the fully-qualified name of the CharacterService's
 	// SetAttunement RPC.
 	CharacterServiceSetAttunementProcedure = "/meurpg.characters.v1.CharacterService/SetAttunement"
+	// CharacterServiceSetScrollSpellProcedure is the fully-qualified name of the CharacterService's
+	// SetScrollSpell RPC.
+	CharacterServiceSetScrollSpellProcedure = "/meurpg.characters.v1.CharacterService/SetScrollSpell"
 	// CharacterServiceMarkCharacterDeadProcedure is the fully-qualified name of the CharacterService's
 	// MarkCharacterDead RPC.
 	CharacterServiceMarkCharacterDeadProcedure = "/meurpg.characters.v1.CharacterService/MarkCharacterDead"
@@ -457,6 +460,17 @@ type CharacterServiceClient interface {
 	// `failed_precondition` with CharacterBlocked: ATTUNEMENT_LIMIT, ATTUNEMENT_RESTRICTED,
 	// ATTUNEMENT_NEEDS_REST or ATTUNEMENT_SAME_ITEM.
 	SetAttunement(context.Context, *connect.Request[v1.SetAttunementRequest]) (*connect.Response[v1.SetAttunementResponse], error)
+	// SetScrollSpell puts a spell on a Spell Scroll of the sheet, or takes it off with an empty spell_key (SRD 5.1, Spell
+	// Scroll). The master may always; the owner only while the sheet is open to editing, as UpdateCharacter. The spell
+	// must exist, be of the scroll's level (a cantrip is 0) and be on and not archived at the table. The spell is stored
+	// on the entry (SheetMagicItem.spell_key); a plain save keeps it. The checks run in this order: who may (a caller
+	// who may not see the character is told it does not exist), the sheet's lock, the stale revision, the entry, the
+	// spell, its level, the table.
+	// Errors: `not_found` (the character is not the caller's to see), `failed_precondition` with CharacterBlocked:
+	// SHEET_LOCKED or CHARACTER_DEAD (the owner of a locked sheet), `aborted` (stale revision), `invalid_argument` with
+	// InvalidField: entry_id (not an entry of the sheet, or not a Spell Scroll) or spell_key (not a spell, not of the
+	// scroll's level, or not on at the table).
+	SetScrollSpell(context.Context, *connect.Request[v1.SetScrollSpellRequest]) (*connect.Response[v1.SetScrollSpellResponse], error)
 	// MarkCharacterDead records that a player character died (RN-03). Only
 	// the campaign's master may call it.
 	//
@@ -1104,6 +1118,12 @@ func NewCharacterServiceClient(httpClient connect.HTTPClient, baseURL string, op
 			connect.WithSchema(characterServiceMethods.ByName("SetAttunement")),
 			connect.WithClientOptions(opts...),
 		),
+		setScrollSpell: connect.NewClient[v1.SetScrollSpellRequest, v1.SetScrollSpellResponse](
+			httpClient,
+			baseURL+CharacterServiceSetScrollSpellProcedure,
+			connect.WithSchema(characterServiceMethods.ByName("SetScrollSpell")),
+			connect.WithClientOptions(opts...),
+		),
 		markCharacterDead: connect.NewClient[v1.MarkCharacterDeadRequest, v1.MarkCharacterDeadResponse](
 			httpClient,
 			baseURL+CharacterServiceMarkCharacterDeadProcedure,
@@ -1312,6 +1332,7 @@ type characterServiceClient struct {
 	setEquipped              *connect.Client[v1.SetEquippedRequest, v1.SetEquippedResponse]
 	setDailyChoice           *connect.Client[v1.SetDailyChoiceRequest, v1.SetDailyChoiceResponse]
 	setAttunement            *connect.Client[v1.SetAttunementRequest, v1.SetAttunementResponse]
+	setScrollSpell           *connect.Client[v1.SetScrollSpellRequest, v1.SetScrollSpellResponse]
 	markCharacterDead        *connect.Client[v1.MarkCharacterDeadRequest, v1.MarkCharacterDeadResponse]
 	getMasterNotes           *connect.Client[v1.GetMasterNotesRequest, v1.GetMasterNotesResponse]
 	updateMasterNotes        *connect.Client[v1.UpdateMasterNotesRequest, v1.UpdateMasterNotesResponse]
@@ -1402,6 +1423,11 @@ func (c *characterServiceClient) SetDailyChoice(ctx context.Context, req *connec
 // SetAttunement calls meurpg.characters.v1.CharacterService.SetAttunement.
 func (c *characterServiceClient) SetAttunement(ctx context.Context, req *connect.Request[v1.SetAttunementRequest]) (*connect.Response[v1.SetAttunementResponse], error) {
 	return c.setAttunement.CallUnary(ctx, req)
+}
+
+// SetScrollSpell calls meurpg.characters.v1.CharacterService.SetScrollSpell.
+func (c *characterServiceClient) SetScrollSpell(ctx context.Context, req *connect.Request[v1.SetScrollSpellRequest]) (*connect.Response[v1.SetScrollSpellResponse], error) {
+	return c.setScrollSpell.CallUnary(ctx, req)
 }
 
 // MarkCharacterDead calls meurpg.characters.v1.CharacterService.MarkCharacterDead.
@@ -1834,6 +1860,17 @@ type CharacterServiceHandler interface {
 	// `failed_precondition` with CharacterBlocked: ATTUNEMENT_LIMIT, ATTUNEMENT_RESTRICTED,
 	// ATTUNEMENT_NEEDS_REST or ATTUNEMENT_SAME_ITEM.
 	SetAttunement(context.Context, *connect.Request[v1.SetAttunementRequest]) (*connect.Response[v1.SetAttunementResponse], error)
+	// SetScrollSpell puts a spell on a Spell Scroll of the sheet, or takes it off with an empty spell_key (SRD 5.1, Spell
+	// Scroll). The master may always; the owner only while the sheet is open to editing, as UpdateCharacter. The spell
+	// must exist, be of the scroll's level (a cantrip is 0) and be on and not archived at the table. The spell is stored
+	// on the entry (SheetMagicItem.spell_key); a plain save keeps it. The checks run in this order: who may (a caller
+	// who may not see the character is told it does not exist), the sheet's lock, the stale revision, the entry, the
+	// spell, its level, the table.
+	// Errors: `not_found` (the character is not the caller's to see), `failed_precondition` with CharacterBlocked:
+	// SHEET_LOCKED or CHARACTER_DEAD (the owner of a locked sheet), `aborted` (stale revision), `invalid_argument` with
+	// InvalidField: entry_id (not an entry of the sheet, or not a Spell Scroll) or spell_key (not a spell, not of the
+	// scroll's level, or not on at the table).
+	SetScrollSpell(context.Context, *connect.Request[v1.SetScrollSpellRequest]) (*connect.Response[v1.SetScrollSpellResponse], error)
 	// MarkCharacterDead records that a player character died (RN-03). Only
 	// the campaign's master may call it.
 	//
@@ -2477,6 +2514,12 @@ func NewCharacterServiceHandler(svc CharacterServiceHandler, opts ...connect.Han
 		connect.WithSchema(characterServiceMethods.ByName("SetAttunement")),
 		connect.WithHandlerOptions(opts...),
 	)
+	characterServiceSetScrollSpellHandler := connect.NewUnaryHandler(
+		CharacterServiceSetScrollSpellProcedure,
+		svc.SetScrollSpell,
+		connect.WithSchema(characterServiceMethods.ByName("SetScrollSpell")),
+		connect.WithHandlerOptions(opts...),
+	)
 	characterServiceMarkCharacterDeadHandler := connect.NewUnaryHandler(
 		CharacterServiceMarkCharacterDeadProcedure,
 		svc.MarkCharacterDead,
@@ -2694,6 +2737,8 @@ func NewCharacterServiceHandler(svc CharacterServiceHandler, opts ...connect.Han
 			characterServiceSetDailyChoiceHandler.ServeHTTP(w, r)
 		case CharacterServiceSetAttunementProcedure:
 			characterServiceSetAttunementHandler.ServeHTTP(w, r)
+		case CharacterServiceSetScrollSpellProcedure:
+			characterServiceSetScrollSpellHandler.ServeHTTP(w, r)
 		case CharacterServiceMarkCharacterDeadProcedure:
 			characterServiceMarkCharacterDeadHandler.ServeHTTP(w, r)
 		case CharacterServiceGetMasterNotesProcedure:
@@ -2809,6 +2854,10 @@ func (UnimplementedCharacterServiceHandler) SetDailyChoice(context.Context, *con
 
 func (UnimplementedCharacterServiceHandler) SetAttunement(context.Context, *connect.Request[v1.SetAttunementRequest]) (*connect.Response[v1.SetAttunementResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("meurpg.characters.v1.CharacterService.SetAttunement is not implemented"))
+}
+
+func (UnimplementedCharacterServiceHandler) SetScrollSpell(context.Context, *connect.Request[v1.SetScrollSpellRequest]) (*connect.Response[v1.SetScrollSpellResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("meurpg.characters.v1.CharacterService.SetScrollSpell is not implemented"))
 }
 
 func (UnimplementedCharacterServiceHandler) MarkCharacterDead(context.Context, *connect.Request[v1.MarkCharacterDeadRequest]) (*connect.Response[v1.MarkCharacterDeadResponse], error) {

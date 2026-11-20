@@ -1051,6 +1051,8 @@ type SheetMagicItem struct {
 	Key     string
 	Attuned bool
 	ID      string
+	// SpellKey is the spell on a Spell Scroll, as the sheet stores it, or "" for a scroll with none and every other item.
+	SpellKey string `json:",omitempty"`
 }
 
 // ItemModifier is one line of Derived.ItemModifiers: what a magic piece adds to one number

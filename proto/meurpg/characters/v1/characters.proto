@@ -366,6 +366,18 @@ service CharacterService {
   // ATTUNEMENT_NEEDS_REST or ATTUNEMENT_SAME_ITEM.
   rpc SetAttunement(SetAttunementRequest) returns (SetAttunementResponse);
 
+  // SetScrollSpell puts a spell on a Spell Scroll of the sheet, or takes it off with an empty spell_key (SRD 5.1, Spell
+  // Scroll). The master may always; the owner only while the sheet is open to editing, as UpdateCharacter. The spell
+  // must exist, be of the scroll's level (a cantrip is 0) and be on and not archived at the table. The spell is stored
+  // on the entry (SheetMagicItem.spell_key); a plain save keeps it. The checks run in this order: who may (a caller
+  // who may not see the character is told it does not exist), the sheet's lock, the stale revision, the entry, the
+  // spell, its level, the table.
+  // Errors: `not_found` (the character is not the caller's to see), `failed_precondition` with CharacterBlocked:
+  // SHEET_LOCKED or CHARACTER_DEAD (the owner of a locked sheet), `aborted` (stale revision), `invalid_argument` with
+  // InvalidField: entry_id (not an entry of the sheet, or not a Spell Scroll) or spell_key (not a spell, not of the
+  // scroll's level, or not on at the table).
+  rpc SetScrollSpell(SetScrollSpellRequest) returns (SetScrollSpellResponse);
+
   // MarkCharacterDead records that a player character died (RN-03). Only
   // the campaign's master may call it.
   //
@@ -1756,16 +1768,25 @@ message SheetMagicItem {
   // catalog on every read; a save ignores it. Read by the same people as the charges: the character's player and the
   // master.
   string effect_pt = 14;
-  // The spell a scroll casts (the catalog's key, "spell:fireball") and its name in Portuguese. Filled by the server on every
-  // read for a scroll that casts its spell; empty for every other item, a spell scroll that is only text included. A save
-  // ignores them.
+  // The spell on a Spell Scroll (the catalog's key, "spell:fireball"), set by SetScrollSpell and stored on the entry. A save
+  // keeps the stored key and drops the one the client sends. Empty for a scroll with no spell and for every other item. The
+  // character's player never reads the key of a spell the master switched off or archived after it was set (RN-23): it is
+  // empty for them then, and spell_gone_pt says why; the master reads it with spell_off.
   string spell_key = 15;
+  // The name of that spell in Portuguese. Filled by the server on every read; a save ignores it. Empty whenever spell_key is.
   string spell_name_pt = 16;
   // What a use of this entry is, present only on an entry that ChargesService.UseConsumable accepts and empty for every other
   // item. Filled by the server on every read, from the same rules the use follows, on the campaign's content; a save ignores it.
   // The sheet and the combat's item list read it instead of deciding what a use does or costs. Read by the same people as the
   // charges: the character's player and the master.
   SheetConsumable consumable = 17;
+  // "A magia deste pergaminho não está mais na mesa.": the words the character's player reads for a scroll whose spell the master
+  // switched off or archived after it was set (RN-23), in place of the key and the name. Empty in every other case, and for the
+  // master. Filled by the server on every read; a save ignores it.
+  string spell_gone_pt = 18;
+  // The scroll's spell is switched off or archived at the table. Only the master reads it, together with the key and the name.
+  // Filled by the server on every read; a save ignores it.
+  bool spell_off = 19;
 }
 
 // ConsumableKind is what kind of consumable an entry of the sheet is.
@@ -1791,6 +1812,27 @@ message SheetConsumable {
   int32 heal_dice_count = 3;
   int32 heal_dice_sides = 4;
   int32 heal_bonus = 5;
+  // The scroll fields (8 to 14) are filled for a Spell Scroll that holds a spell the character's player may read, from the sheet's
+  // build and the table's content. They are empty or zero on every entry that is not a scroll, on a scroll with no spell, and on a
+  // scroll whose spell the master switched off or archived (RN-23: the player reads spell_gone_pt on the entry instead).
+  // The level of the scroll's spell: 0 for a cantrip. Meaningful only while the entry's spell_key is set.
+  int32 scroll_spell_level = 8;
+  // The character reads the spell: it is on the spell list of a class the character casts from. False for a character with no
+  // spellcasting. A scroll the character does not read is refused by the read, and nothing is spent.
+  bool reads_scroll_spell = 9;
+  // Why the character does not read the spell, in words ("Não é da lista de Mago."). Empty when reads_scroll_spell is true.
+  string scroll_unreadable_pt = 10;
+  // Reading the spell asks for an ability check: its level is above the highest level the character can cast (the pact slots
+  // of a warlock included). False when reads_scroll_spell is false or the spell is a cantrip.
+  bool scroll_check_needed = 11;
+  // The check's DC, 10 plus the spell's level. Zero when scroll_check_needed is false.
+  int32 scroll_check_dc = 12;
+  // The ability the check uses: the spellcasting ability of the class whose list has the spell. Unspecified when
+  // scroll_check_needed is false.
+  meurpg.rules.v1.Ability scroll_check_ability = 13;
+  // What the spell's casting time costs of the turn: the action, the bonus action or the reaction. Unspecified for a spell that
+  // takes a minute or longer, which costs none of the turn. Zero when reads_scroll_spell is false.
+  meurpg.rules.v1.ActionEconomy scroll_casting_economy = 14;
 }
 
 // ItemRecharge is the catalog's charge rules of one item (SRD 5.1: each wand, staff, ring and
@@ -2519,6 +2561,23 @@ message SetAttunementRequest {
 
 // SetAttunementResponse returns the character as it stands.
 message SetAttunementResponse {
+  Character character = 1;
+}
+
+// SetScrollSpellRequest names the scroll and the spell to put on it.
+message SetScrollSpellRequest {
+  string campaign_id = 1;
+  string character_id = 2;
+  // The entry: the `id` of one of the sheet's magic_items, a variant of the Spell Scroll.
+  string entry_id = 3;
+  // The spell's catalog key, such as "spell:fireball". Empty takes the spell off the scroll.
+  string spell_key = 4;
+  // The revision the caller holds; a stale one is refused with `aborted`. 0 skips the check.
+  int32 revision = 5;
+}
+
+// SetScrollSpellResponse returns the character as it stands, with the new revision.
+message SetScrollSpellResponse {
   Character character = 1;
 }
 

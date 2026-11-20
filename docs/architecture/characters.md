@@ -416,6 +416,34 @@ It returns `ErrNoAmmunition` without writing when a counted kind has no piece le
 It returns `ErrAmmunitionRecovered` when it was done and `ErrNothingToRecover` when nothing was fired.
 `ContentService.ListMagicItems` lists the items the picker offers: items and families with their variants, never the +N armor and weapon families, found by name, in pages like `ListSpells`.
 
+
+## The spell on a scroll
+
+A variant of the Spell Scroll in `FullSheet.magic_items` can hold a spell.
+`SetScrollSpell` sets it, or takes it off with an empty `spell_key`.
+It is stored on the entry as `SheetMagicItem.spell_key`, in the sheet's JSON: no column.
+The master may always set it.
+The owner may only while the sheet is open to editing, as `UpdateCharacter`: a locked sheet or a dead character is refused with `CharacterBlocked`.
+Any other caller is told the character does not exist.
+`SetScrollSpell` locks the character row and reads the table's content in the same transaction.
+The checks run in this order: who may, the lock, the stale revision, the entry, that it is a scroll (`Content.SpellScrollNumbers`), the spell, its level and the table.
+The spell must exist, its level must be the scroll's (a cantrip is 0), and `Content.Hidden` must be false for it, so a spell the master switched off or archived is refused to the master too.
+Asking for the spell the scroll already holds changes nothing and moves no revision.
+A save never sets the spell: `keepMagicItems` takes the stored key for an entry whose id and key it already has, and a new entry holds none.
+The fields the server says on a read (`spell_name_pt`, `spell_gone_pt`, `spell_off`) are cleared on a save.
+`fillScrollSpells` fills them on every read.
+The reader is always the owner or the master.
+The owner never reads the key or the name of a spell the master switched off or archived after it was set (RN-23).
+For the owner `spell_key` and `spell_name_pt` are empty, and `spell_gone_pt` holds the words "A magia deste pergaminho não está mais na mesa.".
+The master reads the key and the name with `spell_off` true.
+The owner's save keeps the stored key, since it comes from the stored sheet and not from the read.
+`SheetConsumable` of a scroll with a spell the reader may read carries the reader's numbers, from `Content.ReadScrollSpell` in `rules/spellscrollread.go`.
+These are the spell's level, whether the character reads the spell, why not, whether a check is owed with its DC and ability, and the economy of the casting time.
+A character reads the spell when it is on the list of a class they cast from (`Spellcasting.SpellList`); with no spellcasting they read none.
+A check is owed when the spell's level is above the highest level of the character's slots, pact slots included.
+Its DC is 10 plus the spell's level, and its ability is the spellcasting ability of the class whose list has the spell.
+The economy is the existing `ActionEconomy`; a casting of a minute or longer spends none of the turn and reads unspecified.
+`fillItemCharges` keeps the consumable `fillScrollSpells` made, and makes the others.
 ## Class and race choices
 
 The questions and their rules are `rules`' (see [Class and race choices](rules.md#class-and-race-choices)); `choices.go` checks who may ask, turns the answer into messages and writes the picks of a sheet that is locked for the player.

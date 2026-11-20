@@ -596,7 +596,7 @@ func buildOf(f *charactersv1.FullSheet) rules.Build {
 		})
 	}
 	for _, it := range f.GetMagicItems() {
-		b.MagicItems = append(b.MagicItems, rules.SheetMagicItem{Key: it.GetKey(), Attuned: it.GetAttuned(), ID: it.GetId()})
+		b.MagicItems = append(b.MagicItems, rules.SheetMagicItem{Key: it.GetKey(), Attuned: it.GetAttuned(), ID: it.GetId(), SpellKey: it.GetSpellKey()})
 	}
 	for _, c := range f.GetClasses() {
 		b.Classes = append(b.Classes, rules.ClassLevel{

@@ -163,6 +163,7 @@ func (s *Service) characterToProto(content *rules.Content, row charactersdb.Char
 		c.Derived.Gear = mapToProto(rules.DeriveGear(build, content, der), gearToProto)
 		addChangedContent(c.Derived, der.AllIssues(), content, build, full, r)
 		fillMagicItems(content, c.Sheet.GetFull(), build, der)
+		fillScrollSpells(content, c.Sheet.GetFull(), der, master)
 		c.Sheet.GetFull().Infusions = sheetInfusionsOf(row.ID, der, infusions)
 		if !master {
 			// The stored issues are the server's bookkeeping of what the sheet already had (the changed entries
