@@ -90,7 +90,7 @@ describe('SteedChoice: the steed part of the summon sheet (#588, boards 588-21 a
     expect(types()).toBeNull();
     expect(fold()).toBeUndefined();
     const row = el.querySelector('.same')!;
-    expect(row.querySelector('app-creature-art')).not.toBeNull();
+    expect(row.querySelectorAll('app-creature-art')).toHaveLength(1);
     expect(row.querySelector('.same__name')?.textContent?.trim()).toBe('Estrela');
     expect(flat(row.querySelector('.mr-tag'))).toBe('Mesmo corcel');
     expect(row.querySelector('.mr-tag mat-icon')?.textContent?.trim()).toBe('link');
@@ -106,7 +106,7 @@ describe('SteedChoice: the steed part of the summon sheet (#588, boards 588-21 a
     const { el, types, fold } = setup({ spell: steedSpell({ bondedSteed: estrela() }) });
     expect(types()).toBeNull();
     expect(el.querySelector('.same')).toBeNull();
-    expect(fold()).toBeDefined();
+    expect(flat(fold())).toContain('Como funciona');
     expect(el.querySelectorAll('input[type=radio]').length).toBe(0);
   });
 });

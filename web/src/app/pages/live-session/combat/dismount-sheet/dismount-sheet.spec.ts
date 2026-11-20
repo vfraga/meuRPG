@@ -26,7 +26,7 @@ const riding = [
   combatant({ id: 'z1', label: 'Zumbi 1' }),
 ];
 
-describe('DismountSheet (#588, board 588-07)', () => {
+describe('DismountSheet', () => {
   const answerReaction = vi.fn();
   const get = vi.fn();
   const close = vi.fn();
@@ -80,7 +80,8 @@ describe('DismountSheet (#588, board 588-07)', () => {
     const sub = el.querySelector('.frame__sub')!;
     expect(flat(sub)).toBe('Reação · desmontar · Rodada 4');
     expect(flat(sub.querySelector('b'))).toBe('Reação');
-    expect(sub.querySelector('app-economy-mark rect')).not.toBeNull();
+    expect(sub.querySelectorAll('app-economy-mark rect.mark')).toHaveLength(1);
+    expect(sub.querySelector('app-economy-mark .slash')).toBeNull();
     expect(flat(el.querySelector('.what'))).toBe(
       'O Cavalo de guerra caiu. Usar a reação para desmontar de pé?',
     );
@@ -156,6 +157,32 @@ describe('DismountSheet (#588, board 588-07)', () => {
     expect(close).toHaveBeenCalled();
   });
 
+  it('has its live regions on the page before the notices, and the notices carry no role of their own', async () => {
+    answerReaction.mockRejectedValueOnce(new ConnectError('down', Code.Unavailable));
+    const { el, settle, button, state } = setup();
+    await settle();
+    const alert = el.querySelector('.mr-live[role=alert]')!;
+    const status = el.querySelector('.mr-live[role=status]')!;
+    expect(flat(alert)).toBe('');
+    expect(flat(status)).toBe('');
+    button('Desmontar de pé').click();
+    await settle();
+    expect(el.querySelector('.mr-live[role=alert]')).toBe(alert);
+    expect(flat(alert)).toContain('o servidor não respondeu');
+    expect(alert.querySelector('.mr-notice')?.hasAttribute('role')).toBe(false);
+    state.apply(
+      encounter({
+        revision: 9,
+        combatants: [combatant({ id: 'tor', label: 'Tor', mine: true, mountedOnId: 'cav' })],
+        reactionWindows: [],
+      } as never),
+    );
+    await settle();
+    expect(el.querySelector('.mr-live[role=status]')).toBe(status);
+    expect(flat(status)).toBe('Não é mais preciso responder: você segue na montaria.');
+    expect(status.firstElementChild?.hasAttribute('role')).toBe(false);
+  });
+
   it('keeps the question and says why when the server refuses, with the same key on the retry', async () => {
     answerReaction.mockRejectedValueOnce(new ConnectError('down', Code.Unavailable));
     answerReaction.mockResolvedValue({ encounter: encounter({ revision: 7 } as never) });
@@ -164,7 +191,7 @@ describe('DismountSheet (#588, board 588-07)', () => {
     button('Desmontar de pé').click();
     await settle();
     expect(close).not.toHaveBeenCalled();
-    expect(el.querySelector('[role=alert]')).not.toBeNull();
+    expect(flat(el.querySelector('[role=alert]'))).toContain('o servidor não respondeu');
     expect(el.querySelectorAll('.pair button').length).toBe(2);
     button('Desmontar de pé').click();
     await settle();
@@ -184,7 +211,7 @@ describe('DismountSheet (#588, board 588-07)', () => {
     expect(get).toHaveBeenCalledWith('c');
     expect(state.encounter()?.revision).toBe(9);
     expect(el.querySelectorAll('.pair button')).toHaveLength(0);
-    expect(button('Fechar')).toBeTruthy();
+    expect(flat(button('Fechar'))).toBe('Fechar');
   });
 
   it('says how it ended when the window left the combat without the answer, and only closes', async () => {

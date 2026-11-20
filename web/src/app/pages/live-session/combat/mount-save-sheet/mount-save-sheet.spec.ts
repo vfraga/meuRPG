@@ -58,7 +58,7 @@ const fell8 = create(MountSaveResultSchema, {
   held: false,
 } as never);
 
-describe('MountSaveSheet (#588, boards 588-06 and 588-10 card 6)', () => {
+describe('MountSaveSheet', () => {
   const rollMountSave = vi.fn();
   const get = vi.fn();
   const resources = { answerHeldRoll: vi.fn() };
@@ -137,7 +137,12 @@ describe('MountSaveSheet (#588, boards 588-06 and 588-10 card 6)', () => {
       'Destreza +2',
     ]);
     // Board 588-06: the mount's glyph beside the title, and the dice in the accent as the first tag.
-    expect(el.querySelector('.frame__head app-saddle-icon')).not.toBeNull();
+    expect(el.querySelector('.frame__head')?.firstElementChild?.tagName.toLowerCase()).toBe(
+      'app-saddle-icon',
+    );
+    expect(el.querySelector('.frame__head app-saddle-icon svg')?.getAttribute('aria-hidden')).toBe(
+      'true',
+    );
     expect(el.querySelector('.frame__head mat-icon.frame__icon')).toBeNull();
     expect(
       Array.from(el.querySelectorAll('.tag')).map((t) => t.classList.contains('tag--dice')),
@@ -195,7 +200,8 @@ describe('MountSaveSheet (#588, boards 588-06 and 588-10 card 6)', () => {
     );
     expect(state.encounter()?.revision).toBe(2);
     const res = el.querySelector('.res')!;
-    expect(res.getAttribute('role')).toBe('status');
+    expect(res.closest('.mr-live')?.getAttribute('role')).toBe('status');
+    expect(res.hasAttribute('role')).toBe(false);
     expect(plain(res.querySelector('.pill')?.textContent)).toBe('checkPassou');
     expect(plain(res.querySelector('.what')?.textContent)).toBe(
       '15 + 2 = 17: você segue na montaria.',
@@ -281,7 +287,8 @@ describe('MountSaveSheet (#588, boards 588-06 and 588-10 card 6)', () => {
   it('opens the typed fields at once on a table of physical dice, with no app roll', () => {
     const { el } = setup(prompt(), { diceMode: DiceMode.PHYSICAL });
     expect(button(el, 'Rolar no app')).toBeUndefined();
-    expect(field(el, 'Face do d20 (1 a 20)')).toBeTruthy();
+    expect(field(el, 'Face do d20 (1 a 20)').tagName).toBe('INPUT');
+    expect(button(el, 'Digitar o resultado')).toBeUndefined();
   });
 
   it('has no d20 for a rider that fails by itself: one button, "Continuar"', async () => {
@@ -316,9 +323,28 @@ describe('MountSaveSheet (#588, boards 588-06 and 588-10 card 6)', () => {
     const { fixture, el } = setup();
     button(el, 'Rolar no app').click();
     await flush(fixture);
-    expect(el.querySelector('app-held-roll-prompt')).not.toBeNull();
+    expect(plain(el.querySelector('app-held-roll-prompt')?.textContent)).toContain('Rolar de novo');
     expect(el.querySelector('.res')).toBeNull();
     expect(button(el, 'Rolar no app')).toBeUndefined();
+  });
+
+  it('has its live regions on the page before the notices, and the notices carry no role of their own', async () => {
+    rollMountSave.mockRejectedValueOnce(new ConnectError('down', Code.Unavailable));
+    const { fixture, el, state } = setup();
+    const alert = el.querySelector('.mr-live[role=alert]')!;
+    const status = el.querySelector('.mr-live[role=status]')!;
+    expect(alert.textContent?.trim()).toBe('');
+    expect(status.textContent?.trim()).toBe('');
+    button(el, 'Rolar no app').click();
+    await flush(fixture);
+    expect(el.querySelector('.mr-live[role=alert]')).toBe(alert);
+    expect(plain(alert.textContent)).toContain('o servidor não respondeu');
+    expect(alert.querySelector('.mr-notice')?.hasAttribute('role')).toBe(false);
+    state.apply(fight(undefined, 3));
+    await flush(fixture);
+    expect(el.querySelector('.mr-live[role=status]')).toBe(status);
+    expect(plain(status.textContent)).toContain('Este teste não espera mais a sua rolagem');
+    expect(status.firstElementChild?.hasAttribute('role')).toBe(false);
   });
 
   it('keeps the question and says why when the server refuses, and retries under the same key', async () => {
@@ -331,19 +357,21 @@ describe('MountSaveSheet (#588, boards 588-06 and 588-10 card 6)', () => {
     const { fixture, el } = setup();
     button(el, 'Rolar no app').click();
     await flush(fixture);
-    expect(el.querySelector('[role=alert]')).not.toBeNull();
+    expect(plain(el.querySelector('[role=alert]')?.textContent)).toContain(
+      'o servidor não respondeu',
+    );
     expect(closed).toHaveLength(0);
     button(el, 'Rolar no app').click();
     await flush(fixture);
     expect(rollMountSave.mock.calls[1][4]).toBe(rollMountSave.mock.calls[0][4]);
-    expect(el.querySelector('.res')).not.toBeNull();
+    expect(plain(el.querySelector('.res .pill')?.textContent)).toBe('checkPassou');
   });
 
   it('opens on the question of a d20 already rolled and kept (the screen was read again), never on a second roll', () => {
     const { el } = setup(prompt(), {}, heldLucky([1], 1));
-    expect(el.querySelector('app-held-roll-prompt')).not.toBeNull();
+    expect(plain(el.querySelector('app-held-roll-prompt')?.textContent)).toContain('Rolar de novo');
     expect(button(el, 'Rolar no app')).toBeUndefined();
-    expect(button(el, 'Rolar de novo')).toBeTruthy();
+    expect(plain(button(el, 'Rolar de novo').textContent)).toContain('Rolar de novo');
   });
 
   it('settles the save with the answer to the question, and tells the result then', async () => {
@@ -403,6 +431,30 @@ describe('MountSaveSheet (#588, boards 588-06 and 588-10 card 6)', () => {
     expect(rollMountSave.mock.calls[1][3]).toEqual({ kind: 'typed', face: 15, extra: [3] });
   });
 
+  it('reads its words from the combat as it is now: a second push that changes the cause changes them', async () => {
+    const { fixture, el, state } = setup();
+    expect(plain(el.querySelector('.what')?.textContent)).toContain(
+      'O Cavalo de guerra sofreu um empurrão.',
+    );
+    state.apply(fight(prompt({ cause: MountSaveCause.PRONE, dc: 12 }), 2));
+    await flush(fixture);
+    expect(plain(el.querySelector('.what')?.textContent)).toContain('Você cai da montaria.');
+    expect(plain(el.querySelector('.what')?.textContent)).not.toContain('empurrão');
+    expect(plain(el.querySelector('h2')?.textContent)).toBe('Você cai da montaria? · CD 12');
+  });
+
+  it('names the mount as the combat names it now', async () => {
+    const { fixture, el, state } = setup();
+    const renamed = fight(prompt(), 2);
+    renamed.combatants = renamed.combatants.map((c) =>
+      c.id === 'h' ? { ...c, label: 'Égua' } : c,
+    ) as typeof renamed.combatants;
+    state.apply(renamed);
+    await flush(fixture);
+    expect(plain(el.querySelector('.what')?.textContent)).toContain('A Égua sofreu um empurrão.');
+    expect(plain(el.querySelector('.what')?.textContent)).toContain('ao lado da Égua.');
+  });
+
   it('says the save is no longer owed when the master rolled it, or it closed by itself, and only closes', async () => {
     const { fixture, el, state } = setup();
     state.apply(fight(undefined, 3));
@@ -422,6 +474,6 @@ describe('MountSaveSheet (#588, boards 588-06 and 588-10 card 6)', () => {
     expect(plain(el.querySelector('.what')?.textContent)).toContain(
       'Se passar, segue na montaria; se falhar, cai Derrubado num quadrado ao lado do Cavalo de guerra.',
     );
-    expect(el.querySelector('.frame__close')).not.toBeNull();
+    expect(el.querySelector('.frame__close')?.getAttribute('aria-label')).toBe('Fechar');
   });
 });

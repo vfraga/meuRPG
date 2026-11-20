@@ -116,10 +116,15 @@ describe('SteedAsk: "Dispensar Estrela?" and "Libertar Estrela?", asked in place
 
   it('any other failure stays in the question, in words, with both buttons back', async () => {
     const { el, buttons, closed, refused, settle } = await setup('dismiss');
+    // The live region is on the page before the error: it is what a screen reader announces.
+    const live = el.querySelector('.mr-live[role=alert]')!;
+    expect(live.textContent?.trim()).toBe('');
     api.failWith = new ConnectError('down', Code.Unavailable);
     buttons()[1].click();
     await settle();
-    expect(el.querySelector('[role=alert]')?.textContent).toContain('o servidor não respondeu');
+    expect(el.querySelector('.mr-live[role=alert]')).toBe(live);
+    expect(live.textContent).toContain('o servidor não respondeu');
+    expect(live.querySelector('.err')?.hasAttribute('role')).toBe(false);
     expect(refused).toEqual([]);
     expect(closed).toEqual([]);
     expect(buttons().every((b) => !b.disabled)).toBe(true);

@@ -50,9 +50,11 @@ let nextId = 0;
       @if (chip()) {
         <p class="ask__chip"><span aria-hidden="true">●</span> Gasta a sua ação</p>
       }
-      @if (error()) {
-        <p class="err" role="alert"><mat-icon aria-hidden="true">error</mat-icon>{{ error() }}</p>
-      }
+      <div class="mr-live" role="alert">
+        @if (error()) {
+          <p class="err"><mat-icon aria-hidden="true">error</mat-icon>{{ error() }}</p>
+        }
+      </div>
       <button #first type="button" matButton="outlined" class="big" [disabled]="busy()" (click)="closed.emit(false)">Voltar</button>
       <button type="button" matButton="outlined" class="big big--danger" data-confirm [disabled]="busy()" (click)="confirm()"><mat-icon aria-hidden="true">{{ mode() === 'release' ? 'link_off' : 'close' }}</mat-icon><span class="lbl">{{ verb() }}&nbsp;<span class="nm">{{ c.name }}</span></span></button>
     </div>

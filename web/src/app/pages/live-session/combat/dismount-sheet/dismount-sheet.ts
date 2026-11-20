@@ -57,15 +57,20 @@ export interface DismountSheetData {
     >
       <app-economy-mark sub-mark kind="reaction" />
       <div class="body">
-        @if (error()) {
-          <div class="mr-notice mr-notice--danger" role="alert">
-            <mat-icon aria-hidden="true">error</mat-icon>
-            <p>{{ error() }}</p>
-          </div>
-        }
-        @if (gone()) {
-          <p class="what" role="status">{{ goneText() }}</p>
-        } @else {
+        <div class="mr-live" role="alert">
+          @if (error()) {
+            <div class="mr-notice mr-notice--danger">
+              <mat-icon aria-hidden="true">error</mat-icon>
+              <p>{{ error() }}</p>
+            </div>
+          }
+        </div>
+        <div class="mr-live" role="status">
+          @if (gone()) {
+            <p class="what">{{ goneText() }}</p>
+          }
+        </div>
+        @if (!gone()) {
           <p class="what">
             <b>{{ view.lead }} {{ view.question }}</b>
           </p>

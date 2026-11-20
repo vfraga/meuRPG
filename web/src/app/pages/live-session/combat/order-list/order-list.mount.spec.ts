@@ -87,7 +87,8 @@ describe('OrderList with a rider and its mount', () => {
 
   it('does not indent an independent mount that only ties with its rider, and keeps its line', () => {
     const el = render([tor, horse('independent'), zombie]);
-    expect(el.querySelector('app-order-group')).not.toBeNull();
+    expect(text(el.querySelector('app-order-group .head'))).toContain('Turno conjunto');
+    expect(text(el.querySelector('app-order-group .head'))).not.toContain('Montado');
     expect(el.querySelector('.row--mount')).toBeNull();
     expect(text(el.querySelector('[data-combatant="h"] .row__sub'))).toContain(
       'Leva Tor · independente',
@@ -131,8 +132,8 @@ describe('OrderList with a rider and its mount', () => {
       });
       const { menu } = live([tor, horse('controlled'), zombie, wolf]);
       const item = menu('Zumbi').find((i) => flat(i) === 'Montaria…');
-      expect(item).toBeTruthy();
-      expect(item?.querySelector('app-saddle-icon')).not.toBeNull();
+      expect(item?.getAttribute('role')).toBe('menuitem');
+      expect(item?.querySelector('app-saddle-icon svg')?.getAttribute('aria-hidden')).toBe('true');
       document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
       expect(menu('Lobo').some((i) => flat(i) === 'Montaria…')).toBe(true);
       document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
@@ -186,7 +187,7 @@ describe('OrderList with a rider and its mount', () => {
         .find((i) => flat(i) === 'Montaria…')!
         .click();
       fixture.detectChanges();
-      expect(el.querySelector('app-row-mount')).not.toBeNull();
+      expect(text(el.querySelector('app-row-mount'))).toContain('Montaria');
       fixture.componentRef.setInput(
         'encounter',
         encounter({

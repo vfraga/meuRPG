@@ -39,7 +39,7 @@ The browser draws what the server sends (reach from `GetMoveOptions`, totals, ve
   The words are in `core/combat/mount-mark.ts`.
 - **"Estrela também"** (`cast-sheet/steed-also`): when the server says a self-only spell may reach the bonded steed the caster rides (`SpellOption.also_steed`), the cast sheet has a check under the slot, "Estrela também" with "O corcel que você monta. Um efeito que dura cai nos dois.".
   It is on by default, and the cast sends `also_steed` while it is on.
-  The steed's name is the label of the combatant the caster rides.
+  The steed's name is the label of the combatant the caster rides, and only when that combatant is the caster's bonded steed (the id the summon options name): the sheet reads it when it opens.
   The check is framed in the accent on its soft ground.
   The line the server wrote about the steed (`SpellCast.steed_note`) closes the result (`app-cast-result`, the live region), not the notes of what the cast spent.
 - **The pair card:** on the rider's turn, the rider's player gets one turn, theirs ("Sua vez, Tor", "Cavalgando o Cavalo de guerra"), not a joint one: a card in the `accent` frame with three outlined buttons, "Disparada", "Desengajar", "Esquivar" (`TakeAction` with the mount's id; each is named as the mount's, "Disparada do Cavalo de guerra"), then one line.

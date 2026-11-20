@@ -59,7 +59,7 @@ type Stage = 'ask' | 'result' | 'gone';
 const EFFECT_DIE_FACES = 4;
 
 /**
- * "Você cai da montaria?" (#588, boards 588-06 and 588-10 card 6): the Dexterity saving throw of a rider whose mount was moved
+ * "Você cai da montaria?" the Dexterity saving throw of a rider whose mount was moved
  * against its will, or who was knocked prone while mounted, answered with `RollMountSave`. It opens by itself for the rider's
  * player, who has to answer it (the turn waits), and from "Rolar por Tor" for the master, who may close it. It says the cause,
  * the roll and the bonus; the DC only where the server sent it (the master, or a table that shows save DCs). "Rolar no app", or
@@ -130,18 +130,25 @@ export class MountSaveSheet {
     { key: 'd20-2', label: 'Segundo d20', min: 1, max: 20 },
   ];
 
-  /** The words as the combat was when the sheet opened: the roll moves the turn and may end the ride. */
+  /** The combat as it was when the sheet opened: a kept d20's question is read from it once. */
   private readonly opened = this.data.state.encounter();
-  protected readonly view = this.opened
-    ? mountSaveView(this.opened, this.data.prompt, !this.data.byMaster)
-    : null;
-  private readonly names = {
+  /** The prompt as the combat holds it now (a push may change its cause or mode); the one the sheet opened with once it is answered. */
+  private readonly prompt = computed(() => {
+    const live = this.data.state.encounter()?.mountSave;
+    return live?.riderId === this.data.prompt.riderId ? live : this.data.prompt;
+  });
+  /** The words, read from the combat as it is now. */
+  protected readonly view = computed(() => {
+    const e = this.data.state.encounter();
+    return e ? mountSaveView(e, this.prompt(), !this.data.byMaster) : null;
+  });
+  private readonly names = computed(() => ({
     rider: this.label(this.data.prompt.riderId),
     mount: this.label(this.data.prompt.mountId),
-  };
+  }));
   protected readonly resultView = computed(() => {
     const r = this.result();
-    return r ? mountSaveResultView(r, !this.data.byMaster, this.names) : null;
+    return r ? mountSaveResultView(r, !this.data.byMaster, this.names()) : null;
   });
 
   private readonly present = computed(
@@ -200,7 +207,7 @@ export class MountSaveSheet {
   });
 
   private label(id: string): string {
-    return (id && this.opened?.combatants.find((c) => c.id === id)?.label) || '';
+    return (id && this.data.state.encounter()?.combatants.find((c) => c.id === id)?.label) || '';
   }
 
   /** "Confirmar" of the typed d20 (and the second one, with advantage or disadvantage). */

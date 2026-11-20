@@ -119,10 +119,10 @@ describe('CombatView: the rider and the mount it directs (588-04)', () => {
     // The card is in the panel's own slot, which takes the panel's 12 px sides (the card is projected: no child rule reaches it).
     expect(at('.groups__pair')).toBeGreaterThan(at('.econ'));
     expect(at('app-tab-list')).toBeGreaterThan(at('.groups__pair'));
-    expect(m.el.querySelector('.groups > .groups__pair > app-pair-card')).not.toBeNull();
+    expect(m.el.querySelectorAll('.groups > .groups__pair > app-pair-card')).toHaveLength(1);
     expect(getComputedStyle(kids[at('.groups__pair')]).marginLeft).toBe('12px');
-    expect(m.el.querySelector('.econ app-economy-shapes')).not.toBeNull();
-    expect(m.el.querySelector('.econ .econ__move')).not.toBeNull();
+    expect(m.el.querySelectorAll('.econ app-economy-shapes')).toHaveLength(1);
+    expect(m.el.querySelectorAll('.econ .econ__move')).toHaveLength(1);
     // No divider between the row and the card, and 12 px of the column's gap (588-05).
     expect(getComputedStyle(m.el.querySelector('.econ')!).borderBottomStyle).toBe('none');
     expect(parseFloat(getComputedStyle(m.el.querySelector('app-pair-card')!).marginTop) || 0).toBe(
@@ -137,9 +137,9 @@ describe('CombatView: the rider and the mount it directs (588-04)', () => {
     });
     await settle(m.fixture);
     const card = m.el.querySelector<HTMLElement>('app-action-groups app-pair-card')!;
-    expect(card.querySelector('.pair__rider app-economy-shapes')).not.toBeNull();
+    expect(card.querySelectorAll('.pair__rider app-economy-shapes')).toHaveLength(1);
     expect(m.el.querySelector('.econ app-economy-shapes')).toBeNull();
-    expect(m.el.querySelector('.econ .econ__move')).not.toBeNull();
+    expect(m.el.querySelectorAll('.econ .econ__move')).toHaveLength(1);
     // The row under the card keeps its divider over the tabs.
     expect(getComputedStyle(m.el.querySelector('.econ')!).borderBottomStyle).toBe('solid');
     expect(m.el.querySelectorAll('app-pair-card')).toHaveLength(1);
@@ -151,12 +151,12 @@ describe('CombatView: the rider and the mount it directs (588-04)', () => {
       turnOptions: (id) => (id === 'h' ? (three(false) as never) : undefined),
     });
     await settle(m.fixture);
-    expect(m.el.querySelector('app-death-saves')).not.toBeNull();
+    expect(m.el.querySelectorAll('app-death-saves')).toHaveLength(1);
     expect(m.el.querySelectorAll('app-pair-card .mr-button--off')).toHaveLength(3);
     // The card and the death saves are two blocks of the column, with its gap between them.
     const column = m.el.querySelector('app-death-saves')!.parentElement!;
     expect(column.classList.contains('player__blocks')).toBe(true);
-    expect(column.querySelector(':scope > app-pair-card')).not.toBeNull();
+    expect(column.querySelectorAll(':scope > app-pair-card')).toHaveLength(1);
     expect(m.el.querySelector('app-pair-card .pair__why')?.textContent).toContain(
       'Caído: o mestre conduz o Cavalo de guerra.',
     );
@@ -227,7 +227,7 @@ describe('CombatView: the rider and the mount it directs (588-04)', () => {
     });
     expect(m.callsOf('endTurn').map((c) => c.args[2])).toEqual(['tor', 'h']);
     expect(error).toBe('');
-    expect(m.el.querySelector('app-pair-card')).not.toBeNull();
+    expect(m.el.querySelectorAll('app-pair-card')).toHaveLength(1);
     // The save is rolled; the second tap ends what is left, the mount's part.
     release();
     await m.view.endTurn(false);
@@ -299,11 +299,11 @@ describe('CombatView: the rider and the mount it directs (588-04)', () => {
       api: { endTurn: async () => left },
     });
     await settle(m.fixture);
-    expect(m.el.querySelector('app-pair-card')).not.toBeNull();
+    expect(m.el.querySelectorAll('app-pair-card')).toHaveLength(1);
     const end = [...m.el.querySelectorAll<HTMLButtonElement>('app-end-turn button')].find((b) =>
       b.textContent?.includes('Encerrar turno'),
     );
-    expect(end).toBeDefined();
+    expect(end?.textContent).toContain('Encerrar turno');
     end!.click();
     await settle(m.fixture);
     expect(m.callsOf('endTurn').map((c) => c.args[2])).toEqual(['h']);
@@ -332,7 +332,9 @@ describe('CombatView: the rider and the mount it directs (588-04)', () => {
       });
       await settle(m.fixture);
       expect(m.el.querySelectorAll('app-pair-card .pair__act')).toHaveLength(3);
-      expect(m.el.querySelector('app-end-part')).not.toBeNull();
+      const ends = [...m.el.querySelectorAll('app-end-part button')];
+      expect(ends).toHaveLength(2);
+      expect(ends.every((b) => b.textContent?.includes('Encerrar a minha parte'))).toBe(true);
       expect(m.view.jointOthers()).toEqual(['Brisa']);
     });
 

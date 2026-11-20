@@ -76,7 +76,7 @@ describe('PairCard (#588, boards 588-04 and 588-05)', () => {
     const rider = el.querySelector('.pair__rider')!;
     expect(flat(rider.querySelector('.pair__name'))).toBe('Tor');
     const riderShapes = rider.querySelector('app-economy-shapes')!;
-    expect(riderShapes.getAttribute('aria-label') ?? flat(riderShapes)).toBeTruthy();
+    expect(riderShapes.querySelector('ul')?.getAttribute('aria-label')).toBe('O que Tor tem');
     expect(flat(riderShapes)).toContain('Ação');
     expect(flat(riderShapes)).toContain('Bônus');
     expect(flat(riderShapes)).toContain('Reação');
@@ -166,7 +166,7 @@ describe('PairCard (#588, boards 588-04 and 588-05)', () => {
     const { el, buttons } = setup({ options: three(false) });
     const why = el.querySelector('#pair-why')!;
     expect(flat(why)).toBe('blockCaído: o mestre conduz o Cavalo de guerra.');
-    expect(why.closest('[role=status]')).not.toBeNull();
+    expect(why.closest('.mr-live')?.getAttribute('role')).toBe('status');
     expect(buttons().map((b) => b.getAttribute('aria-describedby'))).toEqual([
       'pair-why',
       'pair-why',
@@ -178,7 +178,7 @@ describe('PairCard (#588, boards 588-04 and 588-05)', () => {
         .every((b) => !b.hasAttribute('aria-describedby')),
     ).toBe(true);
     // The live region is there before the reason arrives, so the reason is announced.
-    expect(setup().el.querySelector('.pair [role=status]')).not.toBeNull();
+    expect(setup().el.querySelector('.pair .mr-live[role=status]')?.textContent?.trim()).toBe('');
   });
 
   it('emits the key of the action pressed, and nothing while busy or for a refused one', () => {
