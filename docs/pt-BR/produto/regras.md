@@ -1290,7 +1290,8 @@ As escolhas cobrem as seções do SRD 5.1 Fighting Style, Draconic Ancestry e Br
   Uma característica da mesa pode oferecer uma escolha que mistura tipos: uma perícia ou um idioma, uma perícia ou uma ferramenta, ou os três.
   O mestre lista cada tipo uma vez, com as chaves dele (um tipo de ferramenta pode marcar tipos de proficiência no lugar), e diz quantas escolhas o jogador faz no total.
   O jogador lê uma escolha só em "Escolhas" e na subida de nível guiada, com as opções de todos os tipos juntas e cada uma marcada com o seu tipo.
-  Uma escolha nunca é algo que o personagem já tem, e nunca a mesma duas vezes.
+  Uma escolha nunca é algo que o personagem já tem por outra origem (um idioma da raça, uma perícia da classe, uma ferramenta do antecedente), e nunca a mesma duas vezes: essa opção fica bloqueada na tela, e um salvamento que a traga é recusado.
+  Uma escolha que a própria escolha já guarda continua valendo quando a ficha é salva de novo.
   Uma perícia escolhida assim é uma perícia que o personagem tem à parte das listas da classe e das outras origens, e não ocupa lugar nelas.
   Um idioma entra nos idiomas do personagem, e uma ferramenta é colocada junto das outras ferramentas escolhidas do personagem.
   Uma escolha que nenhum dos tipos oferece é recusada como uma chave que não existe.
