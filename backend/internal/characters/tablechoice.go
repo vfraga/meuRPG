@@ -99,10 +99,14 @@ func refuseKeptOutPick(content *rules.Content, m authz.Membership, before func()
 // field of the pick and a sentence that names only the key's own name. A pick the stored sheet holds stays, whether it
 // fits or not; before is nil for a sheet that does not exist yet.
 func refuseUnfitPick(content *rules.Content, m authz.Membership, before func() *charactersv1.FullSheet, after *charactersv1.FullSheet) error {
+	return refuseUnfitPickIn(viewContent(content, m), before, after)
+}
+
+// refuseUnfitPickIn is refuseUnfitPick on the content view the caller has chosen.
+func refuseUnfitPickIn(view *rules.Content, before func() *charactersv1.FullSheet, after *charactersv1.FullSheet) error {
 	if after == nil {
 		return nil
 	}
-	view := viewContent(content, m)
 	var stored *rules.Build
 	if was := before(); was != nil {
 		b := buildOf(was)

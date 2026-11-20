@@ -42,13 +42,23 @@ func (c *content) unplacedNewSkillPick(x, xs *deriver, held, now Build) (field, 
 	expertise := func(k string) bool { _, ok := c.skills[k]; return ok }
 	var stuckSkills, stuckExpertise []string
 	if xs != nil {
-		stuckSkills = unplacedPicks(xs.skillSources(), pickList(held.SkillProficiencies, skill(xs)))
-		stuckExpertise = unplacedPicks(xs.expertiseSources(), pickList(held.Expertise, expertise))
+		stuckSkills = unplacedPicks(xs.shown(xs.skillSources()), pickList(held.SkillProficiencies, skill(xs)))
+		stuckExpertise = unplacedPicks(xs.shown(xs.expertiseSources()), pickList(held.Expertise, expertise))
 	}
-	if f, k, ok := unplacedNewList(skillsField, x.skillSources(), now.SkillProficiencies, held.SkillProficiencies, stuckSkills, skill(x)); ok {
+	if f, k, ok := unplacedNewList(skillsField, x.shown(x.skillSources()), now.SkillProficiencies, held.SkillProficiencies, stuckSkills, skill(x)); ok {
 		return f, k, true
 	}
-	return unplacedNewList(expertiseField, x.expertiseSources(), now.Expertise, held.Expertise, stuckExpertise, expertise)
+	return unplacedNewList(expertiseField, x.shown(x.expertiseSources()), now.Expertise, held.Expertise, stuckExpertise, expertise)
+}
+
+// shown are the sources a reader may read: for a player, the ones whose owner is hidden from them and that the sheet does not
+// hold are left out, as if the owner did not exist. The master reads them all. The sources the issues count (the allowance of
+// the sheet) stay as they are.
+func (x *deriver) shown(sources []pickSource) []pickSource {
+	if !x.c.player {
+		return sources
+	}
+	return slices.DeleteFunc(slices.Clone(sources), func(s pickSource) bool { return x.c.hidden(s.Owner) && !x.c.sheetHas(x.b, s.Owner) })
 }
 
 // deriverFor is the deriver of the sheet b, made with the entries it loses left out.
@@ -123,7 +133,7 @@ func (x *deriver) unplacedNewTool(held Build, xs *deriver) (string, string, bool
 	stuck := map[string][]string{}
 	if xs != nil {
 		for owner, values := range xs.toolPicksByOwner() {
-			stuck[owner] = unplacedPicks(xs.c.toolSources(owner), values)
+			stuck[owner] = unplacedPicks(xs.shown(xs.c.toolSources(owner)), values)
 		}
 	}
 	for i, stored := range x.b.FeatureChoices {
@@ -136,7 +146,7 @@ func (x *deriver) unplacedNewTool(held Build, xs *deriver) (string, string, bool
 			continue
 		}
 		heldValues := slices.DeleteFunc(slices.Clone(byOwner[owner]), func(k string) bool { return !slices.Contains(held.FeatureChoices, ScopedChoice(choiceKey, k)) })
-		sources := x.c.toolSources(owner)
+		sources := x.shown(x.c.toolSources(owner))
 		if !placesAlone(sources, competing(byOwner[owner], heldValues, stuck[owner]), value) {
 			return fmt.Sprintf("full.feature_choice_keys[%d]", i), value, true
 		}
@@ -157,8 +167,8 @@ type PickAllowed struct {
 // expertise may go on (nil otherwise). They are the lists the save's refusal reads (unplacedNewList).
 func (c *Content) PickLists(b Build) (skills PickAllowed, expertise *PickAllowed) {
 	x := c.deriverFor(b)
-	skills = allowedBy(x.skillSources())
-	if sources := x.expertiseSources(); len(sources) > 0 {
+	skills = allowedBy(x.shown(x.skillSources()))
+	if sources := x.shown(x.expertiseSources()); len(sources) > 0 {
 		if e := allowedBy(sources); !e.Any {
 			expertise = &e
 		}
@@ -193,11 +203,11 @@ func (c *Content) OnAList(b Build, field, key string) bool {
 	var sources []pickSource
 	switch {
 	case strings.HasPrefix(field, skillsField):
-		sources = x.skillSources()
+		sources = x.shown(x.skillSources())
 	case strings.HasPrefix(field, expertiseField):
-		sources = x.expertiseSources()
+		sources = x.shown(x.expertiseSources())
 	case strings.HasPrefix(field, choiceKeysField):
-		sources = x.toolSourcesAt(field)
+		sources = x.shown(x.toolSourcesAt(field))
 	}
 	return slices.ContainsFunc(sources, func(s pickSource) bool { return s.allows(key) })
 }
