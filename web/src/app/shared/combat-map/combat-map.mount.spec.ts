@@ -1,5 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 
+import { CreatureSize } from '../../../gen/meurpg/rules/v1/rules_pb';
 import { combatant } from '../../core/combat/combat-testing';
 import { CombatMap } from './combat-map';
 
@@ -21,6 +22,35 @@ function map(inputs: Record<string, unknown> = {}) {
 }
 
 describe('CombatMap: a rider on its mount', () => {
+  it('keeps the footprint of a Large mount while it is ridden, with the rider’s disc in the corner of one square', () => {
+    const el = map({
+      combatants: [
+        combatant({ id: 'tor', label: 'Tor', col: 5, row: 5, mountedOnId: 'h' }),
+        combatant({
+          id: 'h',
+          label: 'Cavalo de guerra',
+          col: 5,
+          row: 5,
+          riderId: 'tor',
+          size: CreatureSize.LARGE,
+        }),
+      ],
+    });
+    const tk = el.querySelector<HTMLElement>('.cm__tk')!;
+    expect(tk.style.getPropertyValue('--span')).toBe('2');
+    const corner = el.querySelector<HTMLElement>('app-rider-mark .rm__corner')!;
+    expect(corner.style.getPropertyValue('--rm-side')).toBe('var(--cm-tk)');
+    expect(getComputedStyle(corner).top).toBe('0px');
+    expect(getComputedStyle(corner).right).toBe('0px');
+  });
+
+  it('keeps the mount’s initial readable on a 22 px token', () => {
+    const el = map();
+    const mount = el.querySelector<HTMLElement>('.cm__tk > app-combatant-token')!;
+    // The letter is a third of the token, and never under 10 px.
+    expect(getComputedStyle(mount).fontSize).toBe('max(var(--tk) * 0.36, 10px)');
+  });
+
   it('draws one token for the pair, the mount with the rider on it and the saddle', () => {
     const el = map();
     expect(el.querySelectorAll('.cm__tk')).toHaveLength(1);

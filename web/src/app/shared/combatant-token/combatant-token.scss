@@ -27,7 +27,8 @@
   align-items: flex-end;
   justify-content: flex-start;
   padding: 0 0 14% 15%;
-  font-size: calc(var(--tk) * 0.32);
+  // At 22 px the letter stays readable: never under 10 px.
+  font-size: max(calc(var(--tk) * 0.36), 10px);
 }
 
 // An NPC: a rounded square with an ink border on the surface.

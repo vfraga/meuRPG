@@ -12,24 +12,36 @@ import { CombatantToken } from './combatant-token';
   imports: [CombatantToken],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <svg class="rm__saddle" viewBox="0 0 100 100" focusable="false">
-      <path d="M33 37 Q60 108 97 41 Q63 80 33 37 Z" />
-    </svg>
-    <app-combatant-token
-      class="rm__disc"
-      [initial]="initial()"
-      [npc]="npc()"
-      [creature]="creature()"
-      [defeated]="defeated()"
-      [onMap]="onMap()"
-      [size]="'calc(' + size() + ' * 0.42)'"
-    />
+    <span class="rm__corner" [style.--rm-side]="size()">
+      <svg class="rm__saddle" viewBox="0 0 100 100" focusable="false">
+        <path d="M33 37 Q60 108 97 41 Q63 80 33 37 Z" />
+      </svg>
+      <app-combatant-token
+        class="rm__disc"
+        [initial]="initial()"
+        [npc]="npc()"
+        [creature]="creature()"
+        [defeated]="defeated()"
+        [onMap]="onMap()"
+        [size]="'calc(' + size() + ' * 0.42)'"
+      />
+    </span>
   `,
   styles: `
     :host {
       position: absolute;
       inset: 0;
       pointer-events: none;
+    }
+
+    // The saddle and the disc sit in a corner box of one square's token, top right, so a mount drawn on 2 × 2 keeps the
+    // rider's disc the size of any other and in the corner.
+    .rm__corner {
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: var(--rm-side);
+      height: var(--rm-side);
     }
 
     .rm__saddle {
@@ -68,6 +80,6 @@ export class RiderMark {
   readonly defeated = input(false);
   /** Drawn on a battle map: the map's fixed colours. */
   readonly onMap = input(false);
-  /** The side of the mount's token, as a CSS length. */
+  /** The side of one square's token, as a CSS length: the corner the saddle and the disc fill (a mount on 2 × 2 has the same corner). */
   readonly size = input.required<string>();
 }

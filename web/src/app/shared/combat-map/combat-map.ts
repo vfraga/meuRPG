@@ -305,7 +305,10 @@ export class CombatMap {
     const at = this.place(c);
     const col = Math.max(0, Math.min(at.col, this.columns() - n));
     const row = Math.max(0, Math.min(at.row, this.rows() - n));
-    const others = this.shown().filter((o) => o.id !== c.id);
+    // Its own rider shares its square: it is the disc on the token, not a neighbour in the way.
+    const others = this.shown().filter(
+      (o) => o.id !== c.id && o.mountedOnId !== c.id && o.id !== c.mountedOnId,
+    );
     const blocked = others.some((o) => {
       const p = this.place(o);
       return p.col >= col && p.col < col + n && p.row >= row && p.row < row + n;
