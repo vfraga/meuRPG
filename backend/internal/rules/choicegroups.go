@@ -410,7 +410,9 @@ func (c *content) choiceSet(b Build) ChoiceSet { return c.choiceSetAgainst(b, ni
 // ChoicesAgainst is Choices of the new sheet b read against the stored sheet (nil for a character that does not exist yet): a
 // pick of a choice of alternatives that repeats what another source gives the sheet, and that the stored sheet does not hold, is
 // unmet and counts as missing, as the save refuses it. A pick the stored sheet holds stays.
-func (c *Content) ChoicesAgainst(stored *Build, b Build) ChoiceSet { return c.c.choiceSetAgainst(b, stored, true) }
+func (c *Content) ChoicesAgainst(stored *Build, b Build) ChoiceSet {
+	return c.c.choiceSetAgainst(b, stored, true)
+}
 
 // choiceSetAgainst is choiceSet, with the stored sheet the picks are compared with when against says so.
 func (c *content) choiceSetAgainst(b Build, stored *Build, against bool) ChoiceSet {

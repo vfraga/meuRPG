@@ -129,7 +129,7 @@ func refuseRepeatedAlternativePick(view *rules.Content, stored *rules.Build, aft
 	if strings.HasPrefix(key, "proficiency:") {
 		name = view.ProficiencyNamePT(key)
 	}
-	return invalidArgument(&fieldError{field: "sheet." + field, err: errors.New(name + " o personagem já tem por outra origem: uma escolha entre tipos diferentes não repete isso")})
+	return invalidArgument(&fieldError{field: "sheet." + field, err: errors.New("O personagem já tem " + name + " por outra origem: uma escolha entre tipos diferentes não repete isso.")})
 }
 
 // unfitSentence is the sentence of a pick that cannot be placed, by the kind of pick the field holds: a skill or an

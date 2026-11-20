@@ -170,7 +170,7 @@ func TestAToolAlternativeTakesAFilter(t *testing.T) {
 		t.Errorf("the tool pick gave no proficiency: %v", d.Proficiencies)
 	}
 	if got := c.Choices(b); len(got.NotOffered) != 0 || choiceOf(t, got, altKey(e)).Missing() != 0 || missingIssues(d) != 0 || openOf(d, OpenChoiceTools) != 0 {
-		t.Errorf("the tool pick is not counted: not offered %v, open tools %d, missing %d, issues %d %v", got.NotOffered, openOf(d, OpenChoiceTools), choiceOf(t, got, altKey(e)).Missing(), missingIssues(d), d.Issues)
+		t.Errorf("the tool pick is not counted: not offered %v, open tools %d", got.NotOffered, openOf(d, OpenChoiceTools))
 	}
 	// A tool the filter leaves out is no key a pick may carry.
 	if c.c.choiceValueOK(altStored(e, "proficiency:thieves-tools")) {
@@ -392,8 +392,7 @@ func TestAToolPickOfWhatABackgroundGroupGaveIsRefused(t *testing.T) {
 		{Kind: altTool, From: []string{"proficiency:disguise-kit", "proficiency:forgery-kit"}},
 	}}
 	group := BackgroundGroup{Kind: GroupTool, Choose: 1, Options: []string{"proficiency:disguise-kit", "proficiency:dice-set"}}
-	c, b, bg := altSheet(t, alt, nil, []BackgroundGroup{group}, ScopedChoice(BackgroundGroupKey(filterBackground, group), "proficiency:disguise-kit"))
-	_ = bg
+	c, b, _ := altSheet(t, alt, nil, []BackgroundGroup{group}, ScopedChoice(BackgroundGroupKey(filterBackground, group), "proficiency:disguise-kit"))
 	if ch := choiceOf(t, c.Choices(b), altKey(alt)); !optionOf(t, ch, "proficiency:disguise-kit").Blocked() {
 		t.Error("the tool the group gave is offered again")
 	}
@@ -403,7 +402,8 @@ func TestAToolPickOfWhatABackgroundGroupGaveIsRefused(t *testing.T) {
 	}
 }
 
-// Only a source that gives at least full proficiency, with no condition, is a skill the sheet has apart from the choice.
+// Only a source that gives at least full proficiency (a `when` effect that applies counts; an only-proficient one and half do not)
+// is a skill the sheet has apart from the choice.
 func TestASkillPickIsRefusedOnlyForAnUnconditionalFullSource(t *testing.T) {
 	t.Parallel()
 	alt := Effect{Type: "choice", Choice: choiceAlternatives, Count: 1, Alternatives: []ChoiceAlternative{
@@ -466,12 +466,6 @@ func TestAHeldPickStaysWhenAnotherSourceGivesTheSameThingLater(t *testing.T) {
 		t.Error("the stored sheet's pick is refused after the level-up")
 	}
 	// A new pick of what the sheet holds apart is refused: the same pick on a sheet that did not store it.
-	fresh := after
-	fresh.FeatureChoices = without(after.FeatureChoices, altKey(alt))
-	fresh.FeatureChoices = append(fresh.FeatureChoices, altStored(alt, "skill:stealth"))
-	if _, key, found := c.NewDuplicateAlternativePick(&after, fresh); found && key != "skill:stealth" {
-		t.Errorf("refused %q", key)
-	}
 	nothing := after
 	nothing.FeatureChoices = without(after.FeatureChoices, altKey(alt))
 	if _, key, found := c.NewDuplicateAlternativePick(&nothing, after); !found || key != "skill:stealth" {

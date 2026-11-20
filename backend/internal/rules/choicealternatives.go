@@ -280,8 +280,8 @@ func (x *deriver) heldApart(value string) bool {
 	return x.proficientApart[value] || hasPick(withoutAlternatives(x.pickedTools), value) || x.groupToolHeld(value)
 }
 
-// skillHeldApart says the automatic skills, the player's own list or an effect that gives at least a full proficiency with no
-// condition give the skill.
+// skillHeldApart says the automatic skills, the player's own list or an effect that gives at least a full proficiency (not a
+// tagged one, not one only for those who are proficient already) give the skill. A `when` effect that applies now counts.
 func (x *deriver) skillHeldApart(skill string) bool {
 	if slices.Contains(x.automaticSkillKeysApart(), skill) || slices.Contains(x.b.SkillProficiencies, skill) {
 		return true
