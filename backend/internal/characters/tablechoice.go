@@ -321,6 +321,9 @@ func addChangedContent(d *rulesv1.DerivedSheet, issues []rules.Issue, content *r
 		name := content.NamePT(f.entry.Key)
 		var messages, codes []string
 		for _, is := range f.issues {
+			if is.Code == rules.IssuePickFit && !r.master {
+				continue // the fit issue is the master's advisory alone
+			}
 			codes = append(codes, is.Code)
 			// The sentence as a change reads it ("agora dá 2 perícias"), when the
 			// engine has one for this issue; otherwise the issue's own.
@@ -329,6 +332,9 @@ func addChangedContent(d *rulesv1.DerivedSheet, issues []rules.Issue, content *r
 				continue
 			}
 			messages = append(messages, changeSentence(is, f.entry.Key, name))
+		}
+		if len(codes) == 0 {
+			continue
 		}
 		d.ChangedContent = append(d.ChangedContent, &rulesv1.ChangedContent{
 			Key: f.entry.Key, NamePt: name, Field: f.entry.Field, Revision: i32(f.entry.Revision), SavedRevision: i32(f.entry.Since),
@@ -371,6 +377,10 @@ func (r reader) tell(d *rulesv1.DerivedSheet, issues []rules.Issue) {
 		if (is.Lost != nil || is.Named != "") && i < len(d.GetIssues()) {
 			d.Issues[i].Message = r.say(is)
 		}
+	}
+	if !r.master {
+		// The fit of the picks to their lists is the master's advisory alone.
+		d.Issues = slices.DeleteFunc(d.Issues, func(is *rulesv1.Issue) bool { return is.GetCode() == rules.IssuePickFit })
 	}
 }
 
