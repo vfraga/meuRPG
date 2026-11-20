@@ -26,6 +26,11 @@
       </div>
     } @else if (stage() === 'gone') {
       <p class="what">{{ goneText }}</p>
+    } @else if (waitLead()) {
+      <p class="small wait">
+        <mat-icon aria-hidden="true">schedule</mat-icon>{{ waitLead() }}
+        <span aria-hidden="true">Você em {{ waitSeconds() }} s</span>
+      </p>
     }
   </div>
   @if (stage() === 'ask') {
@@ -37,7 +42,7 @@
         [canApp]="canApp"
         [canType]="canType"
         [preferApp]="preferApp"
-        [busy]="busy()"
+        [busy]="busy() || waitSeconds() > 0"
         (answer)="held.answer($event)"
       />
     } @else if (view(); as v) {

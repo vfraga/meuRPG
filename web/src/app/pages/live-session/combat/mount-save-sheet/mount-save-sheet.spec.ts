@@ -15,7 +15,7 @@ import { CombatClient } from '../../../../core/combat/combat-client';
 import { fakeCombatClient } from '../../../../core/combat/combat-client-testing';
 import { CombatState } from '../../../../core/combat/combat-state';
 import { combatant, encounter } from '../../../../core/combat/combat-testing';
-import { heldAnswer, heldLucky } from '../../../../core/held-rolls/held-roll-testing';
+import { askedAt, heldAnswer, heldLucky } from '../../../../core/held-rolls/held-roll-testing';
 import { ResourceClient } from '../../../../core/resources/resources-client';
 import { MountSaveSheet, type MountSaveSheetData } from './mount-save-sheet';
 
@@ -372,6 +372,37 @@ describe('MountSaveSheet', () => {
     expect(plain(el.querySelector('app-held-roll-prompt')?.textContent)).toContain('Rolar de novo');
     expect(button(el, 'Rolar no app')).toBeUndefined();
     expect(plain(button(el, 'Rolar de novo').textContent)).toContain('Rolar de novo');
+  });
+
+  describe("the master's answer for the rider", () => {
+    afterEach(() => vi.useRealTimers());
+
+    it('waits for the rider first: the buttons are off and the countdown runs until the time has passed', async () => {
+      vi.useFakeTimers({ toFake: ['setInterval', 'Date'] });
+      const { fixture, el } = setup(
+        prompt(),
+        { byMaster: true },
+        heldLucky([1], 1, { rollerLabel: 'Tor', ...askedAt(Date.now()) }),
+      );
+      await flush(fixture);
+      expect(plain(el.querySelector('.wait')?.textContent)).toContain('Tor responde primeiro.');
+      expect(plain(el.querySelector('.wait')?.textContent)).toContain('Você em 10 s');
+      expect(button(el, 'Rolar de novo').getAttribute('aria-disabled')).toBe('true');
+      vi.advanceTimersByTime(4_000);
+      await flush(fixture);
+      expect(plain(el.querySelector('.wait')?.textContent)).toContain('Você em 6 s');
+      vi.advanceTimersByTime(6_000);
+      await flush(fixture);
+      expect(el.querySelector('.wait')).toBeNull();
+      expect(button(el, 'Rolar de novo').getAttribute('aria-disabled')).not.toBe('true');
+    });
+
+    it("never makes the rider's own player wait", async () => {
+      const { fixture, el } = setup(prompt(), {}, heldLucky([1], 1, askedAt(Date.now())));
+      await flush(fixture);
+      expect(el.querySelector('.wait')).toBeNull();
+      expect(button(el, 'Rolar de novo').getAttribute('aria-disabled')).not.toBe('true');
+    });
   });
 
   it('settles the save with the answer to the question, and tells the result then', async () => {

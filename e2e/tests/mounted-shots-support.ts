@@ -327,7 +327,10 @@ async function riderScreens(t: MountedTable, l: Look): Promise<void> {
   await expect(wait).toBeVisible();
   await wait.getByRole('button', { name: 'Rolar por Isolda' }).click();
   const answer = m.locator('app-mount-save-sheet');
-  await answer.getByRole('button', { name: 'Digitar o resultado' }).click();
+  // The server lets the master answer only after the player's first seconds: the sheet counts them down and keeps its buttons off.
+  const typeIt = answer.getByRole('button', { name: 'Digitar o resultado' });
+  await expect(typeIt).toBeEnabled({ timeout: 30_000 });
+  await typeIt.click();
   await answer.getByLabel(/Role 1d20 de novo/).fill('15');
   await answer.getByRole('button', { name: 'Confirmar 15' }).click();
   await expect(held.getByText('Este teste não espera mais a sua rolagem: o mestre rolou, ou ele deixou de ser preciso.')).toBeVisible();

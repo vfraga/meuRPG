@@ -3,6 +3,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  DestroyRef,
   effect,
   ElementRef,
   inject,
@@ -57,6 +58,8 @@ type Stage = 'ask' | 'result' | 'gone';
 
 /** The d4 of Bênção and Perdição. */
 const EFFECT_DIE_FACES = 4;
+/** How often the master's wait is counted again, in milliseconds. */
+const CLOCK_TICK_MS = 1000;
 
 /**
  * "Você cai da montaria?" the Dexterity saving throw of a rider whose mount was moved
@@ -115,7 +118,20 @@ export class MountSaveSheet {
     settle: (res, done) => this.answeredHeld(res, done.answer),
     busy: this.busy,
     error: this.error,
+    // The master answers for the rider only after the player's first seconds (the server refuses him sooner).
+    master: this.data.byMaster,
+    now: () => this.clock(),
   });
+  /** The time, moved every second while the master waits for the rider's player. */
+  private readonly clock = signal(Date.now());
+  /** Seconds until the master may answer the question for the rider; `0` for the rider's player and once the time has passed. */
+  protected readonly waitSeconds = computed(() => this.held.waitSeconds(this.clock()));
+  /** "Tor responde primeiro", the words a reader of the live region hears (the countdown beside it is not read each second). */
+  protected readonly waitLead = computed(() =>
+    this.waitSeconds() > 0
+      ? `${this.held.offer()?.rollerLabel || this.names().rider || 'Quem rolou'} responde primeiro.`
+      : '',
+  );
   /** Tells the roller that the master answered the question for them. */
   protected readonly follow = new HeldFollow(this.held);
   protected readonly lockWhileBusy = effect(() => this.sheet.lock(this.busy()));
@@ -172,6 +188,10 @@ export class MountSaveSheet {
   private readonly keys = new ActionKey();
 
   constructor() {
+    if (this.data.byMaster) {
+      const timer = setInterval(() => this.clock.set(Date.now()), CLOCK_TICK_MS);
+      inject(DestroyRef).onDestroy(() => clearInterval(timer));
+    }
     // The d20 was rolled and kept before this sheet opened (a reload): its question is what is owed, not another roll.
     const kept = this.opened?.combatants.find((c) => c.id === this.data.prompt.riderId);
     const offer = kept ? heldOfferOf(kept) : undefined;
