@@ -119,7 +119,7 @@ func (c *content) toolSources(owner string) []pickSource {
 		}
 		out = append(out, pickSource{Owner: owner, Count: max(e.Count, 1), From: c.toolsOffered(from, open)})
 	}
-	return out
+	return append(out, c.alternativeToolSources(owner)...)
 }
 
 // toolsOffered are the proficiencies a tool choice offers: the listed ones that a tool choice may name and, when it

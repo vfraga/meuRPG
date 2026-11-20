@@ -410,7 +410,7 @@ func (x *deriver) automaticSkillKeys() []string {
 			}
 		}
 	}
-	return out
+	return append(out, alternativePicksOfKind(x.altPicks, altSkill)...)
 }
 
 // skillEffect applies a skill proficiency effect: "skill:*" raises every skill

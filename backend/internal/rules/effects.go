@@ -102,6 +102,8 @@ type Effect struct {
 	// list, and FromFeature, on a choice of features, offers the options of the feature it names (choicefilter.go).
 	Filter      *ChoiceFilter `json:"filter,omitempty"`
 	FromFeature string        `json:"from_feature,omitempty"`
+	// Alternatives, on a choice of kind "alternatives", are the kinds of pick it mixes (choicealternatives.go).
+	Alternatives []ChoiceAlternative `json:"alternatives,omitempty"`
 
 	// choice, picks of a feat (picks.go).
 	// Name names the choice within its entry (a-z, 0-9 and _).
@@ -388,7 +390,7 @@ var (
 	recharges         = []string{RechargeShortRest, RechargeLongRest, RechargeDawn, RechargeNone, RechargeInitiative, RechargeRestoreOneShort, RechargeRestoreOneLong}
 	choiceKinds       = []string{
 		"skill", "expertise", "cantrip", "spell", "subclass", "feature",
-		"language", "tool", "ability_score_improvement", "feat", "ability", "damage_type",
+		"language", "tool", "ability_score_improvement", "feat", "ability", "damage_type", choiceAlternatives,
 	}
 	economies = []string{"action", "bonus_action", "reaction", "free", "movement"}
 	// maneuverApplies is where a superiority die goes: the damage of a weapon attack
@@ -896,6 +898,9 @@ func (x effectCompiler) choice() error {
 		if _, known := optionSetOf(e.Set); !known || e.Choice != "feature" || len(e.From) > 0 {
 			return x.fail("set %q is the option set of a choice of features with no from", e.Set)
 		}
+	}
+	if done, err := x.alternatives(); done {
+		return err
 	}
 	for _, k := range e.From {
 		if !x.c.pickKeyExists(e.Choice, k) {

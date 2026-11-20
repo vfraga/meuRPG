@@ -234,11 +234,24 @@ func TestEffectMenuIsWhatTheValidatorAccepts(t *testing.T) {
 		effects = append(effects, Effect{Type: "choice", Choice: "tool", Count: 1, From: []string{v.Key}})
 	}
 	for _, kind := range menuList(t, m, ListChoiceKinds) {
-		if kind.Key == "feature" || kind.Key == pickAbility || kind.Key == pickDamageType {
+		if kind.Key == "feature" || kind.Key == pickAbility || kind.Key == pickDamageType || kind.Key == choiceAlternatives {
 			continue // a feature choice needs its options (below); the picks are a feat's (below)
 		}
 		effects = append(effects, Effect{Type: "choice", Choice: kind.Key, Count: 1, From: nil})
 	}
+	// A choice of alternatives mixes the kinds the menu lists, one alternative each.
+	var alternatives []ChoiceAlternative
+	for _, kind := range menuList(t, m, ListAlternativeKinds) {
+		list := ListSkills
+		switch kind.Key {
+		case altLanguage:
+			list = ListLanguages
+		case altTool:
+			list = ListToolChoices
+		}
+		alternatives = append(alternatives, ChoiceAlternative{Kind: kind.Key, From: valueKeys(menuList(t, m, list))[:1]})
+	}
+	effects = append(effects, Effect{Type: "choice", Choice: choiceAlternatives, Count: 1, Alternatives: alternatives})
 	for n := m.ExtraAttackMin; n <= m.ExtraAttackMax; n++ {
 		effects = append(effects, Effect{Type: "extra_attack", Count: n})
 	}

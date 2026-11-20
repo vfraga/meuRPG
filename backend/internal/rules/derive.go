@@ -54,6 +54,8 @@ type deriver struct {
 	// holds the ones no placement takes too, which still count and still give their proficiency.
 	owned                        map[string]bool
 	pickedLanguages, pickedTools []proficiencyPick
+	// altPicks are the picks of the choices of alternatives that count (choicealternatives.go).
+	altPicks []altPick
 	// unplacedTools are the tool picks of pickedTools that the placement in the owner's choices leaves out (pickfit.go).
 	unplacedTools []proficiencyPick
 	// groups are the picks of the background's groups (background_groups.go), read once; groupTyped are the labels of the

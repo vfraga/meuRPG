@@ -25,7 +25,7 @@ var overlayEffectTypes = []string{
 // overlayChoiceKinds are the choices a table feature may offer. The subclass and
 // the Ability Score Improvement are the class table's, not a feature's.
 var overlayChoiceKinds = []string{
-	"skill", "expertise", "cantrip", "spell", "language", "tool", "feature", "feat", "ability", "damage_type",
+	"skill", "expertise", "cantrip", "spell", "language", "tool", "feature", "feat", "ability", "damage_type", choiceAlternatives,
 }
 
 // featureKind is where a feature belongs: a class, a subclass, a race (trait)
@@ -478,8 +478,14 @@ func (b *overlayBuilder) checkChoiceEffect(site effectSite, e *Effect) error {
 	if err := checkChoiceCount(site, e); err != nil {
 		return err
 	}
+	if attr, reason, msg := b.base.alternativeProblem(e); attr != "" {
+		return site.fail(attr, reason, "%s", msg)
+	}
 	if err := checkChoiceFilter(site, e); err != nil {
 		return err
+	}
+	if e.Choice == choiceAlternatives {
+		return b.checkAlternativesOwner(site)
 	}
 	if e.FromFeature != "" {
 		return b.checkFromFeature(site, e)
@@ -720,7 +726,7 @@ var ownFields = map[string][]string{
 	"roll_mode":    {"roll", "targets", "against_condition", "while"},
 	"sense":        {"sense", "range_ft"},
 	"resource":     {"resource", "max", "recharge"},
-	"choice":       {"choice", "count", "from", "name", "set", "daily_choice", "duration", "filter", "from_feature"},
+	"choice":       {"choice", "count", "from", "name", "set", "daily_choice", "duration", "filter", "from_feature", "alternatives"},
 	"extra_attack": {"count"},
 	// A grant_action may cost several uses of its resource, let the player choose how many,
 	// and heal or give temporary hit points; an on_event is the owner's hook on an event.
@@ -881,6 +887,7 @@ var effectFields = []effectField{
 	{"aura", func(e *Effect) bool { return e.Aura != nil }, func(e *Effect) { e.Aura = nil }},
 	{"filter", func(e *Effect) bool { return e.Filter != nil }, func(e *Effect) { e.Filter = nil }},
 	{"from_feature", func(e *Effect) bool { return e.FromFeature != "" }, func(e *Effect) { e.FromFeature = "" }},
+	{"alternatives", func(e *Effect) bool { return len(e.Alternatives) > 0 }, func(e *Effect) { e.Alternatives = nil }},
 }
 
 // effectFieldClear is how to clear each of effectFields, by name.
@@ -1144,6 +1151,7 @@ func (b *overlayBuilder) compilePending(c *entryErrors, p pendingEffects) (out [
 	out = make([]*Effect, 0, len(p.effects))
 	chosen := map[string]int{}
 	declared := map[string]string{} // the picks the effects so far name (picks.go)
+	alternatives := map[string]bool{}
 	for i := range p.effects {
 		e := p.effects[i]
 		at := fmt.Sprintf("%s.effects[%d]", p.path, i)
@@ -1155,7 +1163,7 @@ func (b *overlayBuilder) compilePending(c *entryErrors, p pendingEffects) (out [
 				continue
 			}
 		}
-		if !b.compileEffectAt(c, p, i, at, &e, declared) {
+		if !b.checkAlternativesTwice(c, p.owner, at, &e, alternatives) || !b.compileEffectAt(c, p, i, at, &e, declared) {
 			failed = true
 			continue
 		}

@@ -127,7 +127,9 @@ const (
 	// ListProficiencyKinds are the kinds a filter of a choice of tools names, and ListWeaponProficiencies,
 	// ListToolProficiencies and ListOtherProficiencies the proficiencies of each kind, so the editor counts what a filter
 	// matches with no other call.
-	ListProficiencyKinds    = "proficiency_kinds"
+	ListProficiencyKinds = "proficiency_kinds"
+	// ListAlternativeKinds are the kinds of pick an alternative of a choice of alternatives offers.
+	ListAlternativeKinds    = "alternative_kinds"
 	ListWeaponProficiencies = "weapon_proficiencies"
 	ListToolProficiencies   = "tool_proficiencies"
 	ListOtherProficiencies  = "other_proficiencies"
@@ -440,6 +442,7 @@ var menuTypes = []MenuType{
 		{Name: "count", Required: true, Kind: "number", Min: 1, Max: MaxChoiceCount},
 		{Name: "from", Kind: "choices"},
 		{Name: "filter", Kind: "choice_filter", List: ListProficiencyKinds},
+		{Name: "alternatives", Kind: "choice_alternatives", List: ListAlternativeKinds},
 		{Name: "from_feature", Kind: "feature_ref"},
 		{Name: "name", Kind: "text"},
 		{Name: "set", Kind: "choice", List: ListFeatOptionSets},
@@ -524,6 +527,7 @@ var (
 		"skill": "Perícias", "expertise": "Especialização", "cantrip": "Truques", "spell": "Magias",
 		"language": "Idiomas", "tool": "Ferramentas", "feature": "Uma opção de uma lista",
 		"feat": "Talentos", "ability": "Uma habilidade (só em talento)", "damage_type": "Um tipo de dano (só em talento)",
+		choiceAlternatives: "Uma entre tipos diferentes (perícia, idioma ou ferramenta)",
 	}
 	rollTargetNames = map[string]string{
 		"attack": "Ataques", "death_save": "Testes contra a morte", "initiative": "Iniciativa",
@@ -766,6 +770,7 @@ func (c *content) menuLists() []MenuList {
 		{Name: ListTools, Values: tools},
 		{Name: ListToolChoices, Values: c.menuToolChoices(tools)},
 		{Name: ListProficiencyKinds, Values: namedMenu(filterKinds, func(k string) string { return proficiencyKindNames[k] })},
+		{Name: ListAlternativeKinds, Values: namedMenu(alternativeKinds, func(k string) string { return alternativeKindNames[k] })},
 		{Name: ListWeaponProficiencies, Values: c.menuProficienciesOfKind(filterKindWeapon)},
 		{Name: ListToolProficiencies, Values: c.menuProficienciesOfKind(filterKindTool)},
 		{Name: ListOtherProficiencies, Values: c.menuProficienciesOfKind(filterKindOther)},

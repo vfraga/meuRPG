@@ -74,6 +74,9 @@ func (c *content) choiceValueOK(stored string) bool {
 	if strings.Contains(choiceKey, groupKeyPart) {
 		return c.groupValueOK(choiceKey, value)
 	}
+	if strings.Contains(choiceKey, altKeyPart) {
+		return c.alternativeValueOK(choiceKey, value)
+	}
 	if !c.choiceOwnerKnown(base) && !c.featPick(choiceKey, value) {
 		return false
 	}

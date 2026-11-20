@@ -55,7 +55,16 @@ func (c *content) isToolKey(key string) bool {
 }
 
 // proficiencyPick is a language or a tool picked through a choice, and the owner that granted it.
-type proficiencyPick struct{ Value, Owner string }
+type proficiencyPick struct {
+	Value, Owner string
+	// Alt says a choice of alternatives took the pick: the plain choices of the owner do not count it.
+	Alt bool
+}
+
+// withoutAlternatives are the picks of the plain choices: the ones a choice of alternatives took are counted by its own.
+func withoutAlternatives(picks []proficiencyPick) []proficiencyPick {
+	return slices.DeleteFunc(slices.Clone(picks), func(p proficiencyPick) bool { return p.Alt })
+}
 
 // pickedProficiencies are the languages and the tools the picks of Build.FeatureChoices give.
 // A pick counts when its owner is on the sheet, the owner offers it, and none before it was the same.
@@ -81,6 +90,7 @@ func (c *content) pickedProficiencies(b Build, owned func(string) bool) (languag
 			}
 		}
 	}
+	languages, offered = c.addAlternativePicks(b, owned, languages, offered)
 	tools, left := c.placeToolPicks(offered)
 	return languages, tools, c.unplacedWithinCount(tools, left)
 }
@@ -158,6 +168,7 @@ func (x *deriver) proficiencyPicks() {
 	var placed []proficiencyPick
 	x.pickedLanguages, placed, x.unplacedTools = x.c.pickedProficiencies(x.b, func(k string) bool { return x.owned[k] || onSheet(k) })
 	x.pickedTools = slices.Concat(placed, x.unplacedTools)
+	x.altPicks = x.c.pickedAlternatives(x.b, func(k string) bool { return x.owned[k] || onSheet(k) })
 }
 
 // listedNames adds to the sheet's list the names the player typed in a free field, once each: a name the sheet
@@ -195,11 +206,12 @@ func (x *deriver) checkProficiencyPicks() {
 		languages += bg.LanguageChoices
 	}
 	tools = x.toolPicksAsked()
-	if n := tools - len(x.pickedTools) - len(x.b.ToolProficiencies); n > 0 {
+	if n := tools - len(withoutAlternatives(x.pickedTools)) - len(x.b.ToolProficiencies); n > 0 {
 		x.openProficiencyPick(OpenChoiceTools, n, "ferramenta", "ferramentas")
 	}
 	x.checkBackgroundGroupPicks()
-	if n := languages - len(x.pickedLanguages) - len(x.b.Languages); n > 0 {
+	x.checkAlternativePicks()
+	if n := languages - len(withoutAlternatives(x.pickedLanguages)) - len(x.b.Languages); n > 0 {
 		x.openProficiencyPick(OpenChoiceLanguages, n, "idioma", "idiomas")
 	}
 }
@@ -223,7 +235,7 @@ func (x *deriver) toolPicksAsked() int {
 			continue
 		}
 		var held []string
-		for _, p := range x.pickedTools {
+		for _, p := range withoutAlternatives(x.pickedTools) {
 			if p.Owner == a.owner {
 				held = append(held, p.Value)
 			}
@@ -266,6 +278,7 @@ func (cb *choiceBuilder) proficiencyChoices(g *groupBuild, owner string) {
 	}
 	cb.languageChoice(g, owner)
 	cb.toolChoice(g, owner)
+	cb.alternativeChoices(g, owner)
 }
 
 // languageChoice is the pick of the languages a race, a trait or a background gives: any language of the content,
