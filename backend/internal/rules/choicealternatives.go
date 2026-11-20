@@ -274,10 +274,11 @@ func (x *deriver) heldApart(value string) bool {
 	case strings.HasPrefix(value, "language:"):
 		return x.languageHeldApart(value)
 	}
-	return x.proficientApart[value] || hasPick(withoutAlternatives(x.pickedTools), value)
+	return x.proficientApart[value] || hasPick(withoutAlternatives(x.pickedTools), value) || x.groupToolHeld(value)
 }
 
-// skillHeldApart says the automatic skills, the player's own list or an effect give the skill.
+// skillHeldApart says the automatic skills, the player's own list or an effect that gives at least a full proficiency with no
+// condition give the skill.
 func (x *deriver) skillHeldApart(skill string) bool {
 	if slices.Contains(x.automaticSkillKeysApart(), skill) || slices.Contains(x.b.SkillProficiencies, skill) {
 		return true
@@ -285,6 +286,13 @@ func (x *deriver) skillHeldApart(skill string) bool {
 	return slices.ContainsFunc(x.active, func(a activeEffect) bool {
 		e := a.effect
 		return e.Type == "proficiency" && e.Proficiency == skill && len(e.Tags) == 0 && x.applies(a)
+	})
+}
+
+// groupToolHeld says a tool group of the background gave the tool.
+func (x *deriver) groupToolHeld(tool string) bool {
+	return slices.ContainsFunc(x.groupPicks(), func(p groupPick) bool {
+		return p.Group.Kind == GroupTool && slices.Contains(p.Values, tool)
 	})
 }
 

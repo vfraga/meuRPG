@@ -385,3 +385,38 @@ func TestTheMessageOfAnAlternativeOptionOutsideTheSRDIsInEnglish(t *testing.T) {
 		t.Errorf("message = %q, want %q", msg, want)
 	}
 }
+
+// altSheet is a sheet of a table background whose feature carries the choice of alternatives and the other effects, and
+// whose tool group has the options; the picks are the stored ones.
+func altSheet(t *testing.T, alt Effect, extra []Effect, groups []BackgroundGroup, picks ...string) (*Content, Build, TableBackground) {
+	t.Helper()
+	bg := groupBackground(groups...)
+	bg.Key = filterBackground
+	bg.Feature.Key = altOwner
+	bg.Feature.Effects = append([]Effect{alt}, extra...)
+	c := withOverlayOn(t, loadForTest(t), Overlay{Revision: 1, Backgrounds: []TableBackground{bg}})
+	b := pickBuild("race:human", "")
+	b.Background = bg.Key
+	b.FeatureChoices = picks
+	return c, b, bg
+}
+
+// The tool a background's tool group gave is held from another source, as a class's skill is.
+func TestAToolPickOfWhatABackgroundGroupGaveIsRefused(t *testing.T) {
+	t.Parallel()
+	alt := Effect{Type: "choice", Choice: choiceAlternatives, Count: 1, Alternatives: []ChoiceAlternative{
+		{Kind: altSkill, From: []string{"skill:stealth", "skill:persuasion"}},
+		{Kind: altTool, From: []string{"proficiency:disguise-kit", "proficiency:forgery-kit"}},
+	}}
+	group := BackgroundGroup{Kind: GroupTool, Choose: 1, Options: []string{"proficiency:disguise-kit", "proficiency:dice-set"}}
+	c, b, bg := altSheet(t, alt, nil, []BackgroundGroup{group}, ScopedChoice(BackgroundGroupKey(filterBackground, group), "proficiency:disguise-kit"))
+	_ = bg
+	b.FeatureChoices = append(b.FeatureChoices, altStored(alt, "proficiency:disguise-kit"))
+	ch := choiceOf(t, c.Choices(b), altKey(alt))
+	if !optionOf(t, ch, "proficiency:disguise-kit").Blocked() || !slices.Contains(ch.Unmet, "proficiency:disguise-kit") {
+		t.Errorf("the tool the group gave is offered again: unmet %v", ch.Unmet)
+	}
+	if missingIssues(Derive(b, c)) != 1 {
+		t.Errorf("the sheet counts the repeated tool pick")
+	}
+}
