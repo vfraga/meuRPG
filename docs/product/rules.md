@@ -1295,6 +1295,8 @@ The choices cover the SRD 5.1 sections Fighting Style, Draconic Ancestry and Bre
   The master alone reads an issue about it.
   The choices preview answers the lists of the draft as it is: after a class change, the picks the new class's lists no longer place stay ticked, can be taken off, and are refused only by the save, at their own field. A key that is no tool, or whose owner is hidden, is still refused by the preview.
   A new pick that no list allows is refused for a player, and the sentence names only that pick; the master saves it, on create, save, preview, complete-choices and level-up, and reads the issue on the sheet (a key that is not a tool, or whose owner is hidden or missing, is refused for the master too).
+  The preview of a locked sheet answers the lists as well, and refuses only a key that is no tool or whose owner is hidden.
+  The sentence of a refused pick stays on its field until a pick, the class, the race, the subrace or the background changes.
   A level up asks for as many new skills as the sheet after the level may pick, held picks counted, and refuses a new skill that no list of the sheet after the level has room for.
 - **Creation.** A player's sheet with an open choice is refused ("Criar personagem" explains what is missing), and the editor has a step "Escolhas". The master's NPCs and the table sheets are not held to it.
 - **Options that cannot be taken yet** (an invocation that asks level 5, or a spell the sheet lacks) are listed, dotted, with the reason. Two options that give the same thing (the same resistance twice) are refused.
