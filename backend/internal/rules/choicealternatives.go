@@ -485,7 +485,7 @@ func (c *content) alternativeFault(before []ChoiceAlternative, a ChoiceAlternati
 		case slices.Contains(a.From[:i], k):
 			return altFromAttr, ReasonValue, fmt.Sprintf("%q is listed twice", k)
 		case !c.alternativeKeyOK(a.Kind, k):
-			return altFromAttr, ReasonReference, fmt.Sprintf("%q is not a %s of the SRD that an alternative offers", k, alternativeKindNames[a.Kind])
+			return altFromAttr, ReasonReference, fmt.Sprintf("%q is not a %s of the SRD that an alternative offers", k, a.Kind)
 		}
 	}
 	return "", "", ""

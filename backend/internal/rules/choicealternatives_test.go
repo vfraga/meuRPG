@@ -375,3 +375,13 @@ func TestAPickOfWhatAnotherSourceGivesIsRefused(t *testing.T) {
 		})
 	}
 }
+
+// The message of an option an alternative does not offer is in the language of the other messages of the overlay's checks.
+func TestTheMessageOfAnAlternativeOptionOutsideTheSRDIsInEnglish(t *testing.T) {
+	t.Parallel()
+	a := ChoiceAlternative{Kind: altSkill, From: []string{"skill:nenhuma"}}
+	_, _, msg := loadForTest(t).c.alternativeFault(nil, a)
+	if want := `"skill:nenhuma" is not a skill of the SRD that an alternative offers`; msg != want {
+		t.Errorf("message = %q, want %q", msg, want)
+	}
+}
