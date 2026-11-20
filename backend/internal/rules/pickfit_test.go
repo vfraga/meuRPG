@@ -505,3 +505,40 @@ func TestLevelUpExpertiseIsMatchedToTheLevelsSources(t *testing.T) {
 		}
 	}
 }
+
+// The master is never refused a new skill or expertise that no list of the level places: the fit issue tells it on the sheet.
+func TestTheMastersLevelUpPickNoListPlacesIsAccepted(t *testing.T) {
+	t.Parallel()
+	c, before, ch := sourceLevelUpFixture(t)
+	ch.SkillProficiencies = []string{"skill:stealth"}
+	after, err := ApplyLevelUp(before, ch, c)
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantRefusal(t, CheckLevelUpOf(before, after, ch, c), LevelUpReasonSkills, "full.skill_proficiency_keys")
+	if err := CheckLevelUpOf(before, after, ch, c.ForMasterPicks()); err != nil {
+		t.Errorf("the master's level-up is refused: %v", err)
+	}
+}
+
+func TestTheMastersLevelUpExpertiseNoListPlacesIsAccepted(t *testing.T) {
+	t.Parallel()
+	c := withOverlay(t, Overlay{Revision: 1, Subclasses: []TableSubclass{{
+		TableEntry: TableEntry{Key: sourceSub, NamePT: "Mestre do saber"}, Class: "class:fighter",
+		Levels: []TableSubclassLevel{{Level: 3, Features: []TableFeature{{
+			Key: "feature:estudo@mesa", NamePT: "Estudo", DescPT: []string{"Uma especialização à escolha."},
+			Effects: []Effect{{Type: "choice", Choice: "expertise", Count: 1, From: []string{"skill:acrobatics"}}},
+		}}}},
+	}}})
+	before := sweepUp(t, c, sweepBase(t, c, "class:fighter", ""), "class:fighter", sourceSub, 2)
+	ch := satisfy(t, c, before, "class:fighter", sourceSub)
+	ch.Expertise = []string{"skill:animal-handling"}
+	after, err := ApplyLevelUp(before, ch, c)
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantRefusal(t, CheckLevelUpOf(before, after, ch, c), LevelUpReasonExpertise, "full.expertise_skill_keys")
+	if err := CheckLevelUpOf(before, after, ch, c.ForMasterPicks()); err != nil {
+		t.Errorf("the master's level-up is refused: %v", err)
+	}
+}

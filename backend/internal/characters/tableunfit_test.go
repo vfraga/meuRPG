@@ -234,8 +234,12 @@ func TestAnImportedSheetThatDoesNotFitImportsAndTheMasterReadsTheIssue(t *testin
 	}
 	master := authz.Membership{CampaignID: u.campaign, Role: authz.RoleMaster}
 	sheet := u.sheet("skill:investigation", "skill:insight", "skill:nature")
-	if _, err := checkNewSheet(content, master, kindPlayer, proto.CloneOf(sheet)); err == nil {
-		t.Fatal("a sheet made now with a pick no list allows is accepted")
+	player := authz.Membership{CampaignID: u.campaign, Role: authz.RolePlayer}
+	if _, err := checkNewSheet(content, player, kindPlayer, proto.CloneOf(sheet)); err == nil {
+		t.Fatal("a sheet a player makes now with a pick no list allows is accepted")
+	}
+	if _, err := checkNewSheet(content, master, kindPlayer, proto.CloneOf(sheet)); err != nil {
+		t.Fatalf("the master's sheet made now is refused: %v", err)
 	}
 	checked, err := checkImportedSheet(content, master, kindPlayer, proto.CloneOf(sheet))
 	if err != nil {

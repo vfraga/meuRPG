@@ -1428,6 +1428,9 @@ func askedPick(mc, asked *MulticlassOffer) *MulticlassOffer {
 
 // checkNewPicksPlaced refuses a new skill or expertise that the sources of the sheet after cannot place with the others.
 func (c *content) checkNewPicksPlaced(before, after Build) *LevelUpError {
+	if c.unlisted {
+		return nil // the master's pick no list places is saved, and the fit issue tells it
+	}
 	x, xs := c.deriverFor(after), c.deriverFor(before)
 	field, key, found := c.unplacedNewSkillPick(x, xs, before, after)
 	switch {

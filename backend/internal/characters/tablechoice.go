@@ -100,11 +100,12 @@ func refuseKeptOutPick(content *rules.Content, m authz.Membership, before func()
 // field of the pick and a sentence that names only the key's own name. A pick the stored sheet holds stays, whether it
 // fits or not; before is nil for a sheet that does not exist yet.
 func refuseUnfitPick(content *rules.Content, m authz.Membership, before func() *charactersv1.FullSheet, after *charactersv1.FullSheet) error {
-	return refuseUnfitPickIn(viewContent(content, m), before, after)
+	return refuseUnfitPickIn(viewContent(content, m), isMaster(m), before, after)
 }
 
-// refuseUnfitPickIn is refuseUnfitPick on the content view the caller has chosen.
-func refuseUnfitPickIn(view *rules.Content, before func() *charactersv1.FullSheet, after *charactersv1.FullSheet) error {
+// refuseUnfitPickIn is refuseUnfitPick on the content view the caller has chosen. The master is never refused for a pick no
+// list allows (the fit issue tells it on the sheet); a tool pick that is no tool stays a key the content does not have.
+func refuseUnfitPickIn(view *rules.Content, master bool, before func() *charactersv1.FullSheet, after *charactersv1.FullSheet) error {
 	if after == nil {
 		return nil
 	}
@@ -119,6 +120,9 @@ func refuseUnfitPickIn(view *rules.Content, before func() *charactersv1.FullShee
 	}
 	if strings.HasPrefix(field, rules.ChoiceKeysField) && (!view.IsToolProficiency(key) || view.HiddenToolOwner(buildOf(after), field)) {
 		return errUnknownKey("sheet." + field) // a tool pick of anything but a tool, or of an owner the reader may not read, is a key the content does not have
+	}
+	if master {
+		return nil
 	}
 	return invalidArgument(&fieldError{field: "sheet." + field, err: errors.New(unfitSentence(view, buildOf(after), field, key))})
 }

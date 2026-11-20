@@ -1290,7 +1290,7 @@ As escolhas cobrem as seções do SRD 5.1 Fighting Style, Draconic Ancestry e Br
   Uma escolha que só cabe quando outra passa para uma lista diferente é aceita.
   Uma ficha guardada cujas escolhas não cabem continua salvando, subindo de nível e jogando, e as escolhas dela continuam contando e dando o que dão.
   Só o mestre lê um aviso sobre isso.
-  Uma escolha nova que nenhuma lista permite é recusada, e a frase nomeia só essa escolha.
+  Uma escolha nova que nenhuma lista permite é recusada para um jogador, e a frase nomeia só essa escolha; o mestre a salva, ao criar, salvar, pré-visualizar, completar escolhas e subir de nível, e lê o aviso na ficha (uma chave que não é uma ferramenta, ou cujo dono está oculto ou não existe, é recusada também para o mestre).
   A subida de nível pede tantas perícias novas quanto a ficha depois do nível pode escolher, contando as que já tem, e recusa uma perícia nova para a qual nenhuma lista da ficha depois do nível tem vaga.
 - **Criação.** A ficha de um jogador com uma escolha em aberto é recusada ("Criar personagem" explica o que falta), e o editor tem uma etapa "Escolhas". Os NPCs do mestre e as fichas da mesa não são obrigados a isso.
 - **Opções que ainda não podem ser tomadas** (uma invocação que pede nível 5, ou uma magia que a ficha não tem) são listadas, pontilhadas, com o motivo. Duas opções que dão a mesma coisa (a mesma resistência duas vezes) são recusadas.
