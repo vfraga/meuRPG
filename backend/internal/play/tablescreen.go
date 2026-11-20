@@ -12,11 +12,12 @@ import (
 	"github.com/PuraFome/meuRPG/backend/internal/platform/db"
 	"github.com/PuraFome/meuRPG/backend/internal/play/live"
 	"github.com/PuraFome/meuRPG/backend/internal/play/playdb"
+	"github.com/PuraFome/meuRPG/backend/internal/play/screen"
 )
 
 // The table screen: the TV at the table shows what the master chose. The choice is three
 // columns of the open session (tv_mirror, tv_pin, tv_choice_revision); what the TV shows now is decided
-// by resolveStage from facts read for the TV, never from the master's own reads.
+// by screen.ResolveStage from facts read for the TV, never from the master's own reads.
 
 // errStaleTableScreen is the answer to a choice written over one that changed since it was read.
 func errStaleTableScreen() error {
@@ -24,8 +25,8 @@ func errStaleTableScreen() error {
 }
 
 // tvChoiceOf is the master's stored choice.
-func tvChoiceOf(session playdb.GameSession) tvChoice {
-	return tvChoice{Mirror: session.TvMirror, Pin: playv1.TableScreenKind(session.TvPin)}
+func tvChoiceOf(session playdb.GameSession) screen.Choice {
+	return screen.Choice{Mirror: session.TvMirror, Pin: playv1.TableScreenKind(session.TvPin)}
 }
 
 // GetTableScreen implements playv1connect.TableScreenServiceHandler.
@@ -39,7 +40,7 @@ func (s *Service) GetTableScreen(
 	}
 	var (
 		session playdb.GameSession
-		facts   tvFacts
+		facts   screen.Facts
 		name    string
 		party   []string
 	)
@@ -61,7 +62,7 @@ func (s *Service) GetTableScreen(
 		return nil, s.dbError(ctx, "read the table screen", err)
 	}
 	choice := tvChoiceOf(session)
-	pick := resolveStage(choice, facts)
+	pick := screen.ResolveStage(choice, facts)
 	stage := &playv1.TableScreenStage{Kind: pick.Kind}
 	if err := s.projectStageBody(ctx, session, stage); err != nil {
 		return nil, err
@@ -78,7 +79,7 @@ func (s *Service) GetTableScreen(
 		CampaignName:   name,
 		SessionNumber:  session.SessionNumber,
 		Party:          party,
-		Options:        tvOptions(facts),
+		Options:        screen.Options(facts),
 		Presence:       s.screens.snapshot(m.CampaignID, session.ID),
 	}), nil
 }
@@ -99,9 +100,9 @@ func (s *Service) partyNames(ctx context.Context, tx pgx.Tx, campaignID string) 
 	return names, nil
 }
 
-// tvFactsOf reads what resolveStage needs of the open session, inside tx.
-func (s *Service) tvFactsOf(ctx context.Context, tx pgx.Tx, session playdb.GameSession) (tvFacts, error) {
-	var f tvFacts
+// tvFactsOf reads what screen.ResolveStage needs of the open session, inside tx.
+func (s *Service) tvFactsOf(ctx context.Context, tx pgx.Tx, session playdb.GameSession) (screen.Facts, error) {
+	var f screen.Facts
 	q := s.queriesIn(tx)
 	if session.ShownImageID != nil {
 		v, err := shownViewersOf(ctx, q, session)
@@ -157,7 +158,7 @@ func (s *Service) SetTableScreen(
 	if _, known := playv1.TableScreenKind_name[int32(pin)]; !known {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("pin is not a known item"))
 	}
-	if !want.GetMirror() && !validTvPin(pin) {
+	if !want.GetMirror() && !screen.ValidPin(pin) {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("pin must be the idle screen, the map, the image, the scene or the combat when the TV does not mirror"))
 	}
 	var updated playdb.GameSession
@@ -167,7 +168,7 @@ func (s *Service) SetTableScreen(
 			return errStaleTableScreen()
 		}
 		keep := session.TvPin // a mirror choice with no pin keeps the pin it had
-		if column, ok := tvPinColumn[pin]; ok {
+		if column, ok := screen.PinColumn[pin]; ok {
 			keep = column
 		}
 		var err error

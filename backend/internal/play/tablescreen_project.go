@@ -15,6 +15,7 @@ import (
 	"github.com/PuraFome/meuRPG/backend/internal/authz"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/db"
 	"github.com/PuraFome/meuRPG/backend/internal/play/playdb"
+	"github.com/PuraFome/meuRPG/backend/internal/play/screen"
 	"github.com/PuraFome/meuRPG/backend/internal/rules"
 )
 
@@ -68,11 +69,11 @@ func (s *Service) projectMap(ctx context.Context, tv authz.Membership, session p
 	return nil
 }
 
-// tvMap is the TV's form of a map: hidden_by_fog and nothing else when mapOnTV refuses it, otherwise what the
+// tvMap is the TV's form of a map: hidden_by_fog and nothing else when screen.MapOnTV refuses it, otherwise what the
 // maps module answers for the TV's viewer. Nil when the map is gone or no player sees it now: the field is
 // then unset, which is not hidden_by_fog.
 func (s *Service) tvMap(ctx context.Context, tv authz.Membership, mapID string) (*playv1.TvMap, error) {
-	m, err := s.maps.TableScreenMap(ctx, tv.CampaignID, mapID, mapOnTV)
+	m, err := s.maps.TableScreenMap(ctx, tv.CampaignID, mapID, screen.MapOnTV)
 	if connect.CodeOf(err) == connect.CodeNotFound {
 		return nil, nil
 	}

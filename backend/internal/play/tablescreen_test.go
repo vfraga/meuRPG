@@ -7,6 +7,7 @@ import (
 	"connectrpc.com/connect"
 
 	playv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/play/v1"
+	"github.com/PuraFome/meuRPG/backend/internal/play/screen"
 )
 
 // The master's table screen. These tests need the database (MEURPG_TEST_DATABASE_URL).
@@ -204,7 +205,7 @@ func TestSetTableScreenAtTheSameRevisionHasOneWinner(t *testing.T) {
 	const writers = 4
 	errs := make(chan error, writers)
 	for i := range writers {
-		pin := tvPinnable[i%len(tvPinnable)]
+		pin := screen.Pinnable[i%len(screen.Pinnable)]
 		go func() {
 			_, err := a.setScreen(a.master, 0, false, pin)
 			errs <- err

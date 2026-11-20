@@ -1,20 +1,21 @@
-package play
+// Package screen decides what the table screen (the TV) shows: the screen, the pin and its fallbacks, and what the master may pin.
+package screen
 
 import (
 	playv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/play/v1"
 )
 
 // The table screen decides what the TV shows in three single places, each one function:
-//   - resolveStage: which screen (the mirror order, the pin and its fallbacks);
-//   - mapOnTV: whether a map's content may go to the TV;
-//   - tvShowsConversation: whether the Conversa goes to the TV.
+//   - ResolveStage: which screen (the mirror order, the pin and its fallbacks);
+//   - MapOnTV: whether a map's content may go to the TV;
+//   - ShowsConversation: whether the Conversa goes to the TV.
 
-// tvShowsConversation is false: the Conversa (RN-36) never goes to the TV, and the narration to
+// ShowsConversation is false: the Conversa (RN-36) never goes to the TV, and the narration to
 // the whole table is not shown on it either.
-const tvShowsConversation = false
+const ShowsConversation = false
 
-// tvFacts is what resolveStage needs to know of the session, already read.
-type tvFacts struct {
+// Facts is what ResolveStage needs to know of the session, already read.
+type Facts struct {
 	// ImageToTable: the session shows an image whose audience is the whole table.
 	ImageToTable bool
 	// CombatActive: a combat is in progress.
@@ -30,25 +31,25 @@ type tvFacts struct {
 	GroupVision bool
 }
 
-// tvChoice is the master's stored choice.
-type tvChoice struct {
+// Choice is the master's stored choice.
+type Choice struct {
 	Mirror bool
 	Pin    playv1.TableScreenKind
 }
 
-// tvPick is the screen resolveStage chose and why it is not the one asked for.
-type tvPick struct {
+// Pick is the screen ResolveStage chose and why it is not the one asked for.
+type Pick struct {
 	Kind   playv1.TableScreenKind
 	Notice playv1.TableScreenNotice
 }
 
-// mapOnTV says whether a map's content may go to the TV: not when the fog of war is on and "Visão do
+// MapOnTV says whether a map's content may go to the TV: not when the fog of war is on and "Visão do
 // grupo" is off, because the TV would show what no player sees together (RN-10).
-func mapOnTV(fogOn, groupVision bool) bool { return !fogOn || groupVision }
+func MapOnTV(fogOn, groupVision bool) bool { return !fogOn || groupVision }
 
-// tvUnavailable says why the TV cannot show the item now, or UNSPECIFIED when it can. The idle
+// Unavailable says why the TV cannot show the item now, or UNSPECIFIED when it can. The idle
 // screen is always available.
-func tvUnavailable(kind playv1.TableScreenKind, f tvFacts) playv1.TableScreenUnavailable {
+func Unavailable(kind playv1.TableScreenKind, f Facts) playv1.TableScreenUnavailable {
 	switch kind {
 	case playv1.TableScreenKind_TABLE_SCREEN_KIND_IMAGE:
 		if !f.ImageToTable {
@@ -69,15 +70,15 @@ func tvUnavailable(kind playv1.TableScreenKind, f tvFacts) playv1.TableScreenUna
 		if !f.HasMap {
 			return playv1.TableScreenUnavailable_TABLE_SCREEN_UNAVAILABLE_NO_MAP
 		}
-		if !mapOnTV(f.FogOn, f.GroupVision) {
+		if !MapOnTV(f.FogOn, f.GroupVision) {
 			return playv1.TableScreenUnavailable_TABLE_SCREEN_UNAVAILABLE_NEEDS_GROUP_VISION
 		}
 	}
 	return playv1.TableScreenUnavailable_TABLE_SCREEN_UNAVAILABLE_UNSPECIFIED
 }
 
-// tvPinnable lists the items the master can pick, in the order the panel shows them.
-var tvPinnable = []playv1.TableScreenKind{
+// Pinnable lists the items the master can pick, in the order the panel shows them.
+var Pinnable = []playv1.TableScreenKind{
 	playv1.TableScreenKind_TABLE_SCREEN_KIND_IDLE,
 	playv1.TableScreenKind_TABLE_SCREEN_KIND_MAP,
 	playv1.TableScreenKind_TABLE_SCREEN_KIND_IMAGE,
@@ -85,11 +86,11 @@ var tvPinnable = []playv1.TableScreenKind{
 	playv1.TableScreenKind_TABLE_SCREEN_KIND_COMBAT,
 }
 
-// tvOptions are the items of the master's panel and whether each can be picked now.
-func tvOptions(f tvFacts) []*playv1.TableScreenOption {
-	out := make([]*playv1.TableScreenOption, 0, len(tvPinnable))
-	for _, k := range tvPinnable {
-		why := tvUnavailable(k, f)
+// Options are the items of the master's panel and whether each can be picked now.
+func Options(f Facts) []*playv1.TableScreenOption {
+	out := make([]*playv1.TableScreenOption, 0, len(Pinnable))
+	for _, k := range Pinnable {
+		why := Unavailable(k, f)
 		out = append(out, &playv1.TableScreenOption{
 			Kind:        k,
 			Available:   why == playv1.TableScreenUnavailable_TABLE_SCREEN_UNAVAILABLE_UNSPECIFIED,
@@ -99,7 +100,7 @@ func tvOptions(f tvFacts) []*playv1.TableScreenOption {
 	return out
 }
 
-// resolveStage decides which screen the TV shows.
+// ResolveStage decides which screen the TV shows.
 //
 // Mirror, first that exists: the image shown to the whole table, the combat, the scene open to the
 // whole table, the map the TV may show, the idle screen. The master's own tabs do not count.
@@ -107,45 +108,45 @@ func tvOptions(f tvFacts) []*playv1.TableScreenOption {
 //
 // Pin: the pinned item when it can be shown; otherwise the idle screen, with the notice that says
 // why. The choice is never written by this function.
-func resolveStage(c tvChoice, f tvFacts) tvPick {
+func ResolveStage(c Choice, f Facts) Pick {
 	if c.Mirror {
 		return mirrorStage(f)
 	}
 	return pinnedStage(c.Pin, f)
 }
 
-func mirrorStage(f tvFacts) tvPick {
+func mirrorStage(f Facts) Pick {
 	switch {
 	case f.ImageToTable:
-		return tvPick{Kind: playv1.TableScreenKind_TABLE_SCREEN_KIND_IMAGE}
+		return Pick{Kind: playv1.TableScreenKind_TABLE_SCREEN_KIND_IMAGE}
 	case f.CombatActive:
-		return tvPick{Kind: playv1.TableScreenKind_TABLE_SCREEN_KIND_COMBAT}
+		return Pick{Kind: playv1.TableScreenKind_TABLE_SCREEN_KIND_COMBAT}
 	case f.SceneOpen && f.SceneForAll:
-		return tvPick{Kind: playv1.TableScreenKind_TABLE_SCREEN_KIND_SCENE}
+		return Pick{Kind: playv1.TableScreenKind_TABLE_SCREEN_KIND_SCENE}
 	}
 	notice := playv1.TableScreenNotice_TABLE_SCREEN_NOTICE_UNSPECIFIED
 	if f.SceneOpen { // not for all, or it would have been chosen above
 		notice = playv1.TableScreenNotice_TABLE_SCREEN_NOTICE_SCENE_NOT_FOR_ALL
 	}
 	if f.HasMap {
-		if mapOnTV(f.FogOn, f.GroupVision) {
-			return tvPick{Kind: playv1.TableScreenKind_TABLE_SCREEN_KIND_MAP, Notice: notice}
+		if MapOnTV(f.FogOn, f.GroupVision) {
+			return Pick{Kind: playv1.TableScreenKind_TABLE_SCREEN_KIND_MAP, Notice: notice}
 		}
 		if notice == playv1.TableScreenNotice_TABLE_SCREEN_NOTICE_UNSPECIFIED {
 			notice = playv1.TableScreenNotice_TABLE_SCREEN_NOTICE_MAP_NEEDS_GROUP_VISION
 		}
 	}
-	return tvPick{Kind: playv1.TableScreenKind_TABLE_SCREEN_KIND_IDLE, Notice: notice}
+	return Pick{Kind: playv1.TableScreenKind_TABLE_SCREEN_KIND_IDLE, Notice: notice}
 }
 
-func pinnedStage(pin playv1.TableScreenKind, f tvFacts) tvPick {
-	idle := tvPick{Kind: playv1.TableScreenKind_TABLE_SCREEN_KIND_IDLE}
-	if pin == playv1.TableScreenKind_TABLE_SCREEN_KIND_IDLE || !validTvPin(pin) {
+func pinnedStage(pin playv1.TableScreenKind, f Facts) Pick {
+	idle := Pick{Kind: playv1.TableScreenKind_TABLE_SCREEN_KIND_IDLE}
+	if pin == playv1.TableScreenKind_TABLE_SCREEN_KIND_IDLE || !ValidPin(pin) {
 		return idle
 	}
-	switch tvUnavailable(pin, f) {
+	switch Unavailable(pin, f) {
 	case playv1.TableScreenUnavailable_TABLE_SCREEN_UNAVAILABLE_UNSPECIFIED:
-		return tvPick{Kind: pin}
+		return Pick{Kind: pin}
 	case playv1.TableScreenUnavailable_TABLE_SCREEN_UNAVAILABLE_SCENE_NOT_FOR_ALL:
 		idle.Notice = playv1.TableScreenNotice_TABLE_SCREEN_NOTICE_SCENE_NOT_FOR_ALL
 	case playv1.TableScreenUnavailable_TABLE_SCREEN_UNAVAILABLE_NEEDS_GROUP_VISION:
@@ -165,8 +166,8 @@ const (
 	tvPinCombat
 )
 
-// tvPinColumn is the column value of each item the master can pin.
-var tvPinColumn = map[playv1.TableScreenKind]int16{
+// PinColumn is the column value of each item the master can pin.
+var PinColumn = map[playv1.TableScreenKind]int16{
 	playv1.TableScreenKind_TABLE_SCREEN_KIND_IDLE:   tvPinIdle,
 	playv1.TableScreenKind_TABLE_SCREEN_KIND_MAP:    tvPinMap,
 	playv1.TableScreenKind_TABLE_SCREEN_KIND_IMAGE:  tvPinImage,
@@ -174,9 +175,9 @@ var tvPinColumn = map[playv1.TableScreenKind]int16{
 	playv1.TableScreenKind_TABLE_SCREEN_KIND_COMBAT: tvPinCombat,
 }
 
-// validTvPin says whether kind is one the master can pin.
-func validTvPin(kind playv1.TableScreenKind) bool {
-	for _, k := range tvPinnable {
+// ValidPin says whether kind is one the master can pin.
+func ValidPin(kind playv1.TableScreenKind) bool {
+	for _, k := range Pinnable {
 		if k == kind {
 			return true
 		}
