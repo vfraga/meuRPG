@@ -87,13 +87,14 @@ func (s *Service) checkEditedSheet(ctx context.Context, m authz.Membership, cont
 	if err != nil {
 		return nil, "", invalidArgument(err)
 	}
-	if err := refuseKeptOutPick(content, m, s.storedSheetOf(ctx, m, id), sheet.GetFull()); err != nil {
+	storedOf := s.storedSheetOf(ctx, m, id)
+	if err := refuseKeptOutPick(content, m, storedOf, sheet.GetFull()); err != nil {
 		return nil, "", err
 	}
-	if err := s.refuseClosedPick(ctx, content, m, id, sheet.GetFull()); err != nil {
+	if err := refuseClosedPick(content, m, id, storedOf, sheet.GetFull()); err != nil {
 		return nil, "", err
 	}
-	if err := refuseUnfitPick(content, m, s.storedSheetOf(ctx, m, id), sheet.GetFull()); err != nil {
+	if err := refuseUnfitPick(content, m, storedOf, sheet.GetFull()); err != nil {
 		return nil, "", err
 	}
 	row, err := s.queries.GetCharacter(ctx, charactersdb.GetCharacterParams{CampaignID: m.CampaignID, ID: id})

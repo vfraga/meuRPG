@@ -52,3 +52,41 @@ func TestASwitchedOffTableClassAddsNoSkillKeyToAPlayersListForADraft(t *testing.
 		t.Errorf("Ana's list holds %s of a class the table switched off", extra)
 	}
 }
+
+// The same list with the source one table class feature the master archived: the feature is on a class the table keeps (the
+// SRD wizard), so no class filter can hide it, and only the filter of the sources keeps its key out of a player's list.
+func TestAnArchivedClassFeatureAddsNoSkillKeyToAPlayersListForADraft(t *testing.T) {
+	p := newChoicesProbe(t)
+	w, ctx := p.w, t.Context()
+	const extra = "skill:performance"
+	held := must(w.ana.characters.CreateCharacter(ctx, rq(&charactersv1.CreateCharacterRequest{
+		CampaignId: w.campaign, Kind: charactersv1.CharacterKind_CHARACTER_KIND_PLAYER, Name: "Menestrel", Sheet: sheet("class:wizard", 1),
+	}))).GetCharacter()
+	listed := func(who *person) bool {
+		r := who.call(charactersv1connect.CharacterServicePreviewChoicesProcedure, &charactersv1.PreviewChoicesRequest{
+			CampaignId: w.campaign, CharacterId: held.GetId(), Kind: charactersv1.CharacterKind_CHARACTER_KIND_PLAYER, Sheet: sheet("class:wizard", 1),
+		})
+		if !r.ok() {
+			t.Fatalf("PreviewChoices: HTTP %d %s", r.status, shorten(r.body))
+		}
+		return slices.Contains(choicesOf(t, r).GetSkillsAllowed().GetKeys(), extra)
+	}
+	feature := must(w.master.table.CreateTableEntry(ctx, rq(&rulesv1.CreateTableEntryRequest{
+		CampaignId: w.campaign, Body: &rulesv1.CreateTableEntryRequest_TableClassFeature{TableClassFeature: &rulesv1.TableClassFeature{
+			NamePt: "Canto", DescPt: []string{"Texto de teste."}, ClassKey: "class:wizard", Level: 1,
+			Effects: []*rulesv1.TableEffect{{Type: "choice", Choice: "skill", Count: 1, From: []string{extra}}},
+		}},
+	}))).GetEntry()
+	for name, who := range map[string]*person{"the master": w.master, "Ana": w.ana} {
+		if !listed(who) {
+			t.Fatalf("%s: before the archive the list lacks %s, the positive control", name, extra)
+		}
+	}
+	must(w.master.table.ArchiveTableEntry(ctx, rq(&rulesv1.ArchiveTableEntryRequest{CampaignId: w.campaign, Key: feature.GetKey()})))
+	if !listed(w.master) {
+		t.Errorf("the master reads what is archived, and the list lacks %s", extra)
+	}
+	if listed(w.ana) {
+		t.Errorf("Ana's list holds %s of an archived class feature", extra)
+	}
+}

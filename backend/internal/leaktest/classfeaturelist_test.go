@@ -61,7 +61,7 @@ func TestAnArchivedClassFeatureIsNoSourceOfAPickForAPlayer(t *testing.T) {
 			if key != "" {
 				r.body = []byte(strings.ReplaceAll(string(r.body), key, "K"))
 			}
-			out[name] = shorten(r.body) + " HTTP " + string(rune('0'+r.status/100))
+			out[name] = string(r.body) + " HTTP " + string(rune('0'+r.status/100))
 		}
 		for _, skill := range []string{inside, outside} {
 			put("create "+skill, w.caio.call(charactersv1connect.CharacterServiceCreateCharacterProcedure, &charactersv1.CreateCharacterRequest{
@@ -100,9 +100,16 @@ func TestAnArchivedClassFeatureIsNoSourceOfAPickForAPlayer(t *testing.T) {
 	must(w.master.table.ArchiveTableEntry(ctx, rq(&rulesv1.ArchiveTableEntryRequest{CampaignId: w.campaign, Key: feature.GetKey()})))
 	with := lists(w.ana, answers(w.ana, feature.GetKey()))
 	for name, want := range without {
+		if name == "options" {
+			continue // main counts the feature's pick in the level (skillChoices), so only its sources are compared, below
+		}
 		if with[name] != want {
 			t.Errorf("Ana, %s, with the archived feature: %s\nwithout the feature: %s", name, with[name], want)
 		}
+	}
+	// The options keep main's count of the level's picks; the feature is named as a source of none of them.
+	if body := with["options"]; strings.Contains(body, "skillSources") || strings.Contains(body, inside) {
+		t.Errorf("Ana's options list the archived feature as a source of skills: %s", body)
 	}
 	// A level-up is counted by the level itself, as on main: the pick the archived feature lists goes through, any other is
 	// refused as it is without the feature. Last, because it moves the character.

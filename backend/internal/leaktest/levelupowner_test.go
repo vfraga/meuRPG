@@ -34,17 +34,40 @@ func TestTheSkillSourcesOfAMulticlassOwnerTheTableKeepsOutReachNoPlayer(t *testi
 	apart := must(w.ana.characters.CreateCharacter(ctx, rq(&charactersv1.CreateCharacterRequest{
 		CampaignId: w.campaign, Kind: charactersv1.CharacterKind_CHARACTER_KIND_PLAYER, Name: "Perita", Sheet: s,
 	}))).GetCharacter()
+	levelUp := func(class string, skills ...string) reply {
+		return w.ana.call(charactersv1connect.CharacterServiceLevelUpCharacterProcedure, &charactersv1.LevelUpCharacterRequest{
+			CampaignId: w.campaign, CharacterId: apart.GetId(), Revision: apart.GetRevision(), Choices: &charactersv1.LevelUpChoices{
+				ClassKey: class, SkillProficiencyKeys: skills,
+				HitPoints: &charactersv1.LevelUpHitPoints{Method: charactersv1.LevelUpHitPointsMethod_LEVEL_UP_HIT_POINTS_METHOD_AVERAGE},
+			},
+		})
+	}
 	for _, how := range []string{"switched off", "archived"} {
-		for _, k := range []string{key} {
-			if how == "archived" {
-				must(w.master.table.SetOptionSwitches(ctx, rq(&rulesv1.SetOptionSwitchesRequest{CampaignId: w.campaign, Switches: []*rulesv1.OptionSwitch{{Key: k, Off: false}}})))
-				must(w.master.table.ArchiveTableEntry(ctx, rq(&rulesv1.ArchiveTableEntryRequest{CampaignId: w.campaign, Key: k})))
-			} else {
-				must(w.master.table.SetOptionSwitches(ctx, rq(&rulesv1.SetOptionSwitchesRequest{CampaignId: w.campaign, Switches: []*rulesv1.OptionSwitch{{Key: k, Off: true}}})))
+		if how == "archived" {
+			must(w.master.table.SetOptionSwitches(ctx, rq(&rulesv1.SetOptionSwitchesRequest{CampaignId: w.campaign, Switches: []*rulesv1.OptionSwitch{{Key: key, Off: false}}})))
+			must(w.master.table.ArchiveTableEntry(ctx, rq(&rulesv1.ArchiveTableEntryRequest{CampaignId: w.campaign, Key: key})))
+		} else {
+			must(w.master.table.SetOptionSwitches(ctx, rq(&rulesv1.SetOptionSwitchesRequest{CampaignId: w.campaign, Switches: []*rulesv1.OptionSwitch{{Key: key, Off: true}}})))
+		}
+		// A class the table keeps out is refused on the options and on the level-up as main refuses it, whatever the pick: the
+		// skill its list holds, one it does not, and none. The answer names the class the caller sent and no skill.
+		reason := map[string]string{"switched off": "SWITCHED_OFF_CHOICE", "archived": "ARCHIVED_CHOICE"}[how]
+		refused := func(what string, got reply) {
+			t.Helper()
+			body := string(got.body)
+			if got.ok() || got.status != 400 || !strings.Contains(body, reason) || strings.Contains(body, extra) {
+				t.Errorf("%s: %s is answered %d %s, not the refusal %s of the class", how, what, got.status, shorten(got.body), reason)
 			}
 		}
-		if body := string(options(w.ana, apart.GetId(), key).body); strings.Contains(body, canary) || strings.Contains(body, extra) {
-			t.Errorf("%s: Ana's options for a class she does not hold name it: %s", how, shorten([]byte(body)))
+		refused("the options", options(w.ana, apart.GetId(), key))
+		none := levelUp(key)
+		refused("the level-up with no pick", none)
+		for name, picks := range map[string][]string{"a pick the list holds": {extra}, "a pick the list lacks": {"skill:stealth"}} {
+			got := levelUp(key, picks...)
+			refused("the level-up with "+name, got)
+			if string(got.body) != string(none.body) {
+				t.Errorf("%s: the level-up with %s is answered %s, with no pick %s", how, name, shorten(got.body), shorten(none.body))
+			}
 		}
 	}
 }

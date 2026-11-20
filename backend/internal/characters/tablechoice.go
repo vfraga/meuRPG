@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"slices"
 	"strings"
+	"sync"
 	"time"
 	"unicode"
 	"unicode/utf8"
@@ -146,8 +147,8 @@ func unfitSentence(view *rules.Content, b rules.Build, field, key string) string
 
 // refuseClosedPick is refuseClosedChoices against the stored sheet of a character the caller sees. Nothing is refused
 // when that sheet cannot be read, so the later checks answer for it as before.
-func (s *Service) refuseClosedPick(ctx context.Context, content *rules.Content, m authz.Membership, characterID string, sheet *charactersv1.FullSheet) error {
-	stored := s.storedSheetOf(ctx, m, characterID)()
+func refuseClosedPick(content *rules.Content, m authz.Membership, characterID string, storedOf func() *charactersv1.FullSheet, sheet *charactersv1.FullSheet) error {
+	stored := storedOf()
 	if stored == nil {
 		return nil
 	}
@@ -158,9 +159,11 @@ func (s *Service) refuseClosedPick(ctx context.Context, content *rules.Content, 
 func noSheet() *charactersv1.FullSheet { return nil }
 
 // storedSheetOf reads the stored sheet of a character the caller sees, nil for any other: a pick is new to a sheet the
-// caller cannot read.
+// caller cannot read. The sheet is read once, on the first call of the function, whatever the number of checks that ask.
 func (s *Service) storedSheetOf(ctx context.Context, m authz.Membership, characterID string) func() *charactersv1.FullSheet {
-	return func() *charactersv1.FullSheet {
+	var once sync.Once
+	var out *charactersv1.FullSheet
+	read := func() *charactersv1.FullSheet {
 		row, err := s.queries.GetCharacter(ctx, charactersdb.GetCharacterParams{CampaignID: m.CampaignID, ID: characterID})
 		if err != nil || !canSee(m, row.Kind, row.Status, row.PlayerUserID) {
 			return nil
@@ -170,6 +173,10 @@ func (s *Service) storedSheetOf(ctx context.Context, m authz.Membership, charact
 			return nil
 		}
 		return stored.GetFull()
+	}
+	return func() *charactersv1.FullSheet {
+		once.Do(func() { out = read() })
+		return out
 	}
 }
 

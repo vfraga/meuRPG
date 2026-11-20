@@ -486,6 +486,14 @@ func checkNewSheetOf(content *rules.Content, m authz.Membership, kind string, ra
 	if err := refuseKeptOutPick(content, m, noSheet, sheet.GetFull()); err != nil {
 		return nil, err
 	}
+	if err := checkSheetKind(kind, sheet); err != nil {
+		return nil, invalidArgument(err)
+	}
+	if sheet.GetFull() != nil {
+		sheet.GetFull().AbilityOrigin = nil // the server's record, set later for a player
+		sheet.GetFull().Infusions = nil     // the server's records: a new character, or one a package brings, has none
+	}
+	// The kind comes before the closed entries, and those before the fit, as everywhere a new pick is taken.
 	if err := refuseClosedChoices(content, m, "", nil, sheet.GetFull()); err != nil {
 		return nil, err
 	}
@@ -495,13 +503,6 @@ func checkNewSheetOf(content *rules.Content, m authz.Membership, kind string, ra
 	}
 	if err := refuseUnfitPick(content, m, held, sheet.GetFull()); err != nil {
 		return nil, err
-	}
-	if err := checkSheetKind(kind, sheet); err != nil {
-		return nil, invalidArgument(err)
-	}
-	if sheet.GetFull() != nil {
-		sheet.GetFull().AbilityOrigin = nil // the server's record, set later for a player
-		sheet.GetFull().Infusions = nil     // the server's records: a new character, or one a package brings, has none
 	}
 	return sheet, nil
 }

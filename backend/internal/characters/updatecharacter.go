@@ -65,13 +65,14 @@ func (s *Service) readSheetSave(ctx context.Context, m authz.Membership, msg *ch
 	if err != nil {
 		return nil, invalidArgument(err)
 	}
-	if err := refuseKeptOutPick(content, m, s.storedSheetOf(ctx, m, id), sheet.GetFull()); err != nil {
+	stored := s.storedSheetOf(ctx, m, id)
+	if err := refuseKeptOutPick(content, m, stored, sheet.GetFull()); err != nil {
 		return nil, err
 	}
-	if err := s.refuseClosedPick(ctx, content, m, id, sheet.GetFull()); err != nil {
+	if err := refuseClosedPick(content, m, id, stored, sheet.GetFull()); err != nil {
 		return nil, err
 	}
-	if err := refuseUnfitPick(content, m, s.storedSheetOf(ctx, m, id), sheet.GetFull()); err != nil {
+	if err := refuseUnfitPick(content, m, stored, sheet.GetFull()); err != nil {
 		return nil, err
 	}
 	return &sheetSave{m: m, id: id, revision: revision, name: name, content: content, sheet: sheet}, nil

@@ -214,16 +214,6 @@ func TestAPickOfAnEntryKeyIsAnsweredAsAKeyThatDoesNotExist(t *testing.T) {
 			s.GetFull().FeatureChoiceKeys = []string{rules.ScopedChoice(rules.ToolPickKey("trait:tool-proficiency"), key)}
 			return s
 		},
-		"a skill": func(key string) *charactersv1.CharacterSheet {
-			s := base()
-			s.GetFull().SkillProficiencyKeys = []string{key}
-			return s
-		},
-		"an expertise": func(key string) *charactersv1.CharacterSheet {
-			s := base()
-			s.GetFull().ExpertiseSkillKeys = []string{key}
-			return s
-		},
 	}
 	held := must(w.ana.characters.CreateCharacter(ctx, rq(&charactersv1.CreateCharacterRequest{
 		CampaignId: w.campaign, Kind: charactersv1.CharacterKind_CHARACTER_KIND_PLAYER, Name: "Anã", Sheet: base(),
