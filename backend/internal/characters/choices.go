@@ -41,6 +41,10 @@ const (
 )
 
 // PreviewChoices implements charactersv1connect.CharacterServiceHandler.
+//
+// It answers a draft whose picks no list allows (the class changed under them) with the lists the draft has now:
+// the fit of the picks is the save's refusal (and PreviewCharacter's), not this answer's. Every other check of the
+// save still holds, so a player's answer never carries anything of an entry the master switched off or archived.
 func (s *Service) PreviewChoices(
 	ctx context.Context,
 	req *connect.Request[charactersv1.PreviewChoicesRequest],
@@ -65,7 +69,7 @@ func (s *Service) PreviewChoices(
 		if err := checkCreatorKind(m, kind); err != nil {
 			return nil, err
 		}
-		if sheet, err = checkNewSheet(content, m, kind, req.Msg.GetSheet()); err != nil {
+		if sheet, err = checkDraftSheet(content, m, kind, req.Msg.GetSheet()); err != nil {
 			return nil, err
 		}
 	} else if sheet, notOffered, err = s.sheetForChoices(ctx, m, content, req.Msg.GetCharacterId(), req.Msg.GetSheet()); err != nil {
@@ -110,7 +114,7 @@ func (s *Service) sheetForChoices(ctx context.Context, m authz.Membership, conte
 		return stored, nil, nil
 	}
 	if mayEditSheet(m, row) && row.Status != statusDead {
-		sheet, _, err := s.checkEditedSheet(ctx, m, content, characterID, raw)
+		sheet, _, err := s.checkEditedSheet(ctx, m, content, characterID, raw, sheetDraft)
 		return sheet, nil, err
 	}
 	full := stored.GetFull()
@@ -129,7 +133,8 @@ func (s *Service) sheetForChoices(ctx context.Context, m authz.Membership, conte
 	fresh := newKeptOutPicks(viewContent(content, m), func() *charactersv1.FullSheet { return full }, over)
 	over.FeatureChoiceKeys = slices.DeleteFunc(over.FeatureChoiceKeys, func(k string) bool { return slices.Contains(fresh, k) })
 	// A pick is new when the stored sheet lacks it: what the master archived or switched off is not a new choice.
-	if err := refuseNewChoices(content, m, row.ID, full, over); err != nil {
+	// The fit of the picks is not asked: the preview answers the lists, and the completion is what refuses.
+	if err := refuseNewKeys(content, m, row.ID, full, over); err != nil {
 		return nil, nil, err
 	}
 	return &charactersv1.CharacterSheet{Content: &charactersv1.CharacterSheet_Full{Full: over}}, fresh, nil

@@ -6,6 +6,10 @@ import { Code, ConnectError } from '@connectrpc/connect';
 import { BehaviorSubject, of } from 'rxjs';
 
 import { create } from '@bufbuild/protobuf';
+import {
+  InvalidFieldSchema,
+  PickAllowedSchema,
+} from '../../../gen/meurpg/characters/v1/characters_pb';
 
 import {
   AbilityScoresRefusalReason,
@@ -892,6 +896,81 @@ describe('CharacterEditor', () => {
       expect(box().checked).toBe(true);
     });
 
+    describe('a held skill the class change left outside the lists', () => {
+      const PAUSE = 300;
+      const FIELD = 'sheet.full.skill_proficiency_keys[0]';
+      const SENTENCE =
+        'A perícia Furtividade não está em nenhuma das listas de onde o personagem escolhe perícias.';
+      const refusal = () =>
+        new ConnectError(`${FIELD} ${SENTENCE}`, Code.InvalidArgument, undefined, [
+          { desc: InvalidFieldSchema, value: create(InvalidFieldSchema, { field: FIELD }) },
+        ]);
+      const problems = (el: HTMLElement) =>
+        Array.from(el.querySelectorAll('app-skill-picker .skill__problem')).map((p) =>
+          p.textContent?.trim(),
+        );
+      /** The server answers the draft with the lists of the class it has now. */
+      const serverAllows = (keys: string[]) => {
+        fake.previewChoicesFn = () =>
+          Promise.resolve({
+            groups: [],
+            done: 0,
+            total: 0,
+            notOffered: [],
+            spellSources: [],
+            skillsAllowed: create(PickAllowedSchema, { any: false, keys }),
+            expertiseAllowed: null,
+          });
+      };
+
+      afterEach(() => vi.useRealTimers());
+
+      it('shows the lists of the new class, keeps the pick ticked, and puts the server sentence on its row until it is taken off', async () => {
+        const { cmp, names, fixture, el } = await openCut();
+        fake.previewCharacterFn = () => Promise.reject(refusal());
+        serverAllows(['skill:arcana', 'skill:history']);
+        vi.useFakeTimers();
+        cmp.picks.toggleSkill('skill:stealth');
+        fixture.detectChanges();
+        await vi.advanceTimersByTimeAsync(PAUSE); // the lists
+        fixture.detectChanges();
+        await vi.advanceTimersByTimeAsync(PAUSE); // the pick the lists leave out
+        fixture.detectChanges();
+
+        expect(names()).toEqual(['Arcanismo', 'História', 'Furtividade']);
+        expect(problems(el)).toEqual([SENTENCE]);
+        expect(el.querySelector('app-skill-picker .skill__problem')?.id).toBe(
+          'skill-problem-skill:stealth',
+        );
+        const stealth = () =>
+          el.querySelectorAll<HTMLInputElement>('app-skill-picker .skill__name input')[2];
+        expect(stealth().checked).toBe(true);
+        expect(stealth().disabled).toBe(false);
+
+        cmp.picks.toggleSkill('skill:stealth');
+        fixture.detectChanges();
+        expect(problems(el)).toEqual([]);
+        expect(names()).toEqual(['Arcanismo', 'História']);
+      });
+
+      it('shows no sentence while every held skill is on a list, whatever the server would say of the draft', async () => {
+        const { cmp, fixture, el } = await openCut();
+        fake.previewCharacterFn = () => Promise.reject(refusal());
+        serverAllows(['skill:arcana', 'skill:history']);
+        vi.useFakeTimers();
+        cmp.picks.toggleSkill('skill:arcana');
+        fixture.detectChanges();
+        await vi.advanceTimersByTimeAsync(PAUSE);
+        fixture.detectChanges();
+        await vi.advanceTimersByTimeAsync(PAUSE);
+        fixture.detectChanges();
+
+        // A refusal of the draft would put its sentence on the held skill if the picks were asked.
+        expect(cmp.server.pickFit.answer()).toBeNull();
+        expect(problems(el)).toEqual([]);
+      });
+    });
+
     it('says nothing of a held skill no list allows: its row reads as its name alone', async () => {
       const { cmp, names, answer } = await openCut();
       cmp.picks.toggleSkill('skill:stealth');
@@ -902,7 +981,11 @@ describe('CharacterEditor', () => {
     it('clears the refusal on the step when a skill or an expertise is toggled or the class changes', async () => {
       const { cmp, fixture } = await openCut();
       const refuse = () => {
-        cmp.saving.pickProblem.set('Uma frase do servidor.');
+        cmp.saving.pickRefusal.set({
+          kind: 'skill',
+          key: 'skill:arcana',
+          sentence: 'Uma frase do servidor.',
+        });
         cmp.saving.state.set({ status: 'error', message: 'Veja o passo Perícias.' });
       };
       for (const act of [
@@ -913,7 +996,7 @@ describe('CharacterEditor', () => {
         refuse();
         act();
         fixture.detectChanges();
-        expect(cmp.saving.pickProblem()).toBe('');
+        expect(cmp.saving.pickRefusal()).toBeNull();
         expect(cmp.saving.state().status).toBe('idle');
       }
     });

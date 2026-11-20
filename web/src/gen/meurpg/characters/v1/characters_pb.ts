@@ -10213,6 +10213,10 @@ export const CharacterService: GenService<{
    * with a character_id and no sheet, the character's stored sheet is the one read.
    * A basic sheet has no choices (`invalid_argument`).
    *
+   * The one check it leaves to the save is the fit of the picks to their lists: a draft
+   * whose skill, expertise or tool picks no list allows (the class changed under them)
+   * is answered with the lists it has now, and PreviewCharacter and the save refuse the pick.
+   *
    * @generated from rpc meurpg.characters.v1.CharacterService.PreviewChoices
    */
   previewChoices: {

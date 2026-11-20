@@ -157,31 +157,53 @@ export function invalidFieldPath(err: unknown): string | null {
   return connectErr.findDetails(InvalidFieldSchema)[0]?.field ?? null;
 }
 
-/** The four sentences the server gives a pick it cannot place: no list has it, or the lists that have it are full. */
+/** The sentences the server gives a skill, an expertise or a tool it cannot place: no list has it, or the lists that have it are full. */
 const PICK_SENTENCES = [
   /^A perícia .+ não está em nenhuma das listas de onde o personagem escolhe perícias\.$/,
   /^Não há vaga para a perícia (.+): as listas que a oferecem já estão preenchidas pelas outras perícias marcadas\. Desmarque uma delas para marcar \1\.$/,
   /^A especialização em .+ não está em nenhuma das listas de onde o personagem escolhe especializações\.$/,
   /^Não há vaga para a especialização em (.+): as listas que a oferecem já estão preenchidas pelas outras especializações marcadas\. Desmarque uma delas para marcar a especialização em \1\.$/,
+  /^A ferramenta .+ não está em nenhuma das escolhas de ferramenta do personagem\.$/,
+  /^Não há vaga para a ferramenta (.+): as listas que a oferecem já estão preenchidas pelas outras ferramentas marcadas\. Desmarque uma delas para marcar \1\.$/,
 ];
 
+/** The kinds of pick the server holds to a list: the sheet field each one lives in. */
+export type PickKind = 'skill' | 'expertise' | 'tool';
+
+const PICK_KIND_OF_FIELD: Readonly<Record<string, PickKind>> = {
+  skill_proficiency_keys: 'skill',
+  expertise_skill_keys: 'expertise',
+  feature_choice_keys: 'tool',
+};
+
+/** A pick the server cannot place: its kind, its place in the sheet's list of that kind and the server's sentence. */
+export interface PickRefusal {
+  readonly kind: PickKind;
+  readonly index: number;
+  readonly sentence: string;
+}
+
 /**
- * The server's sentence for a skill or an expertise it cannot place, without the field it leads with; `null` for any
- * other refusal or any other sentence.
+ * The server's refusal of a skill, an expertise or a tool it cannot place, with the sentence it gives, without the field
+ * it leads with; `null` for any other refusal or any other sentence.
  */
-export function pickRefusalOf(err: unknown): string | null {
+export function pickRefusalOf(err: unknown): PickRefusal | null {
   const field = invalidFieldPath(err);
-  if (
-    !field ||
-    !/^(?:sheet\.)?full\.(?:skill_proficiency_keys|expertise_skill_keys)\[\d+\]$/.test(field)
-  ) {
+  const at = field
+    ? /^(?:sheet\.)?full\.(skill_proficiency_keys|expertise_skill_keys|feature_choice_keys)\[(\d+)\]$/.exec(
+        field,
+      )
+    : null;
+  if (!field || !at) {
     return null;
   }
   const message = ConnectError.from(err, Code.Unavailable).rawMessage;
   const sentence = (
     message.startsWith(`${field} `) ? message.slice(field.length + 1) : message
   ).trim();
-  return PICK_SENTENCES.some((re) => re.test(sentence)) ? sentence : null;
+  return PICK_SENTENCES.some((re) => re.test(sentence))
+    ? { kind: PICK_KIND_OF_FIELD[at[1]], index: Number(at[2]), sentence }
+    : null;
 }
 
 const BLOCKED_FROM_GEN: Partial<Record<GenCharacterBlockedReason, CharacterBlockedReason>> = {
@@ -351,7 +373,7 @@ function invalidArgumentMessage(err: ConnectError): string {
   }
   const pick = pickRefusalOf(err);
   if (pick) {
-    return pick;
+    return pick.sentence;
   }
   const block = /^full\.classes\[(\d+)\]/.exec(field);
   if (block) {

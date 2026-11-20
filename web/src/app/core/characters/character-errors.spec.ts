@@ -248,6 +248,7 @@ describe('pickRefusalOf', () => {
     ]);
   const SKILL = 'sheet.full.skill_proficiency_keys[2]';
   const EXPERTISE = 'sheet.full.expertise_skill_keys[0]';
+  const TOOL = 'sheet.full.feature_choice_keys[1]';
   const sentences: [string, string][] = [
     [
       SKILL,
@@ -265,12 +266,29 @@ describe('pickRefusalOf', () => {
       EXPERTISE,
       'Não há vaga para a especialização em Furtividade: as listas que a oferecem já estão preenchidas pelas outras especializações marcadas. Desmarque uma delas para marcar a especialização em Furtividade.',
     ],
+    [
+      TOOL,
+      'A ferramenta Kit de herbalismo não está em nenhuma das escolhas de ferramenta do personagem.',
+    ],
+    [
+      TOOL,
+      'Não há vaga para a ferramenta Kit de herbalismo: as listas que a oferecem já estão preenchidas pelas outras ferramentas marcadas. Desmarque uma delas para marcar Kit de herbalismo.',
+    ],
   ];
 
   it.each(sentences)('gives the server sentence of %s without the field', (field, sentence) => {
     const err = refused(field, sentence);
-    expect(pickRefusalOf(err)).toBe(sentence);
+    expect(pickRefusalOf(err)?.sentence).toBe(sentence);
     expect(describeCharacterError(err)).toBe(sentence);
+  });
+
+  it('says which kind of pick and which place in its list the refusal points at', () => {
+    const [skill, expertise, tool] = [SKILL, EXPERTISE, TOOL].map((field) =>
+      pickRefusalOf(refused(field, sentences.find(([f]) => f === field)![1])),
+    );
+    expect(skill).toMatchObject({ kind: 'skill', index: 2 });
+    expect(expertise).toMatchObject({ kind: 'expertise', index: 0 });
+    expect(tool).toMatchObject({ kind: 'tool', index: 1 });
   });
 
   it('is null for any other sentence at those fields, and for any other refusal', () => {

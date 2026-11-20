@@ -142,7 +142,7 @@
     [attr.role]="isRadio(choice) ? 'radio' : 'checkbox'"
     [attr.aria-checked]="isPicked(choice, option)"
     [attr.aria-disabled]="isOff(choice, option) ? 'true' : null"
-    [attr.aria-describedby]="optionId(choice, option) + '-d'"
+    [attr.aria-describedby]="optionId(choice, option) + '-d' + (problem(choice, option) !== '' ? ' ' + optionId(choice, option) + '-p' : '')"
     [id]="optionId(choice, option)"
     [attr.tabindex]="tabIndex(choice, option)"
     (click)="toggle(choice, option)"
@@ -161,6 +161,9 @@
         {{ option.summaryPt }}
       }
     </span>
+    @if (problem(choice, option); as sentence) {
+      <span class="card__problem" role="alert" [id]="optionId(choice, option) + '-p'">{{ sentence }}</span>
+    }
     @if (offerCantrips() && missingSpell(option); as spell) {
       <button
         type="button"

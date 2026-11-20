@@ -176,7 +176,7 @@ async function campaignWithNpc(page: Page): Promise<{ campaignId: string; npcId:
   });
   expect(created.ok()).toBeTruthy();
   const campaignId = (await created.json()).campaign.id as string;
-  const npc = await createCharacterRPC(page, campaignId, characterRpcBody('ENEMY', { ...pensantus, name: 'Capitão Goblin' }));
+  const reserved = await createCharacterRPC(page, campaignId, characterRpcBody('ENEMY', { ...pensantus, name: 'Capitão Goblin' }));
   expect(npc.ok()).toBeTruthy();
   return { campaignId, npcId: (await npc.json()).character.id as string };
 }
@@ -2006,7 +2006,7 @@ async function scanXpScreens(browser: Browser, colorScheme: 'light' | 'dark', wi
     await expectScreenPasses(p, `Ficha por marcos, o bloco de subir de nível ${where}`);
 
     // The NPC: the minion's section with the list open, "Usar 50 XP", and the enemy's header fields.
-    const npc = await createEnemyRPC(m, campaignId, 'Capitão Goblin', '1', 200);
+    const reserved = await createEnemyRPC(m, campaignId, 'Capitão Goblin', '1', 200);
     await open(m, `/campaigns/${campaignId}/npcs/new/minion`);
     await expectScreenPasses(m, `NPC curto com Ao ser derrotado ${where}`);
     const nd = m.getByRole('combobox', { name: 'Nível de desafio (ND)' });
@@ -7635,9 +7635,11 @@ for (const [scheme, theme] of [['light', 'claro'], ['dark', 'escuro']] as const)
 
 /**
  * The skill step with the lists of its sources (#574, part D): the wizard's step with the list cut to what the sheet's sources allow,
- * the server's refusal of a pick no source can hold with the others (a class that takes two of its list and a trait that takes one skill
- * only), and the sheet editor on a stored sheet that holds a skill no list allows any more (the master narrowed the lists after it was
- * saved): the skill stays on, with nothing to say of it, and can be taken off. Real server throughout.
+ * the wizard after the class changed under two ticked skills (the pickers show the new class's lists, the picks stay ticked and the first
+ * one that no list has shows the server's sentence on its row), the server's refusal of a pick no source can hold with the others (a class
+ * that takes two of its list and a trait that takes one skill only), shown on the row of the pick, and the sheet editor on a stored sheet
+ * that holds a skill no list allows any more (the master narrowed the lists after it was saved): the skill stays on, with nothing to say
+ * of it to its player, and can be taken off; the master reads "Escolha fora das listas." on the same sheet. Real server throughout.
  */
 async function scanPickLists(browser: Browser, colorScheme: 'light' | 'dark', width: number): Promise<void> {
   test.setTimeout(240_000);
@@ -7678,6 +7680,29 @@ async function scanPickLists(browser: Browser, colorScheme: 'light' | 'dark', wi
     await expect(skills.getByRole('checkbox', { name: 'Adestrar Animais', exact: true })).toHaveCount(1);
     await expectScreenPasses(page, `Editor, a etapa de perícias com a lista cortada pelas fontes ${where}`);
 
+    // The class changes under two ticked skills: the pickers show the new class's lists, the picks stay ticked and removable, and the
+    // server's sentence for the first one no list has is on its row. The save is what refuses.
+    await skills.getByRole('checkbox', { name: 'Atletismo', exact: true }).check();
+    await skills.getByRole('checkbox', { name: 'Natureza', exact: true }).check();
+    await page.getByRole('tab', { name: 'Básico' }).click();
+    await pick('Classe', 'Mago');
+    skills = await openSkills();
+    await expect(skills.getByRole('checkbox', { name: 'Arcanismo', exact: true })).toHaveCount(1);
+    await expect(skills.getByRole('checkbox', { name: 'Furtividade', exact: true })).toHaveCount(1);
+    await expect(skills.getByRole('checkbox', { name: 'Adestrar Animais', exact: true })).toHaveCount(0);
+    await expect(skills.getByRole('checkbox', { name: 'Atletismo', exact: true })).toBeChecked();
+    await expect(skills.getByRole('checkbox', { name: 'Atletismo', exact: true })).toBeEnabled();
+    const noList = (skill: string) => `A perícia ${skill} não está em nenhuma das listas de onde o personagem escolhe perícias.`;
+    await expect(skills.locator('.skill__problem')).toHaveText([noList('Atletismo')]);
+    await expect(page.getByRole('tab', { name: 'Perícias' })).toContainText('(com erro)');
+    await expectScreenPasses(page, `Editor, a perícia que a classe nova não lista, com a frase do servidor ${where}`);
+    // Taking a pick off moves the sentence to the next one, and the last one off clears it.
+    await skills.getByRole('checkbox', { name: 'Atletismo', exact: true }).uncheck();
+    await expect(skills.locator('.skill__problem')).toHaveText([noList('Natureza')]);
+    await skills.getByRole('checkbox', { name: 'Natureza', exact: true }).uncheck();
+    await expect(skills.locator('.skill__problem')).toHaveCount(0);
+    await expect(page.getByRole('tab', { name: 'Perícias' })).not.toContainText('(com erro)');
+
     // The sheet editor: the class takes athletics and nature, the trait takes stealth. Taking stealth off and picking animal handling
     // leaves a pick the sources cannot hold together: the server's sentence is on the step.
     const characterId = await createSheetRPC(page, campaignId, icaroSheetWith(guardian, raceKey, ['skill:athletics', 'skill:nature', 'skill:stealth']));
@@ -7691,8 +7716,9 @@ async function scanPickLists(browser: Browser, colorScheme: 'light' | 'dark', wi
     await skills.getByRole('checkbox', { name: 'Furtividade', exact: true }).uncheck();
     await skills.getByRole('checkbox', { name: 'Adestrar Animais', exact: true }).check();
     await page.getByRole('button', { name: 'Salvar ficha' }).click();
-    // The step says it with the server's sentence, once; the notice above the buttons only points to the step.
+    // The row of the pick says it with the server's sentence, once; the notice above the buttons only points to the step.
     const sentence = 'Não há vaga para a perícia Adestrar Animais: as listas que a oferecem já estão preenchidas pelas outras perícias marcadas. Desmarque uma delas para marcar Adestrar Animais.';
+    await expect(skills.locator('.skill__problem')).toHaveText([sentence]);
     await expect(page.getByRole('alert').filter({ hasText: sentence })).toHaveCount(1);
     await expect(page.getByRole('alert').filter({ hasText: 'Veja o passo Perícias.' })).toHaveCount(1);
     await expect(page.getByRole('tab', { name: 'Perícias' })).toContainText('(com erro)');
@@ -7700,6 +7726,7 @@ async function scanPickLists(browser: Browser, colorScheme: 'light' | 'dark', wi
     // Taking the pick back clears both.
     await skills.getByRole('checkbox', { name: 'Adestrar Animais', exact: true }).uncheck();
     await expect(page.getByRole('alert').filter({ hasText: 'Veja o passo Perícias.' })).toHaveCount(0);
+    await expect(skills.locator('.skill__problem')).toHaveCount(0);
 
     // The master narrows the lists: stealth is in none, and the stored sheet still holds it.
     await changeGuardianSkillListRPC(m, campaignId, guardian, ['skill:athletics', 'skill:nature']);
@@ -7711,7 +7738,22 @@ async function scanPickLists(browser: Browser, colorScheme: 'light' | 'dark', wi
     await expect(skills.getByRole('checkbox', { name: 'Furtividade', exact: true })).toBeEnabled();
     // The row reads as the skill's name alone: nothing says the list no longer allows it.
     await expect(skills.locator('.skill__name').filter({ has: page.getByRole('checkbox', { name: 'Furtividade', exact: true }) })).toHaveText(/^\s*Furtividade\s*$/);
+    await expect(skills.locator('.skill__problem')).toHaveCount(0);
     await expectScreenPasses(page, `Editor, uma ficha guardada com uma perícia que nenhuma lista permite ${where}`);
+
+    // A character the master made for a player to claim, with a pick no list has (the master is never refused): the master reads "Escolha fora das listas." in "Pendências de regra".
+    const reserved = { ...icaroSheetWith(guardian, raceKey, ['skill:athletics', 'skill:nature', 'skill:arcana']), forPlayer: true, name: 'Ícaro, o Batedor' };
+    const heldOutside = await createSheetRPC(m, campaignId, reserved);
+    const sheetPage = `/campaigns/${campaignId}/characters/${heldOutside}`;
+    const masterRead = await browser.newContext({ storageState: authStatePath('Mestre Teste'), colorScheme, viewport: { width, height: 900 } });
+    try {
+      const mr = await masterRead.newPage();
+      await open(mr, sheetPage);
+      await expect(mr.getByRole('note', { name: 'Pendências de regra' }).getByText('Escolha fora das listas.')).toBeVisible();
+      await expectScreenPasses(mr, `Ficha lida pelo mestre, com "Escolha fora das listas." ${where}`);
+    } finally {
+      await masterRead.close();
+    }
   } finally {
     await masterContext.close();
     await context.close();
@@ -8315,7 +8357,7 @@ async function scanMonsterScreens(browser: Browser, colorScheme: 'light' | 'dark
     await expectScreenPasses(m, `Encontros, ${await m.locator('.head-xp').innerText()} ${where}`);
 
     await m.getByRole('button', { name: 'Pôr um NPC no grupo' }).click();
-    const npc = m.getByRole('dialog', { name: 'Pôr um NPC no grupo' });
+    const reserved = m.getByRole('dialog', { name: 'Pôr um NPC no grupo' });
     await expect(npc.locator('.budget__n')).toContainText('Baixa');
     await expectScreenPasses(m, `Pôr um NPC no grupo ${where}`);
     await npc.getByRole('radio', { name: 'Só um nome' }).check({ force: true });
@@ -12941,7 +12983,7 @@ async function scanConversationScreens(browser: Browser, colorScheme: 'light' | 
     await expect(lineOf(m, narration)).toBeVisible();
     await m.getByRole('combobox', { name: 'Falar como' }).click();
     await m.getByRole('option', { name: /^Capitão Goblin/ }).click();
-    const npc = `Quem ousa entrar no meu covil? ${Date.now()}`;
+    const reserved = `Quem ousa entrar no meu covil? ${Date.now()}`;
     await say(m, npc);
     await expect(lineOf(m, npc)).toContainText('Capitão Goblin');
     await expectScreenPasses(m, `Conversa, do mestre com as linhas ${where}`);

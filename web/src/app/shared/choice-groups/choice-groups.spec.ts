@@ -64,6 +64,21 @@ describe('ChoiceGroups', () => {
     expect(cards()[1].getAttribute('aria-checked')).toBe('true');
   });
 
+  it('shows the server sentence of a picked option on its card, and on no other', () => {
+    const { fixture, el, cards } = setup(group(2, ['a', 'b']));
+    fixture.componentRef.setInput('problems', new Map([['a', 'Não há vaga para A.']]));
+    fixture.detectChanges();
+
+    const problem = el.querySelector<HTMLElement>('.card__problem');
+    expect(problem?.textContent?.trim()).toBe('Não há vaga para A.');
+    expect(cards()[0].getAttribute('aria-describedby')).toContain(problem?.id);
+    expect(el.querySelectorAll('.card__problem')).toHaveLength(1);
+
+    fixture.componentRef.setInput('problems', new Map([['c', 'Não há vaga para C.']]));
+    fixture.detectChanges();
+    expect(el.querySelector('.card__problem')).toBeNull(); // C is not picked
+  });
+
   it('keeps a blocked option focusable, disabled and described by its reason', () => {
     const { cards, sent } = setup();
     const blocked = cards()[2];

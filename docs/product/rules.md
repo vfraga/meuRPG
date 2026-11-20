@@ -1292,6 +1292,8 @@ The choices cover the SRD 5.1 sections Fighting Style, Draconic Ancestry and Bre
   The master alone reads an issue about it.
   A new pick that no list allows is refused for a player, and the sentence names only that pick.
   When several new picks have no room, the sentence names a pick that no list has before one that only competes for room.
+  The editor offers the lists of the sheet as it stands: when the class changes, the pickers show the new class's lists and the picks that no longer fit stay ticked, so the player can take them off.
+  Each such pick shows the server's sentence on its own field, one pick at a time, and the save refuses it.
   A skill the stored sheet had automatically (from a background, say) is a new pick when a save makes it one.
   A list whose skills the character already has automatically lets the player choose any other skill in its place (SRD 5.1: the same proficiency from two sources is replaced by a different one of the same kind).
   The master is never refused for it: the pick is saved, and the master reads the issue.
