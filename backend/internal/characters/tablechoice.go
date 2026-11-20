@@ -115,16 +115,30 @@ func refuseUnfitPickIn(view *rules.Content, master bool, before func() *characte
 		stored = &b
 	}
 	field, key, found := view.UnplacedNewPick(stored, buildOf(after))
-	if !found {
-		return nil
-	}
-	if strings.HasPrefix(field, rules.ChoiceKeysField) && (!view.IsToolProficiency(key) || view.HiddenToolOwner(buildOf(after), field)) {
+	if found && unknownToolPick(view, after, field, key) {
 		return errUnknownKey("sheet." + field) // a tool pick of anything but a tool, or of an owner the reader may not read, is a key the content does not have
 	}
 	if master {
+		return refuseUnknownNewTools(view, stored, after)
+	}
+	if !found {
 		return nil
 	}
 	return invalidArgument(&fieldError{field: "sheet." + field, err: errors.New(unfitSentence(view, buildOf(after), field, key))})
+}
+
+// unknownToolPick says the unplaced pick is a tool pick of a key the content does not have.
+func unknownToolPick(view *rules.Content, after *charactersv1.FullSheet, field, key string) bool {
+	return strings.HasPrefix(field, rules.ChoiceKeysField) && (!view.IsToolProficiency(key) || view.HiddenToolOwner(buildOf(after), field))
+}
+
+// refuseUnknownNewTools gives the master the unknown-key answer of every new tool pick, whatever other pick the sheet has that
+// no list places: UnplacedNewPick names only the first of them.
+func refuseUnknownNewTools(view *rules.Content, stored *rules.Build, after *charactersv1.FullSheet) error {
+	if field, found := view.UnknownNewToolPick(stored, buildOf(after)); found {
+		return errUnknownKey("sheet." + field)
+	}
+	return nil
 }
 
 // unfitSentence is the sentence of a pick that cannot be placed, by the kind of pick the field holds: a skill or an
