@@ -76,6 +76,41 @@ async function expectInside(box: Locator, items: Locator, what: string): Promise
   }
 }
 
+/** The boxes of `items` are on one row, side by side with a gap and no overlap, of one height, and none is cut inside. */
+async function expectOneRow(items: Locator, what: string): Promise<void> {
+  const boxes = await items.evaluateAll((all) =>
+    all.map((el) => {
+      const r = el.getBoundingClientRect();
+      return { left: r.left, right: r.right, top: r.top, height: r.height, cut: el.scrollWidth - el.clientWidth };
+    }),
+  );
+  expect(boxes.length, `${what}: nothing to measure`).toBeGreaterThan(1);
+  for (const [i, b] of boxes.entries()) {
+    expect(Math.abs(b.top - boxes[0].top), `${what}, item ${i + 1}: not on the first one's row`).toBeLessThanOrEqual(1);
+    expect(Math.abs(b.height - boxes[0].height), `${what}, item ${i + 1}: its height differs`).toBeLessThanOrEqual(1);
+    expect(b.cut, `${what}, item ${i + 1}: its content is cut by ${b.cut}px`).toBeLessThanOrEqual(1);
+    if (i > 0) {
+      expect(b.left - boxes[i - 1].right, `${what}, item ${i + 1}: it touches the one before`).toBeGreaterThanOrEqual(7.5);
+    }
+  }
+}
+
+/** A ridden Large mount: its initial and the rider's are 10 px or more, and the rider's disc lies inside the mount's circle. */
+async function expectRiddenMountReadable(rider: Locator, where: string): Promise<void> {
+  const m = await rider.evaluate((el) => {
+    const token = el.parentElement!.querySelector(':scope > app-combatant-token') as HTMLElement;
+    const disc = el.querySelector('.rm__disc') as HTMLElement;
+    const t = token.getBoundingClientRect();
+    const d = disc.getBoundingClientRect();
+    const radius = t.width / 2;
+    const gap = Math.hypot(d.left + d.width / 2 - (t.left + radius), d.top + d.height / 2 - (t.top + radius)) + d.width / 2;
+    return { mountFont: parseFloat(getComputedStyle(token).fontSize), riderFont: parseFloat(getComputedStyle(disc).fontSize), side: t.width, reach: gap, radius };
+  });
+  expect(m.mountFont, `the mount's initial at ${where}`).toBeGreaterThanOrEqual(10);
+  expect(m.riderFont, `the rider's initial at ${where}`).toBeGreaterThanOrEqual(10);
+  expect(m.reach, `the rider's disc leaves the mount's circle at ${where}`).toBeLessThanOrEqual(m.radius + 0.5);
+}
+
 /** The summon sheet, whichever container it is in (a dialog from a tablet up, a bottom sheet on a phone). */
 const summonSheet = (p: Page): Locator => p.locator('app-summon-sheet');
 
@@ -149,6 +184,15 @@ async function steedScreens(t: MountedTable, l: Look): Promise<void> {
   await see(p, 'convocar-mesmo', l);
   await again.getByRole('button', { name: `Convocar ${STEED}` }).click();
   await expect(card.getByRole('heading', { name: STEED })).toBeVisible();
+}
+
+/** The dice tray's card of the roll that was just made, closed with its own "Fechar", so it covers nothing in the shot. */
+async function closeDiceTray(p: Page): Promise<void> {
+  const tray = p.locator('app-roll-overlay');
+  await expect(tray.locator('.result')).toBeVisible();
+  // The card sits outside the open sheet, which the dialog layer hides from the accessibility tree: the button is found by its text.
+  await tray.locator('button', { hasText: 'Fechar' }).click();
+  await expect(tray.locator('.result')).toBeHidden();
 }
 
 /** The goblin's shove on the horse, through the API: the master's dice are not what these screens show. */
@@ -235,6 +279,10 @@ async function rideScreens(t: MountedTable, l: Look): Promise<void> {
   await see(p, 'par-turno', l, pair);
   await expectInside(pair.locator('.pair'), pair.locator('.pair__act'), `os três botões do par (${l.scheme}, ${l.width}px)`);
   await crop(pair, 'par-cartao', l);
+  // The ridden Large pair with the map in view: one token on 2 × 2, the rider's disc inside it.
+  const pairMap = p.locator('app-combat-map').first();
+  await expect(pairMap.locator('.cm__rider')).toBeVisible();
+  await see(p, 'par-mapa', l, pairMap);
   if (l.width === 390) {
     await p.setViewportSize({ width: 320, height: MOUNTED_VIEWPORTS[320] });
     await expect(pair.getByRole('button', { name: `Esquivar do ${STEED}` })).toBeVisible();
@@ -261,6 +309,7 @@ async function rideScreens(t: MountedTable, l: Look): Promise<void> {
   await expect(rider).toBeVisible();
   await see(m, 'mestre-mapa', l, rider);
   await crop(rider.locator('xpath=..'), 'mapa-par', l);
+  await expectRiddenMountReadable(rider, `${l.scheme}, ${l.width}px`);
   await openTurn(m);
 
   // Goblin 1 pushes the horse: the save to stay on, on her screen, and the master's wait.
@@ -280,11 +329,14 @@ async function rideScreens(t: MountedTable, l: Look): Promise<void> {
   await see(p, 'teste-digitado', l);
   await save.getByRole('button', { name: /^Confirmar/ }).click();
   await expect(save.locator('.res')).toContainText('4: você caiu da montaria (Derrubado)');
+  // The dice tray shows the roll over the sheet's title and the log: it is closed before the shots.
+  await closeDiceTray(p);
   await see(p, 'teste-resultado', l);
   await closeSheet(save);
   await expect(p.getByText('Derrubado').first()).toBeVisible();
   const log = await openCombatLog(p);
   await expect(log.getByText(/caiu/).first()).toBeVisible();
+  await expect(p.locator('app-roll-overlay .result')).toBeHidden();
   await see(p, 'registro', l, log);
 
   // Out of her turn the card's "Dispensar" is refused (it spends the action): off, with the reason linked under the actions.
@@ -298,6 +350,7 @@ async function rideScreens(t: MountedTable, l: Look): Promise<void> {
   await expect(off).toHaveAttribute('aria-disabled', 'true');
   await expect(off).toHaveAttribute('aria-describedby', /steed-why-/);
   await expect(card.getByText(/Só na vez de .*: dispensar gasta a ação\./)).toBeVisible();
+  await expectOneRow(card.locator('.acts .act'), `os botões do cartão do corcel (${l.scheme}, ${l.width}px)`);
   await see(p, 'cartao-recusa', l, card);
 }
 

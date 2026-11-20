@@ -95,7 +95,7 @@ export async function placeSteedRPC(m: Page, table: CombatTable, creatureId: str
 }
 
 /** The steed Isolda already has, placed beside her (she stands on 5,7), and the combat begun with her first: Isolda 20, the steed 12, Goblin 1 beside where the pair will ride to. */
-export async function beginMountedCombat(t: MountedTable, at: Record<string, [number, number]> = { 'Capitão Goblin': [15, 2], 'Goblin 1': [10, 7], 'Goblin 2': [16, 11] }): Promise<Encounter> {
+export async function beginMountedCombat(t: MountedTable, at: Record<string, [number, number]> = { 'Capitão Goblin': [15, 2], 'Goblin 1': [11, 7], 'Goblin 2': [16, 11] }): Promise<Encounter> {
   const creatures = await listCreaturesRPC(t.p, t.campaignId, t.table.characterId);
   await placeSteedRPC(t.m, t.table, creatures[0].id, 6, 7);
   return beginAttackCombatRPC(t.m, t.table, { Isolda: 20, [STEED]: 12, 'Goblin 1': 6, 'Capitão Goblin': 3, 'Goblin 2': 2 }, at);
