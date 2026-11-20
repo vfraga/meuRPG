@@ -3,6 +3,7 @@ package rules
 import (
 	"fmt"
 	"maps"
+	"slices"
 	"testing"
 )
 
@@ -102,13 +103,28 @@ func copyScores(m map[Ability]int) map[Ability]int {
 	return out
 }
 
+// nextSkillFrom is the first skill of the list the character is not proficient in; the list is the one the class lets a
+// multiclass character choose from (an empty list allows every skill).
+func nextSkillFrom(c *Content, b Build, from []string) string {
+	have := map[string]bool{}
+	for _, s := range slices.Concat(b.SkillProficiencies, c.c.backgrounds[b.Background].Skills) {
+		have[s] = true
+	}
+	for _, s := range c.c.skillOrder {
+		if !have[s] && (len(from) == 0 || slices.Contains(from, s)) {
+			return s
+		}
+	}
+	return ""
+}
+
 // addClass is the master's multiclassing in the editor: a new class at a level,
 // with the skills it gives a multiclass character and the spells it asks for.
 func addClass(c *Content, b Build, classKey string, level int) Build {
 	b.Classes = append(b.Classes, ClassLevel{Class: classKey, Level: level})
 	if mc := c.c.classes[classKey].Multiclass.SkillChoices; mc != nil {
 		for range mc.Choose {
-			b.SkillProficiencies = append(b.SkillProficiencies, nextSkill(c, b))
+			b.SkillProficiencies = append(b.SkillProficiencies, nextSkillFrom(c, b, mc.From))
 		}
 	}
 	return fillSpells(c, b, classKey, 0)
