@@ -177,6 +177,15 @@ describe('MovePage: a readied move released off the readier’s turn (#856, boar
     );
   });
 
+  it('caps the map width on the release page only, and names the mover in the legend only for the master', () => {
+    const player = setup();
+    expect(player.el.querySelector('.move__map')?.classList.contains('move__map--release')).toBe(true);
+    expect(plain(player.el.querySelector('.move__legend')?.textContent)).toContain('Você alcança');
+    const master = setup({ master: true });
+    expect(plain(master.el.querySelector('.move__legend')?.textContent)).toMatch(/\S+ alcança/);
+    expect(plain(master.el.querySelector('.move__legend')?.textContent)).not.toContain('undefined');
+  });
+
   it('drops the move when the window went away: the notice and "Voltar à sessão" only (857-09 card 7)', () => {
     const { el, button, backed } = setup({ gone: true });
     expect(plain(el.querySelector('[data-testid=release-gone]')?.textContent)).toContain(

@@ -221,7 +221,7 @@ export function readiedGoneText(o: {
   readonly afterMap?: boolean;
 }): string {
   if (o.down) {
-    return 'Você ficou Caído.';
+    return 'Condição Caído.';
   }
   if (o.reactionUsed) {
     return 'A janela fechou e a sua reação foi usada.';
@@ -284,7 +284,6 @@ export function readiedRowFields(e: Encounter, w: ReactionWindow, before?: React
     useLabel: row.useLabel,
     passLabel: row.passLabel,
     readied: {
-      waits: row.waits,
       after:
         !w.answerNow && before
           ? `Depois ${ofReactor(before, before.reactorIsPlayer || combatantIsPlayer(e, before.reactorId))}`

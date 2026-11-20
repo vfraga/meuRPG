@@ -101,7 +101,7 @@ describe('the words of a readied spell or move released on the map (857-02 to 85
 
   it('says why a move cannot be made now: grappled, or no speed (857-09 card 6)', () => {
     expect(moveOffText(true)).toBe(
-      'Você está Agarrado: o seu deslocamento é 0. Dá para deixar passar.',
+      'Condição Agarrado: o seu deslocamento é 0. Dá para deixar passar.',
     );
     expect(moveOffText(false)).toBe('O seu deslocamento é 0. Dá para deixar passar.');
   });
@@ -149,7 +149,7 @@ describe('a release whose window went away (857-09 card 1)', () => {
       rest: '',
     });
     expect(releaseGoneView({ ...base, down: true })).toEqual({
-      lead: 'Você ficou Caído.',
+      lead: 'Condição Caído.',
       rest: 'A magia preparada se perde.',
     });
     expect(releaseGoneView({ ...base, timedOut: true })).toEqual({

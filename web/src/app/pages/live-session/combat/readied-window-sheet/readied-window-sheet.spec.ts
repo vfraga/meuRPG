@@ -195,9 +195,8 @@ describe('ReadiedWindowSheet (#582, boards 582-06 to 582-08)', () => {
       'Deixar passar',
       'Atacar o Zumbi 1',
     ]);
-    // The focus opens on the title: no answer shows a ring or a state layer before a key or a tap reaches it.
-    expect(el.querySelector('.frame__title')?.hasAttribute('data-initial-focus')).toBe(true);
-    expect(button('Deixar passar').hasAttribute('data-initial-focus')).toBe(false);
+    // "Deixar passar" has the focus at open. Whether it shows a ring is the browser's call (the e2e checks it after a click); the sheet forces none.
+    expect(document.activeElement).toBe(button('Deixar passar'));
     expect(flat(el.querySelector('.foot__clock'))).toMatch(
       /^Se você não responder, passa sozinho em \d+ s\.$/,
     );
@@ -520,7 +519,7 @@ describe('ReadiedWindowSheet (#582, boards 582-06 to 582-08)', () => {
     const grapple = setup({ toMap, row, moveLeft: 0, conditions: ['condition:grappled'] });
     await grapple.settle();
     expect(flat(grapple.el.querySelector('#readied-limit'))).toContain(
-      'Você está Agarrado: o seu deslocamento é 0.',
+      'Condição Agarrado: o seu deslocamento é 0.',
     );
   });
 
@@ -565,10 +564,28 @@ describe('ReadiedWindowSheet (#582, boards 582-06 to 582-08)', () => {
     expect(flat(mine.el.querySelector('[data-testid=readied-clock]'))).toBe(
       'Se você não responder, passa sozinho em 1 min 12 s.',
     );
-    const other = setup({ window: { waitBeganAt: began, waitedMs: 48_000n, rolling: true } });
+    const other = setup({
+      toMap: vi.fn(),
+      row: { kind: ReadiedKind.MOVE, moveFt: 25, actionNamePt: '' },
+      window: { waitBeganAt: began, waitedMs: 48_000n, rolling: true },
+    });
     await other.settle();
     expect(flat(other.el.querySelector('[data-testid=readied-clock]'))).toContain(
       'Você abriu o mapa em outro aparelho. Passa sozinho em 1 min 12 s.',
+    );
+  });
+
+  it('does not say the map is open elsewhere when the mark is a player choosing targets', async () => {
+    const began = timestampFromMs(Date.now() - 48_000);
+    const { el, settle } = setup({
+      row: { kind: ReadiedKind.ATTACK },
+      window: { waitBeganAt: began, waitedMs: 48_000n, rolling: true },
+    });
+    await settle();
+    const clock = flat(el.querySelector('[data-testid=readied-clock]'));
+    expect(clock).not.toContain('outro aparelho');
+    expect(clock).toBe(
+      'Você está escolhendo: a mesa espera 1 min 12 s. Depois disso, passa sozinho.',
     );
   });
 
@@ -671,7 +688,7 @@ describe('ReadiedWindowSheet (#582, boards 582-06 to 582-08)', () => {
   it('moves the focus to "Fechar" when the window goes away under the prompt', async () => {
     const { el, settle, button, state } = setup();
     await settle();
-    expect(document.activeElement).not.toBe(button('Deixar passar'));
+    expect(document.activeElement).toBe(button('Deixar passar'));
     state.apply(
       encounter({
         revision: 9,

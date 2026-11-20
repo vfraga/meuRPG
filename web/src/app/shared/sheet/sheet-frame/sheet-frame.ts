@@ -34,7 +34,7 @@ import { MatIconModule } from '@angular/material/icon';
           <mat-icon class="frame__icon" aria-hidden="true">{{ icon() }}</mat-icon>
         }
         <div class="frame__titles">
-          <h2 class="frame__title" [class.frame__title--small]="small()" [id]="titleId()" tabindex="-1" [attr.data-initial-focus]="focusTitle() ? '' : null">{{ title() }}</h2>
+          <h2 class="frame__title" [class.frame__title--small]="small()" [id]="titleId()" tabindex="-1">{{ title() }}</h2>
         </div>
         <!-- An extra icon button before the close one (the cast sheet's "?"). -->
         <ng-content select="[head-action]" />
@@ -75,8 +75,6 @@ export class SheetFrame {
   readonly small = input(false);
   /** An alert dialog that must be answered has no close button. */
   readonly closable = input(true);
-  /** An alert dialog opens with the focus on its title (the name it is read by), so no answer shows a focus ring or a state layer before anyone touches it. */
-  readonly focusTitle = input(false);
   /** A fixed height (a CSS length) for a dialog whose list filters: it does not jump as the results change. */
   readonly height = input('');
 

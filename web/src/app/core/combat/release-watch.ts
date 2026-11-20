@@ -1,4 +1,12 @@
-import { DestroyRef, computed, effect, inject, signal, untracked } from '@angular/core';
+import {
+  DestroyRef,
+  type EffectRef,
+  computed,
+  effect,
+  inject,
+  signal,
+  untracked,
+} from '@angular/core';
 
 import {
   CombatantState,
@@ -66,20 +74,29 @@ export class ReleaseWatch {
     /** Told the window on every change while it is open (the player's mark reads a reopen from it). */
     private readonly onWindow?: (w: ReactionWindow) => void,
   ) {
-    const timer = setInterval(() => {
+    this.timer = setInterval(() => {
       this.now.set(Date.now());
       this.mono.set(performance.now());
     }, TICK_MS);
-    inject(DestroyRef).onDestroy(() => clearInterval(timer));
+    inject(DestroyRef).onDestroy(() => this.destroy());
     const first = this.window();
     if (first) {
       this.see(first);
     }
-    effect(() => {
+    this.watching = effect(() => {
       const w = this.window();
       const e = this.encounter();
       untracked(() => (w ? this.see(w) : this.settle(e)));
     });
+  }
+
+  private readonly timer: ReturnType<typeof setInterval>;
+  private readonly watching: EffectRef;
+
+  /** Stops the clock and the watch: the release is over. Built in a longer-lived injector (the combat view's), it would run until that one goes. */
+  destroy(): void {
+    clearInterval(this.timer);
+    this.watching.destroy();
   }
 
   private see(w: ReactionWindow): void {

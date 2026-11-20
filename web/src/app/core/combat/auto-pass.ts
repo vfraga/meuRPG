@@ -5,6 +5,7 @@ import {
   type Encounter,
   type OpportunityOffer,
   ReactionKind,
+  ReadiedKind,
   type ReactionWindow,
 } from '../../../gen/meurpg/play/v1/combat_pb';
 import type { CombatClient } from './combat-client';
@@ -12,6 +13,7 @@ import type { CombatState } from './combat-state';
 import { barText, offersToAnswer, reactorIsMasters } from './opportunity';
 import { revealBarText } from './hidden-reveal';
 import { AutoPassClock, autoPassKey, autoPassText } from './reaction-autopass';
+import { readiedOfWindow } from './reaction-readied';
 import { masterBarWait } from './readied-wait';
 import { openWindows } from './reactions';
 import { windowsBarText } from './reaction-master';
@@ -50,6 +52,8 @@ export function masterWaitNote(
   e: Encounter,
   left: Readonly<Record<string, number>>,
   playerName: (characterId: string) => string,
+  /** Whether a readied window's held action is released on the map: only then is the mark "on the map" (a player choosing targets sets it too). */
+  onMap: (w: ReactionWindow) => boolean = (w) => readiedOfWindow(e, w)?.kind === ReadiedKind.MOVE,
 ): string {
   const other = revealBarText(e) || barText(e, playerName);
   if (other) {
@@ -62,7 +66,7 @@ export function masterWaitNote(
     (w) => w.kind === ReactionKind.READIED && left[w.id] === soonest,
   );
   if (readied && text && Number.isFinite(soonest)) {
-    return masterBarWait(readied.reactorLabel, readied.rolling, soonest);
+    return masterBarWait(readied.reactorLabel, readied.rolling && onMap(readied), soonest);
   }
   return text && Number.isFinite(soonest)
     ? `${text} · ${autoPassText(soonest).toLowerCase()}`

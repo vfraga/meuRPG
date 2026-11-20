@@ -131,4 +131,27 @@ describe("the wait mark of a readied window's release (#857, #856)", () => {
       expect(done.mark).toHaveBeenCalledTimes(1);
     });
   });
+
+  it('sets a new mark only after the clear of the same window landed, so a late clear never erases it', async () => {
+    const order: string[] = [];
+    let release: () => void = () => undefined;
+    const slowClear = new Promise<void>((r) => (release = r));
+    const mark = vi.fn(async (_c: string, _e: string, _w: string, clear?: boolean) => {
+      if (clear) {
+        await slowClear;
+      }
+      order.push(clear ? 'clear' : 'mark');
+      return encounter({ revision: 5 });
+    });
+    const first = setup({ mark }).m;
+    await first.enter();
+    order.length = 0;
+    const leaving = first.leave();
+    const second = setup({ mark }).m;
+    const entering = second.enter();
+    await Promise.resolve();
+    release();
+    await Promise.all([leaving, entering]);
+    expect(order).toEqual(['clear', 'mark']);
+  });
 });

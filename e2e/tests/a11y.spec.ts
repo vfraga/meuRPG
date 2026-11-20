@@ -15578,7 +15578,7 @@ async function scanReadyMapScreens(browser: Browser, colorScheme: 'light' | 'dar
     const win = moveWindow(p);
     await expect(win).toBeVisible();
     await expect(win.getByTestId('release-to-map')).toHaveAttribute('aria-disabled', 'true');
-    await expect(win.getByText('Você está Agarrado: o seu deslocamento é 0. Dá para deixar passar.')).toBeVisible();
+    await expect(win.getByText('Condição Agarrado: o seu deslocamento é 0. Dá para deixar passar.')).toBeVisible();
     await expectScreenPasses(p, `Soltar, a janela do movimento que não dá para fazer, Agarrado ${where}`);
     await shoot(p, 'janela-mover-agarrado');
     await win.getByRole('button', { name: 'Deixar passar' }).click();
@@ -15646,6 +15646,121 @@ for (const [colorScheme, theme] of [
     test(`soltar a ação preparada no mapa passa no axe e nas conferências de layout no tema ${theme}, em ${width}`, { tag: ['@a11y', '@RN-31'] }, async ({ browser }) => {
       test.setTimeout(600_000);
       await scanReadyMapScreens(browser, colorScheme, width);
+    });
+  }
+}
+
+/**
+ * The other states of the release on the map (#857, boards 857-07 to 857-09): the cast sheet and the master's dialog when the window went away
+ * under them, the typed roll and the result with "Voltar à sessão", the Mover page that something blocks, and the window that passed by itself.
+ * The wall and the direction releases (cards 3 and 4) are not here: the table of `readyMapTable` holds the Bola de Fogo or a move only, and a
+ * wall or a direction needs a caster who knows such a spell, its readying and the map's picker for it.
+ */
+async function scanReadyMapEndScreens(browser: Browser, colorScheme: 'light' | 'dark', width: number): Promise<void> {
+  const where = `(${colorScheme}, ${width}px)`;
+  const view = { ...featViewport(width), colorScheme, both: true };
+  const shoot = async (page: Page, screen: string): Promise<void> => shootReady(page, screen, width, colorScheme, '857-ready-map');
+
+  // The window goes away under the open screens: the trigger undone under the player's sheet, and the player letting it pass under the master's dialog.
+  const gone = await readyMapTable(browser, 'Acessibilidade soltar desfeito', 'fireball', view);
+  try {
+    const { m, p, campaignId } = gone;
+    m.setDefaultTimeout(20_000);
+    p.setDefaultTimeout(20_000);
+    await fireReadied(m);
+    await spellWindow(p).getByTestId('release-to-map').click();
+    const sheet = releaseSheet(p);
+    await expect(sheet).toBeVisible();
+    await undoFire(m, campaignId);
+    await expect(sheet.getByTestId('release-gone')).toContainText(releaseTexts.undone);
+    await expectScreenPasses(p, `Soltar, a folha da magia depois que o mestre desfez o gatilho ${where}`);
+    await shoot(p, 'folha-desfeita');
+    await sheet.getByTestId('release-done').click();
+    await expect(sheet).toHaveCount(0);
+
+    await fireReadied(m);
+    await expect(spellWindow(p)).toBeVisible();
+    await masterQueue(m).getByRole('button', { name: 'Soltar por Pensantus' }).click();
+    const masterSheet = releaseSheet(m, true);
+    await expect(masterSheet).toBeVisible();
+    await spellWindow(p).getByRole('button', { name: 'Deixar passar' }).click();
+    await expect(masterSheet.getByTestId('release-gone')).toBeVisible();
+    await expectScreenPasses(m, `Soltar, a janela do mestre depois que a janela da magia fechou ${where}`);
+    await shoot(m, 'mestre-fechou');
+    await masterSheet.getByTestId('release-done').click();
+    await expect(masterSheet).toHaveCount(0);
+  } finally {
+    await gone.done();
+  }
+
+  // The cast: the typed roll of the damage, then the result and its way back to the session.
+  const cast = await readyMapTable(browser, 'Acessibilidade soltar conjurar', 'fireball', view);
+  try {
+    const { m, p } = cast;
+    m.setDefaultTimeout(20_000);
+    p.setDefaultTimeout(20_000);
+    await fireReadied(m);
+    const sheet = await placeFireball(p);
+    await sheet.getByRole('button', { name: 'Conjurar Bola de Fogo' }).click();
+    const result = p.getByRole('dialog', { name: 'Bola de Fogo conjurada' });
+    await expect(result.getByRole('heading', { name: 'Bola de Fogo conjurada' })).toBeVisible();
+    await result.getByRole('button', { name: 'Digitar o resultado' }).click();
+    await result.getByLabel(/Role 8d6/).fill('28');
+    await expectScreenPasses(p, `Soltar, o dado da Bola de Fogo digitado ${where}`);
+    await shoot(p, 'dado-digitado');
+    await result.getByRole('button', { name: 'Confirmar 28' }).click();
+    await expect(result.getByRole('button', { name: releaseTexts.done })).toBeVisible();
+    await expectScreenPasses(p, `Soltar, o resultado da Bola de Fogo com a volta à sessão ${where}`);
+    await shoot(p, 'resultado');
+    await result.getByRole('button', { name: releaseTexts.done }).click();
+    await expect(result).toHaveCount(0);
+  } finally {
+    await cast.done();
+  }
+
+  // The move that something blocks: the page stays open with its notice.
+  const blocked = await readyMapTable(browser, 'Acessibilidade soltar barrado', 'move', { ...view, blocker: true });
+  try {
+    const { m, p, encounter } = blocked;
+    m.setDefaultTimeout(20_000);
+    p.setDefaultTimeout(20_000);
+    const at = encounter.combatants.find((c) => c.label === 'Pensantus')!;
+    await fireReadied(m);
+    await moveWindow(p).getByTestId('release-to-map').click();
+    await expect(p.getByRole('heading', { name: 'Mover Pensantus' })).toBeVisible();
+    await tapSquare(p, (at.col ?? 0) + 2, at.row ?? 0);
+    await p.getByRole('button', { name: 'Mover para cá' }).click();
+    await expect(p.locator('.mr-notice--danger')).toContainText('Algo bloqueia o caminho: nada foi gasto. Escolha outro quadrado.');
+    await expectScreenPasses(p, `Soltar, a página de movimento com algo no caminho ${where}`);
+    await shoot(p, 'mover-bloqueado');
+  } finally {
+    await blocked.done();
+  }
+
+  // The window the player left alone: it passes by itself after the 30 s, and says so.
+  const alone = await readyMapTable(browser, 'Acessibilidade soltar sozinho', 'fireball', view);
+  try {
+    const { m, p } = alone;
+    p.setDefaultTimeout(20_000);
+    await fireReadied(m);
+    const win = spellWindow(p);
+    await expect(win).toBeVisible();
+    await expect(win).toContainText(/Passou sozinho: você não respondeu em 30 s\./, { timeout: 60_000 });
+    await expectScreenPasses(p, `Soltar, a janela que passou sozinha ${where}`);
+    await shoot(p, 'janela-passou-sozinha');
+  } finally {
+    await alone.done();
+  }
+}
+
+for (const [colorScheme, theme] of [
+  ['light', 'claro'],
+  ['dark', 'escuro'],
+] as const) {
+  for (const width of [390, 768, 1280]) {
+    test(`soltar a ação preparada no mapa, os outros estados, passa no axe e nas conferências de layout no tema ${theme}, em ${width}`, { tag: ['@a11y', '@RN-31'] }, async ({ browser }) => {
+      test.setTimeout(600_000);
+      await scanReadyMapEndScreens(browser, colorScheme, width);
     });
   }
 }

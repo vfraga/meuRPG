@@ -2,7 +2,7 @@ import { expect, type Browser, type BrowserContext, type Locator, type Page } fr
 import { beginAttackCombatRPC, combatRPC, getEncounterRPC, passTurnsToAndWait, pensantusCasting, tableForCombat, type Encounter } from './combat-support';
 import { featShotScale } from './feat-options-support';
 import { endOpenSessionRPC, openSessionPage } from './live-session-support';
-import { goblinTrigger, readyAttackRPC, readyRPC, readySpellRPC } from './ready-support';
+import { goblinTrigger, readyRPC, readySpellRPC } from './ready-support';
 import { waitForEncounterRevision } from './revision-support';
 import { callRPC, newSignedInContext, pensantus } from './support';
 
@@ -39,8 +39,8 @@ export const releaseTexts = {
   otherDevice: /Você abriu o mapa em outro aparelho\. Passa sozinho em/,
 } as const;
 
-/** What the player holds: the Bola de Fogo (3rd-level slot), a move of the speed it has, or a dagger (the attack the release rows replace). */
-export type Held = 'fireball' | 'move' | 'attack';
+/** What the player holds: the Bola de Fogo (3rd-level slot), or a move of the speed it has. */
+export type Held = 'fireball' | 'move';
 
 export interface ReadyMapTable {
   master: BrowserContext;
@@ -96,9 +96,6 @@ export async function readyMapTable(
 export async function holdOn(player: Page, campaignId: string, encounter: Encounter, held: Held): Promise<Encounter> {
   if (held === 'fireball') {
     return readySpellRPC(player, campaignId, encounter, 'Pensantus', 'spell:fireball', 3);
-  }
-  if (held === 'attack') {
-    return readyAttackRPC(player, campaignId, encounter, 'Pensantus', 'Capitão Goblin');
   }
   return readyRPC(player, 'ReadyAction', {
     campaignId,

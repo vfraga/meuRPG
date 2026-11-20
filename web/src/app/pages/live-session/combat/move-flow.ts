@@ -193,6 +193,7 @@ export class MoveFlow {
         `${article(this.moverName) === 'a' ? 'A' : 'O'} ${this.moverName} saiu do combate.`,
       );
     }
+    this.release.end();
     this.ctx.state().moving.set(false);
     this.moverId.set('');
   }

@@ -97,7 +97,9 @@ The fire event (`readied_fired` with `opened`) writes no log line.
   So does a walk shorter than the budget: the first move is the whole use, and a second one is an ordinary move off turn (`NOT_YOUR_TURN`).
   A walk that goes nowhere, stopped before its first square (a creature the player cannot see blocks it), has length 0 and is no use (`spendReadiedMove`): nothing is spent, the row waits and the window stays open.
   Such a release writes no session event (the undo's next target stays what it was) and tells nobody; only its own reply says `stopped_early`, as a walk on a turn does (`moveAttempt.idle`).
-  The web reads that reply on the Mover page of the release (`MoveFlow.afterMove`): when `stopped_early` came with the readier still on its square, the page stays open with "Algo bloqueia o caminho: nada foi gasto. Escolha outro quadrado." and the release is left unfinished, so the player picks another square or lets it pass.
+  The web reads that reply on the Mover page of the release.
+  When `stopped_early` comes with the readier still on its square, the page stays open and shows the notice "Algo bloqueia o caminho: nada foi gasto. Escolha outro quadrado."
+  The release is left unfinished, so the player picks another square or lets it pass.
   The master's release to the square the readier stands on is the same walk of length 0.
   A walk on the mover's own turn that stops at its first step still writes its event and sends the moved hint: that is not changed.
   The move is a line of the log, after the `readied_fired` line.
@@ -139,7 +141,7 @@ The automatic pass of 30 s counts on the master's screen from when the window op
 It can pass a window whose player is still choosing a square for a move, or a target: the row is then ignored.
 The readier's player sets the mark (`MarkReactionRolling`) on the first touch of the list of creatures or the darts in the window, or on entering the map.
 The player can clear it, and the master's wait is 120 s from `wait_began_at`, not the 30 s of the window.
-The prompt says so.
+The readier's prompt says it: once the player is on the map, its line reads that the table waits for the player for up to 2 minutes.
 The master's own touch does not mark it: the mark is the reactor player's alone.
 
 ## The reaction
@@ -206,12 +208,13 @@ A release with an origin lays the zone of a zone spell at the held slot: `placeA
 `PreviewSpellArea` reads the held spell at the slot level of the row while the caster's READIED window holds it (`heldByWindow`).
 That preview takes no free slot of that level and reads no slot from the request; any other preview is checked against the free slots as before.
 In a combat with no map the area is released with the creatures the answer picks, or with nobody.
-The Ready sheet offers the spells the window releases with darts, creatures or nothing.
+The Ready sheet offers the spells the window releases: with darts, creatures or nothing, and the spells placed on a map or laying a zone there, which are released on the map with `CastSpell`.
 It shows with a reason, and does not offer, a spell that asks the caster an ability (Enhance Ability), the creatures of a summon (Conjure Animals) or a damage type (Flame Strike): the answer carries no `ability_key`, `summon` or `damage_type_key`.
 The sheet reads them as the cast sheet does: `needsAbility`, the summon options of the character and the `damage_choice` of the spell's details.
 The server refuses the same spells at Ready, so a client that does not offer them is not the only guard.
-The sheet fails open: a read that fails leaves the spell offered. A revival (Revivify) is told by nothing the web reads, so only the server refuses it.
-A spell placed on a map or laying a zone is offered by the sheet and released on the map with `CastSpell`. The sheet shows the sentence of `READY_SPELL_NOT_RELEASABLE`.
+The sheet fails open: a read that fails leaves the spell offered.
+A revival (Revivify) is told by nothing the web reads, so only the server refuses it.
+When the server refuses a spell with `READY_SPELL_NOT_RELEASABLE`, the sheet shows that sentence.
 While the row waits, `GetTurnOptions.spell_targets` of its readier also lists the targets of the held spell (`heldEntry`), with the darts of its slot, so the window can show them.
 It does so only off the readier's turn, where the window opens and no ordinary entry is listed: on the turn a second action (Action Surge) could list the same spell twice, with nothing to tell the entries apart.
 A held spell attack lists none.

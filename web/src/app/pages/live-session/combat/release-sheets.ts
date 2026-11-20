@@ -21,6 +21,9 @@ const CANNOT_OPEN = 'Não deu para abrir o mapa. Tente de novo.';
  * "Voltar" shows the window again for the player.
  */
 export class ReleaseSheets {
+  /** The windows whose spell is being read for the map: a second press meanwhile opens nothing. */
+  private readonly opening = new Set<string>();
+
   constructor(
     private readonly ctx: CombatSheetsContext,
     private readonly castMap: () => CastMapData | null,
@@ -50,6 +53,10 @@ export class ReleaseSheets {
       this.ctx.note(CANNOT_OPEN);
       return;
     }
+    if (this.opening.has(w.id)) {
+      return;
+    }
+    this.opening.add(w.id);
     try {
       // The held spell's targets come from the readier's own options, whoever releases it.
       const turn = await this.ctx.api.moves.turnOptions(this.ctx.campaignId(), e.id, w.reactorId);
@@ -77,6 +84,8 @@ export class ReleaseSheets {
       }
     } catch {
       this.ctx.note(CANNOT_OPEN);
+    } finally {
+      this.opening.delete(w.id);
     }
   }
 

@@ -101,7 +101,7 @@ describe('a release watching its window (#857, #856; 857-09 cards 1 and 7)', () 
     expect(used.watch.view()?.lead).toBe('A janela fechou e a sua reação foi usada.');
     const down = setup();
     down.open([], { readied: undefined, state: CombatantState.DOWN }, 2);
-    expect(down.watch.view()?.lead).toBe('Você ficou Caído.');
+    expect(down.watch.view()?.lead).toBe('Condição Caído.');
   });
 
   it('says it passed by itself in 2 minutes when the clock ran out before the window went', () => {
@@ -170,5 +170,33 @@ describe('a release watching its window (#857, #856; 857-09 cards 1 and 7)', () 
     vi.setSystemTime(T0 + 12 * MS + 8 * MS + 3_600_000);
     vi.advanceTimersByTime(MS);
     expect(watch.secondsLeft()).toBe(99);
+  });
+
+  it('stops its one-second clock and its watch on destroy(), before the injector goes', () => {
+    vi.useFakeTimers();
+    try {
+      const state = new CombatState();
+      state.apply(
+        encounter({
+          combatants: [combatant({ id: 'pen', label: 'Pensantus', readied: row() })],
+          reactionWindows: [win()],
+        }),
+      );
+      const watch = TestBed.runInInjectionContext(
+        () =>
+          new ReleaseWatch(() => state.encounter(), {
+            windowId: 'w1',
+            readiedId: 'r1',
+            reactorId: 'pen',
+            spellName: 'Bola de Fogo',
+            move: false,
+          }),
+      );
+      const stop = vi.spyOn(globalThis, 'clearInterval');
+      watch.destroy();
+      expect(stop).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

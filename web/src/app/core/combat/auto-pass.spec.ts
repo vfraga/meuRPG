@@ -4,7 +4,12 @@ import { Code, ConnectError } from '@connectrpc/connect';
 import { timestampFromMs } from '@bufbuild/protobuf/wkt';
 import { vi } from 'vitest';
 
-import { CombatantKind, type Encounter, ReactionKind } from '../../../gen/meurpg/play/v1/combat_pb';
+import {
+  CombatantKind,
+  type Encounter,
+  ReactionKind,
+  ReadiedKind,
+} from '../../../gen/meurpg/play/v1/combat_pb';
 import { MasterAutoPass, autoPassOffers, masterWaitNote } from './auto-pass';
 import { CombatState } from './combat-state';
 import { combatant, encounter, reactionWindow } from './combat-testing';
@@ -192,12 +197,40 @@ describe("masterWaitNote of a readied window's wait (#857, 857-08 card 7)", () =
     );
   });
 
-  it('says the player is on the map, with the 2 minutes counted as minutes', () => {
+  const holding = (kind: ReadiedKind) =>
+    combatant({
+      id: 'p',
+      label: 'Pensantus',
+      kind: CombatantKind.PLAYER,
+      readied: { id: 'h1', kind } as never,
+    });
+
+  it('says the player is on the map, with the 2 minutes counted as minutes, for a held move', () => {
     const e = encounter({
-      combatants: [pen, goblin],
+      combatants: [holding(ReadiedKind.MOVE), goblin],
       reactionWindows: [readied({ rolling: true })],
     });
     expect(masterWaitNote(e, { r1: 108 }, name)).toBe(
+      'Pensantus está no mapa · passa sozinho em 1 min 48 s',
+    );
+  });
+
+  it('does not say "no mapa" for the mark of a player who only chooses targets in the window', () => {
+    const e = encounter({
+      combatants: [holding(ReadiedKind.ATTACK), goblin],
+      reactionWindows: [readied({ rolling: true })],
+    });
+    expect(masterWaitNote(e, { r1: 108 }, name)).toBe(
+      'Esperando a reação de Pensantus · passa sozinho em 1 min 48 s',
+    );
+  });
+
+  it('says it for a held spell the caller knows is placed on the map', () => {
+    const e = encounter({
+      combatants: [holding(ReadiedKind.SPELL), goblin],
+      reactionWindows: [readied({ rolling: true })],
+    });
+    expect(masterWaitNote(e, { r1: 108 }, name, () => true)).toBe(
       'Pensantus está no mapa · passa sozinho em 1 min 48 s',
     );
   });

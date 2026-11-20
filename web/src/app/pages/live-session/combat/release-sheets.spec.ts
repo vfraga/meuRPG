@@ -128,6 +128,18 @@ describe('ReleaseSheets, the map of a readied action (#857, #856)', () => {
     expect(reopen).not.toHaveBeenCalled();
   });
 
+  it('opens one dialog when the button is pressed twice while the readier’s options are read', async () => {
+    const { sheets, dialogOpen, turnOptions } = setup({ master: true });
+    sheets.open('w1');
+    sheets.open('w1');
+    await nextTurn();
+    expect(turnOptions).toHaveBeenCalledTimes(1);
+    expect(dialogOpen).toHaveBeenCalledTimes(1);
+    sheets.open('w1');
+    await nextTurn();
+    expect(dialogOpen).toHaveBeenCalledTimes(2);
+  });
+
   it('says so, and opens nothing, when there is no map or the options do not list the spell', async () => {
     const noMap = setup({ map: false });
     noMap.sheets.open('w1');

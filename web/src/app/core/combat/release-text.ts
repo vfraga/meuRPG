@@ -91,7 +91,7 @@ export function masterFoot(reactor: string): string {
 /** Why "Mover agora" is off: the grapple or no speed at all (the budget of the window is 0). */
 export function moveOffText(grappled: boolean): string {
   return grappled
-    ? 'Você está Agarrado: o seu deslocamento é 0. Dá para deixar passar.'
+    ? 'Condição Agarrado: o seu deslocamento é 0. Dá para deixar passar.'
     : 'O seu deslocamento é 0. Dá para deixar passar.';
 }
 
@@ -131,7 +131,7 @@ export function releaseGoneView(o: {
     };
   }
   if (o.down) {
-    return { lead: 'Você ficou Caído.', rest: o.move ? '' : 'A magia preparada se perde.' };
+    return { lead: 'Condição Caído.', rest: o.move ? '' : 'A magia preparada se perde.' };
   }
   if (o.reactionUsed) {
     return { lead: 'A janela fechou e a sua reação foi usada.', rest: '' };

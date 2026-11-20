@@ -182,7 +182,7 @@ describe('a window that closed without the player', () => {
     expect(readiedGoneText({ ...base, reactionUsed: true, timedOut: false })).toBe(
       'A janela fechou e a sua reação foi usada.',
     );
-    expect(readiedGoneText({ ...base, down: true, timedOut: true })).toBe('Você ficou Caído.');
+    expect(readiedGoneText({ ...base, down: true, timedOut: true })).toBe('Condição Caído.');
   });
 
   it('says 2 minutes when the player had been on the map, 30 s when not', () => {

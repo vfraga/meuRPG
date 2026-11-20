@@ -144,8 +144,16 @@ export class MoveReleaseFlow {
     this.end();
   }
 
-  private end(): void {
+  /**
+   * The page leaves the release, whichever way: "Voltar", the move, the turn ending, a creature leaving. The mark comes off when it is
+   * still set and the window still open, and the clock of the watch stops.
+   */
+  end(): void {
+    if (this.current() && !this.gone()) {
+      void this.mark?.leave();
+    }
     this.current.set(null);
+    this.watch?.destroy();
     this.watch = null;
     this.mark = null;
   }

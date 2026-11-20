@@ -37,7 +37,7 @@
     }
 
     @if (!soloHeight() && !goneView()) {
-      <div class="move__map" [style.--move-ratio]="encounter().gridColumns / encounter().gridRows">
+      <div class="move__map" [class.move__map--release]="!!release()" [style.--move-ratio]="encounter().gridColumns / encounter().gridRows">
         <div #scroller class="move__scroll">
           <app-combat-map
             [fog]="fog()"
@@ -76,7 +76,7 @@
         <div class="move__below">
         <app-map-layers-legend class="move__legend" [layers]="layers()">
           <!-- The master's release page names the mover (857-07); a name agrees with no gender. -->
-          <li><span class="mr-swatch mr-swatch--reach" aria-hidden="true"></span>{{ jumping() ? 'Alcance do salto' : (release()?.foot ? own()?.label + ' alcança' : 'Você alcança') }}</li>
+          <li><span class="mr-swatch mr-swatch--reach" aria-hidden="true"></span>{{ jumping() ? 'Alcance do salto' : (release()?.master ? (own()?.label ?? 'Quem se move') + ' alcança' : 'Você alcança') }}</li>
           <li><span class="mr-swatch mr-swatch--ring" aria-hidden="true"></span>Alcance de {{ jumping() ? limitText() : leftText() }}</li>
           @if (chosen()) {
             <li><span class="mr-swatch mr-swatch--chosen" aria-hidden="true"></span>Quadrado escolhido</li>

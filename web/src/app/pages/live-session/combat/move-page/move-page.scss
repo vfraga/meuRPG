@@ -107,10 +107,10 @@
   }
 }
 
-// From 1024px the whole map is shown, and on a window as short as 1280x800 its legend and the nudge line under it stay in view, as the boards
+// On the readied-move release page, from 1024px the whole map is shown, and on a window as short as 1280x800 its legend and the nudge line under it stay in view, as the boards
 // draw them: the map is no wider than what fits the height left under the title, the band and the budget (the grid's width over its height
 // is `--move-ratio`). A taller window or a wider grid than the column leaves the column's own width.
-.move__map {
+.move__map--release {
   @media (min-width: 1024px) {
     max-width: max(320px, calc((100dvh - 380px) * var(--move-ratio, 1.5)));
   }

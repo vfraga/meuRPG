@@ -49,7 +49,12 @@ export class ReadiedAimState {
 
   /** The wait line of a readied row: where the player is and the time left (`undefined` for a window with no clock). */
   waitOf(row: QueueRow, seconds: number | undefined) {
-    return masterRowWait(row.window.reactorLabel, row.window.rolling, seconds);
+    // The mark is also set by a player who only chooses targets in the window: "No mapa" is for a held action that is released on the map.
+    return masterRowWait(
+      row.window.reactorLabel,
+      row.window.rolling && this.mapRelease(row) !== null,
+      seconds,
+    );
   }
 
   held(row: Pick<QueueRow, 'window'>) {

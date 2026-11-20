@@ -1,6 +1,7 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   ElementRef,
   Injector,
   afterNextRender,
@@ -138,6 +139,7 @@ export type { CastMapData, CastRelease, CastSheetData } from './cast-sheet-types
 })
 export class CastSheet {
   private readonly api = inject(CombatClient);
+  private readonly destroyRef = inject(DestroyRef);
   /** Read when the player answers about the die: a sheet that never asks does not build the client. */
   private readonly lazyInjector = inject(Injector);
   private readonly animator = inject(RollAnimator);
@@ -287,6 +289,12 @@ export class CastSheet {
 
   constructor() {
     void this.mark?.enter();
+    // Esc, the backdrop or a swipe close the sheet without "Voltar": the mark still comes off, unless the window is gone or the cast was made.
+    this.destroyRef.onDestroy(() => {
+      if (!this.s.done() && !this.watch?.gone()) {
+        void this.mark?.leave();
+      }
+    });
     effect(() => {
       if (this.s.cast()) {
         this.mark?.finish();

@@ -57,8 +57,6 @@ export interface QueueRow {
   readonly slots: readonly SlotOption[];
   /** A readied action's window (#582, board 582-05): "Deixar passar" comes first and the wait is said in one line. */
   readonly readied?: {
-    /** "Esperando Tor". */
-    readonly waits: string;
     /** "Depois de Pensantus" for the window that waits behind another (one at a time), or `''`. */
     readonly after: string;
     /** The use is an attack or a spell: the dice come from the app, and the creature is picked from a list (`app-readied-aim`). */

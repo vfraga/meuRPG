@@ -17,6 +17,8 @@ export interface MoveRelease {
 export interface MoveReleaseView {
   readonly band: ReleaseBand;
   readonly note: string;
+  /** The master answers for the reactor: the page names the mover where the player's page says "you". */
+  readonly master: boolean;
   /** The master's footer; `''` for the player. */
   readonly foot: string;
   /** What the table does while the player is on the page ("A mesa espera você: até 2 min."); `''` for the master, whose footer says the other thing. */
@@ -34,6 +36,7 @@ export function moveReleaseView(
   return {
     band: moveBand({ trigger: r.trigger, reactor: r.reactor, turnOf, master: r.master }),
     note: moveNote(r.reactor, r.master),
+    master: r.master,
     foot: r.master ? masterFoot(r.reactor) : '',
     wait: r.master ? '' : ON_MAP_TEXT,
     gone,

@@ -240,6 +240,29 @@ describe('CastSheet: a readied spell released on the map (#857, boards 857-02 an
     expect(close).toHaveBeenCalledWith(false);
   });
 
+  it('takes the mark off when the sheet goes away without "Voltar" (Esc, the backdrop, a swipe)', async () => {
+    const { fixture, markReactionRolling } = await open();
+    expect(markReactionRolling).toHaveBeenCalledTimes(1);
+    fixture.destroy();
+    await Promise.resolve();
+    expect(markReactionRolling).toHaveBeenLastCalledWith('c', 'enc', 'w1', true);
+  });
+
+  it('does not clear a mark when the sheet goes away after "Voltar" took it off, or once the window is gone', async () => {
+    const back = await open();
+    back.button('Voltar')!.click();
+    await back.settle();
+    back.fixture.destroy();
+    await Promise.resolve();
+    expect(back.markReactionRolling).toHaveBeenCalledTimes(2);
+    const gone = await open();
+    gone.enc.set(encounter({ revision: 9, combatants: [], reactionWindows: [] } as never));
+    await gone.settle();
+    gone.fixture.destroy();
+    await Promise.resolve();
+    expect(gone.markReactionRolling).toHaveBeenCalledTimes(1);
+  });
+
   it('says in the confirmation of nobody that only the reaction is spent', async () => {
     const { el, button, placeAt, settle } = await open({ answer: preview([]) });
     await placeAt(6, 4);

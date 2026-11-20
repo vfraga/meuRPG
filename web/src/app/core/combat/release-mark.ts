@@ -17,6 +17,12 @@ export interface ReleaseMarkIds {
  * closes whatever the network says, and the stream shows the truth. Only the reactor's player makes it (the master is refused).
  */
 export class ReleaseMark {
+  /**
+   * The clear of each window still in the air, whichever screen sent it: a new entry on the same window (the player went back and
+   * opened the map again at once) sets its mark only after that clear landed, or the late clear would erase the newer mark.
+   */
+  private static readonly clearing = new Map<string, Promise<void>>();
+
   /** The mark is set, as far as this screen knows. */
   readonly on = signal(false);
   private finished = false;
@@ -36,7 +42,12 @@ export class ReleaseMark {
     if (this.on() || this.finished) {
       return Promise.resolve();
     }
-    this.pending ??= this.mark().finally(() => (this.pending = null));
+    if (this.pending) {
+      return this.pending;
+    }
+    const clearing = ReleaseMark.clearing.get(this.ids.windowId);
+    const marking = clearing ? clearing.then(() => this.mark()) : this.mark();
+    this.pending = marking.finally(() => (this.pending = null));
     return this.pending;
   }
 
@@ -50,13 +61,26 @@ export class ReleaseMark {
   }
 
   /** On "Voltar": takes the mark off, when it was set. Resolves once the combat the server answers is applied, so the window shows what is true. */
-  async leave(): Promise<void> {
-    await this.pending;
-    if (!this.on() || this.finished) {
-      return;
-    }
-    this.on.set(false);
-    this.seenRolling = false;
+  leave(): Promise<void> {
+    const run = (async () => {
+      await this.pending;
+      if (!this.on() || this.finished) {
+        return;
+      }
+      this.on.set(false);
+      this.seenRolling = false;
+      await this.clear();
+    })();
+    ReleaseMark.clearing.set(this.ids.windowId, run);
+    void run.finally(() => {
+      if (ReleaseMark.clearing.get(this.ids.windowId) === run) {
+        ReleaseMark.clearing.delete(this.ids.windowId);
+      }
+    });
+    return run;
+  }
+
+  private async clear(): Promise<void> {
     try {
       this.apply(await this.call(true));
     } catch {

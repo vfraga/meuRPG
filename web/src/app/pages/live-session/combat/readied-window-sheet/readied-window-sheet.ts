@@ -60,7 +60,7 @@ export interface ReadiedWindowSheetData {
 /**
  * "O mestre disse que o gatilho aconteceu: ‘Quando o zumbi passar pela porta’. Atacar com a Espada longa agora?" (#582, boards
  * 582-06 to 582-08): the `alertdialog` of a readied action's window, opened by itself for its readier and answered with
- * `AnswerReaction`. "Deixar passar" comes first (the focus opens on the title, so no answer shows a ring unasked); an attack picks its target from the server's list (the one the
+ * `AnswerReaction`. "Deixar passar" comes first and has the focus, with no ring until a key moves it; an attack picks its target from the server's list (the one the
  * player named is chosen when it is within reach); another action has one button. A held spell splits its darts or ticks its creatures
  * with the cast screens' own list (#857); a spell that needs the map and a move go there (`toMap`, "Soltar no mapa" and "Mover agora").
  * The master's screen passes the window after 30 s, or after the one wait of 120 s once the player is choosing or on the map, so the
@@ -188,16 +188,21 @@ export class ReadiedWindowSheet {
    * same mark the map sets (`rolling`), so the one 120 s wait begins at whichever comes first.
    */
   private readonly choosingMarked = signal(false);
-  /** The player is on the map in another device: this sheet reads the wait as theirs, not as a prompt of its own. */
-  protected readonly otherDevice = computed(
+  /** The mark is set by another device (this sheet did not set it). */
+  private readonly markedElsewhere = computed(
     () => this.watch.window()?.rolling === true && !this.choosingMarked(),
   );
+  /** The player is on the map in another device: this sheet reads the wait as theirs, not as a prompt of its own. */
+  protected readonly otherDevice = computed(() => this.markedElsewhere() && this.mapRelease());
   protected readonly autoPass = computed(() => {
     const seconds = this.watch.secondsLeft();
     if (this.otherDevice()) {
       return otherDeviceText(seconds);
     }
-    return this.choosingMarked() ? playerChoosingText(seconds) : playerWaitText(seconds);
+    // The mark also comes from choosing targets, on this device or another: the table waits the longer time for it.
+    return this.choosingMarked() || this.markedElsewhere()
+      ? playerChoosingText(seconds)
+      : playerWaitText(seconds);
   });
 
   /** The window is no longer in the combat: the time ran out, or the master answered for the player. */
@@ -238,7 +243,7 @@ export class ReadiedWindowSheet {
   /** The window going away takes the focus to "Fechar", so it does not fall to the page behind. */
   protected readonly focusClose = effect(() => {
     if (this.gone()) {
-      untracked(() => afterNextRender(() => this.focusInitial(), { injector: this.injector }));
+      untracked(() => afterNextRender(() => this.focusInitial(true), { injector: this.injector }));
     }
   });
   protected readonly goneText = computed(() => {
@@ -256,7 +261,8 @@ export class ReadiedWindowSheet {
     if (this.isMove && this.data.toMap) {
       void this.readMoveLeft();
     }
-    // The window opens with the focus on its title: "Deixar passar" is the first button of the Tab order, with no ring or state layer before a key or a tap reaches it.
+    // The safe answer has the focus; the browser draws a ring only when the last input was a key.
+    afterNextRender(() => this.focusInitial(), { injector: this.injector });
   }
 
   /** What the move can spend in this window: the server's own number, so a grapple or a speed of 0 shows before the map opens. */
@@ -283,10 +289,11 @@ export class ReadiedWindowSheet {
     toMap(this.plan());
   }
 
-  private focusInitial(): void {
+  /** The focus goes to the first answer, with no ring unless `ring` asks for it ("Fechar" of a gone window). */
+  private focusInitial(ring = false): void {
     (
       this.host.nativeElement.querySelector('[data-initial-focus]') as HTMLButtonElement | null
-    )?.focus({ focusVisible: true } as FocusOptions);
+    )?.focus(ring ? ({ focusVisible: true } as FocusOptions) : undefined);
   }
 
   /**

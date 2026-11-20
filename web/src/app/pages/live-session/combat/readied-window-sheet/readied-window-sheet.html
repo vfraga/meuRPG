@@ -5,7 +5,6 @@
   [phone]="inSheet"
   [closable]="false"
   [focusableBody]="true"
-  [focusTitle]="!gone()"
 >
   <div class="body">
     @if (error()) {
@@ -94,6 +93,7 @@
           matButton="outlined"
           type="button"
           class="pair__btn"
+          data-initial-focus
           [disabled]="busy()"
           (click)="answer(false)"
         >

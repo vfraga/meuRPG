@@ -273,16 +273,26 @@ describe("ReactionQueue, a readied action's window (#582, board 582-05)", () => 
     expect(api.answerReaction).not.toHaveBeenCalled();
   });
 
+  it('says only "Esperando Tor" when the mark is a player choosing targets, not a map release', () => {
+    const { fixture, el } = setup({}, { rolling: true });
+    fixture.componentRef.setInput('autoLeft', { w1: 108 });
+    fixture.detectChanges();
+    expect(plain(el.querySelector('[data-testid=readied-wait]')?.textContent)).toBe(
+      'hourglass_top Esperando Tor · passa sozinho em 1 min 48 s',
+    );
+  });
+
   it('says "No mapa · passa sozinho em ..." while the player is on the map, and "Esperando Tor" when back (857-08)', async () => {
     const left = { w1: 108 };
-    const { fixture, el } = setup({}, { rolling: true });
+    const move = { kind: ReadiedKind.MOVE, moveFt: 25, actionNamePt: '' };
+    const { fixture, el } = setup(move, { rolling: true });
     fixture.componentRef.setInput('autoLeft', left);
     fixture.detectChanges();
     expect(plain(el.querySelector('[data-testid=readied-wait]')?.textContent)).toContain(
       'location_on No mapa · passa sozinho em 1 min 48 s',
     );
     fixture.componentRef.setInput('autoLeft', { w1: 72 });
-    const back = setup({}, { rolling: false });
+    const back = setup(move, { rolling: false });
     back.fixture.componentRef.setInput('autoLeft', { w1: 72 });
     back.fixture.detectChanges();
     expect(plain(back.el.querySelector('[data-testid=readied-wait]')?.textContent)).toBe(

@@ -152,8 +152,8 @@ type encounterData struct {
 // loadEncounter reads a combat's combatants, in turn order.
 func loadEncounter(ctx context.Context, q *playdb.Queries, enc playdb.Encounter, rerolls bool) (*encounterData, error) {
 	// The open windows come first: a read through the pool is no snapshot, and a pass that commits between the two reads must
-	// show as "window still open, readied action already ignored" (the next read closes it), never as "window gone, readied action
-	// still waiting", which the readier's sheet reads as the master undoing the trigger.
+	// show as "window still open, readied action already ignored" (the window is gone at the next read), never as "window gone,
+	// readied action still waiting", which the readier's sheet reads as the master undoing the trigger. A read closes no window.
 	open, err := q.ListOpenReactionWindows(ctx, enc.ID)
 	if err != nil {
 		return nil, fmt.Errorf("list the reaction windows: %w", err)

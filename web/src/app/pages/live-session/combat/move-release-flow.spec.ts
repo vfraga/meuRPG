@@ -125,4 +125,37 @@ describe('MoveReleaseFlow, the page of a readied move (#856)', () => {
     await flow.back();
     expect(reopen).not.toHaveBeenCalled();
   });
+
+  it('takes the mark off and stops the watch when the page leaves the release another way (the turn ends)', async () => {
+    const { flow, mark } = setup();
+    flow.open('w1');
+    await Promise.resolve();
+    flow.end();
+    await vi.waitFor(() => expect(mark).toHaveBeenLastCalledWith('camp', 'enc', 'w1', true));
+    expect(flow.current()).toBeNull();
+    expect(flow.view()).toBeNull();
+  });
+
+  it('clears nothing on leaving when the window is already gone', async () => {
+    const { flow, mark, state, tor, ogro } = setup();
+    flow.open('w1');
+    TestBed.tick();
+    state.apply(encounter({ revision: 9, combatants: [tor, ogro], reactionWindows: [] } as never));
+    TestBed.tick();
+    flow.end();
+    expect(mark).toHaveBeenCalledTimes(1);
+  });
+
+  it('stops the one-second clock of the watch when the release ends, not only with the view', () => {
+    vi.useFakeTimers();
+    try {
+      const { flow } = setup();
+      flow.open('w1');
+      const stop = vi.spyOn(globalThis, 'clearInterval');
+      flow.end();
+      expect(stop).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });

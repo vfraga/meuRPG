@@ -22,6 +22,7 @@ describe("the Mover page's words for a readied move (#856, boards 857-06 and 857
       'gasta a ■ Reação e não tira nada do deslocamento da sua vez. Vale um movimento só.',
     );
     expect(v.foot).toBe('');
+    expect(v.master).toBe(false);
     expect(v.gone).toBeNull();
   });
 
@@ -29,6 +30,7 @@ describe("the Mover page's words for a readied move (#856, boards 857-06 and 857
     const v = moveReleaseView({ ...tor, master: true }, 'vez do Ogro', null);
     expect(v.band.lead).toBe('Ação preparada de Tor:');
     expect(flat(v.band.detail)).toContain('você responde por Tor');
+    expect(v.master).toBe(true);
     expect(v.foot).toBe('Tor ainda pode responder no próprio aparelho: vale a primeira resposta.');
   });
 

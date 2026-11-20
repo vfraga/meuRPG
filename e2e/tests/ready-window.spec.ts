@@ -56,8 +56,10 @@ test('o mestre dispara, o jogador lê o gatilho e ataca, e o mestre lê a mesma 
     await expect(prompt).toContainText('Em quem · 2 criaturas ao alcance');
     await expect(prompt.getByRole('radio', { name: /Capitão Goblin/ })).toBeChecked();
     await expect(prompt.locator('label', { hasText: 'Goblin 2' })).toContainText('Fora de alcance: até 18 m');
-    // The focus opens on the title, so "Deixar passar" shows no ring or fill before a key reaches it.
-    await expect(prompt.getByRole('heading', { name: 'Ação preparada', exact: true })).toBeFocused();
+    // "Deixar passar" has the focus at open and shows no ring: it matches :focus-visible only once a key moves the focus.
+    const decline = prompt.getByRole('button', { name: 'Deixar passar' });
+    await expect(decline).toBeFocused();
+    expect(await decline.evaluate((b) => b.matches(':focus-visible'))).toBe(false);
     await expect(prompt).toContainText(/Se você não responder, passa sozinho em \d+ s\./);
 
     // The master reads the same window in his queue: what is held and the trigger, who the table waits for, "Deixar passar" first.
