@@ -80,6 +80,8 @@ const TRANSLATORS: Translators = {
   contentChanged: () => ({ kind: 'contentChanged' }),
   characterChangesRequested: (v) => ({ kind: 'characterChanged', characterId: v.characterId }),
   characterResubmitted: (v) => ({ kind: 'characterChanged', characterId: v.characterId }),
+  // The infusions of a character changed: an open sheet reads them again, like any other change of the sheet.
+  characterInfusionsChanged: (v) => ({ kind: 'characterChanged', characterId: v.characterId }),
   characterRevived: (v) => ({ kind: 'characterRevived', characterId: v.characterId }),
   revivifyChanged: () => ({ kind: 'revivifyChanged' }),
   callingYou: () => ({ kind: 'callingYou' }),

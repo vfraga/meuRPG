@@ -176,6 +176,7 @@ function minimalFullSheet(overrides: Partial<FullSheet> = {}): FullSheet {
     itemBonuses: [],
     magicItems: [],
     dailyPicks: [],
+    infusions: [],
     shortRested: false,
     cantripKeys: [],
     knownSpellKeys: [],

@@ -69,7 +69,7 @@ func (x *deriver) casterOf(oc ownedClass) (caster, bool) {
 	}
 	sc := Spellcasting{
 		Class: oc.key, ClassNamePT: c.namePT(oc.key), Ability: a,
-		SaveDC: 8 + x.prof + x.mods[a], AttackBonus: x.prof + x.mods[a],
+		SaveDC: 8 + x.prof + x.mods[a], AttackBonus: x.prof + x.mods[a] + x.focusBonus,
 		PreparesSpells: e.Prepares, Spellbook: e.Spellbook, Ritual: e.Ritual, SpellList: cast.list,
 	}
 	if s := row.Spellcasting; s != nil {
@@ -187,6 +187,9 @@ type spellSheet struct {
 	// grant (choicegroups.go): a bonus cantrip, the Pact of the Tome's cantrips
 	// and a Mystic Arcanum. They are known on top of the class's numbers.
 	grantedCantrips, grantedSpells []string
+	// bookSpells are the rituals picked for the Book of Ancient Secrets: known, not
+	// prepared and outside the class's numbers.
+	bookSpells []string
 	// alwaysPrepared are the subclass's spells at its class level.
 	alwaysPrepared map[string]bool
 
@@ -220,6 +223,8 @@ func (x *deriver) characterSpells(casters []caster) {
 	counted := s.addPrepared()
 	s.addAlwaysPrepared()
 	s.addGrantedKnown()
+	s.addBook()
+	s.markWarlockList()
 	s.checkKnownCount()
 	s.checkPreparedCount(counted)
 
@@ -261,13 +266,17 @@ func (s *spellSheet) collectGranted() {
 // The bonus cantrips take the place of the extra cantrips a sheet that predates
 // the picks keeps in its cantrip list.
 func (s *spellSheet) collectPicks() {
-	for _, k := range s.x.b.FeatureChoices {
+	for i, k := range s.x.b.FeatureChoices {
 		choiceKey, spell, ok := SplitScopedChoice(k)
 		if !ok || !strings.HasPrefix(spell, "spell:") || !s.x.grantsSpells(choiceKey) {
 			continue
 		}
 		if _, hidden := s.c.featureSummons[spell]; hidden {
 			continue // a pick never names the spell of a feature's summon
+		}
+		if choiceKey == bookRitualsKey {
+			s.pickBookSpell(spell, fmt.Sprintf("full.feature_choice_keys[%d]", i))
+			continue
 		}
 		s.granted[spell] = true
 		if sp := s.c.spells[spell]; sp != nil && sp.Level == 0 {
@@ -278,6 +287,44 @@ func (s *spellSheet) collectPicks() {
 		} else {
 			s.grantedSpells = append(s.grantedSpells, spell)
 		}
+	}
+}
+
+// pickBookSpell keeps a pick of the Book of Ancient Secrets: a 1st-level spell with the ritual tag.
+// The spell is not marked granted, so a warlock that knows it another way counts it as usual.
+// A pick that is no longer such a spell stays out of the book and is an issue at its field.
+func (s *spellSheet) pickBookSpell(key, field string) {
+	sp := s.c.spells[key]
+	switch {
+	case sp == nil:
+	case sp.Level == 1 && sp.Ritual:
+		s.bookSpells = append(s.bookSpells, key)
+	default:
+		s.x.issue(IssueSpellLevel, field, "%s não é um ritual de 1º nível: o Livro dos Segredos Antigos guarda só esses.", s.c.namePT(key))
+	}
+}
+
+// addBook puts the book's rituals on the sheet: known and, unless the warlock has the spell
+// another way, not prepared.
+func (s *spellSheet) addBook() {
+	for _, key := range s.bookSpells {
+		s.addSpell(s.c.spells[key], false)
+		for i := range s.x.d.Spells {
+			if s.x.d.Spells[i].Spell.Key == key {
+				s.x.d.Spells[i].FromBook = true
+			}
+		}
+	}
+}
+
+// markWarlockList marks the spells on the character's warlock list when the sheet has the Book of
+// Ancient Secrets, which casts the warlock spells the character knows as rituals.
+func (s *spellSheet) markWarlockList() {
+	if !s.x.d.holdsBook() {
+		return
+	}
+	for i := range s.x.d.Spells {
+		s.x.d.Spells[i].WarlockList = s.x.onWarlockList(s.x.d.Spells[i].Spell)
 	}
 }
 

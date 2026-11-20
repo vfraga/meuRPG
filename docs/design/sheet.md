@@ -17,7 +17,7 @@ The browser draws what the server sends and computes no rule: multiclass prerequ
   Under that, the marks and the chip drop together to a second line under the name, at the name's x; the "⋮" and the button stay at the right edge, on the middle of the whole row.
   A row has the kind icon, the name (it ellipsizes first), "×N" for equal copies and "duas mãos" (dropped when there is no room).
   A carried two-handed weapon that would leave the shield idle has a ⚠.
-  The shield it idles has a dashed "Parado" tag.
+  The shield it idles has a dashed "Não conta na CA" tag.
   The weapon's marks are 22 px icon-only chips, each named by its word.
   A row ends with the magic bonus chip, the "⋮" and an outlined 44 px "Equipar" or "Guardar" of equal width in every row.
   The bonus chip is "+N" with a spark.
@@ -126,6 +126,7 @@ The browser draws what the server sends and computes no rule: multiclass prerequ
   The footer says "Gasta um espaço de 2º nível ou maior. Só durante uma sessão, fora de combate.", with only the first sentence in bold; the two refusals read "Agora não há sessão aberta." and "Leva 10 minutos: não dá durante um combate.".
   A choice the server refuses for a bonded steed reads "Estrela já tem forma e tipo. Para escolher outros, liberte Estrela antes."; a call that did not arrive reads "Não deu para convocar agora. Nada foi gasto. Tente de novo.".
 - **XP and level up:** `xp-block` shows XP; `level-up-banner` shows "Pode subir de nível"; the steps page is `pages/level-up`. "A classe mudou" (`changed-content`) lists what a master's change did to this character.
+- **XP and level up:** `xp-block` shows XP; `level-up-banner` shows "Pode subir de nível"; the steps page is `pages/level-up`. "A classe mudou" (`changed-content`) lists what a master's change did to this character. "Ver o que mudou" opens the sentences (each line tied to the code at its place in `ChangedContent.codes`: the notice of a weapon that takes both hands is the line with the code `shield_idle`, decided for each line, never for the whole entry) with who adjusts and when the notice goes: the numbers of the sheet for most lines ("Quem ajusta: você, na ficha" or "o mestre, na ficha", and the notice goes by itself when the numbers match again); for the line of a table weapon that takes both hands ("A arma mudou.", "A arma Machado de Lenhador passou a exigir as duas mãos. Com ela em uso, o escudo de Tor não conta na CA (CA 18 → 16).": the shield does not count in the armor class), two sentences of its own for whoever reads it, a locked sheet's owner included, in a paragraph of their own when the entry has other lines too: "Quem ajusta: o dono da ficha, guardando o escudo ou a arma. O aviso some quando um dos dois deixa de estar em uso." The feature rows of the sheet mark an entry the character no longer qualifies for with the `mr-tag--compact` tag "Não vale agora" (dashed) beside its name.
 - **Level-up steps bar:** `pages/level-up/steps-bar` draws one segment per step on a phone. From 768 px it draws numbered circles with a line between them, 56 px long and down to 16 px as the row narrows, so the last step is always inside the page. Between 768 and 1023 px only the current step keeps its label on screen; the others keep theirs for screen readers, and the line under the title says the step.
 
 ## Editors

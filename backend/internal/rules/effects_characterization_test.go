@@ -37,6 +37,7 @@ func effectCases() map[string]string {
 	add("bad: ignore_cover on a note", `{"type":"note","ignore_cover":true}`)
 	add("bad: range_multiplier on a note", `{"type":"note","range_multiplier":2}`)
 	add("bad: no_long_range_disadvantage on a note", `{"type":"note","no_long_range_disadvantage":true}`)
+	add("bad: cast_level on a note", `{"type":"note","cast_level":2}`)
 	add("bad: max_cr before sides", `{"type":"note","max_cr":"1","sides":6}`)
 	add("bad: sides before replaces", `{"type":"note","sides":6,"replaces":"x"}`)
 	add("bad: replaces before ranged fields", `{"type":"note","replaces":"x","ignore_cover":true}`)

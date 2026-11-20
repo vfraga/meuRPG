@@ -188,6 +188,9 @@ type Service struct {
 	// reviewHost is package play, connected by SetReviewHost: the streams a review or a
 	// revival is told on, and the combat a revived character goes back to. Nil until then.
 	reviewHost ReviewHost
+	// optionSwaps hears the swaps of a table feature's options a level-up makes, connected by SetOptionSwaps. Optional:
+	// nil calls nobody.
+	optionSwaps OptionSwaps
 	// maxCharacters is the cap on a campaign's characters (RN-30).
 	maxCharacters int
 	// claims limits PreviewClaim and ClaimCharacter (claims.go), and
@@ -261,7 +264,7 @@ type Sessions interface {
 	authz.Caller
 }
 
-// Mount registers CharacterService, ContentService and TableContentService on a mux. handle is
+// Mount registers CharacterService, ContentService, TableContentService and InfusionService on a mux. handle is
 // usually httpserver.Server.Handle or http.ServeMux.Handle.
 //
 // sessions tells who is calling (the identity service in production), and
@@ -279,6 +282,7 @@ func (s *Service) Mount(handle func(pattern string, handler http.Handler), sessi
 	handle(charactersv1connect.NewCharacterServiceHandler(s, opts...))
 	handle(rulesv1connect.NewContentServiceHandler(s, opts...))
 	handle(rulesv1connect.NewTableContentServiceHandler(s, opts...))
+	handle(charactersv1connect.NewInfusionServiceHandler(s, opts...))
 }
 
 // LockSheets locks the sheets of the campaign's living player characters

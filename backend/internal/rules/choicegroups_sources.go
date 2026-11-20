@@ -16,6 +16,7 @@ import (
 const (
 	halfElfBonusCount = 2
 	tomeCantrips      = 3
+	bookRitualPicks   = 2
 	signatureSpells   = 2
 )
 
@@ -183,6 +184,9 @@ func (cb *choiceBuilder) invocations(oc ownedClass, idx int) {
 	}
 	g := cb.group(ChoiceOriginClass, oc.key, last, idx)
 	cb.optionChoice(g, invocationsFeature, known, inv.Options)
+	if slices.Contains(cb.plain, bookInvocationKey) {
+		cb.bookRituals(g)
+	}
 }
 
 // enemyTitles and terrainTitles are the titles of the 2nd and 3rd pick of a
@@ -268,7 +272,7 @@ func (cb *choiceBuilder) cantripChoice(g *groupBuild, fk string, e *Effect) {
 	c := cb.c
 	var keys []string
 	for _, entry := range c.spellEntries {
-		if entry.Level == 0 && !entry.Archived && slices.ContainsFunc(e.From, func(list string) bool { return c.onList(c.spells[entry.Key], list) }) {
+		if entry.Level == 0 && !cb.retiredPick(fk, entry) && slices.ContainsFunc(e.From, func(list string) bool { return c.onList(c.spells[entry.Key], list) }) {
 			keys = append(keys, entry.Key)
 		}
 	}
@@ -360,7 +364,24 @@ func (cb *choiceBuilder) tomeCantrips(g *groupBuild) {
 	})
 	var keys []string
 	for _, e := range c.spellEntries {
-		if e.Level == 0 && !e.Archived {
+		if e.Level == 0 && !cb.retiredPick(key, e) {
+			keys = append(keys, e.Key)
+		}
+	}
+	cb.spellOptions(ch, keys)
+	cb.takeScoped(ch)
+}
+
+// bookRituals are the two rituals of the Book of Ancient Secrets: 1st-level spells with
+// the ritual tag, from any class (SRD 5.1, Warlock, Eldritch Invocations).
+func (cb *choiceBuilder) bookRituals(g *groupBuild) {
+	ch := cb.addChoice(g, &Choice{
+		Key: bookRitualsKey, FeatureKey: bookInvocationKey, Kind: ChoiceKindSpells, TitlePT: "Rituais do Livro", Picks: bookRitualPicks,
+		HintPT: "Livro das Sombras: 2 magias de 1º nível com a etiqueta de ritual, de qualquer classe. Só se conjuram como ritual, com o Livro das Sombras em mãos, e não contam nas magias conhecidas.",
+	})
+	var keys []string
+	for _, e := range cb.c.spellEntries {
+		if e.Level == 1 && e.Ritual && !cb.retiredPick(bookRitualsKey, e) {
 			keys = append(keys, e.Key)
 		}
 	}
@@ -383,7 +404,7 @@ func (cb *choiceBuilder) arcanum(g *groupBuild, fk string) {
 	})
 	var keys []string
 	for _, e := range c.spellEntries {
-		if e.Level == level && !e.Archived && cb.onWarlockList(e) {
+		if e.Level == level && !cb.retiredPick(fk, e) && cb.x.onWarlockList(e) {
 			keys = append(keys, e.Key)
 		}
 	}
@@ -393,15 +414,15 @@ func (cb *choiceBuilder) arcanum(g *groupBuild, fk string) {
 
 // onWarlockList says whether a spell is on the warlock's list for this character:
 // the class's own or the patron's expanded list.
-func (cb *choiceBuilder) onWarlockList(e SpellEntry) bool {
+func (x *deriver) onWarlockList(e SpellEntry) bool {
 	if slices.Contains(e.Classes, classWarlock) {
 		return true
 	}
-	for _, oc := range cb.x.classes {
+	for _, oc := range x.classes {
 		if oc.key != classWarlock || oc.subclass == nil || !oc.subclass.ExpandedList {
 			continue
 		}
-		if s := cb.c.spells[e.Key]; s != nil && slices.Contains(s.Subclasses, oc.subclass.Key) {
+		if s := x.c.spells[e.Key]; s != nil && slices.Contains(s.Subclasses, oc.subclass.Key) {
 			return true
 		}
 	}

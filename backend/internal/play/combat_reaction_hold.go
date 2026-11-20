@@ -182,7 +182,21 @@ func (s *Service) releaseHold(ctx context.Context, c *combatTx, h playdb.Reactio
 	}
 	c.replay = st
 	defer func() { c.replay = nil }()
+	// The replay runs in a savepoint: a refusal drops the action, and what it wrote before it met the refusal (the slot, the
+	// action, the damage of the rays it had rolled) goes with it. What the answers of the windows did stays.
+	sp, err := c.tx.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("guard the replay of a held action: %w", err)
+	}
+	before, marked := *c, c.hints.mark()
 	err = s.replayHeld(withAmbient(ctx, c), m, h)
+	if err != nil && clientError(err) {
+		_ = sp.Rollback(ctx) // the transaction decides what a failed rollback means: the next statement fails with it
+		*c = before
+		c.hints.rewind(marked) // hints is a pointer: the restore above leaves what the replay told, and the streams would hear of writes rolled back
+	} else if cerr := sp.Commit(ctx); cerr != nil {
+		return fmt.Errorf("release the guard of the replay of a held action: %w", cerr)
+	}
 	return s.settleReplay(ctx, c, h, windows, st, err)
 }
 
@@ -232,7 +246,7 @@ func (s *Service) replayHeld(ctx context.Context, m authz.Membership, h playdb.R
 		if err := proto.Unmarshal(h.Request, &req); err != nil {
 			return fmt.Errorf("read a held cast: %w", err)
 		}
-		_, err := s.castSpell(ctx, m, connect.NewRequest(&req))
+		_, err := s.castSpell(ctx, m, connect.NewRequest(&req), false)
 		return err
 	case "attack":
 		var req playv1.RollAttackRequest

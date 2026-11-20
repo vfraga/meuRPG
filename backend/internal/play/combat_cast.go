@@ -49,6 +49,9 @@ type castCall struct {
 	// grantedBy is the source of the granted_spell effect that casts the spell; "" for the character's classes.
 	grantedBy string
 	targets   []castAim
+	// answering says the cast is the answer of a READIED window (AnswerReaction "Usar"): the window must be open, else the
+	// spell is not cast for it. false for CastSpell and for a cast a window held.
+	answering bool
 	// in is how the dice come; rolled says the request sets them at all.
 	in     rollInput
 	rolled bool
@@ -108,6 +111,9 @@ func (call *castCall) readTargets(req *playv1.CastSpellRequest) error {
 // readCastRoll reads how the dice come: rolled in the app, one typed face, a typed pool or the typed faces
 // of a pair; rolled says any of them was set.
 func readCastRoll(req *playv1.CastSpellRequest) (in rollInput, rolled bool, err error) {
+	if len(req.GetRayRolls()) > 0 {
+		return readRayRolls(req)
+	}
 	switch roll := req.GetRoll().(type) {
 	case *playv1.CastSpellRequest_RollInApp:
 		if !roll.RollInApp {
@@ -132,6 +138,32 @@ func readCastRoll(req *playv1.CastSpellRequest) (in rollInput, rolled bool, err 
 	return in, rolled, nil
 }
 
+// rayRollsAlone refuses ray_rolls beside another way of rolling (others says one is set); names are the fields the
+// caller's request calls them.
+func rayRollsAlone(others bool, names string) error {
+	if others {
+		return connect.NewError(connect.CodeInvalidArgument, errors.New("ray_rolls take the place of "+names))
+	}
+	return nil
+}
+
+// readRayRolls reads the physical d20s of each attack roll (ray) of a spell with several (ray_rolls): they take the place of
+// every other way of rolling, and each entry holds one face or the pair of a mode with two dice, 1 to 20 each. Whether the
+// spell has that many attack rolls is checked with the spell (checkSpellAttack).
+func readRayRolls(req *playv1.CastSpellRequest) (in rollInput, rolled bool, err error) {
+	if refused := rayRollsAlone(req.GetRoll() != nil || len(req.GetD20Faces()) > 0, "roll_in_app, d20_face, pool_sum and d20_faces"); refused != nil {
+		return in, false, refused
+	}
+	for i, r := range req.GetRayRolls() {
+		faces, err := typedD20Faces(r.GetD20Faces())
+		if err != nil {
+			return in, false, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("ray_rolls[%d] takes one d20 face, or two for advantage or disadvantage, 1 to 20 each", i))
+		}
+		in.rays = append(in.rays, faces)
+	}
+	return in, true, nil
+}
+
 // castOut is what the transaction of a cast leaves for its answer.
 type castOut struct {
 	made actionEvent
@@ -150,12 +182,13 @@ type castOut struct {
 
 // castSpell is CastSpell for a member already authorized: the replay of a held action calls it
 // with the member who made the request (combat_reaction_hold.go).
-func (s *Service) castSpell(ctx context.Context, m authz.Membership, req *connect.Request[playv1.CastSpellRequest]) (*connect.Response[playv1.CastSpellResponse], error) {
+func (s *Service) castSpell(ctx context.Context, m authz.Membership, req *connect.Request[playv1.CastSpellRequest], answering bool) (*connect.Response[playv1.CastSpellResponse], error) {
 	call, err := readCastIDs(req.Msg)
 	if err != nil {
 		return nil, err
 	}
-	if call.spellKey == revivifyKey { // brings the dead back: its own target, its own checks (revivify.go)
+	call.answering = answering
+	if castsAsRevival(call.spellKey) { // brings the dead back: its own target, its own checks (revivify.go)
 		return s.castRevivify(ctx, req)
 	}
 	if err := call.readBody(req.Msg); err != nil {
@@ -279,7 +312,7 @@ func (f *castFlow) prepare(ctx context.Context) error {
 	}
 	f.aimAtCaster()
 	f.aimAtSteed()
-	for _, phase := range []func(context.Context) error{f.checkHitTargets, f.checkPool, f.readModes, f.checkSpellAttack, f.checkFavor} {
+	for _, phase := range []func(context.Context) error{f.checkHitTargets, f.checkReleaseDice, f.checkPool, f.readModes, f.checkSpellAttack, f.checkFavor} {
 		if err := phase(ctx); err != nil {
 			return err
 		}
@@ -381,17 +414,10 @@ func (f *castFlow) checkEnabled(ctx context.Context) error {
 // pickSlot checks the slot the caster chose and reads the spell as it is at that level, with the damage type
 // and the ability the caster picked.
 func (f *castFlow) pickSlot(ctx context.Context) error {
+	if err := f.readSpellAtSlot(ctx); err != nil {
+		return err
+	}
 	var err error
-	if f.slot, err = f.chosenSlot(); err != nil {
-		return err
-	}
-	f.slotLevel = int(f.cast.level)
-	if f.slot != nil {
-		f.slotLevel = int(f.slot.Level)
-	}
-	if f.sp, err = f.s.roster.GrantedCombatSpell(ctx, f.c.tx, f.m.CampaignID, f.caster.CharacterID, f.call.spellKey, f.call.grantedBy, f.slotLevel, f.req.GetDamageTypeKey()); err != nil {
-		return err
-	}
 	if f.abilityKey, err = f.s.abilityChoiceOf(ctx, f.c, f.call.spellKey, f.req.GetAbilityKey()); err != nil {
 		return err
 	}
@@ -402,6 +428,18 @@ func (f *castFlow) pickSlot(ctx context.Context) error {
 		return connect.NewError(connect.CodeInvalidArgument, errors.New("damage_type_key must be one of the damage types of a spell that lets the caster choose"))
 	}
 	return nil
+}
+
+// readSpellAtSlot checks the slot the caster chose and reads the spell as it is at that level, with the damage type the
+// caster picked.
+func (f *castFlow) readSpellAtSlot(ctx context.Context) error {
+	var err error
+	if f.slot, err = f.chosenSlot(); err != nil {
+		return err
+	}
+	f.slotLevel = f.cast.levelWith(f.slot)
+	f.sp, err = f.s.roster.GrantedCombatSpell(ctx, f.c.tx, f.m.CampaignID, f.caster.CharacterID, f.call.spellKey, f.call.grantedBy, f.slotLevel, f.req.GetDamageTypeKey())
+	return err
 }
 
 // applyTableOptions gives the spell what the options of the caster's table features change in its damage.
@@ -459,6 +497,9 @@ func (f *castFlow) placeArea(ctx context.Context) error {
 	var err error
 	if f.wall, err = f.wallOfRequest(); err != nil {
 		return err
+	}
+	if f.call.answering && laysZoneOnMap(f.sp, f.c.enc) { // the answer carries no point to lay it at (ready_spell.go)
+		return badArea("this spell lays a zone on the map, which the answer cannot place")
 	}
 	// A spell that keeps its area on the map lays it only when the request chooses a point: a cast without one is the
 	// spell as it was before the zones (its targets, its effects), and lays nothing.
@@ -562,13 +603,39 @@ func (f *castFlow) aimAtCaster() {
 	}
 }
 
+// checkReleaseDice refuses, on the release of a readied spell, the dice the spell does not use: a cast leaves them out
+// (pool_sum on a spell with no pool, d20_faces or a mode on a spell with no attack roll or pool), an answer never drops
+// what it carries. The d20_face of an old client is left out: the cast ignores it for a spell with no attack roll.
+func (f *castFlow) checkReleaseDice(context.Context) error {
+	if f.readied == nil {
+		return nil
+	}
+	pool := f.sp.HP != nil && (f.sp.HP.Kind == rules.SpellKindHPPool || f.sp.HP.Kind == rules.SpellKindTempHP)
+	switch {
+	case f.call.in.pool && !pool:
+		return connect.NewError(connect.CodeInvalidArgument, errors.New("pool_sum is for a spell that rolls a pool of dice"))
+	case f.sp.AttackType == "" && (len(f.req.GetD20Faces()) > 0 || f.req.GetRollMode() != playv1.RollMode_ROLL_MODE_UNSPECIFIED || f.req.GetModeReason() != ""):
+		return connect.NewError(connect.CodeInvalidArgument, errors.New("this spell rolls no d20: leave d20_faces and the mode out"))
+	}
+	return nil
+}
+
 // checkPool checks the pool of a spell that rolls one was set.
 func (f *castFlow) checkPool(ctx context.Context) error {
 	hp := f.sp.HP
 	if hp == nil || (hp.Kind != rules.SpellKindHPPool && hp.Kind != rules.SpellKindTempHP) {
 		return nil
 	}
-	return f.s.mustRollPool(ctx, f.c.tx, f.m, f.call.in, f.call.rolled)
+	if err := f.s.mustRollPool(ctx, f.c.tx, f.m, f.call.in, f.call.rolled); err != nil {
+		return err
+	}
+	if f.call.in.inApp {
+		return nil
+	}
+	// The sum is checked against the dice the spell rolls at this slot before any window can hold the cast: a replay
+	// would meet it only after the windows were answered.
+	_, err := physicalPool(hp.Pool, f.call.in.typed)
+	return err
 }
 
 // readModes reads the combat for the d20 rolls of the cast.
@@ -581,10 +648,29 @@ func (f *castFlow) readModes(ctx context.Context) error {
 	return err
 }
 
+// checkRayRolls checks the physical d20s of the attack rolls (rays) of a spell attack: a single one takes d20_face or d20_faces,
+// several (one for each ray of Scorching Ray, or for each target of a spell that attacks several) take a ray_rolls entry each
+// (the in-app roll takes none). The faces of each entry are checked against the mode of its ray
+// when it is rolled (d20With).
+func checkRayRolls(in rollInput, rays int) error {
+	switch {
+	case len(in.rays) > 0 && rays < 2:
+		return connect.NewError(connect.CodeInvalidArgument, errors.New("ray_rolls are for a spell with several attack rolls (rays): use d20_face for a single one"))
+	case len(in.rays) > 0 && len(in.rays) != rays:
+		return connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("ray_rolls takes one entry for each of the %d attack rolls (rays), got %d", rays, len(in.rays)))
+	case !in.inApp && rays != 1 && len(in.rays) == 0:
+		return connect.NewError(connect.CodeInvalidArgument, errors.New("d20_face fits a single attack roll (ray): type ray_rolls for several, or use roll_in_app"))
+	}
+	return nil
+}
+
 // checkSpellAttack checks the dice of a spell attack: a d20 for each target, and the way the caller rolls
 // (RN-18).
 func (f *castFlow) checkSpellAttack(ctx context.Context) error {
 	if f.sp.AttackType == "" {
+		if len(f.call.in.rays) > 0 {
+			return connect.NewError(connect.CodeInvalidArgument, errors.New("this spell rolls no d20: leave ray_rolls out"))
+		}
 		return nil
 	}
 	in := f.call.in
@@ -594,8 +680,8 @@ func (f *castFlow) checkSpellAttack(ctx context.Context) error {
 	if !f.call.rolled {
 		return connect.NewError(connect.CodeInvalidArgument, errors.New("set roll_in_app or d20_face for a spell attack"))
 	}
-	if !in.inApp && len(raysAt(f.sp, f.targets)) != 1 {
-		return connect.NewError(connect.CodeInvalidArgument, errors.New("d20_face fits a single target: use roll_in_app for several"))
+	if err := checkRayRolls(in, len(raysAt(f.sp, f.targets))); err != nil {
+		return err
 	}
 	if f.v.master {
 		return nil
@@ -628,6 +714,9 @@ func (f *castFlow) holdForWindow(ctx context.Context) (bool, error) {
 	if f.sp.FeatureSummon {
 		return false, nil // a feature's summon is no spell to counter
 	}
+	if err := f.heldBlocked(ctx); err != nil {
+		return false, err
+	}
 	if err := f.checkFavorHeld(ctx); err != nil { // the replay would refuse it: refuse it now, before anything is held
 		return false, err
 	}
@@ -642,12 +731,28 @@ func (f *castFlow) holdForWindow(ctx context.Context) (bool, error) {
 	return false, nil
 }
 
+// heldBlocked refuses a spell attack that may be asked about while a question of the caster waits, before a window can hold it: the
+// replay would be refused by the open question and the cast dropped when the windows were answered, as a weapon attack is refused
+// at once (attackFlow.holdForWindow).
+func (f *castFlow) heldBlocked(ctx context.Context) error {
+	if !spellMayAsk(f.caster, f.m, f.sp, f.targs) {
+		return nil
+	}
+	return f.s.heldBlocked(ctx, combatGate(f.c), rollSpec{
+		Kind: heldSpellAttack, Key: f.call.key, Window: f.c.replay != nil, Lucky: f.out.modes.traits.Lucky,
+		Roller: heldRoller{CampaignID: f.m.CampaignID, CharacterID: f.caster.CharacterID, UserID: f.m.UserID},
+	})
+}
+
 // holdForDie asks the player of a spell attack against one target, when the character holds a Bardic
 // Inspiration die or is a halfling: the d20 is rolled now (and kept, for the die, or for the Lucky question
 // of a 1), before anything is spent, and the player decides before the result is told (inspiration_held.go).
-// The answer runs the cast again with the d20 already rolled. A cast that waited for a reaction window is not
-// asked.
+// The answer runs the cast again with the d20 already rolled. A cast that waited for a reaction window is asked when the
+// window's replay reaches this point, and its question is the window's own (inspiration_held.go).
 func (f *castFlow) holdForDie(ctx context.Context) error {
+	if f.c.replay != nil && f.c.replay.countered {
+		return nil // a countered cast rolls nothing: it is written as countered (settleCountered), and an answer would cast it again
+	}
 	var err error
 	f.out.asked, err = f.s.holdSpellAttack(ctx, f.c, f.m, f.req, f.call.key, f.caster, rayCombatants(f.sp, f.targets, f.targs), f.sp, f.call.in, f.out.modes, f.strokeArmor(ctx))
 	return err
@@ -660,7 +765,7 @@ func (f *castFlow) spend(ctx context.Context) error {
 		return err
 	}
 	f.out.made = actionEvent{
-		RunBefore: run, Round: f.c.enc.Round, Actor: f.caster.ID, Key: f.call.spellKey, CastID: f.castID(), Slot: f.slot,
+		RunBefore: run, Round: f.c.enc.Round, Actor: f.caster.ID, Key: f.call.spellKey, CastID: f.castID(), Slot: f.slot, CastLevel: clamp32(link.GrantCastLevel(f.slot == nil, f.slotLevel, int(f.cast.level)), 0, 9),
 		ActionBefore: f.caster.ActionUsed, BonusBefore: f.caster.BonusActionUsed, ReactionBefore: f.caster.ReactionUsed, DashedBefore: f.caster.Dashed,
 		SpellCastBefore: f.caster.SpellCast, BonusSpellBefore: f.caster.BonusSpellCast,
 	}
@@ -843,8 +948,8 @@ func (f *castFlow) affect(ctx context.Context) error {
 	if def, ok := zoneDefOfSpell(f.sp); ok && f.sp.ZoneLaid { // the area stays on the map (zones_cast.go)
 		return f.affectZone(ctx, def)
 	}
-	for _, i := range raysAt(f.sp, f.targets) { // a ray of Scorching Ray is an attack of its own
-		if err := f.hitTarget(ctx, i, f.targs[i]); err != nil {
+	for k, i := range raysAt(f.sp, f.targets) { // a ray of Scorching Ray is an attack of its own
+		if err := f.hitTarget(ctx, i, f.targs[i], f.rayInput(k)); err != nil {
 			return err
 		}
 	}
@@ -872,8 +977,17 @@ func (f *castFlow) affectHitPoints(ctx context.Context) error {
 	return nil
 }
 
-// hitTarget is the spell on one target: its cover, and the attack or the save it asks.
-func (f *castFlow) hitTarget(ctx context.Context, i int, t playdb.Combatant) error {
+// rayInput is how the d20 of the k-th ray comes: the cast's own, or, with ray_rolls, the physical d20s typed for that ray.
+func (f *castFlow) rayInput(k int) rollInput {
+	in := f.call.in
+	if k < len(in.rays) {
+		in.typed, in.typedFaces, in.ray = 0, in.rays[k], k+1
+	}
+	return in
+}
+
+// hitTarget is the spell on one target: its cover, and the attack or the save it asks. in is how its d20 comes.
+func (f *castFlow) hitTarget(ctx context.Context, i int, t playdb.Combatant, in rollInput) error {
 	hit := castHit{Target: t.ID, Darts: shownDarts(f.sp, f.targets[i])}
 	var cp coverPair
 	if f.placedArea {
@@ -884,7 +998,7 @@ func (f *castFlow) hitTarget(ctx context.Context, i int, t playdb.Combatant) err
 			return err
 		}
 	}
-	if err := f.s.resolveOnTarget(ctx, f.c, f.m, f.sp, f.caster, t, f.slotLevel, f.call.in, cp, &hit, f.out.modes, &f.out.made); err != nil {
+	if err := f.s.resolveOnTarget(ctx, f.c, f.m, f.sp, f.caster, t, f.slotLevel, in, cp, &hit, f.out.modes, &f.out.made); err != nil {
 		return err
 	}
 	f.out.made.Hits = append(f.out.made.Hits, hit)

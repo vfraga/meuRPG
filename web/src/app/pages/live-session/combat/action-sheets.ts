@@ -28,6 +28,7 @@ import { ReadySheet, type ReadySheetData } from './ready-sheet/ready-sheet';
 import type { Observable } from 'rxjs';
 import { needsSheet, resourceOf, usedNote } from '../../../core/combat/feature-use';
 import { readySpeed } from '../../../core/combat/ready';
+import { readyChoices } from '../../../core/combat/ready-choices';
 import { ActionKey } from '../../../core/connect/idempotency';
 import { openBardicInspiration, openFlexibleCasting, openLayOnHands } from './resource-sheets';
 import { SpendSheet, type SpendSheetData } from './theatre/spend-sheet';
@@ -251,17 +252,36 @@ export class ActionSheets {
     );
   }
 
+  private readyOpening = false;
+
   /**
    * "Preparar" (#582): the sheet of the Ready action. It takes what `GetTurnOptions` listed (the attacks, the spells and the standard
    * actions), the creatures of the fight to name in the trigger and where the readier stands (no map, no speed, a concentration).
    * The call, its refusals and the combat it answers are the sheet's own.
    */
-  openReady(): void {
+  async openReady(): Promise<void> {
     const own = this.ctx.own();
     const e = this.ctx.encounter();
     const options = this.ctx.options();
-    if (!own || !e || !options?.options) {
+    if (!own || !e || !options?.options || this.readyOpening) {
       return;
+    }
+    // The sheet opens after the reads, so a second tap before they end would open a second one.
+    this.readyOpening = true;
+    const campaignId = this.ctx.campaignId();
+    let choices: Awaited<ReturnType<typeof readyChoices>>;
+    try {
+      choices = await readyChoices(options.options.spells, {
+        details: (key) => this.ctx.catalog.details(campaignId, key),
+        summons: async () =>
+          new Set(
+            (await this.ctx.creatures.summonOptions(campaignId, own.characterId)).spells
+              .filter((s) => !s.grantedBy)
+              .map((s) => s.spellKey),
+          ),
+      });
+    } finally {
+      this.readyOpening = false;
     }
     const data: ReadySheetData = {
       campaignId: this.ctx.campaignId(),
@@ -270,6 +290,7 @@ export class ActionSheets {
       ownerLabel: own.label,
       options: options.options,
       summaries: new Map(),
+      choices,
       spellTargets: options.spellTargets,
       theatre: this.ctx.theatre(),
       ...readySpeed(own.speedFt, options),

@@ -46,6 +46,9 @@ type TableWeapon struct {
 	NormalRangeFt, LongRangeFt int
 	// WeightOz and PriceCP are notes.
 	WeightOz, PriceCP int
+	// TwoHandedSince is the table revision at which the weapon last became two-handed, as the server keeps it (0 when it is
+	// not, or was before it was kept): Content.TwoHandedSince.
+	TwoHandedSince int
 }
 
 // addWeapon registers a table weapon as an equipment row of the clone. Every field that is wrong is reported at its own
@@ -62,7 +65,7 @@ func (b *overlayBuilder) addWeapon(w *TableWeapon, path string) error {
 	b.register(w.TableEntry)
 	b.ownEquipment()
 	b.n.equipment[key] = &srd51.Equipment{Key: key, Name: w.NamePT, Kind: "weapon", Weapon: weaponRow(w)}
-	b.n.weaponOf[key] = WeaponTableEntry{Key: key, NamePT: w.NamePT}
+	b.n.weaponOf[key] = WeaponTableEntry{Key: key, NamePT: w.NamePT, TwoHandedSince: w.TwoHandedSince}
 	return nil
 }
 
@@ -185,7 +188,14 @@ func (b *overlayBuilder) ownEquipment() {
 type WeaponTableEntry struct {
 	Key, NamePT   string
 	Archived, Off bool
+	// TwoHandedSince is TableWeapon.TwoHandedSince.
+	TwoHandedSince int
 }
+
+// TwoHandedSince is the table revision at which the table's weapon key last became two-handed, or 0 when it is not a table
+// weapon, is not two-handed, or was before the server kept it. A sheet that fits the table at that revision or a later one
+// already had the weapon as it is.
+func (c *Content) TwoHandedSince(key string) int { return c.c.weaponOf[key].TwoHandedSince }
 
 // TableWeapons lists the table's weapons, sorted by Portuguese name.
 func (c *Content) TableWeapons() []WeaponTableEntry {

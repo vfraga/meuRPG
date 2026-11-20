@@ -126,6 +126,15 @@ func ownedBy(b Build, d Derived) func(string) bool {
 	}
 }
 
+// appliedBy is ownedBy for what a prerequisite asks: an entry the sheet lists but has lost does not count, as it gives
+// nothing (an option that needs a lost option is lost too).
+func appliedBy(b Build, d Derived) func(string) bool {
+	owns := ownedBy(b, d)
+	return func(key string) bool {
+		return owns(key) && !slices.ContainsFunc(d.Issues, func(is Issue) bool { return is.Lost != nil && is.Lost.Key == key })
+	}
+}
+
 // choiceFeats adds to the sheet the feats its picks give, after the feats of
 // Build.Feats. A feat whose prerequisite is no longer met is listed and not applied.
 func (x *deriver) choiceFeats(owned map[string]bool, add func(string), feature func(key, name, source string, level int, desc []string)) {

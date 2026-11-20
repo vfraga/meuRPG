@@ -27,7 +27,7 @@ const endSpellCast = `-- name: EndSpellCast :one
 UPDATE spell_casts
 SET status = $2, end_reason = $3, ended_at = $4, concentrating = false, carried_encounter_id = NULL
 WHERE id = $1
-RETURNING id, campaign_id, game_session_id, caster_id, spell_key, ritual, slot_level, slot_pact, status, end_reason, concentrating, casting_minutes, lasts, duration_seconds, rest_ends, secret, targets, dice_count, dice_sides, roll_faces, roll_total, physical, creature_ids, carried_encounter_id, started_at, cast_at, ended_at
+RETURNING id, campaign_id, game_session_id, caster_id, spell_key, ritual, slot_level, slot_pact, status, end_reason, concentrating, casting_minutes, lasts, duration_seconds, rest_ends, secret, targets, dice_count, dice_sides, roll_faces, roll_total, physical, creature_ids, carried_encounter_id, started_at, cast_at, ended_at, grant_source
 `
 
 type EndSpellCastParams struct {
@@ -74,6 +74,7 @@ func (q *Queries) EndSpellCast(ctx context.Context, arg EndSpellCastParams) (Spe
 		&i.StartedAt,
 		&i.CastAt,
 		&i.EndedAt,
+		&i.GrantSource,
 	)
 	return i, err
 }
@@ -84,7 +85,7 @@ SET status = $2, end_reason = $3, ended_at = $4, concentrating = $5, targets = $
     dice_count = $7, dice_sides = $8, roll_faces = $9, roll_total = $10, physical = $11,
     creature_ids = $12, cast_at = $13, slot_level = $14, slot_pact = $15
 WHERE id = $1
-RETURNING id, campaign_id, game_session_id, caster_id, spell_key, ritual, slot_level, slot_pact, status, end_reason, concentrating, casting_minutes, lasts, duration_seconds, rest_ends, secret, targets, dice_count, dice_sides, roll_faces, roll_total, physical, creature_ids, carried_encounter_id, started_at, cast_at, ended_at
+RETURNING id, campaign_id, game_session_id, caster_id, spell_key, ritual, slot_level, slot_pact, status, end_reason, concentrating, casting_minutes, lasts, duration_seconds, rest_ends, secret, targets, dice_count, dice_sides, roll_faces, roll_total, physical, creature_ids, carried_encounter_id, started_at, cast_at, ended_at, grant_source
 `
 
 type FinishSpellCastParams struct {
@@ -154,12 +155,13 @@ func (q *Queries) FinishSpellCast(ctx context.Context, arg FinishSpellCastParams
 		&i.StartedAt,
 		&i.CastAt,
 		&i.EndedAt,
+		&i.GrantSource,
 	)
 	return i, err
 }
 
 const getSpellCast = `-- name: GetSpellCast :one
-SELECT id, campaign_id, game_session_id, caster_id, spell_key, ritual, slot_level, slot_pact, status, end_reason, concentrating, casting_minutes, lasts, duration_seconds, rest_ends, secret, targets, dice_count, dice_sides, roll_faces, roll_total, physical, creature_ids, carried_encounter_id, started_at, cast_at, ended_at FROM spell_casts
+SELECT id, campaign_id, game_session_id, caster_id, spell_key, ritual, slot_level, slot_pact, status, end_reason, concentrating, casting_minutes, lasts, duration_seconds, rest_ends, secret, targets, dice_count, dice_sides, roll_faces, roll_total, physical, creature_ids, carried_encounter_id, started_at, cast_at, ended_at, grant_source FROM spell_casts
 WHERE id = $1 AND campaign_id = $2
 `
 
@@ -199,6 +201,7 @@ func (q *Queries) GetSpellCast(ctx context.Context, arg GetSpellCastParams) (Spe
 		&i.StartedAt,
 		&i.CastAt,
 		&i.EndedAt,
+		&i.GrantSource,
 	)
 	return i, err
 }
@@ -207,12 +210,12 @@ const insertSpellCast = `-- name: InsertSpellCast :one
 
 INSERT INTO spell_casts (
     campaign_id, game_session_id, caster_id, spell_key, ritual, slot_level, slot_pact, status, concentrating,
-    casting_minutes, lasts, duration_seconds, rest_ends, secret, started_at
+    casting_minutes, lasts, duration_seconds, rest_ends, secret, started_at, grant_source
 ) VALUES (
     $1, $2, $3, $4, $5, $6, $7, $8, $9,
-    $10, $11, $12, $13, $14, $15
+    $10, $11, $12, $13, $14, $15, $16
 )
-RETURNING id, campaign_id, game_session_id, caster_id, spell_key, ritual, slot_level, slot_pact, status, end_reason, concentrating, casting_minutes, lasts, duration_seconds, rest_ends, secret, targets, dice_count, dice_sides, roll_faces, roll_total, physical, creature_ids, carried_encounter_id, started_at, cast_at, ended_at
+RETURNING id, campaign_id, game_session_id, caster_id, spell_key, ritual, slot_level, slot_pact, status, end_reason, concentrating, casting_minutes, lasts, duration_seconds, rest_ends, secret, targets, dice_count, dice_sides, roll_faces, roll_total, physical, creature_ids, carried_encounter_id, started_at, cast_at, ended_at, grant_source
 `
 
 type InsertSpellCastParams struct {
@@ -231,6 +234,7 @@ type InsertSpellCastParams struct {
 	RestEnds        *string
 	Secret          bool
 	StartedAt       time.Time
+	GrantSource     string
 }
 
 // The spells cast outside a combat (casting.go). Every write below runs after the
@@ -252,6 +256,7 @@ func (q *Queries) InsertSpellCast(ctx context.Context, arg InsertSpellCastParams
 		arg.RestEnds,
 		arg.Secret,
 		arg.StartedAt,
+		arg.GrantSource,
 	)
 	var i SpellCast
 	err := row.Scan(
@@ -282,12 +287,13 @@ func (q *Queries) InsertSpellCast(ctx context.Context, arg InsertSpellCastParams
 		&i.StartedAt,
 		&i.CastAt,
 		&i.EndedAt,
+		&i.GrantSource,
 	)
 	return i, err
 }
 
 const listCarriedSpellCasts = `-- name: ListCarriedSpellCasts :many
-SELECT id, campaign_id, game_session_id, caster_id, spell_key, ritual, slot_level, slot_pact, status, end_reason, concentrating, casting_minutes, lasts, duration_seconds, rest_ends, secret, targets, dice_count, dice_sides, roll_faces, roll_total, physical, creature_ids, carried_encounter_id, started_at, cast_at, ended_at FROM spell_casts
+SELECT id, campaign_id, game_session_id, caster_id, spell_key, ritual, slot_level, slot_pact, status, end_reason, concentrating, casting_minutes, lasts, duration_seconds, rest_ends, secret, targets, dice_count, dice_sides, roll_faces, roll_total, physical, creature_ids, carried_encounter_id, started_at, cast_at, ended_at, grant_source FROM spell_casts
 WHERE carried_encounter_id = $1 AND status IN ('casting', 'active')
 ORDER BY started_at, id
 `
@@ -330,6 +336,7 @@ func (q *Queries) ListCarriedSpellCasts(ctx context.Context, carriedEncounterID 
 			&i.StartedAt,
 			&i.CastAt,
 			&i.EndedAt,
+			&i.GrantSource,
 		); err != nil {
 			return nil, err
 		}
@@ -342,7 +349,7 @@ func (q *Queries) ListCarriedSpellCasts(ctx context.Context, carriedEncounterID 
 }
 
 const listLiveSpellCasts = `-- name: ListLiveSpellCasts :many
-SELECT id, campaign_id, game_session_id, caster_id, spell_key, ritual, slot_level, slot_pact, status, end_reason, concentrating, casting_minutes, lasts, duration_seconds, rest_ends, secret, targets, dice_count, dice_sides, roll_faces, roll_total, physical, creature_ids, carried_encounter_id, started_at, cast_at, ended_at FROM spell_casts
+SELECT id, campaign_id, game_session_id, caster_id, spell_key, ritual, slot_level, slot_pact, status, end_reason, concentrating, casting_minutes, lasts, duration_seconds, rest_ends, secret, targets, dice_count, dice_sides, roll_faces, roll_total, physical, creature_ids, carried_encounter_id, started_at, cast_at, ended_at, grant_source FROM spell_casts
 WHERE campaign_id = $1 AND status IN ('casting', 'active')
 ORDER BY started_at, id
 `
@@ -386,6 +393,7 @@ func (q *Queries) ListLiveSpellCasts(ctx context.Context, campaignID string) ([]
 			&i.StartedAt,
 			&i.CastAt,
 			&i.EndedAt,
+			&i.GrantSource,
 		); err != nil {
 			return nil, err
 		}
@@ -398,7 +406,7 @@ func (q *Queries) ListLiveSpellCasts(ctx context.Context, campaignID string) ([]
 }
 
 const listLiveSpellCastsOfCaster = `-- name: ListLiveSpellCastsOfCaster :many
-SELECT id, campaign_id, game_session_id, caster_id, spell_key, ritual, slot_level, slot_pact, status, end_reason, concentrating, casting_minutes, lasts, duration_seconds, rest_ends, secret, targets, dice_count, dice_sides, roll_faces, roll_total, physical, creature_ids, carried_encounter_id, started_at, cast_at, ended_at FROM spell_casts
+SELECT id, campaign_id, game_session_id, caster_id, spell_key, ritual, slot_level, slot_pact, status, end_reason, concentrating, casting_minutes, lasts, duration_seconds, rest_ends, secret, targets, dice_count, dice_sides, roll_faces, roll_total, physical, creature_ids, carried_encounter_id, started_at, cast_at, ended_at, grant_source FROM spell_casts
 WHERE caster_id = $1 AND status IN ('casting', 'active')
 ORDER BY started_at, id
 `
@@ -440,6 +448,7 @@ func (q *Queries) ListLiveSpellCastsOfCaster(ctx context.Context, casterID strin
 			&i.StartedAt,
 			&i.CastAt,
 			&i.EndedAt,
+			&i.GrantSource,
 		); err != nil {
 			return nil, err
 		}
@@ -452,7 +461,7 @@ func (q *Queries) ListLiveSpellCastsOfCaster(ctx context.Context, casterID strin
 }
 
 const listLiveSpellCastsOfCasters = `-- name: ListLiveSpellCastsOfCasters :many
-SELECT id, campaign_id, game_session_id, caster_id, spell_key, ritual, slot_level, slot_pact, status, end_reason, concentrating, casting_minutes, lasts, duration_seconds, rest_ends, secret, targets, dice_count, dice_sides, roll_faces, roll_total, physical, creature_ids, carried_encounter_id, started_at, cast_at, ended_at FROM spell_casts
+SELECT id, campaign_id, game_session_id, caster_id, spell_key, ritual, slot_level, slot_pact, status, end_reason, concentrating, casting_minutes, lasts, duration_seconds, rest_ends, secret, targets, dice_count, dice_sides, roll_faces, roll_total, physical, creature_ids, carried_encounter_id, started_at, cast_at, ended_at, grant_source FROM spell_casts
 WHERE caster_id = ANY($1::UUID[]) AND status IN ('casting', 'active')
 ORDER BY started_at, id
 `
@@ -495,6 +504,7 @@ func (q *Queries) ListLiveSpellCastsOfCasters(ctx context.Context, casterIds []s
 			&i.StartedAt,
 			&i.CastAt,
 			&i.EndedAt,
+			&i.GrantSource,
 		); err != nil {
 			return nil, err
 		}
@@ -507,7 +517,7 @@ func (q *Queries) ListLiveSpellCastsOfCasters(ctx context.Context, casterIds []s
 }
 
 const listLiveSpellCastsOnTarget = `-- name: ListLiveSpellCastsOnTarget :many
-SELECT id, campaign_id, game_session_id, caster_id, spell_key, ritual, slot_level, slot_pact, status, end_reason, concentrating, casting_minutes, lasts, duration_seconds, rest_ends, secret, targets, dice_count, dice_sides, roll_faces, roll_total, physical, creature_ids, carried_encounter_id, started_at, cast_at, ended_at FROM spell_casts
+SELECT id, campaign_id, game_session_id, caster_id, spell_key, ritual, slot_level, slot_pact, status, end_reason, concentrating, casting_minutes, lasts, duration_seconds, rest_ends, secret, targets, dice_count, dice_sides, roll_faces, roll_total, physical, creature_ids, carried_encounter_id, started_at, cast_at, ended_at, grant_source FROM spell_casts
 WHERE campaign_id = $1 AND status = 'active' AND targets @> $2::JSONB
 ORDER BY started_at, id
 `
@@ -556,6 +566,7 @@ func (q *Queries) ListLiveSpellCastsOnTarget(ctx context.Context, arg ListLiveSp
 			&i.StartedAt,
 			&i.CastAt,
 			&i.EndedAt,
+			&i.GrantSource,
 		); err != nil {
 			return nil, err
 		}
@@ -568,7 +579,7 @@ func (q *Queries) ListLiveSpellCastsOnTarget(ctx context.Context, arg ListLiveSp
 }
 
 const listSessionSpellCasts = `-- name: ListSessionSpellCasts :many
-SELECT id, campaign_id, game_session_id, caster_id, spell_key, ritual, slot_level, slot_pact, status, end_reason, concentrating, casting_minutes, lasts, duration_seconds, rest_ends, secret, targets, dice_count, dice_sides, roll_faces, roll_total, physical, creature_ids, carried_encounter_id, started_at, cast_at, ended_at FROM spell_casts
+SELECT id, campaign_id, game_session_id, caster_id, spell_key, ritual, slot_level, slot_pact, status, end_reason, concentrating, casting_minutes, lasts, duration_seconds, rest_ends, secret, targets, dice_count, dice_sides, roll_faces, roll_total, physical, creature_ids, carried_encounter_id, started_at, cast_at, ended_at, grant_source FROM spell_casts
 WHERE game_session_id = $1
 ORDER BY started_at DESC, id DESC
 LIMIT $2
@@ -617,6 +628,7 @@ func (q *Queries) ListSessionSpellCasts(ctx context.Context, arg ListSessionSpel
 			&i.StartedAt,
 			&i.CastAt,
 			&i.EndedAt,
+			&i.GrantSource,
 		); err != nil {
 			return nil, err
 		}

@@ -264,6 +264,8 @@ export interface ReactionAnswer {
   readonly useRacial?: boolean;
   /** Feather Fall: the falling creatures to save. */
   readonly creatureIds?: readonly string[];
+  /** A readied spell: the targets with their darts, as a cast names them (`targets`); not with `creatureIds`. */
+  readonly targets?: readonly CastTarget[];
   /** The die the answer needs, when it needs one: the app rolls it, or the face typed from a physical die. */
   readonly die?: { readonly inApp: true } | { readonly typed: number };
   /** A maneuver reduction: the option of the prompt the player uses. */

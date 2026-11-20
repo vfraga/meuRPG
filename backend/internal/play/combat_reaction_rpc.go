@@ -12,6 +12,7 @@ import (
 	"github.com/PuraFome/meuRPG/backend/internal/authz"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/conv"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/idem"
+	"github.com/PuraFome/meuRPG/backend/internal/play/live"
 	"github.com/PuraFome/meuRPG/backend/internal/play/playdb"
 	"github.com/PuraFome/meuRPG/backend/internal/rules/reaction"
 )
@@ -57,6 +58,14 @@ func parseAnswerInput(ctx context.Context, msg *playv1.AnswerReactionRequest) (a
 	choice := msg.GetAnswer()
 	if choice != playv1.ReactionChoice_REACTION_CHOICE_USE && choice != playv1.ReactionChoice_REACTION_CHOICE_PASS {
 		return m, answerInput{}, connect.NewError(connect.CodeInvalidArgument, errors.New("answer must be USE or PASS"))
+	}
+	if choice == playv1.ReactionChoice_REACTION_CHOICE_PASS && len(msg.GetTargets()) > 0 { // whatever the window
+		return m, answerInput{}, badTargets(targetsNotUsed)
+	}
+	if choice == playv1.ReactionChoice_REACTION_CHOICE_PASS {
+		if err := diceNotUsed(msg); err != nil {
+			return m, answerInput{}, err
+		}
 	}
 	return m, answerInput{key: key, encID: encID, winID: winID, choice: choice}, nil
 }
@@ -143,6 +152,9 @@ func (s *Service) answerWindow(ctx context.Context, c *combatTx, m authz.Members
 	if err != nil {
 		return nil, err
 	}
+	if err := fieldsNotUsed(msg); err != nil { // a READIED window never gets here
+		return nil, err
+	}
 	use := in.choice == playv1.ReactionChoice_REACTION_CHOICE_USE
 	switch reaction.Kind(w.Kind) {
 	case reaction.Contest:
@@ -179,9 +191,10 @@ func (s *Service) answerWindow(ctx context.Context, c *combatTx, m authz.Members
 }
 
 // MarkReactionRolling implements playv1connect.CombatServiceHandler. It sets the
-// window's `rolling` mark for the master's clock and writes nothing else: no session
-// event, no log line (the closure returns no payload), so a retry or a second tab
-// only sets the same mark again.
+// window's `rolling` mark for the master's clock, or takes it off with `clear`, and writes nothing else: no session
+// event, no log line (the closure returns no payload), so nothing is logged or bumped, and a retry or a second tab only
+// sets or clears the same mark again. A mark that changes nothing writes and tells nothing; one that does tells the master
+// and the reactor's player alone: no other player reads the wait.
 func (s *Service) MarkReactionRolling(
 	ctx context.Context,
 	req *connect.Request[playv1.MarkReactionRollingRequest],
@@ -198,15 +211,27 @@ func (s *Service) MarkReactionRolling(
 	if err != nil {
 		return nil, err
 	}
+	var changed bool
 	// The window's own id is the key: no event is written, so it is never looked up as one.
 	res, err := s.write(ctx, combatWrite{m: m, key: winID, kind: eventReactionAnswered, encounterID: encID}, func(c *combatTx) (any, error) {
-		return nil, s.markRolling(ctx, c, m, winID)
+		var err error
+		changed, err = s.markRolling(ctx, c, m, winID, req.Msg.GetClear())
+		return nil, err
 	})
 	if err != nil {
 		return nil, s.dbError(ctx, "mark a reaction as being rolled", err)
 	}
 	out, err := s.finish(ctx, m, res, func(ctx context.Context, d *encounterData) {
-		s.publishEncounterChanged(ctx, m.CampaignID, d.enc)
+		if !changed {
+			return
+		}
+		say, msg := s.sayOf(ctx), encounterChangedMessage(d.enc)
+		mine := msg // the reactor's player reads the blind copy on a fog map, as every player does
+		if blind := s.playersHintOf(ctx, m.CampaignID, d.enc); blind != nil {
+			mine = blind
+		}
+		say(m.CampaignID, live.Event{Audience: live.Audience{Master: true}, Message: msg})
+		say(m.CampaignID, live.Event{Audience: live.Audience{UserID: m.UserID}, Message: mine})
 	})
 	if err != nil {
 		return nil, err
@@ -214,33 +239,46 @@ func (s *Service) MarkReactionRolling(
 	return connect.NewResponse(&playv1.MarkReactionRollingResponse{Encounter: out}), nil
 }
 
-// markRolling is the write of MarkReactionRolling. The mark is the reactor player's own:
-// the master reads it, never sets it. It returns no payload: the change is kept and
-// nothing is written to the log.
-func (s *Service) markRolling(ctx context.Context, c *combatTx, m authz.Membership, winID string) error {
+// markRolling is the write of MarkReactionRolling: the mark on, or off when asked to. The mark is the reactor
+// player's own: the master reads it, never sets it or takes it off. It returns no payload: the change is kept and nothing
+// is written to the log; changed says the mark was a change, and one already as asked writes nothing (a retry or a second
+// tab only sets or clears the same mark).
+func (s *Service) markRolling(ctx context.Context, c *combatTx, m authz.Membership, winID string, off bool) (changed bool, err error) {
 	if err := notEnded(c.enc); err != nil {
-		return err
+		return false, err
 	}
 	if m.Role == authz.RoleMaster {
-		return errWindowDenied()
+		return false, errWindowDenied()
 	}
 	w, _, err := s.windowToAnswer(ctx, c, m, winID)
 	if err != nil {
-		return err
+		return false, err
 	}
 	t := windowTriggerOf(w)
-	if t.Rolling {
-		return nil
+	if t.Rolling == !off && (off || t.WaitBegan != nil) {
+		return false, nil
 	}
-	t.Rolling = true
+	t.Rolling = !off
+	if !off && t.WaitBegan == nil {
+		now := c.now // the transaction's clock; the first mark starts the wait and nothing after it moves it
+		t.WaitBegan = &now
+	}
+	if err := setWindowTrigger(ctx, c.q, w.ID, t); err != nil {
+		return false, err
+	}
+	return true, touch(ctx, c)
+}
+
+// setWindowTrigger writes the trigger of an open window and nothing else.
+func setWindowTrigger(ctx context.Context, q *playdb.Queries, id string, t windowTrigger) error {
 	body, err := json.Marshal(t)
 	if err != nil {
 		return fmt.Errorf("encode the window's trigger: %w", err)
 	}
-	if _, err := c.q.SetReactionWindowStep(ctx, playdb.SetReactionWindowStepParams{ID: w.ID, Step: w.Step, Trigger: body}); err != nil {
-		return fmt.Errorf("mark the window as being rolled: %w", err)
+	if _, err := q.SetReactionWindowTrigger(ctx, playdb.SetReactionWindowTriggerParams{ID: id, Trigger: body}); err != nil {
+		return fmt.Errorf("write the window's trigger: %w", err)
 	}
-	return touch(ctx, c)
+	return nil
 }
 
 // answerShield answers a Shield window: "Usar Escudo Arcano" casts it, "Deixar

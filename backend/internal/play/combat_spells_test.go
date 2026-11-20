@@ -170,7 +170,7 @@ func (a *armed) placeFor(t *testing.T, req *playv1.CastSpellRequest, targets []*
 		// A spell the options leave out (the master casts it again with the action used): the
 		// server's own refusal says how it is placed.
 		_, err := a.master.combat.PreviewSpellArea(t.Context(), connect.NewRequest(&playv1.PreviewSpellAreaRequest{
-			CampaignId: a.campaignID, EncounterId: req.GetEncounterId(), CasterId: req.GetCasterId(), SpellKey: req.GetSpellKey(), Slot: req.GetSlot(),
+			CampaignId: a.campaignID, EncounterId: req.GetEncounterId(), CasterId: req.GetCasterId(), SpellKey: req.GetSpellKey(), Slot: req.GetSlot(), GrantedBy: req.GetGrantedBy(),
 		}))
 		switch {
 		case err == nil:
@@ -188,7 +188,7 @@ func (a *armed) placeFor(t *testing.T, req *playv1.CastSpellRequest, targets []*
 		want[tg.GetCombatantId()] = true
 	}
 	reaches := func(origin *playv1.SpellOrigin, dir *playv1.SpellDirection) bool {
-		pr := &playv1.PreviewSpellAreaRequest{CampaignId: a.campaignID, EncounterId: req.GetEncounterId(), CasterId: req.GetCasterId(), SpellKey: req.GetSpellKey(), Slot: req.GetSlot()}
+		pr := &playv1.PreviewSpellAreaRequest{CampaignId: a.campaignID, EncounterId: req.GetEncounterId(), CasterId: req.GetCasterId(), SpellKey: req.GetSpellKey(), Slot: req.GetSlot(), GrantedBy: req.GetGrantedBy()}
 		if origin != nil {
 			pr.Area = &playv1.PreviewSpellAreaRequest_Origin{Origin: origin}
 		} else {

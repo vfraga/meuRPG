@@ -2111,6 +2111,7 @@ describe('CharacterSheetPage', () => {
                 namePt: 'Guardião do Vale',
                 changedAt: new Date(2026, 9, 5),
                 messages: [sentence],
+                codes: [],
               },
             ],
             issues: [
@@ -2153,6 +2154,7 @@ describe('CharacterSheetPage', () => {
                 namePt: 'Pede depois',
                 changedAt: new Date(2026, 9, 5),
                 messages: [sentence],
+                codes: [],
               },
             ],
             issues: [

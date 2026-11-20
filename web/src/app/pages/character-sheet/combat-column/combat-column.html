@@ -10,12 +10,8 @@
     [hitPointsCurrent]="aidVitals()?.hitPointsCurrent ?? null"
     [aid]="aidVitals()?.hitPointsMaxBonus ?? 0"
     [hitDice]="s.hitDice"
+    [shieldNote]="shieldNote()"
   />
-  @if (shieldNote()) {
-    <p class="mr-muted shield-note" role="note">
-      O escudo não conta na CA: há uma arma de duas mãos equipada. Guarde a arma de duas mãos.
-    </p>
-  }
   @if (modifierLines().length > 0) {
     <section class="mr-panel modifiers" aria-labelledby="modificadores-heading">
       <h3 id="modificadores-heading" class="modifiers__title">

@@ -72,7 +72,7 @@ The rules side (`ChangedSince`, `Issue.Keys`, the sentences) is in [Table conten
 This is what the server stores and shows:
 
 - Each sheet stores, inside its own document and written by `checkSheet` (create, edit and level-up; what the client sends is ignored), the content revision (`FullSheet.content_revision`), the notices it already had (`known_issues`, each by its identity, `Issue.ID`: code, field and exact sentence, and for a lost feat or option the code, the list its pick is in and the entry's key, with no sentence) and, for a still-flagged entry, the revision at which the sheet was up to date with it (`content_baselines`). Only the campaign's master receives `known_issues`; `content_baselines` is sent to every reader of the sheet, as it holds only keys of entries the sheet itself uses, which its owner reads, and nothing in the web reads it.
-- On every read, `Content.ChangedSince` lists the table entries the sheet uses that changed later, and the server shows for each changed entry only the new notices whose keys include it: `DerivedSheet.changed_content` (the key, the name, the field, the revisions, the date of the change and the exact sentences) and a `table_content_changed` `Issue` per entry.
+- On every read, `Content.ChangedSince` lists the table entries the sheet uses that changed later, and the server shows for each changed entry only the new notices whose keys include it: `DerivedSheet.changed_content` (the key, the name, the field, the revisions, the date of the change, the exact sentences and, in `codes`, the code of the issue each sentence comes from: one per sentence, in the same order, built in `addChangedContent`) and a `table_content_changed` `Issue` per entry. The web tells the shield line apart by the code at its place (`shield_idle`), for each line and never by its words.
 - The notice disappears by itself when nothing remains tied to it; a change that left no new notice on that sheet shows nothing; there is no "dismiss".
 - Saving the sheet does not clear it: on saving, the notices that were flagged and still stand stay out of `known_issues` and the entry stores the base revision in `content_baselines`, so the next read flags them again; only fixing what the notice says clears it.
 - It is a notice, never a `Validate` error.
@@ -87,6 +87,9 @@ This is what the server stores and shows:
   `LevelUpCharacter` and `PreviewLevelUp` refuse with `LEVEL_UP_REFUSAL_REASON_ARCHIVED_CHOICE`.
 - The same for a switched-off key (or a child of a switched-off class or race), but only for a player: `SWITCHED_OFF_CONTENT` and `LEVEL_UP_REFUSAL_REASON_SWITCHED_OFF_CHOICE`.
   The master is not refused: the switch hides the option from players, not from any sheet the master edits.
+- The keys of a sheet include the spell of a scoped pick (`choiceKey=spell:key`), so a pick of a spell counts as the sheet using it.
+  A ritual held in the book that stops being a ritual is an issue at its pick (`spell_level`).
+  Its owner reads the notice of changed content for it.
 - A sheet that already uses the key keeps working (`Derive`, `Validate`, names, level-up), and an unrelated edit is never refused.
 - A sheet with an `@mesa` key does not change campaign: `CheckSheetCanMove` (`failed_precondition`, `TABLE_CONTENT_STAYS`, with the first key) exists for it.
   Nothing calls it yet, since characters are not copied between campaigns; whoever builds that must call it before writing.
@@ -209,6 +212,46 @@ A piece that is carried adds nothing, a shield behind a two-handed weapon adds n
 The combat reads the attack lines and the armor class of the same derivation.
 The bonus belongs to the key: two weapons with one key are one row and share it, so a plain and a +1 copy of one weapon cannot be told apart.
 
+### Infusion records in the derivation
+
+`rules.Build.Infusions` holds the live infusion records of the character as holder.
+The loader fills it, and the sheet never stores it.
+A record is valid when all of these hold.
+The content knows its infusion key, and the host feature has its limit rule.
+The character has the host feature and the key is among its `feature_choice_keys`.
+The option has not lost its prerequisite.
+A gear record's piece is on the sheet, and no older record holds the same piece.
+No manual bonus stands on the piece of an item bonus record.
+The host feature is on the class (and subclass) the content gives it.
+The class level for the bonus and the limit is the character's level in that class.
+When two records hold one gear key, the oldest stands and the other is not valid now.
+An item bonus record on a key that already has a manual bonus is not valid: the manual bonus stands and the record gives no number.
+A record that is not valid gives no number and no name, takes no slot of the limit, and takes no attunement place.
+It still has its row in `Derived.Infusions`, with the reason in `ReasonPT`.
+When it becomes valid again it can bring the attunement count above the maximum; nothing ends the attunement for it.
+`Computed` on a row means the app handles the infusion, with a number or a mark.
+`Computed` false is a text only infusion, which the table applies.
+`ITEM_BONUS` on a gear key becomes an `ItemBonus` of that key inside the deriver, at `BonusAt(class level)`.
+The armor class, the attack lines, `weaponMarks` and `Derived.ItemModifiers` read the one path a manual bonus takes.
+`Build.ItemBonuses` of the caller is not changed.
+A class level below the first bonus step gives no number and no line.
+The bonus follows the manual rules: a carried piece adds nothing, and an infusion that asks for attunement adds nothing until the record is attuned.
+The bonus of a key applies to every copy of the key.
+`SPELL_FOCUS_BONUS` adds the bonus to `Spellcasting.AttackBonus`, so the spell attack lines carry it.
+It lists a line with the target `spell_attack`.
+The best focus that counts is the one that applies.
+The bonus does not reach the attacks of granted spells.
+A focus does not change the numbers of its own weapon.
+`REPEATING_AMMUNITION` leaves the weapon's attack without an ammunition key and keeps its improvised melee line.
+`RETURNING`, `RESISTANCE_LABEL` and `NONE` change no number; the resistance label's damage type is the record's parameter.
+The infusion's name is on the gear entry of its piece, on the attack of its weapon, and on each item modifier line of the record with `infusion_id`.
+`Derived.InfusionHosts` has, for each host feature of the character, the live limit at the class level and how many valid records use it.
+`rules.AttunedCount` counts a valid record that asks for attunement and is attuned like an attuned magic item.
+`MaxAttunements` stays the one place for the maximum.
+`rules.Validate` accepts a sheet that has a manual bonus and an infusion on one key: the manual bonus stands.
+A save refuses a manual `item_bonuses` entry that is new or changed against the stored sheet on a key that a valid item bonus record infuses (`rules.CheckManualBonuses`).
+The refusal is at `full.item_bonuses[i].key` and says to end the infusion or leave the manual bonus off.
+
 ## Table options
 
 `TABLE_CONTENT_KIND_OPTION` (`option` rows of `campaign_content`, key `option:<set>:<slug>@mesa`) is an option the master adds to one of the SRD's option sets: an Eldritch Invocation, a Metamagic option, a fighting style, a Pact Boon, a Hunter's Prey, Defensive Tactics, Multiattack or Superior Hunter's Defense, or, in the set `table_feature`, an option of a table feature's option list (`table_option.offered_by` is that feature's key).
@@ -217,6 +260,14 @@ The key names the set and the set never changes (`table_option.set`, `immutable`
 It goes through the same writes, archive mark, switch (`SetOptionSwitches`, `ListOptionSwitches` lists it with the kind), pack, "A classe mudou" notice ("A opção mudou") and player view as the other kinds; a player's copy drops a hidden class, option, pact or spell from the prerequisite and from the effects.
 A player's copy of an option leaves `offered_by` blank when the offering feature is hidden to the player, (archived or switched off), so its key never reaches a player.
 The choice engine reads it with the SRD options: `GetLevelUpOptions`, `PreviewChoices`, `CompleteCharacterChoices` and the sheet's own save list it in the choice of its set, blocked with its reason when the character lacks a prerequisite, and refuse a pick that does not qualify (`PREREQUISITE_UNMET`) or that the master switched off for the players (`SWITCHED_OFF_CONTENT`).
+
+## Swapping the option of a table feature at a level-up
+
+`TableFeature.swap_levels` travels with the rest of the feature: `tableFeatureOf` copies it into `rules.TableFeature.SwapLevels` (`featureSwapLevelsOf`), and the content pack (`ExportTableContent`, `ImportTableContent`) carries it as protojson, so a pack round-trip keeps it (`TestTheSwapLevelsOfAFeatureTravelInAContentPack`).
+`GetLevelUpOptions` and `PreviewLevelUp` append the feature groups of `LevelUpOffer.FeatureSwaps` to `LevelUpOptions.swap_groups` (group = the feature's key, `name_pt` = its name), after the table rule has cleared the ASI swap groups and before the hide-from-player step.
+`LevelUpChoices.swap_feature_options` (`LevelUpPickSwap`, at most 20) is read by `levelUpChoicesFromProto` into `rules.LevelUpChoices.FeatureSwaps`; `checkLevelUpKeys` bounds its key lengths; `newLevelUpPlan` refuses with `SWAP_NOT_ALLOWED` (`choices.swap_feature_options`) what the offer does not allow.
+`levelUpNames` names the group, the given-up and the taken option, so the level-up's own row names the swap, and earlier `ListLevelUps` rows are not touched.
+`LevelUpCharacter` calls the optional `OptionSwaps` hook (`optionswaps.go`, `Service.SetOptionSwaps`) once per level that swaps at least one such option, in the level-up's transaction right after the sheet and the record are written; its error aborts the level, and nothing is connected by default. The hook may run more than once for one level (the transaction retries) and must do nothing outside `tx`. Before it, `endGivenUpOptions` clears in the same transaction what each given-up option had stored in the character's own tables: the used counts of its resources (`character_vitals.resources_used`, for the keys of the resources whose `Source` is the option and that the new sheet no longer defines) and the states it started (`characters.active_states`, keys of the states whose `Source` is the option); what other modules own is theirs to clear through the hook. `FeatureSwapLevels.levels` holds at most 20 entries.
 
 ## Table class features
 
@@ -290,7 +341,13 @@ The vitals keeper has `GiveSpellSlot`, `SpendSpellSlot` and their undos; a slot 
 ## Rerolls, minimums and the critical range
 
 `tableEffectsOf` maps the proto fields `rolls` and `at_most` of `TableEffect` to the effect, and `damage_type` and `value` to a `roll_minimum`; `resource`, `cost`, `when` and `text_pt` are the fields the other effects already use.
-A `granted_spell` also maps `uses_cost` and `no_material_components` (`tableEffectsOf`), and `GrantedSpell`, `CastingGrant` and `SpellGrantOption` carry both (`uses_cost`, 0 for an at-will grant, and `no_material_components`) from `rules.GrantedSpell.Cost` and `NoMaterialComponents`: the sheet words the cost ("Gasta 2 usos de ...") and the "Sem material" tag, and the cast sheet shows "gasta 2" in the grant line and drops the "M" of the component line behind its "?". Both are display: the server spends the cost and enforces no component.
+A `granted_spell` also maps `uses_cost`, `no_material_components` and `cast_level` (`tableEffectsOf`).
+`GrantedSpell`, `CastingGrant` and `SpellGrantOption` carry them from `rules.GrantedSpell` (`Cost`, `NoMaterialComponents`, `CastLevel`) as `uses_cost` (0 for an at-will grant), `no_material_components` and `cast_level`.
+The sheet words the cost ("Gasta 2 usos de ...") and the "Sem material" tag.
+The cast sheet shows "gasta 2" in the grant line and drops the "M" of the component line behind its "?".
+The cost and the waived material are display: the server spends the cost and enforces no component.
+`cast_level` is the level the server casts the spell at with no slot: the spell's own when the effect sets none, 0 for a cantrip.
+A cast with a slot has the slot's level.
 A `modifier` on `critical_range` uses `target`, `mode` (`set`), `value` and `applies` (the scope: `weapon`, `spell` or `both`).
 All three are on the effect menu ([reroll](rules-table-content.md#reroll), [roll minimum](rules-table-content.md#roll-minimum), [critical range](rules-table-content.md#critical-range)).
 `GetEffectMenu` returns the entries of `reroll` and `roll_minimum` with their fields and the list `roll_applies`, the field `applies` of `modifier` with the list `critical_scopes`, and the target `critical_range` among the modifier targets.

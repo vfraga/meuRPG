@@ -28,6 +28,7 @@ const (
 	characterChangesRequested = "changes_requested"
 	characterResubmitted      = "resubmitted"
 	characterRevived          = "revived"
+	characterInfusionsChanged = "infusions_changed"
 )
 
 // reviveCombatant puts a dead combatant back in the fight where it was in the order, with no
@@ -128,6 +129,10 @@ func (s *Service) tellCharacterEvent(ctx context.Context, say sayFn, campaignID,
 		if v, err := s.vitals.GetVitals(ctx, campaignID, characterID); err == nil {
 			say(campaignID, vitalsHint(v))
 		}
+	case characterInfusionsChanged:
+		msg = &playv1.WatchGameSessionResponse{Event: &playv1.WatchGameSessionResponse_CharacterInfusionsChanged_{
+			CharacterInfusionsChanged: &playv1.WatchGameSessionResponse_CharacterInfusionsChanged{CharacterId: characterID},
+		}}
 	default:
 		return
 	}

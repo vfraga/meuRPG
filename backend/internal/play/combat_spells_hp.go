@@ -107,7 +107,14 @@ func (s *Service) poolRoll(d link.Dice, in rollInput) (dice.Result, error) {
 		}
 		return roll, nil
 	}
-	roll, err := dice.Physical(expr, in.typed)
+	return physicalPool(d, in.typed)
+}
+
+// physicalPool takes the sum a player typed for the dice of a pool, and refuses one the dice cannot make. The cast checks it
+// before a window can hold it (checkPool): the replay never meets a sum out of range.
+func physicalPool(d link.Dice, sum int) (dice.Result, error) {
+	expr := dice.Expr{Count: d.Count, Sides: d.Sides}
+	roll, err := dice.Physical(expr, sum)
 	if err != nil {
 		return dice.Result{}, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("pool_sum must be %d to %d", expr.Count, expr.Count*expr.Sides))
 	}

@@ -161,11 +161,12 @@ func TestReadySpellRefusals(t *testing.T) {
 	}
 }
 
-// A readied spell is cast at Ready, not when it is released: Web lays no area on the map while it waits.
+// A readied spell is cast at Ready, not when it is released: Web lays no area while it waits. (On a map Ready refuses it,
+// so the fight is one with no map.)
 func TestReadiedSpellLaysNoArea(t *testing.T) {
 	t.Parallel()
 	a := newCasters(t)
-	e := a.castersFight(t, 1)
+	e := a.theatreFight(t)
 	a.mustReady(t, a.ana, a.readySpell(t, e, "Pensantus", webSpell, 2, ""))
 	var zones int
 	if err := a.h.pool.QueryRow(t.Context(), `SELECT count(*) FROM spell_zones`).Scan(&zones); err != nil || zones != 0 {

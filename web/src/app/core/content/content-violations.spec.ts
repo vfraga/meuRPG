@@ -587,4 +587,54 @@ describe('the refusals of a trait with options and of the traits a subrace repla
       'Uma sub-raça substitui até 60 traços.',
     );
   });
+
+  it('says why an option of a feature asks for a sibling the list itself offered, at the field of that ask (580-03)', () => {
+    const field = (n: number, rest: string) =>
+      `table_class.levels[2].features[0].options[${n}].prerequisite.${rest}`;
+    const ctx = { aOne: 'uma classe' };
+    // The save refuses the two options that wait for each other, each at its own ask, with the reason bad_value.
+    expect(violationText(v(field(0, 'requires_option_keys[0]'), 'bad_value'), ctx)).toBe(
+      'Esta opção e a que ela pede esperam uma pela outra: nenhuma das duas poderia ser escolhida. Tire um dos pedidos.',
+    );
+    expect(violationText(v(field(1, 'requires_option_keys[0]'), 'dangling_reference'), ctx)).toBe(
+      'Uma opção pedida aqui não existe mais. Tire-a ou escolha outra.',
+    );
+    expect(violationText(v(field(1, 'requires_option_keys'), 'limit'), ctx)).toBe(
+      'Uma opção pede no máximo 10 outras.',
+    );
+    // The same asks of an option of a subclass or a race trait read the same.
+    expect(
+      violationText(
+        v(
+          'table_subclass.levels[0].features[1].options[3].prerequisite.requires_option_keys[1]',
+          'bad_value',
+        ),
+        ctx,
+      ),
+    ).toContain('esperam uma pela outra');
+    expect(
+      violationText(
+        v('table_race.traits[0].options[1].prerequisite.requires_option_keys[0]', 'bad_value'),
+        ctx,
+      ),
+    ).toContain('esperam uma pela outra');
+  });
+
+  it('words the other asks of an option of a feature at their own field, not with the generic sentence', () => {
+    const ctx = { aOne: 'uma classe' };
+    const at = (rest: string, reason = 'bad_value') =>
+      violationText(
+        v(`table_class.levels[2].features[0].options[1].prerequisite.${rest}`, reason),
+        ctx,
+      );
+    expect(at('class_level')).toBe('A classe e o nível vão juntos: preencha os dois ou nenhum.');
+    expect(at('class_level.class_key', 'dangling_reference')).toBe(
+      'Esta classe não existe mais. Escolha outra.',
+    );
+    expect(at('class_level.level')).toBe('O nível vai de 1 a 20.');
+    expect(at('requires_pact', 'dangling_reference')).toBe('Escolha uma dádiva do pacto da lista.');
+    expect(at('requires_spell_key', 'dangling_reference')).toBe(
+      'Esta magia não existe mais. Escolha outra.',
+    );
+  });
 });

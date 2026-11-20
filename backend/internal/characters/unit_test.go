@@ -317,7 +317,7 @@ func TestPermissions(t *testing.T) {
 		{"owner, pending", row(kindPlayer, statusPending, nil, false), pendingOwner, [6]bool{true, true, false, false, false, false}},
 	}
 	for _, tt := range tests {
-		c, err := svc.characterToProto(loadRules(t), tt.row, tt.m, "")
+		c, err := svc.characterToProto(loadRules(t), tt.row, tt.m, "", nil)
 		if err != nil {
 			t.Fatalf("%s: characterToProto() error = %v", tt.name, err)
 		}

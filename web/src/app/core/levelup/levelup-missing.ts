@@ -7,6 +7,7 @@ import type { AbilityKey } from '../characters/characters.types';
 import { type ChoiceDrafts, missingIn } from './levelup-choices';
 import type { HpCard, Rolled } from './levelup-draft-types';
 import { type Missing, type PickItem, type Totals, needText } from './levelup-flow';
+import { LIST } from './levelup-summary-rows';
 
 /** What the draft knows that the list of missing picks is made from: every member is a signal or a plain value of the draft. */
 export interface MissingSource {
@@ -41,6 +42,8 @@ export interface MissingSource {
   readonly spellItems: () => readonly PickItem[];
   readonly prepared: () => ReadonlySet<string>;
   readonly preparedAsked: () => number;
+  /** The swap: its groups with half a swap chosen are a missing choice. */
+  readonly swap: { readonly halfGroups: () => readonly { readonly namePt: string }[] };
 }
 
 /** The ability step: the feat, or the abilities of the increase, that are still to pick. */
@@ -177,6 +180,20 @@ function spellsMissing(d: MissingSource): Missing[] {
   ];
 }
 
+/** A swap with only one of its two picks is a choice left half done; the panel is in the ability step or, without it, in "Escolhas". */
+function swapMissing(d: MissingSource): Missing[] {
+  const names = d.swap.halfGroups().map((g) => g.namePt);
+  return names.length > 0
+    ? [
+        {
+          step: d.options.abilityScoreImprovement ? 'abilities' : 'picks',
+          id: 'swap',
+          text: `Falta escolher o que trocar em ${LIST.format(names)}.`,
+        },
+      ]
+    : [];
+}
+
 /** Every choice still to make, in step order, each with the picker that holds it. */
 export function missingChoices(d: MissingSource): Missing[] {
   const o = d.options;
@@ -196,5 +213,6 @@ export function missingChoices(d: MissingSource): Missing[] {
       : []),
     ...expertiseMissing(d),
     ...spellsMissing(d),
+    ...swapMissing(d),
   ];
 }

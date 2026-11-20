@@ -2,7 +2,6 @@ package play
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 
@@ -20,12 +19,8 @@ import (
 // roll it, and the master's card asks for it.
 func (s *Service) handSaveToMaster(ctx context.Context, c *combatTx, w playdb.ReactionWindow, t windowTrigger) error {
 	t.Handed = true
-	body, err := json.Marshal(t)
-	if err != nil {
-		return fmt.Errorf("encode the window's trigger: %w", err)
-	}
-	if _, err := c.q.SetReactionWindowStep(ctx, playdb.SetReactionWindowStepParams{ID: w.ID, Step: w.Step, Trigger: body}); err != nil {
-		return fmt.Errorf("hand the save to the master: %w", err)
+	if err := setWindowTrigger(ctx, c.q, w.ID, t); err != nil {
+		return err
 	}
 	return touch(ctx, c)
 }

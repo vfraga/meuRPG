@@ -40,9 +40,12 @@ export const pensantusReadyKit = {
   preparedSpellKeys: [...pensantusCasting.preparedSpellKeys, 'spell:charm-person'],
 };
 
-/** Why Mover is off in the sheet, and why a spell of darts, several targets or a point is (the window answers with a creature only). */
+/** Why Mover is off in the sheet, and why a spell placed on the map (a point or a direction) is: the window does not place it yet. */
 export const moveOffText = 'Mover pela janela ainda não dá: por enquanto o mestre move a ficha.';
-export const spellOffText = 'Soltar pela janela ainda não dá para esta magia: ela pede dardos, alvos ou um ponto no mapa.';
+export const spellOffText = 'Soltar pela janela ainda não dá para esta magia: ela pede um ponto ou uma direção no mapa.';
+
+/** Why a spell that asks the caster a choice is off in the sheet: here a summon's creatures (the window sends no `summon` yet). */
+export const summonOffText = 'Soltar pela janela ainda não dá para esta magia: ela pede as criaturas ao conjurar.';
 
 /** The trigger of the specs: the zombie of the boards, with the goblin of the table. */
 export const goblinTrigger = 'Quando o goblin passar pela porta';
@@ -61,13 +64,13 @@ export async function openReadySheet(page: Page): Promise<Locator> {
 const shotsDir = process.env.E2E_SHOTS_DIR;
 
 /** Saves the viewport as `582-<screen>-<width>-<claro|escuro>.png` when `E2E_SHOTS_DIR` is set; a normal run writes nothing. */
-export async function shootReady(page: Page, screen: string, width: number, scheme: 'light' | 'dark'): Promise<void> {
+export async function shootReady(page: Page, screen: string, width: number, scheme: 'light' | 'dark', issue = '582'): Promise<void> {
   if (!shotsDir) {
     return;
   }
   mkdirSync(shotsDir, { recursive: true });
   await page.evaluate(() => document.fonts.ready);
-  await page.screenshot({ path: join(shotsDir, `582-${screen}-${width}-${scheme === 'light' ? 'claro' : 'escuro'}.png`) });
+  await page.screenshot({ path: join(shotsDir, `${issue}-${screen}-${width}-${scheme === 'light' ? 'claro' : 'escuro'}.png`) });
 }
 
 /** The player's own call of `ReadyAction`: the held attack, with the trigger of the boards (the spec has no need to drive the sheet again). */

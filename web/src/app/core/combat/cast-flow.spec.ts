@@ -30,6 +30,7 @@ import {
   rollGroups,
   slotRows,
   spellKind,
+  castLevelOf,
   targetRule,
   toggled,
 } from './cast-flow';
@@ -528,5 +529,33 @@ describe('a spell attack that missed on a natural 1', () => {
       natural: '1 natural',
     });
     expect(castRows(attack(4), new Map(), labels)[0].natural).toBeUndefined();
+  });
+});
+
+describe('the level a cast scales at', () => {
+  it('is the slot’s, else the grant’s cast level, else the spell’s own', () => {
+    const grant = { castLevel: 2 };
+    expect(castLevelOf({ level: 3 }, null, 1)).toBe(3);
+    expect(castLevelOf({ level: 3 }, grant, 1)).toBe(3);
+    expect(castLevelOf(null, grant, 1)).toBe(2);
+    expect(castLevelOf(null, { castLevel: 0 }, 0)).toBe(0);
+    expect(castLevelOf(null, null, 1)).toBe(1);
+  });
+
+  it('counts the targets from the level the entry was listed at', () => {
+    // The server lists Bless's grant entry at its cast level 2 (4 targets), and the class entry at the spell's own level.
+    const bless = (maxTargets: number) =>
+      create(SpellTargetsSchema, { spellKey: 'spell:bless', maxTargets, targetsPerLevel: 1 });
+    const grantEntry = bless(4);
+    const classEntry = bless(3);
+    expect(targetRule(grantEntry, 'me', 2, castLevelOf(null, { castLevel: 2 }, 1)).max).toBe(4);
+    expect(
+      targetRule(grantEntry, 'me', 2, castLevelOf({ level: 3 }, { castLevel: 2 }, 1)).max,
+    ).toBe(5);
+    expect(targetRule(classEntry, 'me', 1, castLevelOf({ level: 2 }, null, 1)).max).toBe(4);
+    // A grant at cast level 3 (5 targets) cast with a 2nd-level slot reaches the 2nd level's 4.
+    expect(targetRule(bless(5), 'me', 3, castLevelOf({ level: 2 }, { castLevel: 3 }, 1)).max).toBe(
+      4,
+    );
   });
 });

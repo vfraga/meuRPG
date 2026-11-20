@@ -1,6 +1,7 @@
 package play
 
 import (
+	"cmp"
 	"context"
 	"errors"
 	"fmt"
@@ -42,19 +43,11 @@ const magicMissile = "spell:magic-missile"
 // and each ray is its own spell attack with its own damage.
 const scorchingRay = "spell:scorching-ray"
 
-// scorchingBaseRays is the rays Scorching Ray makes at its own level.
-const scorchingBaseRays = 3
-
-// scorchingRays is how many rays Scorching Ray makes at a slot level.
-func scorchingRays(sp link.Spell, slotLevel int) int {
-	return scorchingBaseRays + max(slotLevel-sp.Level, 0)
-}
-
 // sharesAt is how many darts or rays a slot level gives the caster to share out among the targets: 0 for a
 // spell that shares none.
 func sharesAt(sp link.Spell, slotLevel int) int {
 	if sp.Key == scorchingRay {
-		return scorchingRays(sp, slotLevel)
+		return sp.ScorchingRays(slotLevel)
 	}
 	return dartsOf(sp, slotLevel)
 }
@@ -111,6 +104,11 @@ type castable struct {
 	// grant is set for a spell cast through a granted_spell effect: no slot, a use of the
 	// grant's resource instead (unless it is at will).
 	grant *rulesv1.SpellGrantOption
+}
+
+// levelWith is the level the spell is cast at: the slot's, else the cast level of its grant, else its own.
+func (c castable) levelWith(slot *slotRef) int {
+	return cmp.Or(int(castSlotLevel(slot)), int(c.grant.GetCastLevel()), int(c.level))
 }
 
 // castableOf finds the spell among the options. invalid_argument when the
@@ -183,7 +181,7 @@ func slotOf(in *playv1.SpellSlot, c castable) (*slotRef, error) {
 		return nil, nil
 	}
 	if c.grant != nil {
-		// A granted spell is cast at its own level with no slot; a slot only if the grant allows it.
+		// A granted spell is cast with no slot, at its grant's cast level; a slot only if the grant allows it.
 		if in == nil {
 			return nil, nil
 		}
@@ -240,7 +238,7 @@ func maxTargetsOf(sp link.Spell, slotLevel int) int {
 	case sp.Key == magicMissile:
 		return dartsOf(sp, slotLevel) // a dart each, at most
 	case sp.Key == scorchingRay:
-		return scorchingRays(sp, slotLevel)
+		return sp.ScorchingRays(slotLevel)
 	case sp.Area:
 		return 0
 	case sp.TargetCount > 0:
@@ -280,7 +278,7 @@ func (s *Service) CastSpell(
 	if req.Msg.RevealHidden != nil && m.Role != authz.RoleMaster {
 		return nil, errOnlyMasterReveals()
 	}
-	return s.castSpell(ctx, m, req)
+	return s.castSpell(ctx, m, req, false)
 }
 
 // checkTargets checks, for a player, who a spell may touch: how many targets
@@ -353,7 +351,7 @@ func checkRays(v combatViewer, sp link.Spell, targs []playdb.Combatant, rays []i
 	for _, n := range rays {
 		total += max(n, 1)
 	}
-	limit := scorchingRays(sp, slotLevel)
+	limit := sp.ScorchingRays(slotLevel)
 	if v.master {
 		limit = maxSpellTargets
 	}
@@ -439,15 +437,17 @@ type spellAttackRolled struct {
 	truth  modeResult
 	choice modeChoice
 	step   gateResult
+	// toHit is the bonus the d20 counts with.
+	toHit int
 }
 
 // spellAttackD20 settles the mode of a spell attack's roll, as RollAttack does, and rolls its d20. The
 // answer to a Bardic Inspiration question brings the mode and the d20 it was held with.
 func (s *Service) spellAttackD20(ctx context.Context, c *combatTx, sp link.Spell, caster, target playdb.Combatant, in rollInput, modes *spellModes) (spellAttackRolled, error) {
 	if pre := modes.pre; pre != nil && pre.target == target.ID {
-		return spellAttackRolled{truth: pre.truth, choice: pre.choice, step: pre.step}, nil
+		return spellAttackRolled{truth: pre.truth, choice: pre.choice, step: pre.step, toHit: pre.toHit}, nil
 	}
-	var r spellAttackRolled
+	r := spellAttackRolled{toHit: sp.ToHit}
 	var err error
 	if r.truth, err = s.spellAttackTruth(ctx, c, modes, sp, caster, target, false); err != nil {
 		return r, err
@@ -544,7 +544,7 @@ func (s *Service) resolveSpellAttack(ctx context.Context, c *combatTx, m authz.M
 		return combat.AttackResult{}, 0, err
 	}
 	hit.Extra = extra
-	result := combat.ResolveAttackFrom(sp.ToHit+bonusFace+extraTotal, targetAC, face, modes.traits.SpellCriticalRange)
+	result := combat.ResolveAttackFrom(rolled.toHit+bonusFace+extraTotal, targetAC, face, modes.traits.SpellCriticalRange)
 	if rolled.step.Stroke != nil && !result.Hit { // Stroke of Luck: the miss the caster turned into a hit
 		result.Hit, result.Fumble = true, false
 	}
@@ -552,7 +552,7 @@ func (s *Service) resolveSpellAttack(ctx context.Context, c *combatTx, m authz.M
 		result.Critical = true
 	}
 	hit.TargetAC = clamp32(targetAC, 0, math.MaxInt32)
-	hit.D20, hit.Modifier, hit.Total, hit.Physical = clamp32(d20.Face(), 1, 20), conv.Int32(sp.ToHit+bonusFace), conv.Int32(result.Total), d20.Physical
+	hit.D20, hit.Modifier, hit.Total, hit.Physical = clamp32(d20.Face(), 1, 20), conv.Int32(rolled.toHit+bonusFace), conv.Int32(result.Total), d20.Physical
 	hit.countedRoll = countedOf(d20)
 	return result, targetAC, nil
 }

@@ -14,7 +14,7 @@ import {
 import { ActionEconomy } from '../../../gen/meurpg/rules/v1/rules_pb';
 import { type MarksVm, attackMarksFor, markWords } from '../characters/gear';
 import { rechargeText } from './combat-errors';
-import { circleLabel } from './combat-grid';
+import { aboveOwnLevel, circleLabel } from './combat-grid';
 import { metersText } from '../units';
 import { joinDots, tight } from '../format/text';
 
@@ -298,11 +298,15 @@ export function isCantrip(attack: Attack): boolean {
   return attack.kind === AttackKind.SPELL;
 }
 
-/** Where a granted spell comes from and what it costs: "Graça · À vontade", "Graça · 1 uso", "Graça · gasta 2 · 3 usos". */
-export function grantLine(g: SpellGrantOption): string {
+/**
+ * Where a granted spell comes from and what it costs: "Graça · À vontade", "Graça · 1 uso", "Graça · gasta 2 · 3 usos".
+ * A grant that casts above the spell's own level (`spellLevel`) says so at the end: "Legado · 1 uso · no 2º nível".
+ */
+export function grantLine(g: SpellGrantOption, spellLevel: number): string {
   const left = g.usesLeft === 1 ? '1 uso' : `${g.usesLeft} usos`;
   const uses = g.atWill ? 'À vontade' : g.usesCost > 1 ? `gasta ${g.usesCost} · ${left}` : left;
-  return `${g.sourceNamePt} · ${uses}`;
+  const line = `${g.sourceNamePt} · ${uses}`;
+  return `${line}${aboveOwnLevel(g.castLevel, spellLevel)}`;
 }
 
 /** The tags under a spell's name: its circle, and the economy when it is not
@@ -330,9 +334,9 @@ export function spellLine(o: SpellOption, summary = ''): string {
   if (o.spell?.key === 'spell:shield') {
     return 'Quando você for atingido, o app pergunta se quer usar.';
   }
-  // A granted spell says where it comes from before anything else: the same spell may stand twice in the list.
-  const parts = [o.grant ? grantLine(o.grant) : '', summary || o.spell?.schoolNamePt || ''];
   const level = o.spell?.level ?? 0;
+  // A granted spell says where it comes from before anything else: the same spell may stand twice in the list.
+  const parts = [o.grant ? grantLine(o.grant, level) : '', summary || o.spell?.schoolNamePt || ''];
   const free = o.slots.reduce((sum, s) => sum + s.free, 0);
   if (level > 0 && o.enabled && free === 1 && !o.grant) {
     parts.push(`gasta o último espaço de ${circleLabel(o.slots[0].level)}`);

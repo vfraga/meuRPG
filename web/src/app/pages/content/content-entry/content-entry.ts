@@ -26,11 +26,13 @@ import {
 } from '../../../../gen/meurpg/rules/v1/table_content_pb';
 import { CampaignsService } from '../../../core/campaigns/campaigns.service';
 import { type CatalogVm, catalogVm } from '../../../core/content/catalog';
+import { SwitchesStore } from '../../../core/content/switches-store';
 import { TableContentClient, contentErrorText } from '../../../core/content/content-client';
 import { type ContentContext, loadContext } from '../../../core/content/content-context';
 import {
   type ContentNavKind,
   entryState,
+  isClassKind,
   navOfKind,
   savedSentence,
 } from '../../../core/content/content-kinds';
@@ -114,7 +116,7 @@ type PageState =
     SpellEditor,
     SubclassEditor,
   ],
-  providers: [ContentWatcher, LiveSessionSourceLive],
+  providers: [ContentWatcher, LiveSessionSourceLive, SwitchesStore],
   templateUrl: './content-entry.html',
   styleUrl: './content-entry.scss',
 })
@@ -127,6 +129,7 @@ export class ContentEntry {
   private readonly bottomSheet = inject(MatBottomSheet);
   private readonly injector = inject(Injector);
   private readonly watcher = inject(ContentWatcher);
+  private readonly switches = inject(SwitchesStore);
   private readonly title = viewChild<ElementRef<HTMLElement>>('title');
 
   protected readonly Kind = TableContentKind;
@@ -169,11 +172,7 @@ export class ContentEntry {
     }),
   );
   private readonly defaultsError = signal('');
-  protected readonly needsDefaults = computed(
-    () =>
-      this.editing() &&
-      (this.kind() === TableContentKind.CLASS || this.kind() === TableContentKind.SUBCLASS),
-  );
+  protected readonly needsDefaults = computed(() => this.editing() && isClassKind(this.kind()));
 
   protected readonly ctx = computed(() => {
     const s = this.state();
@@ -279,18 +278,14 @@ export class ContentEntry {
         return;
       }
       if (res.status === 'ok' && now.status === 'ready') {
-        const entries = mergeRefreshed(
-          now.ctx.entries,
-          res.ctx.entries,
-          this.key(),
-          this.editing(),
-        );
-        this.state.set({ status: 'ready', ctx: { ...res.ctx, entries } });
+        const list = mergeRefreshed(now.ctx.entries, res.ctx.entries, this.key(), this.editing());
+        this.state.set({ status: 'ready', ctx: { ...res.ctx, entries: list } });
         // The names are built from the catalog and the entries together, so they follow a change of either.
         const c = await this.client.catalog(this.campaignId());
         if (mine === this.reads) {
-          this.catalog.set(catalogVm(c, entries));
+          this.catalog.set(catalogVm(c, list));
         }
+        await this.switches.load(res.ctx.campaignId, this.needsDefaults());
       }
     } catch {
       // Keep what is on screen: the next change reads again.
@@ -330,6 +325,7 @@ export class ContentEntry {
     this.catalogError.set('');
     this.menuError.set('');
     this.defaultsError.set('');
+    void this.switches.load(ctx.campaignId, this.needsDefaults());
     void Promise.allSettled([
       this.client.catalog(ctx.campaignId).then((c) => this.catalog.set(catalogVm(c, ctx.entries))),
       ctx.isMaster

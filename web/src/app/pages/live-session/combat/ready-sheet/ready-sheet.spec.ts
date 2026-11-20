@@ -4,6 +4,7 @@ import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { Code, ConnectError } from '@connectrpc/connect';
 
 import {
+  AreaPlacement,
   CombatantState,
   EncounterBlockedReason,
   EncounterBlockedSchema,
@@ -112,6 +113,7 @@ describe('ReadySheet (#582)', () => {
       ownerLabel: 'Tor',
       options: options(),
       summaries: new Map(),
+      choices: new Map(),
       spellTargets: [],
       theatre: false,
       noSpeed: false,
@@ -260,11 +262,15 @@ describe('ReadySheet (#582)', () => {
     }
   });
 
-  it('writes the reason in the card of a spell the window cannot release, and lets the others be held', () => {
+  it('writes the reason in the card of a spell placed on the map the window cannot release, and lets the others be held', () => {
     const { el, button, click } = render({
       options: options({ spells: [missiles, charm] }),
       spellTargets: [
-        create(SpellTargetsSchema, { spellKey: 'spell:magic-missile', maxTargets: 3 }),
+        create(SpellTargetsSchema, {
+          spellKey: 'spell:magic-missile',
+          maxTargets: 0,
+          placement: AreaPlacement.POINT,
+        }),
         create(SpellTargetsSchema, { spellKey: 'spell:charm-person', maxTargets: 1 }),
       ],
     });
@@ -274,6 +280,25 @@ describe('ReadySheet (#582)', () => {
     expect(flat(cards[0])).toContain('Soltar pela janela ainda não dá para esta magia');
     expect(cards[1].classList).not.toContain('opt--off');
     expect(flat(cards[1])).toContain('Enfeitiçar Pessoa');
+  });
+
+  it('writes the reason in the card of a spell that asks an ability, creatures or a damage type, and lets a plain one be held', () => {
+    const { el, button, click } = render({
+      options: options({ spells: [missiles, charm, shield] }),
+      choices: new Map([
+        ['spell:magic-missile', 'ability'],
+        ['spell:charm-person', 'damage'],
+      ]),
+    });
+    click(button('Magia'));
+    const cards = Array.from(el.querySelectorAll('label.opt'));
+    expect(cards[0].classList).toContain('opt--off');
+    expect(flat(cards[0])).toContain(
+      'Soltar pela janela ainda não dá para esta magia: ela pede a habilidade ao conjurar.',
+    );
+    expect(flat(cards[1])).toContain('ela pede o tipo de dano ao conjurar.');
+    expect(cards[1].classList).toContain('opt--off');
+    expect(cards[0].querySelector('input')?.disabled).toBe(true);
   });
 
   it('lists "Outra" as Esquivar and Procurar and sends the one chosen', async () => {
@@ -368,6 +393,27 @@ describe('ReadySheet (#582)', () => {
       'Essa ação não pode ser preparada agora. Escolha outra. Nada foi gasto.',
     );
     expect(el.querySelector<HTMLTextAreaElement>('#ready-trigger')!.value).toBe('Se a porta abrir');
+    expect(close).not.toHaveBeenCalled();
+  });
+
+  it('writes the server reason of a spell the window cannot release, with the sheet left open', async () => {
+    readyAction.mockRejectedValue(
+      new ConnectError('x', Code.FailedPrecondition, undefined, [
+        {
+          desc: EncounterBlockedSchema,
+          value: create(EncounterBlockedSchema, {
+            reason: EncounterBlockedReason.READY_SPELL_NOT_RELEASABLE,
+          }),
+        },
+      ]),
+    );
+    const { el, button, click, type, settle } = render();
+    type('Se a porta abrir');
+    click(button('Preparar'));
+    await settle();
+    expect(flat(el.querySelector('.mr-notice--danger'))).toContain(
+      'Esta magia não pode ser preparada: ela pede uma escolha que só se faz ao conjurar na sua vez. Nada foi gasto.',
+    );
     expect(close).not.toHaveBeenCalled();
   });
 

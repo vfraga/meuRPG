@@ -29,7 +29,8 @@ export class OpenDown {
     this.select._positions = this.select._positions.filter((p) => p.originY === 'bottom');
     const open = this.select.open.bind(this.select);
     this.select.open = () => {
-      if (window.innerHeight - this.host.getBoundingClientRect().bottom < ROOM_BELOW) {
+      const canOpen = !this.select.disabled && !this.select.panelOpen;
+      if (canOpen && window.innerHeight - this.host.getBoundingClientRect().bottom < ROOM_BELOW) {
         (this.host.closest('mat-form-field') ?? this.host).scrollIntoView({
           block: 'center',
           behavior: 'instant',

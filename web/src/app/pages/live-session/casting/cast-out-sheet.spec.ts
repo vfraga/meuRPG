@@ -5,6 +5,7 @@ import { Code, ConnectError } from '@connectrpc/connect';
 
 import { DiceMode, DicePreference } from '../../../../gen/meurpg/campaigns/v1/campaigns_pb';
 import {
+  CastingDiceSchema,
   CastingEffectKind,
   CastingGrantSchema,
   CastingReachSchema,
@@ -210,6 +211,74 @@ describe('CastOutSheet (MR-048)', () => {
     expect(api.casts[0].req).toMatchObject({ asRitual: true, slot: null });
   });
 
+  describe('the dice of a cast above the spell’s level, typed from physical dice', () => {
+    const diceByLevel = [1, 2, 3].map((level) =>
+      create(CastingDiceSchema, { level, dice: `${level}d8` }),
+    );
+    const upcast = (extra: Record<string, unknown> = {}) =>
+      castingSpell('spell:cure-wounds', 'Curar Ferimentos', 1, {
+        effect: CastingEffectKind.HEAL,
+        rollsDice: true,
+        rollDice: '1d8',
+        diceByLevel,
+        maxTargets: 1,
+        slots: [1, 3].map((level) => create(SlotChoiceSchema, { level, free: 1 })),
+        ...extra,
+      });
+    const physical = { diceMode: DiceMode.PHYSICAL, preference: DicePreference.PHYSICAL };
+
+    it('reads 1d8 at the 1st-level slot and 3d8 once the 3rd-level slot is picked, with the sum between the count and the highest face', async () => {
+      const { el, click } = await setup(withSpells(upcast()), physical);
+      await click('label.row', 'Curar Ferimentos');
+      await click('label.row', '1º nível');
+      expect(plain(el.textContent)).toContain('Role 1d8 para Curar Ferimentos: some os dados');
+      expect(plain(el.textContent)).toContain('Digite a soma dos dados, de 1 a 8.');
+      await click('label.row', '3º nível');
+      expect(plain(el.textContent)).toContain('Role 3d8 para Curar Ferimentos: some os dados');
+      expect(plain(el.textContent)).toContain('Digite a soma dos dados, de 3 a 24.');
+      expect(plain(el.textContent)).not.toContain('1d8');
+    });
+
+    it('sends the sum typed for the dice of the slot’s level', async () => {
+      const { el, api, click, settle } = await setup(withSpells(upcast()), physical);
+      await click('label.row', 'Curar Ferimentos');
+      await click('label.row', '3º nível');
+      await click('label.row', 'Toren');
+      const field = el.querySelector<HTMLInputElement>('input.type__field');
+      expect(field).toBeTruthy();
+      field!.value = '20';
+      field!.dispatchEvent(new Event('input'));
+      await settle();
+      await click('button', 'Confirmar');
+      expect(api.casts[0].req).toMatchObject({ slot: { level: 3 }, dice: { typedSum: 20 } });
+    });
+
+    it('falls back to the spell’s own dice when the options list none for the level', async () => {
+      const { el, click } = await setup(withSpells(upcast({ diceByLevel: [] })), physical);
+      await click('label.row', 'Curar Ferimentos');
+      await click('label.row', '3º nível');
+      expect(plain(el.textContent)).toContain('Role 1d8 para Curar Ferimentos');
+    });
+
+    it('takes the dice of the level a grant casts at', async () => {
+      const raised = create(CastingGrantSchema, {
+        sourceKey: 'feat:graca@mesa',
+        sourceNamePt: 'Graça de teste',
+        atWill: true,
+        ready: true,
+        ability: 'cha',
+        castLevel: 3,
+      });
+      const { el, click } = await setup(
+        withSpells(upcast({ canCast: false, slots: [], grants: [raised] })),
+        physical,
+      );
+      await click('label.row', 'Curar Ferimentos');
+      expect(plain(el.textContent)).toContain('Role 3d8 para Curar Ferimentos: some os dados');
+      expect(plain(el.textContent)).toContain('Digite a soma dos dados, de 3 a 24.');
+    });
+  });
+
   describe('a spell a granted effect gives', () => {
     const grant = (extra: Record<string, unknown> = {}) =>
       create(CastingGrantSchema, {
@@ -239,6 +308,25 @@ describe('CastOutSheet (MR-048)', () => {
         asRitual: false,
         slot: null,
       });
+    });
+
+    it('takes the targets of the level the grant casts at, and of the slot’s when a slot is used', async () => {
+      const raised = grant({ castLevel: 2, alsoWithSlot: true });
+      const { el, click } = await setup(
+        withSpells(
+          bless([raised], {
+            canCast: false,
+            targetsPerLevel: 3,
+            slots: [create(SlotChoiceSchema, { level: 1, free: 1 })],
+            effect: CastingEffectKind.MAX_HIT_POINTS,
+          }),
+        ),
+      );
+      await click('label.row', 'Bênção');
+      expect(plain(el.textContent)).toContain('até 6 criaturas');
+      await click('label.row', 'com espaço de magia');
+      await click('app-slot-picker label.row');
+      expect(plain(el.textContent)).toContain('até 3 criaturas');
     });
 
     it('offers the class way and each grant, with the uses left, and sends the one picked', async () => {

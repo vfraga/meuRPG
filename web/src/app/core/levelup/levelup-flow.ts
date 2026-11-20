@@ -102,7 +102,9 @@ export function stepsFor(o: LevelUpOptions, t: Totals, more: number): StepKey[] 
     t.expertise > 0 ||
     o.lateChoices.length > 0 ||
     o.newChoices.length > 0 ||
-    proficiencyPick(o, LevelUpProficiencyKind.INSTRUMENT) > 0
+    proficiencyPick(o, LevelUpProficiencyKind.INSTRUMENT) > 0 ||
+    // Without the ability step, "Trocar uma escolha" (a table feature's swap) is one more panel of this step.
+    (!o.abilityScoreImprovement && o.swapGroups.length > 0)
   ) {
     steps.push('picks');
   }

@@ -60,6 +60,8 @@ const FIELD_LABELS: Readonly<Record<string, string>> = {
   school_key: 'Escola',
   class_keys: 'Classes',
   prerequisite: 'Pré-requisito',
+  swap_levels: 'Níveis de troca de opção',
+  every_level: 'Todos os níveis',
   set: 'Lista',
   offered_by: 'Oferecida por',
 };

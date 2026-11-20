@@ -315,12 +315,12 @@ describe('EquipmentPanel, the magic items and the attunement', () => {
     expect(said.classList).toContain('mr-visually-hidden');
   });
 
-  it('marks the shield "Parado" on its row when a two-handed weapon is equipped', () => {
+  it('marks the shield "Não conta na CA" on its row when a two-handed weapon is equipped', () => {
     const shield = { ...piece('equipment:shield', 'Escudo'), kind: 'shield' as const };
     const { el } = render((h) =>
       h.sheet.set({ ...sheetWith([], [shield]), shieldIdle: true } as FullSheetVm),
     );
-    expect(flat(el.querySelector('.gear-row--idle .gear-row__idle'))).toBe('Parado');
+    expect(flat(el.querySelector('.gear-row--idle .gear-row__idle'))).toBe('Não conta na CA');
   });
 
   it('leaves the idle shield note to the combat column', () => {

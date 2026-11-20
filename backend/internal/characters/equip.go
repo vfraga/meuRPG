@@ -182,15 +182,15 @@ func (s *Service) setCarried(ctx context.Context, tx pgx.Tx, campaignID string, 
 
 // refreshKnownIssues keeps known_issues true to the gear in use: Derive reads only the
 // equipped armor and weapons, so moving one in or out can add or end an issue (an unknown
-// key). The issues Derive finds are swapped for the ones it finds now; what other flags
-// the sheet holds (a changed table entry, RN-23) stays as it was.
+// key). An issue the move ends is dropped and one it brings is stored; an issue the sheet had
+// before the move and does not store (a changed table entry, RN-23) stays flagged, as it was.
 func (s *Service) refreshKnownIssues(ctx context.Context, tx pgx.Tx, campaignID string, was, next *charactersv1.FullSheet) error {
 	content, err := s.contentFor(ctx, tx, campaignID)
 	if err != nil {
 		return wrap("read rules content", err)
 	}
-	beforeIssues := rules.Derive(buildOf(was), content).Issues
-	afterIssues := rules.Derive(buildOf(next), content).Issues
+	beforeIssues := rules.Derive(buildOf(was), content).AllIssues()
+	afterIssues := rules.Derive(buildOf(next), content).AllIssues()
 	before, after := issueIDs(beforeIssues), issueIDs(afterIssues)
 	// A stored sentence is read as the issue it holds, so the issue that ends takes its row with it.
 	known := rules.IdentitiesOf(rules.IdentitiesOf(next.KnownIssues, beforeIssues), afterIssues)
@@ -198,7 +198,7 @@ func (s *Service) refreshKnownIssues(ctx context.Context, tx pgx.Tx, campaignID 
 		return slices.Contains(before, id) && !slices.Contains(after, id)
 	})
 	for _, id := range after {
-		if !slices.Contains(known, id) {
+		if !slices.Contains(before, id) && !slices.Contains(known, id) {
 			known = append(known, id)
 		}
 	}

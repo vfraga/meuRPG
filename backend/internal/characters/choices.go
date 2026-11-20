@@ -117,6 +117,10 @@ func (s *Service) sheetForChoices(ctx context.Context, m authz.Membership, conte
 	if len(over.FeatureChoiceKeys) > rules.MaxListLength {
 		return nil, invalidArgument(fieldErr("sheet.full.feature_choice_keys", "must have at most %d entries", rules.MaxListLength))
 	}
+	// A pick is new when the stored sheet lacks it: what the master archived or switched off is not a new choice.
+	if err := refuseNewChoices(content, m, row.ID, full, over); err != nil {
+		return nil, err
+	}
 	return &charactersv1.CharacterSheet{Content: &charactersv1.CharacterSheet_Full{Full: over}}, nil
 }
 
@@ -380,7 +384,7 @@ func (s *Service) completeChoicesInTx(ctx context.Context, tx pgx.Tx, m authz.Me
 	if err != nil {
 		return choicesCompleted{}, wrap("read rules content", err)
 	}
-	sheet, labels, err := pickedSheet(content, current, in.picks)
+	sheet, labels, err := pickedSheet(content, m, current, in.picks)
 	if err != nil {
 		return choicesCompleted{}, err
 	}
@@ -409,7 +413,7 @@ func (s *Service) completeChoicesInTx(ctx context.Context, tx pgx.Tx, m authz.Me
 
 // pickedSheet is the stored sheet with the picks laid over it, checked as any sheet
 // is, and the labels of the choices answered.
-func pickedSheet(content *rules.Content, current charactersdb.Character, picks []*charactersv1.ChoicePick) (*charactersv1.CharacterSheet, []string, error) {
+func pickedSheet(content *rules.Content, m authz.Membership, current charactersdb.Character, picks []*charactersv1.ChoicePick) (*charactersv1.CharacterSheet, []string, error) {
 	stored, err := loadSheet(current.ID, current.Sheet)
 	if err != nil {
 		return nil, nil, err
@@ -425,6 +429,10 @@ func pickedSheet(content *rules.Content, current charactersdb.Character, picks [
 	sheet, err := checkSheet(content, &charactersv1.CharacterSheet{Content: &charactersv1.CharacterSheet_Full{Full: next}})
 	if err != nil {
 		return nil, nil, invalidArgument(err)
+	}
+	// Nor a pick of what the master archived or switched off.
+	if err := refuseNewChoices(content, m, current.ID, full, sheet.GetFull()); err != nil {
+		return nil, nil, err
 	}
 	// The picks may not make the sheet worse: a prerequisite they unmeet, or a pick
 	// the sheet does not offer, that it did not have before.

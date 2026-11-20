@@ -38,15 +38,15 @@ export const FEAT_OPTION_TEXTS: readonly { shape: RegExp; reason?: string; text:
 /** What the server's refusals say at the class level, the pact, the spell and the options a feat or an option asks (#580, S1). */
 export const PREREQUISITE_TEXTS: readonly { shape: RegExp; reason?: string; text: string }[] = [
   {
-    shape: /^table_(option|feat)\.prerequisite\.class_level$/,
+    shape: /^(table_(option|feat)|.+\.options\[\])\.prerequisite\.class_level$/,
     text: 'A classe e o nível vão juntos: preencha os dois ou nenhum.',
   },
   {
-    shape: /^table_(option|feat)\.prerequisite\.class_level\.class_key$/,
+    shape: /^(table_(option|feat)|.+\.options\[\])\.prerequisite\.class_level\.class_key$/,
     text: 'Esta classe não existe mais. Escolha outra.',
   },
   {
-    shape: /^table_(option|feat)\.prerequisite\.class_level\.level$/,
+    shape: /^(table_(option|feat)|.+\.options\[\])\.prerequisite\.class_level\.level$/,
     text: 'O nível vai de 1 a 20.',
   },
   {
@@ -57,12 +57,29 @@ export const PREREQUISITE_TEXTS: readonly { shape: RegExp; reason?: string; text
     shape: /^table_option\.prerequisite\.requires_option_keys(\[\])?$/,
     text: 'Escolha opções que existem, sem a própria opção, e no máximo 10.',
   },
+  // An option of a class, subclass, race or subrace feature: the save refuses the asks of two options that wait for each other (each at
+  // its own ask, with bad_value), an option that is gone (dangling_reference) and too many (limit).
   {
-    shape: /^table_(option|feat)\.prerequisite\.requires_pact$/,
+    shape: /^.+\.options\[\]\.prerequisite\.requires_option_keys(\[\])?$/,
+    reason: 'bad_value',
+    text: 'Esta opção e a que ela pede esperam uma pela outra: nenhuma das duas poderia ser escolhida. Tire um dos pedidos.',
+  },
+  {
+    shape: /^.+\.options\[\]\.prerequisite\.requires_option_keys(\[\])?$/,
+    reason: 'dangling_reference',
+    text: 'Uma opção pedida aqui não existe mais. Tire-a ou escolha outra.',
+  },
+  {
+    shape: /^.+\.options\[\]\.prerequisite\.requires_option_keys(\[\])?$/,
+    reason: 'limit',
+    text: 'Uma opção pede no máximo 10 outras.',
+  },
+  {
+    shape: /^(table_(option|feat)|.+\.options\[\])\.prerequisite\.requires_pact$/,
     text: 'Escolha uma dádiva do pacto da lista.',
   },
   {
-    shape: /^table_(option|feat)\.prerequisite\.requires_spell_key$/,
+    shape: /^(table_(option|feat)|.+\.options\[\])\.prerequisite\.requires_spell_key$/,
     text: 'Esta magia não existe mais. Escolha outra.',
   },
 ];

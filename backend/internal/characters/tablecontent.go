@@ -293,7 +293,7 @@ func tableWeaponOf(te rules.TableEntry, b *rulesv1.TableWeapon) rules.TableWeapo
 	return rules.TableWeapon{
 		TableEntry: te, DescPT: b.GetDescPt(), Category: category, Ranged: b.GetRanged(), Damage: b.GetDamage(), DamageType: b.GetDamageType(),
 		TwoHandedDamage: b.GetTwoHandedDamage(), Properties: b.GetProperties(), NormalRangeFt: int(b.GetNormalRangeFt()), LongRangeFt: int(b.GetLongRangeFt()),
-		WeightOz: int(b.GetWeightOz()), PriceCP: int(b.GetPriceCp()),
+		WeightOz: int(b.GetWeightOz()), PriceCP: int(b.GetPriceCp()), TwoHandedSince: int(b.GetTwoHandedSinceRevision()),
 	}
 }
 
@@ -440,7 +440,14 @@ func tableFeatureOf(f *rulesv1.TableFeature) rules.TableFeature {
 	return rules.TableFeature{
 		Key: f.GetKey(), NamePT: f.GetNamePt(), DescPT: f.GetDescPt(), Effects: tableEffectsOf(f.GetEffects()),
 		Options: tableFeaturesOf(f.GetOptions()), Summon: tableSummonOf(f.GetSummon()), Prerequisite: optionPrerequisiteOf(f.GetPrerequisite()),
+		SwapLevels: featureSwapLevelsOf(f.GetSwapLevels()),
+		Infusion:   tableInfusionOf(f.GetInfusion()), InfusionRule: tableInfusionRuleOf(f.GetInfusionRule()),
 	}
+}
+
+// featureSwapLevelsOf is the engine's swap levels of a stored feature's; the zero value for none.
+func featureSwapLevelsOf(s *rulesv1.FeatureSwapLevels) rules.FeatureSwapLevels {
+	return rules.FeatureSwapLevels{Levels: intsOf(s.GetLevels()), EveryLevel: s.GetEveryLevel()}
 }
 
 // optionPrerequisiteOf is the engine's prerequisite of a stored option's.
@@ -463,7 +470,7 @@ func tableEffectsOf(in []*rulesv1.TableEffect) []rules.Effect {
 			IgnoreCover: e.GetIgnoreCover(), RangeMultiplier: int(e.GetRangeMultiplier()), NoLongRangeDisadvantage: e.GetNoLongRangeDisadvantage(),
 			Except: e.GetExcept(), While: e.GetWhile(), OnlyProficient: e.GetOnlyProficient(),
 			Spell: e.GetSpell(), FromLevel: e.GetFromLevel(), Uses: e.GetUses(), AlsoWithSlot: e.GetAlsoWithSlot(), RitualOnly: e.GetRitualOnly(), CountsAsKnown: e.GetCountsAsKnown(),
-			NoMaterialComponents: e.GetNoMaterialComponents(), UsesCost: int(e.GetUsesCost()), Duration: e.GetDuration(), DailyChoice: e.GetDailyChoice(),
+			NoMaterialComponents: e.GetNoMaterialComponents(), UsesCost: int(e.GetUsesCost()), CastLevel: int(e.GetCastLevel()), Duration: e.GetDuration(), DailyChoice: e.GetDailyChoice(),
 			Cost: e.GetCost(), CostMax: e.GetCostMax(), ValuePerPoint: e.GetValuePerPoint(), Heal: e.GetHeal(), TempHP: e.GetTempHp(),
 			Event: e.GetEvent(), Restore: e.GetRestore(), HealPercentMax: int(e.GetHealPercentMax()),
 			StateName: e.GetStateName(), DurationRounds: e.GetDurationRounds(), EndsOn: e.GetEndsOn(),
@@ -534,7 +541,7 @@ func tableFeatOf(te rules.TableEntry, b *rulesv1.TableFeat) rules.TableFeat {
 func tableOptionOf(te rules.TableEntry, b *rulesv1.TableOption) rules.TableOption {
 	return rules.TableOption{
 		TableEntry: te, DescPT: b.GetDescPt(), Set: b.GetSet(), OfferedBy: b.GetOfferedBy(), Effects: tableEffectsOf(b.GetEffects()),
-		Prerequisite: optionPrerequisiteOf(b.GetPrerequisite()),
+		Prerequisite: optionPrerequisiteOf(b.GetPrerequisite()), Infusion: tableInfusionOf(b.GetInfusion()),
 	}
 }
 
@@ -1251,7 +1258,7 @@ func parentHidden(e entryRow, hidden func(string) bool) bool {
 // A table spell's summon goes without the table creatures the player holds none of, and without its count
 // and limits: a player who casts the spell reads the creatures and the count from GetSummonOptions.
 func forPlayer(e entryRow, hidden func(string) bool, held map[string]bool) entryRow {
-	if hidden == nil && !summons(e.body) && !effectKeepsItsSecrets(e.body) {
+	if hidden == nil && !summons(e.body) && !effectKeepsItsSecrets(e.body) && !carriesInfusions(e.body) {
 		return e // nothing is hidden: the entry goes as it is
 	}
 	if hidden == nil {
@@ -1375,6 +1382,7 @@ func (v playerView) stripOption(b *rulesv1.TableOption) {
 	}
 	v.dropEffects([]*rulesv1.TableFeature{{Effects: b.GetEffects()}})
 	v.stripOptionPrerequisite(b.GetPrerequisite())
+	b.Infusion = nil // the infusion data is the master's and the sheet's, as a feature's
 }
 
 // stripOptionPrerequisite takes the hidden keys out of what an option asks for.
@@ -1465,6 +1473,8 @@ func (v playerView) visible(keys []string) []string {
 func (v playerView) dropEffects(fs []*rulesv1.TableFeature) {
 	for _, f := range fs {
 		v.stripSummon(f.GetSummon())
+		// The infusion data is the master's and the sheet's: a player reads the infusions through the character.
+		f.Infusion, f.InfusionRule = nil, nil
 		for _, ef := range f.GetEffects() {
 			ef.Spells = v.visible(ef.Spells)
 			ef.From = v.visible(ef.From)

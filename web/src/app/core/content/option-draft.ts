@@ -41,6 +41,8 @@ export interface OptionDraft {
   requiresPact: string;
   /** A spell the character must know. */
   requiresSpell: string;
+  /** The infusion data of an option that is an infusion, kept as the server wrote it: the editor draws no field for it, and saving the option must not drop it. */
+  infusion?: TableOption['infusion'];
 }
 
 export function emptyOption(set = ''): OptionDraft {
@@ -72,6 +74,7 @@ export function optionToDraft(o: TableOption): OptionDraft {
     requiresOptions: [...(p?.requiresOptionKeys ?? [])],
     requiresPact: p?.requiresPact ?? '',
     requiresSpell: p?.requiresSpellKey ?? '',
+    ...(o.infusion ? { infusion: o.infusion } : {}),
   };
 }
 
@@ -92,6 +95,7 @@ export function draftToOption(d: OptionDraft, menu: EffectMenuVm): OptionInit {
       requiresPact: d.requiresPact,
       requiresSpellKey: d.requiresSpell,
     },
+    ...(d.infusion ? { infusion: d.infusion } : {}),
     effects: d.feature.effects.map((e) => draftToEffect(e, menu)),
   };
 }

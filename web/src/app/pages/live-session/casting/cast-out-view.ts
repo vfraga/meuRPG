@@ -78,7 +78,7 @@ export function wayCardsOf(s: CastingSpell): readonly ChoiceRow[] {
     picks.filter((p) => p.grant === null).map((p) => p.way),
   );
   return picks.map((p) =>
-    p.grant ? grantCard(p) : (own.find((r) => r.id === p.way) as ChoiceRow),
+    p.grant ? grantCard(p, s.spell?.level ?? 0) : (own.find((r) => r.id === p.way) as ChoiceRow),
   );
 }
 
@@ -106,6 +106,11 @@ export function targetChoicesOf(
 export function diceOf(rollDice: string): { readonly count: number; readonly sides: number } {
   const m = /^(\d+)d(\d+)$/.exec(rollDice);
   return m ? { count: Number(m[1]), sides: Number(m[2]) } : { count: 1, sides: 4 };
+}
+
+/** The dice the spell rolls cast at `level` ("3d8"): the entry of `diceByLevel`, else the spell's own `rollDice`. */
+export function diceTextAt(s: CastingSpell, level: number): string {
+  return s.diceByLevel.find((d) => d.level === level)?.dice ?? s.rollDice;
 }
 
 /** What the cast still needs from the picks so far. */

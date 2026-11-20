@@ -31,6 +31,7 @@ const caster = combatant({ id: 'z', label: 'Zuk' });
 const enc = encounter({ round: 4, combatants: [caster] });
 const spellOption = (key: string, over: object = {}) => ({
   spell: { key, name: key, namePt: `${key} PT`, level: 1, concentration: true },
+  enabled: true,
   economy: ActionEconomy.BONUS_ACTION,
   slots: [{ level: 1, pact: false, free: 2 }],
   metamagicOptions: [{ key: 'quickened' }],
@@ -131,6 +132,25 @@ describe('castSheetData', () => {
     const english = { attack: create(AttackSchema, { key: 'spell:fire-bolt', name: 'Fire Bolt' }) };
     expect(castSheetData(request({ turn: turn([], [english]) })).name).toBe('Fire Bolt');
     expect(castSheetData(request({ key: 'spell:unknown' })).name).toBe('spell:unknown');
+  });
+
+  it("gives a grant cast the grant's entry of the targets, not the class's", () => {
+    const classOpt = spellOption('spell:magic-missile');
+    const grantOpt = spellOption('spell:magic-missile', {
+      grant: { sourceKey: 'feat:graca@mesa', castLevel: 3 },
+    });
+    const entries = [
+      { spellKey: 'spell:magic-missile', darts: [] },
+      { spellKey: 'spell:magic-missile', darts: [{ slotLevel: 3, darts: 5 }] },
+    ];
+    const t = turn([classOpt, grantOpt], [], entries);
+    const own = castSheetData(request({ key: 'spell:magic-missile', turn: t }));
+    const granted = castSheetData(
+      request({ key: 'spell:magic-missile#granted=feat:graca@mesa', turn: t }),
+    );
+    expect(own.targets).toBe(entries[0]);
+    expect(granted.targets).toBe(entries[1]);
+    expect(areaSpellOf(t, 'spell:magic-missile#granted=feat:graca@mesa')?.targets).toBe(entries[1]);
   });
 
   it("reads the caster's slots, pact slots and sorcery points from the vitals", () => {
@@ -271,6 +291,53 @@ describe('the master casting an NPC area spell', () => {
       state: new CombatState(),
     });
   };
+
+  it('carries the grant of an option the NPC has only through a grant, apart from the spell key', () => {
+    const o = options(3, [{ level: 3, pact: false, free: 1 }]);
+    o.options!.spells[0]!.grant = { sourceKey: 'trait:inato' } as never;
+    const ref = 'spell:fireball#granted=trait:inato';
+    expect(areaSpellOf(o, 'spell:fireball')).toBeNull();
+    const found = areaSpellOf(o, ref)!;
+    const data = masterAreaCastData({
+      campaignId: 'c',
+      encounter: enc,
+      caster,
+      key: ref,
+      found,
+      map: { mapName: 'Cripta' } as never,
+      state: new CombatState(),
+    });
+    expect(data.spellKey).toBe('spell:fireball');
+    expect(data.grantedBy).toBe('trait:inato');
+  });
+
+  it('sends no slot for a leveled option the NPC has through a grant that allows none, at the grant’s cast level', () => {
+    const o = options(3, []);
+    o.options!.spells[0]!.grant = { sourceKey: 'trait:inato', castLevel: 4 } as never;
+    const data = masterAreaCastData({
+      campaignId: 'c',
+      encounter: enc,
+      caster,
+      key: 'spell:fireball#granted=trait:inato',
+      found: areaSpellOf(o, 'spell:fireball#granted=trait:inato')!,
+      map: { mapName: 'Cripta' } as never,
+      state: new CombatState(),
+    });
+    expect(data.slot).toBeNull();
+    expect(data.level).toBe(4);
+    o.options!.spells[0]!.grant = { sourceKey: 'trait:inato', alsoWithSlot: true } as never;
+    o.options!.spells[0]!.slots = [{ level: 3, pact: false, free: 1 }] as never;
+    const withSlot = masterAreaCastData({
+      campaignId: 'c',
+      encounter: enc,
+      caster,
+      key: 'spell:fireball#granted=trait:inato',
+      found: areaSpellOf(o, 'spell:fireball#granted=trait:inato')!,
+      map: { mapName: 'Cripta' } as never,
+      state: new CombatState(),
+    });
+    expect(withSlot.slot).toEqual({ level: 3, pact: false });
+  });
 
   it("casts with the lowest slot the options offer, or the spell's own level", () => {
     expect(

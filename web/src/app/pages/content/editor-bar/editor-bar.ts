@@ -119,7 +119,8 @@ export class EditorAlerts {
       position: sticky;
       bottom: 0;
       z-index: 5;
-      margin: 0 calc(var(--mr-gutter) * -1);
+      // The page keeps a space at its foot: the bar reaches over it, so at the end of the page it sits on the page's edge and does not float.
+      margin: 0 calc(var(--mr-gutter) * -1) calc(var(--mr-space-8) * -1);
       padding: var(--mr-space-3) var(--mr-gutter);
       border-top: 1px solid var(--mr-line);
       background: var(--mr-surface);

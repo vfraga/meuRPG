@@ -30,6 +30,7 @@ describe('sheet-format', () => {
       countsAsKnown: false,
       noMaterialComponents: false,
       usesCost: 0,
+      castLevel: 1,
       ability: null,
       abilityPending: false,
       saveDc: 0,
@@ -41,6 +42,34 @@ describe('sheet-format', () => {
       'Sem material',
     ]);
     expect(grantedSpellTags({ ...g, atWill: true, resource: '' })).toEqual(['À vontade']);
+  });
+
+  it('says the level a granted spell is cast at only when it is above the spell’s own', () => {
+    const g = {
+      key: 'spell:bless',
+      namePt: 'Bênção',
+      level: 1,
+      sourcePt: 'Legado',
+      atWill: false,
+      resource: 'usos',
+      resourceNamePt: 'Usos',
+      alsoWithSlot: false,
+      ritualOnly: false,
+      countsAsKnown: false,
+      noMaterialComponents: false,
+      usesCost: 0,
+      castLevel: 1,
+      ability: null,
+      abilityPending: false,
+      saveDc: 0,
+      attackBonus: 0,
+    } as const;
+    expect(grantedSpellTags({ ...g, castLevel: 2 })).toEqual([
+      'Gasta um uso de Usos',
+      'Conjurada no\u00a02º\u00a0nível',
+    ]);
+    expect(grantedSpellTags(g)).toEqual(['Gasta um uso de Usos']);
+    expect(grantedSpellTags({ ...g, level: 0, castLevel: 0 })).toEqual(['Gasta um uso de Usos']);
   });
 
   it('keeps a number beside its unit, and only a unit', () => {

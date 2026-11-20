@@ -21,6 +21,7 @@ The death confirmation cannot be undone, and neither can a contest, a hit rider,
 The undo of an attack gives back the piece of ammunition the shot took, in the same transaction, and takes the shot's line out of the log ([Attacks and damage](attacks-and-damage.md#the-two-step-attack)).
 The use of a charge of a magic item cannot be undone: `item_charge_spent`, `item_charges_restored` and `item_destroyed` are not undoable kinds, so each closes the chain, and the attack before it can no longer be undone ([Item charges](item-charges.md)).
 The use of a consumable (`consumable_used`) is the same: it spends a unit of the sheet, and it closes the chain.
+The infusion events (`infusion_infused`, `infusion_moved`, `infusion_ended`) are not undoable kinds either, so each closes the chain.
 The line of a Parry the server used on an attack is written just before the attack's event, and the undo of the attack takes it back with the attack and gives the creature its reaction back.
 The master's choice of a monster's Parry mode (`monster_reaction_mode_set`) never closes the chain: the undo goes on to the action before it.
 The master's switch of the sunlight (`sunlight_set`, secret, no log line) is the same: it never closes the chain.

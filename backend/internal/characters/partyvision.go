@@ -63,7 +63,7 @@ func partyMember(content *rules.Content, row charactersdb.ListPartyVisionRow, us
 	}
 	if full := sheet.GetFull(); full != nil {
 		// The form's senses and passive Perception, when the druid is a beast (MR-037).
-		derived := derive(content, full, row.WildShapeBeast, row.ActiveStates)
+		derived := derive(content, full, row.WildShapeBeast, row.ActiveStates, "", nil) // the senses and the passive Perception read no infusion
 		member.Senses = sensesOf(derived.Senses)
 		member.PassivePerception = derived.PassivePerception
 	}

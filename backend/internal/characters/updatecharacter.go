@@ -24,12 +24,15 @@ import (
 // sheet become the ones the transaction reads when the table's content moved in
 // between, and the response is built with that content.
 type sheetSave struct {
-	m        authz.Membership
-	id       string
-	revision int32
-	name     string
-	content  *rules.Content
-	sheet    *charactersv1.CharacterSheet
+	// infusions are the holder's live records, read once by the save check (the character locked) and used again to end
+	// the records of a piece that left the sheet.
+	infusions []rules.InfusionRecord
+	m         authz.Membership
+	id        string
+	revision  int32
+	name      string
+	content   *rules.Content
+	sheet     *charactersv1.CharacterSheet
 	// portraitErr is the portrait's field problem, found before the transaction and
 	// answered inside it after the checks that come first; portraitCopy is the copy of
 	// a fog map's background whose gallery row the transaction inserts, and copyCreated
@@ -149,6 +152,13 @@ func (s *Service) saveSheetIn(ctx context.Context, tx pgx.Tx, u *sheetSave, t se
 	if err := dropRemovedItemCharges(ctx, q, u.id, u.sheet.GetFull()); err != nil {
 		return row, err
 	}
+	gone, err := s.endInfusionsOfGoneGear(ctx, q, u.m.CampaignID, u.infusions, u.sheet.GetFull())
+	if err != nil {
+		return row, err
+	}
+	if err := s.reportInfusions(ctx, tx, t, u.m.CampaignID, u.m.UserID, row, gone); err != nil {
+		return row, err
+	}
 	t.Touch() // the sheet changed, for the master and the table alike: the number moves once
 	return row, s.tellGearChange(ctx, tx, u.m.CampaignID, u.id, stored.GetFull(), u.sheet.GetFull(), t)
 }
@@ -197,7 +207,13 @@ func (s *Service) checkSheetSave(ctx context.Context, tx pgx.Tx, u *sheetSave, c
 	if err != nil {
 		return nil, err
 	}
-	if err := refuseSheetChanges(u.content, u.m, current, stored, u.sheet); err != nil {
+	// The character is locked: the records read here are the ones the save changes against.
+	infusions, err := s.holderInfusions(ctx, s.queries.WithTx(tx), current.ID)
+	if err != nil {
+		return nil, err
+	}
+	u.infusions = infusions
+	if err := refuseSheetChanges(u.content, u.m, current, stored, u.sheet, infusions); err != nil {
 		return nil, err
 	}
 	return stored, nil
@@ -205,7 +221,7 @@ func (s *Service) checkSheetSave(ctx context.Context, tx pgx.Tx, u *sheetSave, c
 
 // refuseSheetChanges refuses what a save may not change from the stored sheet, in the
 // order the client is answered, and carries over what the server keeps.
-func refuseSheetChanges(content *rules.Content, m authz.Membership, current charactersdb.Character, stored, sheet *charactersv1.CharacterSheet) error {
+func refuseSheetChanges(content *rules.Content, m authz.Membership, current charactersdb.Character, stored, sheet *charactersv1.CharacterSheet, infusions []rules.InfusionRecord) error {
 	if err := refuseNewChoices(content, m, current.ID, stored.GetFull(), sheet.GetFull()); err != nil {
 		return err
 	}
@@ -218,6 +234,9 @@ func refuseSheetChanges(content *rules.Content, m authz.Membership, current char
 	}
 	// Only the master adds or removes a feat in the editor (MR-025).
 	if err := refuseFeatChange(m, stored.GetFull(), sheet.GetFull()); err != nil {
+		return err
+	}
+	if err := refuseInfusedBonus(content, current.ID, stored.GetFull(), sheet.GetFull(), infusions); err != nil {
 		return err
 	}
 	// The ability origin is the server's: kept from the stored sheet, and a
@@ -234,6 +253,23 @@ func refuseSheetChanges(content *rules.Content, m authz.Membership, current char
 		keepDailyState(stored.GetFull(), sheet.GetFull())
 	}
 	return nil
+}
+
+// refuseInfusedBonus refuses a manual magic bonus that the save adds or changes on a piece an infusion gives its bonus.
+// A pair the stored sheet already has is left alone, so the sheet keeps saving. Both builds carry the live infusion
+// records of the character.
+func refuseInfusedBonus(content *rules.Content, characterID string, stored, sheet *charactersv1.FullSheet, infusions []rules.InfusionRecord) error {
+	if sheet == nil {
+		return nil
+	}
+	before, after := buildOf(stored), buildOf(sheet)
+	before.CharacterID, before.Infusions = characterID, infusions
+	after.CharacterID, after.Infusions = characterID, infusions
+	err := rules.CheckManualBonuses(before, after, content)
+	if ve, ok := errors.AsType[*rules.ValidationError](err); ok {
+		return invalidArgument(&fieldError{field: "sheet." + ve.Field, err: errors.New(ve.Message)})
+	}
+	return err
 }
 
 // insertPortraitCopy writes the portrait copy's gallery row in the transaction and puts

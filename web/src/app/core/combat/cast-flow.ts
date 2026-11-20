@@ -226,10 +226,26 @@ export function dartsAt(darts: readonly DartsAtSlot[], level: number): number {
   return darts.find((d) => d.slotLevel === level)?.darts ?? 0;
 }
 
+/**
+ * The level a cast scales at: the slot's, else the level the grant casts at, else the spell's own (`own`; 0 for a
+ * cantrip), so a grant's level never replaces a slot's.
+ */
+export function castLevelOf(
+  slot: { readonly level: number } | null | undefined,
+  grant: { readonly castLevel: number } | null | undefined,
+  own: number,
+): number {
+  return slot?.level ?? (grant && grant.castLevel > own ? grant.castLevel : own);
+}
+
+/**
+ * How many targets a cast takes and who can be picked. `entryLevel` is the level the entry `st` was listed at: the spell's
+ * own for the class's cast, the grant's cast level for a grant's; `slotLevel` is the level the cast scales at.
+ */
 export function targetRule(
   st: SpellTargets | undefined,
   casterId: string,
-  spellLevel: number,
+  entryLevel: number,
   slotLevel: number,
 ): TargetRule {
   if (!st) {
@@ -251,10 +267,11 @@ export function targetRule(
   if (st.maxTargets === 0) {
     return { kind: 'multi', max: MAX_CAST_TARGETS, min: 0 }; // an area: any number, even none
   }
-  // The server says how many more targets each slot level above the spell's adds; a server that sets only the flag means one.
+  // The server says how many more targets each level above the entry's adds; a server that sets only the flag means one.
+  // A slot below the level of a grant's entry takes as many away.
   const perLevel = st.targetsPerLevel > 0 ? st.targetsPerLevel : st.extraTargetPerLevel ? 1 : 0;
-  const extra = perLevel * Math.max(slotLevel - spellLevel, 0);
-  const max = Math.min(st.maxTargets + extra, MAX_CAST_TARGETS);
+  const extra = perLevel * (slotLevel - entryLevel);
+  const max = Math.max(Math.min(st.maxTargets + extra, MAX_CAST_TARGETS), 1);
   return { kind: max === 1 ? 'single' : 'multi', max, min: 1 };
 }
 

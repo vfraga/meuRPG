@@ -69,13 +69,14 @@ func (s *Service) CastingOptions(ctx context.Context, tx pgx.Tx, campaignID, cha
 		for _, g := range o.Grants {
 			cs.Grants = append(cs.Grants, &playv1.CastingGrant{
 				SourceKey: g.Source, SourceNamePt: g.SourcePT, AtWill: g.AtWill, Resource: g.Resource, UsesLeft: i32(g.UsesLeft),
-				UsesCost: i32(g.Cost), NoMaterialComponents: g.NoMaterialComponents,
+				UsesCost: i32(g.Cost), NoMaterialComponents: g.NoMaterialComponents, CastLevel: i32(g.CastLevel),
 				AlsoWithSlot: g.AlsoWithSlot, RitualOnly: g.RitualOnly, Ready: g.Ready(), Ability: string(g.Ability),
 				AttackBonus: i32(g.AttackBonus), SaveDc: i32(g.SaveDC),
 			})
 		}
-		effect, dice := castingEffect(content, det)
+		effect, dice := castingEffect(content, det, o.Spell.Level)
 		cs.Effect, cs.RollsDice, cs.RollDice = effectKindToProto[effect], dice != "", dice
+		cs.DiceByLevel = diceByLevel(content, det)
 		cs.Summons = effect == link.EffectSummon
 		out = append(out, cs)
 	}
@@ -103,10 +104,29 @@ func durationSeconds(d rules.SpellDuration) int32 {
 	return i32(secs)
 }
 
-// castingEffect says what the server applies for a spell, from the spell alone, and
-// the dice it rolls at the spell's own level ("2d8", "" for none).
-func castingEffect(content *rules.Content, det *rules.SpellDetails) (effect, dice string) {
-	key, level := det.Spell.Key, det.Spell.Level
+// diceByLevel is the dice a cast rolls at each level it can be cast at, from the spell's own level to 9th (a cantrip has
+// its own level only): the dice the server checks a typed sum against. Empty when the cast rolls none.
+func diceByLevel(content *rules.Content, det *rules.SpellDetails) []*playv1.CastingDice {
+	own := det.Spell.Level
+	if _, dice := castingEffect(content, det, own); dice == "" {
+		return nil
+	}
+	top := 9
+	if own == 0 {
+		top = 0
+	}
+	var out []*playv1.CastingDice
+	for level := own; level <= top; level++ {
+		_, dice := castingEffect(content, det, level)
+		out = append(out, &playv1.CastingDice{Level: i32(level), Dice: dice})
+	}
+	return out
+}
+
+// castingEffect says what the server applies for a spell cast at a level, and the dice it
+// rolls there ("2d8", "" for none).
+func castingEffect(content *rules.Content, det *rules.SpellDetails, level int) (effect, dice string) {
+	key := det.Spell.Key
 	if key == rules.MageArmorSpell {
 		return link.EffectArmorClass, ""
 	}
@@ -166,7 +186,7 @@ func (s *Service) OutsideSpell(ctx context.Context, tx pgx.Tx, campaignID, chara
 		for _, g := range o.Grants {
 			out.Grants = append(out.Grants, link.OutsideGrant{
 				Source: g.Source, SourcePT: g.SourcePT, AtWill: g.AtWill, Resource: g.Resource, UsesLeft: g.UsesLeft,
-				Cost: g.Cost, NoMaterial: g.NoMaterialComponents,
+				Cost: g.Cost, NoMaterial: g.NoMaterialComponents, CastLevel: g.CastLevel,
 				AlsoWithSlot: g.AlsoWithSlot, RitualOnly: g.RitualOnly, Ready: g.Ready(),
 			})
 		}
@@ -174,7 +194,7 @@ func (s *Service) OutsideSpell(ctx context.Context, tx pgx.Tx, campaignID, chara
 	out.Lasts, out.RestEnds = det.Duration.Lasts(), rules.EndedByRest(det.Duration)
 	secs, _ := det.Duration.Seconds()
 	out.DurationSeconds = secs
-	out.Effect, _ = castingEffect(content, det)
+	out.Effect, _ = castingEffect(content, det, det.Spell.Level)
 	out.FeatureSummon = isFeatureSummon(content, spellKey)
 	h := combat.HealFeaturesOf(d.Features)
 	out.Healing = link.HealFeatures{Disciple: h.Disciple, Blessed: h.Blessed, Supreme: h.Supreme}
@@ -209,7 +229,11 @@ func (s *Service) MageArmorAC(ctx context.Context, tx pgx.Tx, campaignID, charac
 	if err != nil {
 		return link.MageArmor{}, s.dbError(ctx, "read rules content", err)
 	}
-	return mageArmorOf(buildWithStates(full, stateKeysOf(rows[0].ActiveStates)), content), nil
+	build, err := s.infusedBuild(ctx, s.queriesIn(tx), rows[0].ID, full, stateKeysOf(rows[0].ActiveStates))
+	if err != nil {
+		return link.MageArmor{}, s.dbError(ctx, "read the infusions of a character for Mage Armor", err)
+	}
+	return mageArmorOf(build, content), nil
 }
 
 // mageArmorOf is what Mage Armor does to the sheet b: nothing while it wears armor, else

@@ -549,3 +549,8 @@ body.mr-live-phone app-footer {
     max-width: min(100%, 2400px);
   }
 }
+
+// The menu of "Adicionar opção" lists every option of the SRD and the table: it scrolls inside the panel.
+.mat-mdc-menu-panel.pick-menu {
+  max-height: min(60vh, 360px);
+}

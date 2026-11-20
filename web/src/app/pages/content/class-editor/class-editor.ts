@@ -59,6 +59,7 @@ import { TextField } from '../../../shared/form-fields/text-field';
 import { type GridEdit, type GridRowVm, LevelGrid } from '../../../shared/level-grid/level-grid';
 import { CastingFields } from '../class-parts/casting-fields';
 import { ClassFeatures } from '../class-parts/class-features';
+import { FeaturePreview } from '../class-parts/feature-preview';
 import { type NavSection, SectionNav } from '../class-parts/section-nav';
 import { TableQuestion } from '../class-parts/table-question';
 import { EditorAlerts, EditorBar } from '../editor-bar/editor-bar';
@@ -82,6 +83,7 @@ import {
   editedRows,
   emptyDefaults,
   gridRowsOf,
+  hasFeature,
   isKnownPath,
   movedRequirement,
   questionTextOf,
@@ -108,6 +110,7 @@ import {
     CastingFields,
     CheckRow,
     ClassFeatures,
+    FeaturePreview,
     EditorAlerts,
     EditorBar,
     FieldNote,
@@ -150,6 +153,7 @@ export class ClassEditor {
   protected readonly nameMax = NAME_MAX;
   protected readonly draft = signal<ClassDraft>(emptyClass(emptyDefaults()));
   protected readonly openFeature = signal('');
+  protected readonly previewing = computed(() => hasFeature(this.draft(), this.openFeature()));
   protected readonly question = signal<TableAsk | null>(null);
   protected readonly allCircles = signal(false);
   protected readonly status = signal('');
@@ -199,14 +203,13 @@ export class ClassEditor {
   protected readonly gridRows = computed<GridRowVm[]>(() => gridRowsOf(this.draft()));
 
   /** "Preenchida com a tabela do SRD de Paladino": says where the numbers come from, in the server's words. */
+  protected readonly nameOf = (k: string) => this.catalog().nameOf(k);
   protected readonly tableNote = computed(() =>
-    tableNoteOf(this.casting(), this.defaults(), (k) => this.catalog().nameOf(k)),
+    tableNoteOf(this.casting(), this.defaults(), this.nameOf),
   );
 
   protected readonly questionText = computed(() =>
-    questionTextOf(this.question(), this.casting(), this.defaults(), (k) =>
-      this.catalog().nameOf(k),
-    ),
+    questionTextOf(this.question(), this.casting(), this.defaults(), this.nameOf),
   );
 
   constructor() {

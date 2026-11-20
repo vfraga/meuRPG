@@ -58,6 +58,8 @@ func keepAttunement(content *rules.Content, stored, saved *charactersv1.FullShee
 	keepMagicItems(stored, saved)
 	// The ammunition held is the server's: only SetAmmunition and the shots change it.
 	saved.Ammunition = nil
+	// The infusions are the server's too: InfusionService writes them, and a read fills them.
+	saved.Infusions = nil
 }
 
 // keepMagicItems keeps the ids and the `attuned` of the entries a saved sheet shares with the stored one, and gives an
@@ -101,51 +103,81 @@ func entryNumber(id string) int {
 	return n
 }
 
-// entry is one attunable thing of the sheet: a +N piece of gear or a catalog magic item. Both carry the same
-// fields, so one view reads and sets them.
+// entry is one attunable thing of the character: a +N piece of gear, a catalog magic item or the item of an infusion
+// record that asks attunement. The first two carry the same fields, so one view reads and sets them; the third lives in
+// its record, not in the sheet.
 type entry struct {
-	bonus *charactersv1.ItemBonus
-	magic *charactersv1.SheetMagicItem
+	bonus    *charactersv1.ItemBonus
+	magic    *charactersv1.SheetMagicItem
+	infusion *rules.InfusionRecord
 }
 
+// infusionEntryPrefix starts the entry id of an infusion record: "infusion:<record id>".
+const infusionEntryPrefix = "infusion:"
+
+// infusionEntryID is the entry id of the infusion record with this id.
+func infusionEntryID(recordID string) string { return infusionEntryPrefix + recordID }
+
 func (e entry) id() string {
-	if e.bonus != nil {
+	switch {
+	case e.bonus != nil:
 		return e.bonus.GetId()
+	case e.infusion != nil:
+		return infusionEntryID(e.infusion.ID)
 	}
 	return e.magic.GetId()
 }
 
-// itemKey is the catalog item the entry is, or "" for a +N piece that names none.
+// itemKey is the catalog item the entry is, or "" for a +N piece that names none and for an infusion's item.
 func (e entry) itemKey() string {
-	if e.bonus != nil {
+	switch {
+	case e.bonus != nil:
 		return e.bonus.GetItemKey()
+	case e.infusion != nil:
+		return ""
 	}
 	return e.magic.GetKey()
 }
 
 func (e entry) attuned() bool {
-	if e.bonus != nil {
+	switch {
+	case e.bonus != nil:
 		return e.bonus.GetAttuned()
+	case e.infusion != nil:
+		return e.infusion.Attuned
 	}
 	return e.magic.GetAttuned()
 }
 
 func (e entry) set(attuned bool) {
-	if e.bonus != nil {
+	switch {
+	case e.bonus != nil:
 		e.bonus.Attuned = attuned
-	} else {
+	case e.infusion != nil:
+		e.infusion.Attuned = attuned
+	default:
 		e.magic.Attuned = attuned
 	}
 }
 
-// entriesOf lists the entries of a sheet: the +N pieces, then the magic items.
-func entriesOf(f *charactersv1.FullSheet) []entry {
+// entriesOf lists the entries of a character: the +N pieces and the magic items of its sheet, then the live infusion
+// records that name it as holder and whose infusion asks attunement (the records are the ones the loader read; the
+// entries point into the slice, so setting one changes its record). The content says which infusions ask.
+func entriesOf(f *charactersv1.FullSheet, records []rules.InfusionRecord, content *rules.Content) []entry {
 	var out []entry
 	for _, ib := range f.GetItemBonuses() {
 		out = append(out, entry{bonus: ib})
 	}
 	for _, it := range f.GetMagicItems() {
 		out = append(out, entry{magic: it})
+	}
+	for i := range records {
+		if content == nil {
+			break // no content to say which infusions ask for attunement
+		}
+		if in, ok := content.Infusion(records[i].InfusionKey); ok && in.RequiresAttunement {
+			out = append(out, entry{infusion: &records[i]})
+		}
 	}
 	return out
 }
@@ -166,7 +198,7 @@ func copyAttuned(entries []entry, e entry) bool {
 func fillMagicItems(content *rules.Content, f *charactersv1.FullSheet, build rules.Build, d rules.Derived) {
 	facts := attunementFactsOf(f)
 	setBonusIDs(f)
-	entries := entriesOf(f)
+	entries := entriesOf(f, nil, nil)
 	for _, e := range entries {
 		key := e.itemKey()
 		if key == "" {
@@ -269,29 +301,75 @@ func (s *Service) attuneIn(ctx context.Context, tx pgx.Tx, content *rules.Conten
 	}
 	next := proto.CloneOf(full)
 	setBonusIDs(next)
-	entries := entriesOf(next)
+	// The character is locked: the records read here are the ones this write changes against.
+	records, err := s.holderInfusions(ctx, q, current.ID)
+	if err != nil {
+		return current, false, err
+	}
+	entries := entriesOf(next, records, content)
 	i := slices.IndexFunc(entries, func(e entry) bool { return e.id() == in.entryID })
 	if i < 0 {
 		return current, false, invalidArgument(fieldErr("entry_id", "is not an entry of the sheet"))
 	}
 	target := entries[i]
 	build := buildOf(next)
-	requires, _, met, _ := content.AttunementOf(target.itemKey(), build, rules.Derive(build, content), attunementFactsOf(next))
-	if target.bonus != nil {
-		requires = target.bonus.GetRequiresAttunement()
+	build.CharacterID, build.Infusions = current.ID, records
+	if !entryStands(target, build, content) {
+		return current, false, invalidArgument(fieldErr("entry_id", "is not an entry of the sheet"))
 	}
+	requires, met := askOfEntry(content, target, build, next)
 	if !requires && (in.attuned || !target.attuned()) {
 		return current, false, invalidArgument(fieldErr("entry_id", "is an item that does not ask for attunement"))
 	}
 	if target.attuned() == in.attuned {
 		return current, false, nil // already as asked: nothing changes, and no window is spent
 	}
-	if err := s.checkAttunement(ctx, q, m, current, in, checkFacts{met: met, attuned: rules.AttunedCount(build), copyAttuned: copyAttuned(entries, target)}); err != nil {
+	if err := s.checkAttunement(ctx, q, m, current, in, checkFacts{met: met, attuned: rules.AttunedCount(build, content), copyAttuned: copyAttuned(entries, target)}); err != nil {
+		return current, false, err
+	}
+	if err := s.recordAttunement(ctx, q, m, target, in.attuned); err != nil {
 		return current, false, err
 	}
 	target.set(in.attuned)
 	row, err := s.writeAttunement(ctx, q, m, current, next)
 	return row, err == nil, err
+}
+
+// entryStands says the entry is one to attune: an infusion record that is not valid now is none.
+func entryStands(e entry, build rules.Build, content *rules.Content) bool {
+	if e.infusion == nil {
+		return true
+	}
+	return slices.ContainsFunc(rules.Derive(build, content).Infusions, func(s rules.InfusionStatus) bool { return s.ID == e.infusion.ID && s.Valid })
+}
+
+// askOfEntry says whether the entry asks for attunement and whether the character meets what it asks. A +N piece says it
+// itself, and an infusion record asks it of its infusion and names no restriction.
+func askOfEntry(content *rules.Content, target entry, build rules.Build, f *charactersv1.FullSheet) (requires bool, met rules.Restriction) {
+	requires, _, met, _ = content.AttunementOf(target.itemKey(), build, rules.Derive(build, content), attunementFactsOf(f))
+	switch {
+	case target.bonus != nil:
+		requires = target.bonus.GetRequiresAttunement()
+	case target.infusion != nil:
+		requires, met = true, rules.RestrictionMet
+	}
+	return requires, met
+}
+
+// recordAttunement writes the attunement of an infusion entry on its record, in the transaction of the sheet's write; the
+// other entries live in the sheet. A record that ended meanwhile is no entry any more.
+func (s *Service) recordAttunement(ctx context.Context, q *charactersdb.Queries, m authz.Membership, target entry, attuned bool) error {
+	if target.infusion == nil {
+		return nil
+	}
+	live, err := s.setInfusionAttuned(ctx, q, m.CampaignID, target.infusion.ID, attuned)
+	if err != nil {
+		return err
+	}
+	if !live {
+		return invalidArgument(fieldErr("entry_id", "is not an entry of the sheet"))
+	}
+	return nil
 }
 
 // setBonusIDs gives the +N pieces of a stored sheet their ids (the sheet stores them from the save that made them, but

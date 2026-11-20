@@ -51,8 +51,12 @@ export interface ReadiedPromptView {
 }
 
 const COST_NOTE = 'Gasta a sua reação; ela volta no começo da sua vez.';
-const SPELL_NOTE =
-  'A concentração acaba quando a magia sai. Deixar passar perde a magia e o espaço gasto ao preparar.';
+/** The note of a held spell: passing loses the slot spent on holding it only when one was spent (not for a cantrip). */
+function spellNote(slotLevel: number): string {
+  return slotLevel > 0
+    ? 'A concentração acaba quando a magia sai. Deixar passar perde a magia e o espaço gasto ao preparar.'
+    : 'A concentração acaba quando a magia sai. Deixar passar perde a magia.';
+}
 const ONLY_PASS = 'Por aqui só dá para deixar passar.';
 
 /** "a Espada longa", "o Arco curto": the held weapon with its article. */
@@ -92,7 +96,7 @@ export function readiedPrompt(
         title: `Soltar ${name || 'a magia preparada'}`,
         subtitle: `Reação · a ação preparada de ${reactorLabel}`,
         question: `Soltar ${name || 'a magia preparada'} agora?`,
-        note: SPELL_NOTE,
+        note: spellNote(r.slotLevel),
         useLabel: 'Soltar agora',
         releasable: true,
         limit: '',

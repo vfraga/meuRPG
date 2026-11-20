@@ -867,6 +867,12 @@ message ItemModifier {
   bool counts = 5;
   // Why it adds nothing now, in Portuguese; empty when it counts.
   string reason_pt = 6;
+  // The Portuguese name of the infusion this bonus comes from; empty when it comes from the piece itself. Read by the
+  // owner and the master only.
+  string infusion_name_pt = 7;
+  // The id of the infusion record the bonus comes from; empty when it comes from the piece itself. Read by the owner
+  // and the master only.
+  string infusion_id = 8;
 }
 
 // DerivedState is a temporary state a feature defines: a stance, a form.
@@ -945,6 +951,8 @@ message GearEntry {
   // How many of this piece the sheet lists: weapons with the same key are one row (their state is kept by key, so the
   // copies move together). 1 for armor and the shield.
   int32 count = 7;
+  // The Portuguese name of the infusion on the piece, empty when it has none. Read by the owner and the master only.
+  string infusion_name_pt = 8;
 }
 
 // GearKind says which part of the gear a GearEntry is.
@@ -998,6 +1006,8 @@ message ChangedContent {
   // tied to the entry is told with its own sentence in `issues`. What no longer
   // matches, for the sheet of what changed.
   repeated string messages = 7;
+  // The code of each line of `messages`, in the same order: one code per line. A reader who gets the line gets its code.
+  repeated string codes = 8;
 }
 
 // SaveAction is a creature's action that asks for a saving throw.
@@ -1334,6 +1344,10 @@ message GrantedSpell {
   // (1 or more; 0 for an at-will grant).
   bool no_material_components = 14;
   int32 uses_cost = 15;
+  // The level the grant casts the spell at, with no slot: the effect's `cast_level`, or the spell's own
+  // level when it sets none; 0 for a cantrip, which scales with the character. A cast with a slot (a grant
+  // with `also_with_slot`) uses the slot's level.
+  int32 cast_level = 16;
 }
 
 // Attack is an attack with a weapon on the sheet.
@@ -1431,6 +1445,8 @@ message Attack {
   // sheet. The attack rolls the dice of the grip: versatile_damage_dice with both hands, damage_dice with one.
   // UNSPECIFIED for every other line.
   VersatileGrip grip = 30;
+  // The Portuguese name of the infusion on the weapon, empty when it has none. Read by the owner and the master only.
+  string infusion_name_pt = 31;
 }
 
 // VersatileGrip says how a versatile weapon is held. The sheet has no hand for each piece of gear, so the
@@ -2689,6 +2705,9 @@ message SpellGrantOption {
   // 0 for an at-will grant). A cast works only while `uses_left` covers it.
   bool no_material_components = 10;
   int32 uses_cost = 11;
+  // The level the grant casts the spell at, with no slot: the effect's `cast_level`, or the spell's own
+  // level when it sets none; 0 for a cantrip. A cast with a slot (`also_with_slot`) uses the slot's level.
+  int32 cast_level = 12;
 }
 
 // SpellTableOption is a cast option a table feature offers for a spell (a spell_modifier).

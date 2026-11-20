@@ -93,7 +93,7 @@ export class CastArea {
   readonly nobodyLine = computed(() =>
     nobodyText(
       !!this.flow,
-      this.s.data.level > 0 ? this.s.slotLevel() : 0,
+      this.s.data.level > 0 && !this.s.viaGrant() ? this.s.slotLevel() : 0,
       this.s.data.economy === ActionEconomy.BONUS_ACTION,
     ),
   );

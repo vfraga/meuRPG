@@ -283,7 +283,9 @@ func (s *Service) giveBackNPCSlot(ctx context.Context, c *combatTx, who playdb.C
 // reopenWindows opens again the windows an undone change closed, as they were: the same
 // reactor, the same trigger and its place among the windows to answer. Like the undo of an
 // answer (reopenWindowOf), it leaves the clock to the master's screen, which starts the
-// window's wait again when it sees it open.
+// window's wait again when it sees it open. It keeps the trigger as it was, a mark and
+// the beginning of a wait included; the undo of a readied action's use clears them
+// (readiedWaitsAgain).
 func reopenWindows(ctx context.Context, c *combatTx, ids []string) error {
 	for _, id := range ids {
 		if err := c.q.ReopenReactionWindow(ctx, id); err != nil {

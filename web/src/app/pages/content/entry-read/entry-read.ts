@@ -45,7 +45,7 @@ import type { EntryRead as Read } from '../../../core/content/content-read-parts
               @if (i.options) {
                 <ul class="items items--nested">
                   @for (o of i.options; track $index) {
-                    <li><strong>{{ o.title }}.</strong> {{ o.text }}</li>
+                    <li><strong>{{ o.title }}.</strong> {{ o.text }}@if (o.asks) { <span class="asks"> {{ o.asks }}.</span> }</li>
                   }
                 </ul>
               }
@@ -117,7 +117,7 @@ import type { EntryRead as Read } from '../../../core/content/content-read-parts
     @if (!rows() && (read().options?.length ?? 0) > 0) {
       <ul class="items items--nested" aria-label="Opções">
         @for (o of read().options ?? []; track $index) {
-          <li><strong>{{ o.title }}.</strong> {{ o.text }}</li>
+          <li><strong>{{ o.title }}.</strong> {{ o.text }}@if (o.asks) { <span class="asks"> {{ o.asks }}.</span> }</li>
         }
       </ul>
     }
@@ -199,6 +199,11 @@ import type { EntryRead as Read } from '../../../core/content/content-read-parts
         display: block;
         margin-top: var(--mr-space-3);
       }
+    }
+
+    // "Pede Guerreiro 7 e Golpe do Corvo.": what an option asks, after its text, muted.
+    .asks {
+      color: var(--mr-ink-muted);
     }
 
     // "(de Corujeiro)": where a trait of the race comes from, smaller and muted.

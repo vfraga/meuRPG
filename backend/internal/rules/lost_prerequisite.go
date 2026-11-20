@@ -21,6 +21,8 @@ type LostPrerequisite struct {
 	Conditions []LostCondition
 	// unmet is what the conditions were made from, to say them again over the sheet as it ends up.
 	unmet []FeatUnmet
+	// offeredBy is the lost feat whose own choice offered the option, when that is what it lacks (lostOffered).
+	offeredBy string
 }
 
 // LostCondition is one missing condition: what is asked ("Guerreiro 7") and what the character has, told after the
@@ -100,6 +102,18 @@ func (c *content) lost(key string, option bool, unmet []FeatUnmet, b Build, d De
 	return l
 }
 
+// lostOffered is the LostPrerequisite of an option the character picked from the choice of a feat that is lost: the
+// option needs its feat, and the sheet does not apply the feat now ("pede o talento X, que Tor não aplica agora").
+func (c *content) lostOffered(key, feat string) *LostPrerequisite {
+	what := "a opção "
+	if strings.HasPrefix(feat, "feat:") {
+		what = "o talento "
+	}
+	return &LostPrerequisite{Key: key, EntryPT: c.namePT(key), Option: true, offeredBy: feat, Conditions: []LostCondition{
+		{AskPT: what + c.namePT(feat), LinkPT: "que", HasPT: lostListedPT},
+	}}
+}
+
 // lostIDPrefix marks, in an issue's identity, the key of a lost feat or option where another issue has its sentence.
 const lostIDPrefix = "lost:"
 
@@ -107,10 +121,18 @@ const lostIDPrefix = "lost:"
 // sentence. A lost prerequisite is told apart by the entry's key in the sentence's place, and by the name of the
 // list its pick is in without the pick's place: the sentence says what the character has now and what the reader may
 // see, and the place moves when a swap or a rule takes an earlier pick out, while the issue is the same one. The sheet
-// stores these (known issues), so a stored lost prerequisite holds no sentence and no name.
+// stores these (known issues), so a stored lost prerequisite holds no sentence and no name. An issue that has a sentence of its
+// own for the master (Named) is told apart by that one, which is the one an earlier sheet stored.
 func (is Issue) ID() string {
+	if is.Idle != nil {
+		field, _, _ := strings.Cut(is.Field, "[") // the weapon's place in the list is not what the notice is about
+		return is.Code + "|" + field + "|" + idleIDPrefix + is.Idle.Key
+	}
 	if is.Lost != nil {
 		return is.Code + "|" + listOf(is.Field) + "|" + lostIDPrefix + is.Lost.Key
+	}
+	if is.Named != "" {
+		return is.Code + "|" + is.Field + "|" + is.Named // the sentence that names the entry, whichever sentence the reader gets
 	}
 	return is.Code + "|" + is.Field + "|" + is.Message
 }
@@ -225,9 +247,19 @@ func IdentitiesOf(stored []string, issues []Issue) []string {
 	return out
 }
 
-// retold is the lost prerequisite said over the sheet d: the same conditions, with what the character has there.
+// retold is the lost prerequisite said over the sheet d, the one the character ends up with: each condition the entry
+// lacks there, with what the character has. An entry lost in an earlier pass may lack more on d than when it was lost (the
+// score a lost feat gave), and what it lacked then and meets now is not said. The conditions it was lost for are kept when
+// d meets all of them, as it stays lost.
 func (c *content) retold(l *LostPrerequisite, b Build, d Derived) *LostPrerequisite {
-	return c.lost(l.Key, l.Option, l.unmet, b, d)
+	if l.offeredBy != "" {
+		return c.lostOffered(l.Key, l.offeredBy)
+	}
+	unmet := c.unmetOf(l.Key, l.Option, b, d)
+	if len(unmet) == 0 {
+		unmet = l.unmet
+	}
+	return c.lost(l.Key, l.Option, unmet, b, d)
 }
 
 // lostCondition says one missing condition and what the character has of it.
@@ -236,6 +268,9 @@ func (c *content) lostCondition(u FeatUnmet, b Build, d Derived) LostCondition {
 	switch u.Kind {
 	case FeatUnmetClassLevel, FeatUnmetPact, FeatUnmetSpell, FeatUnmetOption, FeatUnmetLacksFeature:
 		lc.Hidden = c.hiddenOn(b, u.Key)
+	}
+	if (u.Kind == FeatUnmetPact || u.Kind == FeatUnmetOption) && ownedBy(b, d)(u.Key) {
+		lc.HasPT = lostListedPT // the sheet lists it and does not apply it: it is lost itself
 	}
 	if lc.Hidden && c.player {
 		lc.AskPT = "" // a player's view holds no name of it, whoever reads the sentence
@@ -259,6 +294,9 @@ func (c *content) lostAsk(u FeatUnmet, b Build, d Derived) LostCondition {
 	}
 	return LostCondition{AskPT: c.lostAskPT(u), LinkPT: "que", HasPT: lostHasPT[u.Kind]}
 }
+
+// lostListedPT is what is said of a pact or an option the sheet still lists and does not apply, told after "que <name>".
+const lostListedPT = "não aplica agora"
 
 // lostHasPT is what the character has of a condition that is plainly missing, told after "que <name>".
 var lostHasPT = map[string]string{

@@ -144,6 +144,11 @@ message TableWeapon {
   // Weight in ounces (0 to 160000) and price in copper pieces (0 to 100000000). Notes only.
   int32 weight_oz = 11;
   int32 price_cp = 12;
+  // The table revision at which the weapon last became two-handed (the property "weapon-property:two-handed" went on, or the
+  // weapon was made with it): the server's, set on every write and never read from a request. 0 when the weapon is not
+  // two-handed, or was before the server kept it. The sheet that carries the weapon is told "passou a exigir as duas mãos" only
+  // when this is newer than the revision the sheet fits (an edit of the damage tells nothing).
+  int32 two_handed_since_revision = 13;
 }
 
 // TableEffect is one effect of a feature, from the closed menu: what the engine
@@ -311,7 +316,8 @@ message TableEffect {
   // lets the character cast it with a spell slot too, `ritual_only` limits it to the
   // ritual way (a spell with the ritual tag; not with also_with_slot) and
   // `counts_as_known` lists it among the known spells without using any of the
-  // class's picks. A leveled spell cast through the grant is cast at its own level.
+  // class's picks. A leveled spell cast through the grant is cast at its own level, or at
+  // `cast_level` when that is set (see there).
   // The material components are waived only when `no_material_components` is set, and
   // only on the sheet and the cast sheet (the server never enforces components).
   // `uses_cost` is how many uses of the resource each cast spends (0 and 1 are one);
@@ -498,6 +504,11 @@ message TableEffect {
   // choice of a skill or a tool only: the player picks again after each rest of `duration`, apart from the sheet (a
   // locked sheet takes the pick), and what is picked lasts until that rest. Required with `duration`.
   bool daily_choice = 94;
+  // granted_spell only: the level the grant casts the spell at, from the spell's own level to 9 (0:
+  // the spell's own level). The spell scales with that level (damage, healing, targets), and
+  // the cast spends no slot. A cast of the same spell with a slot (`also_with_slot`) uses the slot's
+  // level. Refused on a cantrip, with `ritual_only` and on any other effect type.
+  int32 cast_level = 95;
   // Field 90 is not used.
   reserved 90;
 }
@@ -541,6 +552,109 @@ message TableFeature {
   // options picked, a Pact Boon, a spell. An option whose prerequisite is not met is listed in the choice, disabled,
   // with what it lacks; a sheet that already has it keeps it and shows the "prerequisite" problem.
   OptionPrerequisite prerequisite = 7;
+  // Set on an OPTION of a host feature: the option is an infusion an artificer-like class puts on a piece of gear.
+  // Only an option whose host feature carries `infusion_rule` has it. The sheet's infusion list reads it, and so do
+  // the pack import and export. The editor has no screen for it: it only keeps the data through an edit. A player's
+  // copy of the entry drops it.
+  TableInfusion infusion = 8;
+  // Set on the HOST feature (the one with `options`): how many infusions a character may keep live at once, by
+  // class level. Only a feature with options has it. The sheet's infusion list reads it, and so do the pack import and
+  // export. The editor only keeps it through an edit. A player's copy drops it.
+  TableInfusionRule infusion_rule = 9;
+  // The class levels at which a player who levels up may swap a pick of this feature's option pool for another
+  // option of the pool; unset or empty means never. The pool is this feature's options, with the options of the
+  // other features of the same class or subclass that share an option with it (a later level's "2 more"). Only a
+  // class or subclass feature that has options may set it (an option may not). Whether the table plays with the rule
+  // "Trocar uma escolha no aumento de atributo" does not matter: the feature's own data decides.
+  FeatureSwapLevels swap_levels = 10;
+}
+
+// FeatureSwapLevels says at which class levels the picks of a feature's option pool may be swapped, one pick for
+// another option of the pool, as part of the level-up (TableFeature.swap_levels).
+message FeatureSwapLevels {
+  // The class levels (1 to 20, each at most once) at which a swap is allowed. Not set together with `every_level`.
+  repeated int32 levels = 1 [(meurpg.options.v1.max_items) = 20];
+  // True for every class level from the feature's own level on. Not set together with `levels`.
+  bool every_level = 2;
+}
+
+// TableInfusion is what an infusion does to the piece it is put on. The numbers the app gives (a bonus, the
+// repeating ammunition, the returning thrown weapon) come from `effect`; an infusion with effect NONE is counted by
+// the app and its text is left to the table.
+message TableInfusion {
+  // The kind of piece the infusion goes on. Required (not UNSPECIFIED).
+  InfusionAccepts accepts = 1;
+  // The piece must be attuned to be worth anything: the holder attunes to it.
+  bool requires_attunement = 2;
+  // What the app computes for the piece. NONE means "text only": the app counts the infusion and shows its text.
+  InfusionEffect effect = 3;
+  // The bonus by class level, for ITEM_BONUS and SPELL_FOCUS_BONUS (required there, refused for any other effect):
+  // the bonus from that class level up (for example +1 from 2 and +2 from 10). Class levels 1 to 20 ascending,
+  // bonus 1 to 3.
+  repeated TableInfusionStep bonus_steps = 4;
+  // The damage types the holder picks one of when the infusion is put on, as damage type keys of the app
+  // ("damage-type:fire"). Required for RESISTANCE_LABEL (each key once) and refused for any other effect.
+  repeated string damage_types = 5;
+}
+
+// TableInfusionStep is a bonus that holds from a class level up.
+message TableInfusionStep {
+  // The class level the bonus starts at, 1 to 20.
+  int32 class_level = 1;
+  // The bonus from that level, 1 to 3.
+  int32 bonus = 2;
+}
+
+// TableInfusionRule is the limit of live infusions a host feature allows.
+message TableInfusionRule {
+  // The number of live infusions from a class level up. Class levels 1 to 20 strictly ascending, at least one step.
+  repeated TableInfusionLimitStep limit_steps = 1;
+}
+
+// TableInfusionLimitStep is the number of live infusions that holds from a class level up.
+message TableInfusionLimitStep {
+  // The class level the number starts at, 1 to 20.
+  int32 class_level = 1;
+  // The live infusions allowed from that level, at least 1.
+  int32 active = 2;
+}
+
+// InfusionAccepts is the kind of piece an infusion may be put on.
+enum InfusionAccepts {
+  INFUSION_ACCEPTS_UNSPECIFIED = 0;
+  // A weapon.
+  INFUSION_ACCEPTS_WEAPON = 1;
+  // A piece of armor (body armor, not a shield).
+  INFUSION_ACCEPTS_ARMOR = 2;
+  // A shield.
+  INFUSION_ACCEPTS_SHIELD = 3;
+  // A piece of armor or a shield.
+  INFUSION_ACCEPTS_ARMOR_OR_SHIELD = 4;
+  // A weapon with the thrown property.
+  INFUSION_ACCEPTS_THROWN_WEAPON = 5;
+  // A weapon that fires ammunition.
+  INFUSION_ACCEPTS_AMMUNITION_WEAPON = 6;
+  // An object a spellcaster casts through (a focus).
+  INFUSION_ACCEPTS_SPELLCASTING_FOCUS = 7;
+  // Any object, whether the sheet lists it or not.
+  INFUSION_ACCEPTS_ANY_OBJECT = 8;
+}
+
+// InfusionEffect is the part of an infusion the app computes.
+enum InfusionEffect {
+  INFUSION_EFFECT_UNSPECIFIED = 0;
+  // The app only counts the infusion; the table plays what its text says.
+  INFUSION_EFFECT_NONE = 1;
+  // A bonus to the attack and damage rolls of a weapon, or to the armor class of armor or a shield.
+  INFUSION_EFFECT_ITEM_BONUS = 2;
+  // A bonus to the spell attack rolls of spells cast through the object. The save DC does not change.
+  INFUSION_EFFECT_SPELL_FOCUS_BONUS = 3;
+  // A weapon of ammunition that makes its own ammunition (it needs no pieces).
+  INFUSION_EFFECT_REPEATING_AMMUNITION = 4;
+  // A thrown weapon that returns to the hand after the attack.
+  INFUSION_EFFECT_RETURNING = 5;
+  // The holder resists one damage type picked from `damage_types`; the app shows the label.
+  INFUSION_EFFECT_RESISTANCE_LABEL = 6;
 }
 
 // TableFeat is a feat (MR-025): an optional rule of the game that a character takes
@@ -591,6 +705,9 @@ message TableOption {
   // "table_feature" and refused for any other. The feature is a class or subclass feature of
   // the table that has options (its own list, so it has a choice of features).
   string offered_by = 6;
+  // Set when the option is an infusion: only an option of the set "table_feature" whose `offered_by` feature carries
+  // `infusion_rule` has it, checked as the infusion of an inline option. A player's copy of the entry drops it.
+  TableInfusion infusion = 7;
 }
 
 // OptionPrerequisite is what a table option asks for. Every one that is set must hold.

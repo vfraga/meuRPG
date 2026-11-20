@@ -1,6 +1,7 @@
 import { AreaPlacement, AttackOutcome } from '../../../../../gen/meurpg/play/v1/combat_pb';
 import { DisabledReasonCode } from '../../../../../gen/meurpg/rules/v1/rules_pb';
 import { combatant, encounter } from '../../../../core/combat/combat-testing';
+import { areaSpellOf } from '../cast-sheet/cast-sheet-data';
 import {
   areaSpellsOf,
   attackShow,
@@ -55,6 +56,33 @@ describe('npc card view', () => {
     ]);
     expect(areaSpellsOf(o, true)).toEqual([]);
     expect(areaSpellsOf(null, false)).toEqual([]);
+  });
+
+  it('lists the area spell an NPC has only as an innate grant by its reference, apart from the class option of the same spell', () => {
+    const grant = { sourceKey: 'trait:inato', sourceNamePt: 'Dom inato' };
+    const o = options({
+      options: {
+        attacks: [],
+        spells: [
+          { enabled: true, spell: { key: 'x', namePt: 'Bola', name: 'Ball' } },
+          { enabled: true, spell: { key: 'x', namePt: 'Bola', name: 'Ball' }, grant },
+          { enabled: true, spell: { key: 'w', namePt: 'Muro', name: 'Wall' }, grant },
+        ],
+      },
+      spellTargets: [
+        { spellKey: 'x', placement: AreaPlacement.POINT },
+        { spellKey: 'x', placement: AreaPlacement.POINT },
+        { spellKey: 'w', placement: AreaPlacement.POINT },
+      ],
+    });
+    expect(areaSpellsOf(o, false)).toEqual([
+      { key: 'x', name: 'Bola' },
+      { key: 'x#granted=trait:inato', name: 'Bola · Dom inato' },
+      { key: 'w#granted=trait:inato', name: 'Muro · Dom inato' },
+    ]);
+    for (const { key } of areaSpellsOf(o, false)) {
+      expect(areaSpellOf(o as never, key)).not.toBeNull();
+    }
   });
 
   it('holds the roll for damage owed and for a combatant that cannot act', () => {

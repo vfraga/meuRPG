@@ -218,14 +218,14 @@ describe('ActionGroups: "Sacar ou guardar" (#562)', () => {
       expect(row.querySelector('.gear-row__warn + .mr-visually-hidden')).toBeNull();
     });
 
-    it('marks the shield "Parado" and the header "CA 18 → 16" once the bow is drawn', async () => {
+    it('marks the shield "Não conta na CA" and the header "CA 18 → 16" once the bow is drawn', async () => {
       const drawn: GearVm = { ...bow, equipped: true, armorClassIfToggled: 18, count: 1 };
       const { el } = await setup({ gear: [hand, drawn], idle: true });
       const row = Array.from(el.querySelectorAll('.gear-row')).find((r) =>
         r.textContent?.includes('Escudo'),
       )!;
-      expect(row.textContent).toContain('Parado');
-      expect(el.textContent).toContain('CA 18 → 16');
+      expect(row.textContent).toContain('Não conta na CA');
+      expect(el.textContent).toMatch(/CA\s18\s→\s16/);
     });
   });
 

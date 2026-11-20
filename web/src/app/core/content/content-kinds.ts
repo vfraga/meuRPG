@@ -458,3 +458,8 @@ export const CASTING_WORDS: Readonly<Record<string, string>> = {
   pact: 'de pacto',
   third: 'de um terço',
 };
+
+/** A class or a subclass: the editors that start from the class defaults and draw "Como os jogadores veem". */
+export function isClassKind(kind: TableContentKind | null): boolean {
+  return kind === TableContentKind.CLASS || kind === TableContentKind.SUBCLASS;
+}

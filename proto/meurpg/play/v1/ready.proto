@@ -33,13 +33,15 @@ service ReadyService {
   //     other refusals of a turn; READY_TRIGGER (an empty trigger, or one longer than 200 characters); READY_ACTION (an
   //     attack the combatant does not have, a spell attack as an ATTACK, a standard action that cannot be held (Attack,
   //     Cast a Spell, Ready, Hide, Help, Dash, Disengage), a move in a combat without a map or with no speed, a spell
-  //     with no key, or an action readied already); READY_SPELL_TIME (a spell whose casting time is not 1 action); the refusals of CastSpell
+  //     with no key, or an action readied already); READY_SPELL_TIME (a spell whose casting time is not 1 action); READY_SPELL_NOT_RELEASABLE (a spell no release can carry:
+  //     it asks an ability, a damage type, a summon's creatures or a revival; a spell placed on a map or laying a zone there is readied); the refusals of CastSpell
   //     for the spell (NO_SLOT, a spell the caster does not have or a slot that does not fit as `invalid_argument`).
   //     Nothing is spent.
   //
   // A spell is cast at Ready: the slot and the action are spent and the readier concentrates on it (any other
   // concentration ends); nothing of the spell happens until its release. CastSpell by the readier while its READIED
-  // window is open, or AnswerReaction USE, releases it as a reaction with no slot spent again. A spell attack cantrip
+  // window is open, or AnswerReaction USE, releases it as a reaction with no slot spent again; a spell placed on the map or
+  // laying a zone is released with CastSpell, which carries the point or the direction (the answer refuses it). A spell attack cantrip
   // is readied as a SPELL too, and released with RollAttack (catch_window_id) or AnswerReaction USE. The spell is lost,
   // with its slot, when its concentration ends, when it is let pass, or when the readied action is lost.
   rpc ReadyAction(ReadyActionRequest) returns (ReadyActionResponse);

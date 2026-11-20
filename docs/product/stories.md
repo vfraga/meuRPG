@@ -70,6 +70,7 @@ Where a behaviour came from a product answer, the [archive](../archive/decisions
 | [MR-055](#mr-055-answer-a-creatures-rider) | Combat | MVP |
 | [MR-056](#mr-056-show-the-table-on-a-screen) | Session | MVP |
 | [MR-057](#mr-057-turn-the-sun-on-in-a-combat) | Combat | MVP |
+| [MR-059](#mr-059-infuse-an-item) | Character | MVP |
 | [MR-002](#mr-002-generate-an-invite) | Campaign | MVP (prerequisite) |
 | [MR-005](#mr-005-create-npcs) | Character | MVP (prerequisite) |
 | [MR-007](#mr-007-import-a-sheet-from-pdf) | Character | Later |
@@ -745,13 +746,15 @@ The data rules, limits and the server side are in [Table content: rules](../arch
   In combat the combatant carries all four speeds (`Combatant.speed_fly_ft`, `speed_swim_ft`, `speed_climb_ft`, `speed_burrow_ft`) for the master and the character's player, as it carries the walking speed; a Wild Shape form and a creature bring their own.
   A creature moves on its fly speed when it is the better of the two; the grid does not spend the swim, climb or burrow speed, so a move costs what it costs on foot.
 - **Given** an effect "Respira na água", **when** a character has it, **then** the sheet says "Respira na água" in the speed box; the app keeps no air or drowning count.
-- **Given** a feat, a trait or a feature with the effect "Magia concedida" (a spell of the SRD or of the table, the level it starts at, the casting ability — Intelligence, Wisdom, Charisma or "o jogador escolhe" —, the resource each cast spends, a switch to cast it with a slot too, a switch for rituals only, a switch to list it among the known spells, a switch for no material components and, for a limited grant, how many uses each cast spends), **when** a character has it, **then** the sheet lists the spell under "Magias concedidas" with its source, how it is cast and the DC and attack bonus of the grant, **and** the character's known spells, cantrips and prepared numbers stay as they were.
-  A leveled spell is cast at its own level, a cantrip scales with the character level, and the material components are not waived unless the grant says so; then the sheet and the cast sheet leave the "M" out of the component line (nothing else changes: the server never checks components).
+- **Given** a feat, a trait or a feature with the effect "Magia concedida" (a spell of the SRD or of the table, the level it starts at, the casting ability — Intelligence, Wisdom, Charisma or "o jogador escolhe" —, the resource each cast spends, a switch to cast it with a slot too, a switch for rituals only, a switch to list it among the known spells, a switch for no material components, for a limited grant how many uses each cast spends, and for a spell above a cantrip the level the grant casts it at), **when** a character has it, **then** the sheet lists the spell under "Magias concedidas" with its source, how it is cast and the DC and attack bonus of the grant, **and** the character's known spells, cantrips and prepared numbers stay as they were.
+  A leveled spell is cast at its own level, or at the level the grant sets (from the spell's own level to 9, with no slot): the dice, the healing and the targets that grow with the level follow that level.
+  A cast with a slot has the slot's level.
+  A cantrip scales with the character level, and the material components are not waived unless the grant says so; then the sheet and the cast sheet leave the "M" out of the component line (nothing else changes: the server never checks components).
   When the ability is "o jogador escolhe", the player picks it once, in the sheet's choices, and until then the grant has no numbers.
 - **Given** a granted spell, **when** the player casts it, in a fight or outside one, **then** the cast sheet offers it as a way of its own, with no spell slot (a slot only when the grant allows one), using the grant's ability for the attack roll and the saving throw DC.
   A limited grant spends the uses its cost says (one by default): a cast the uses left do not cover is refused ("A concessão não tem mais usos."), the undo of the first gives it back, and an at-will grant never runs out.
   A ritual-only grant casts as a ritual.
-- **Given** the effect editor, **when** I register a granted spell, **then** the server refuses a spell that does not exist, a ritual-only grant on a spell without the ritual tag, a resource the entry does not define, a cost with no resource and an ability that is none of the four, each at its field.
+- **Given** the effect editor, **when** I register a granted spell, **then** the server refuses a spell that does not exist, a ritual-only grant on a spell without the ritual tag, a resource the entry does not define, a cost with no resource, an ability that is none of the four, and a cast level below the spell's own level, above 9, on a cantrip or on a ritual-only grant, each at its field.
 
 **Options for the SRD's option sets.**
 
@@ -1395,6 +1398,8 @@ The data rules, limits and the server side are in [Table content: rules](../arch
 - **Given** a race, a trait or a background that lets the player pick languages (the Half-Elf's extra language, the Acolyte's two), or a trait, background or feature that lets them pick tools (the Dwarf's artisan's tools, a background's "one type of artisan's tools"), **when** the player reaches the step "Escolhas", **then** each is a choice from the catalog's languages or tools, one each, with the ones the character already has dotted and the reason, and the picks show on the sheet's "Idiomas" and "Proficiências"; the free field "Idiomas" stays for the master's, and what is written there shows on the sheet too. While one is open the sheet says "Falta escolher N idiomas: faça a escolha no passo “Escolhas”" and the save is not stopped (RN-33).
 - **Given** a locked sheet with open choices, **when** the owner opens it, **then** it says "N escolhas pendentes" and "Completar" leads to a page with only those; the master sees "N escolhas em aberto" on the campaign (RN-33).
 - **Given** a level-up, **when** the character has choices left behind, **then** "Escolhas que ficaram para trás" comes before "Próximo", and an invocation that asks something the sheet lacks is dotted with the reason (RN-33).
+- **Given** a warlock who takes the Pact of the Tome or the Book of Ancient Secrets in a level-up, **when** the player confirms without the cantrips or rituals it opens, **then** the level is saved with them open, and the next level asks them first under "Escolhas que ficaram para trás" and refuses the level without them (RN-33).
+- **Given** a warlock who swaps the Book of Ancient Secrets or the Pact of the Tome away, **when** the level is confirmed, **then** the two rituals or the three cantrips go with it, and a single pick of them is never removed alone (RN-33).
 
 #### In the app
 - The numbers in "O que muda" and the summary come from the server, which also lists the attacks whose to-hit or damage the level moves. The hit die uses the same roll picker as combat and the scene (RN-18).
@@ -1557,6 +1562,10 @@ The data rules, limits and the server side are in [Table content: rules](../arch
 - **Given** a combat running, **when** its caster tries to cast outside it, **then** the cast is refused and the spell is cast in the combat.
 - **Given** Bless cast on a character before a fight, **when** the combat starts, **then** the effect enters it with the time it has left in rounds (a round is 6 seconds, a partial round does not count), the character's saves take the d4, and when the combat ends the rounds left go back to game time (RN-22).
 - **Given** Aid cast outside combat, **then** the cast is recorded and the master narrates it; the maximum hit points are raised only by an Aid cast in combat.
+- **Given** a warlock with the Pact of the Tome and the invocation Book of Ancient Secrets, **when** the player opens the step "Escolhas", **then** "Rituais do Livro" asks two 1st-level spells with the ritual tag, from the list of any class, and the two do not count against the spells known (RN-33).
+- **Given** the two rituals of the book, **when** the player casts one, **then** it is cast only "Como ritual": no slot is spent, the casting takes 10 minutes more, a cast with a slot is refused, and the book's spells are in no combat's cast list (RN-32).
+- **Given** a warlock with the invocation who knows a spell with the ritual tag that is on the character's warlock list (the patron's expanded list included), **when** the player casts it, **then** it can be cast as a ritual too; a known spell that is not on that list is not (RN-32).
+- **Given** the master switched a spell off, **when** a player picks a spell for the book's rituals, the Pact of the Tome's cantrips, a Mystic Arcanum or a bonus cantrip, **then** the spell is not offered in any of them; a sheet that already has it keeps it, and the master picks it all the same (RN-23).
 
 #### In the app
 - "Conjurar" lists the spells the character can cast, with the slots, "Como ritual" when the spell allows it, the time it takes and the targets. "Magias ativas" lists the casts going or lasting, with "Concluir conjuração" (master) and "Encerrar".
@@ -1817,6 +1826,45 @@ See [Architecture](../architecture/campaign-package.md).
 #### Related
 - [MR-042](#mr-042-bestiary), [RN-29](rules.md#rn-29-monsters-in-combat).
 
+
+### MR-059: Infuse an item
+
+**As an** artificer's player (or the master, for that character), **I want** to put an infusion I know on an item, move it and end it, **so that** the sheet shows the item with its infusion and the numbers it gives.
+
+- Priority: MVP
+- Rules: RN-44, RN-02
+- Modules: characters, rules, play
+
+**Partly built.**
+Built: the server side for the artificer's own items.
+Waits for the screens: the block "Infusões" of the sheet, the dialog "Infundir", the line of the infusion on the item, in the attack and in the modifiers, and the level-up picks of infusions.
+Not built: an item of another character, the charges of an infused item, and the end of an infusion by a level-up swap.
+
+#### Acceptance criteria
+- **Given** an artificer that knows an infusion, **when** I read the infusions, **then** I read the ones in use, the ones known and not in use, the limit and how many are in use; **given** I am another player, **then** the character does not exist for me.
+- **Given** an infusion, **when** I ask where it goes, **then** each piece of the sheet has a row, and a piece that cannot take it says why in words ("Pede uma arma com munição.", "Já é um item mágico (+1): a infusão pede um item comum.", "Já tem <infusão>: um item guarda uma infusão só."); an infusion for any object also offers one row to name an object.
+- **Given** an infusion and a piece that takes it, **when** I put it on, **then** the sheet lists it, names it on the piece, on the attack and on the modifier line, and the numbers include it as the manual bonus does; **given** the piece is carried, or asks for attunement and is not attuned, **then** it adds nothing and says why.
+- **Given** an infusion that asks for attunement, **when** I put it on with "Sintonizar agora" in the window of a rest, **then** it is attuned and counts among the three; **given** the window is closed, **then** the call is refused and nothing changes.
+- **Given** the limit is reached, **when** I put one more, **then** the one I choose ends, or the oldest; the sheet reads one change.
+- **Given** an infusion for an object, **when** I give a name of 1 to 40 characters, **then** the sheet lists the infusion with that name; two objects may have one name; **given** a name with a line break or a control character, **then** it is cleaned or refused.
+- **Given** I move an infusion to another piece, **then** its time begins again and its attunement is cleared; **given** I end it, **then** the piece is a plain piece again.
+- **Given** the piece leaves the sheet, **when** I save, **then** its infusion ends.
+- **Given** the same request with the same key, **then** the answer is the first one and nothing is written twice.
+- **Given** the limit is reached and I put one on the piece that already has one, choosing that one to end, **then** it is replaced, and the sheet reads one change.
+- **Given** more infusions are valid than the limit (a pick restored, or a level taken off), **then** the oldest say "acima do limite", give no number and take no attunement place, and none ends by itself.
+- **Given** the limit is reached, **when** I choose a record that is over the limit to end, **then** the call is refused and nothing changes, since ending it frees no place; **given** I end that record on its own, **then** it ends and no place is freed.
+- **Given** the limit is reached and a piece holds a record that is over the limit, **when** I put an infusion on that piece, with or without a record chosen, **then** the call is refused and nothing changes.
+- **Given** the limit is reached, **when** I move a record that is over the limit (or whose piece left the sheet), **then** the call is refused and nothing changes; **given** a place is free, **then** it moves.
+- **Given** a piece holds a record that is not valid for another reason (a lost prerequisite), **when** I put an infusion on that piece at the limit, choosing that record or not, **then** the answer is the same: it ends and the oldest valid record gives way with its ending.
+- **Given** a dead character, **then** putting on and moving are refused for everyone; **given** the master, **then** ending a record is allowed, and **given** the owner, **then** it is refused; **given** a sheet locked by the session, **then** the writes still work.
+- **Given** a combat that holds the artificer, **when** an infusion changes, **then** the combat's open screens read the turn and the attacks again; **given** the artificer is hidden, **then** only the master is told.
+- **Given** I am a player of another character, **then** I never read the infusion, an attack's result never names it, and no stream tells me what changed: an infusion change in a combat sends every player the ordinary "the combat changed" hint, with no content, and the infusion hint itself goes only to the master and the owner (RN-44).
+
+#### In the app
+- The block "Infusões" and the dialog "Infundir" are in the boards of the artificer; the screens wait for the web slice.
+
+#### Related
+- [MR-004](#mr-004-character-sheet-in-the-pdf-format), [MR-040](#mr-040-level-up-from-the-sheet), [RN-44](rules.md#rn-44-artificer-infusions).
 
 ## Priority: MVP (prerequisite)
 

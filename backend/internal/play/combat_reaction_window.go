@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"slices"
+	"time"
 	"uuid"
 
 	"connectrpc.com/connect"
@@ -86,6 +87,9 @@ type windowTrigger struct {
 	// Rolling says the reactor's player is using the reaction and rolling its die
 	// (MarkReactionRolling): the master's clock waits longer before it passes the window.
 	Rolling bool `json:"rolling,omitempty"`
+	// WaitBegan is when the reactor's player first marked the window: the wait of 120 s began then. It is set
+	// once, at the first mark, and no later mark or clear changes it.
+	WaitBegan *time.Time `json:"wait_began,omitempty"`
 	// Effect is the state (the effect that lasts) an EFFECT_SAVE window asks the saving throw
 	// of, Phase says at the end or the start of the turn, and Damage that the window opened
 	// because the target took damage (advantage on the roll).

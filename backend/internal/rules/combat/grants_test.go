@@ -198,3 +198,27 @@ func TestAGrantedSpellNeedsItsWholeCost(t *testing.T) {
 		}
 	}
 }
+
+// The cast level of a grant reaches the turn's option and the outside listing as the grant has it.
+func TestAGrantCarriesItsCastLevel(t *testing.T) {
+	t.Parallel()
+	d := rules.Derived{
+		GrantedSpells: []rules.GrantedSpell{
+			grantedSpell("spell:burning-hands", 1, func(g *rules.GrantedSpell) { g.CastLevel = 2 }),
+			grantedSpell("spell:light", 0),
+		},
+	}
+	got := Options(d, TurnState{}, Usage{})
+	if s := spellOptionFor(t, got, "spell:burning-hands"); s.Grant.CastLevel != 2 {
+		t.Errorf("burning hands grant cast level = %d, want 2", s.Grant.CastLevel)
+	}
+	if s := spellOptionFor(t, got, "spell:light"); s.Grant.CastLevel != 0 {
+		t.Errorf("light grant cast level = %d, want 0", s.Grant.CastLevel)
+	}
+	for _, o := range OutsideSpells(d, Usage{}) {
+		want := map[string]int{"spell:burning-hands": 2, "spell:light": 0}[o.Spell.Key]
+		if len(o.Grants) != 1 || o.Grants[0].CastLevel != want {
+			t.Errorf("%s outside grants = %+v, want one at cast level %d", o.Spell.Key, o.Grants, want)
+		}
+	}
+}

@@ -35,6 +35,7 @@ import {
   readyLegend,
   readyMoveText,
 } from '../../../../core/combat/ready-text';
+import type { CastChoice } from '../../../../core/combat/ready-choices';
 import { ActionKey } from '../../../../core/connect/idempotency';
 import { SheetFrame } from '../../../../shared/sheet/sheet-frame/sheet-frame';
 import { injectSheet } from '../../../../shared/sheet/sheet-host';
@@ -51,6 +52,8 @@ export interface ReadySheetData {
   readonly options: TurnOptions;
   /** The summary line of each spell, by key (`GetSpellDetails`); none while it is not read. */
   readonly summaries: ReadonlyMap<string, string>;
+  /** The spells that ask an ability, creatures or a damage type when they are cast: the window sends none of them yet, so they stay off. */
+  readonly choices: ReadonlyMap<string, CastChoice>;
   /** What `GetTurnOptions` says of who each spell can target: darts, a placed area or several targets cannot be released by the window. */
   readonly spellTargets: readonly SpellTargets[];
   /** A combat with no map: no square to walk to. */
@@ -110,7 +113,12 @@ export class ReadySheet {
       case 'attack':
         return readyAttackRows(this.data.options);
       case 'spell':
-        return readySpellRows(this.data.options, this.data.spellTargets, this.data.summaries);
+        return readySpellRows(
+          this.data.options,
+          this.data.spellTargets,
+          this.data.summaries,
+          this.data.choices,
+        );
       case 'other':
         return readyOtherRows(this.data.options);
       default:

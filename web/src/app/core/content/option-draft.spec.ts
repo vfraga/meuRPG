@@ -1,6 +1,11 @@
 import { create } from '@bufbuild/protobuf';
 
-import { TableOptionSchema } from '../../../gen/meurpg/rules/v1/table_content_pb';
+import {
+  InfusionAccepts,
+  InfusionEffect,
+  TableInfusionSchema,
+  TableOptionSchema,
+} from '../../../gen/meurpg/rules/v1/table_content_pb';
 import { menu } from './content-testing-menu';
 import {
   draftToOption,
@@ -44,6 +49,24 @@ describe('the option form (MR-025)', () => {
       },
       effects: [{ type: 'note', textPt: 'Enxerga pelos olhos de um corvo.' }],
     });
+  });
+
+  it('keeps the infusion data of an option that is an infusion through an edit', () => {
+    const body = stored();
+    body.set = 'table_feature';
+    body.offeredBy = 'feature:infundir@mesa';
+    body.infusion = create(TableInfusionSchema, {
+      accepts: InfusionAccepts.SHIELD,
+      effect: InfusionEffect.ITEM_BONUS,
+      bonusSteps: [{ classLevel: 2, bonus: 1 }],
+    });
+    const sent = draftToOption(optionToDraft(body), menu());
+    expect(sent.infusion).toMatchObject({
+      accepts: InfusionAccepts.SHIELD,
+      effect: InfusionEffect.ITEM_BONUS,
+      bonusSteps: [{ classLevel: 2, bonus: 1 }],
+    });
+    expect(draftToOption(optionToDraft(stored()), menu()).infusion).toBeUndefined();
   });
 
   it('keeps the offering feature of an option of a table feature through an edit', () => {

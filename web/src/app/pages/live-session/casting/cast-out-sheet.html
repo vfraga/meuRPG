@@ -113,7 +113,7 @@
           [canApp]="canApp"
           [canType]="canType"
           [preferApp]="preferApp"
-          [label]="'Role ' + spell()!.rollDice + ' para ' + spell()!.spell!.namePt + ': some os dados'"
+          [label]="'Role ' + diceText() + ' para ' + spell()!.spell!.namePt + ': some os dados'"
           [hint]="'Digite a soma dos dados, de ' + dice().count + ' a ' + dice().count * dice().sides + '.'"
           totalNote="Total dos dados"
           [min]="dice().count"

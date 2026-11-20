@@ -37,9 +37,13 @@ const wildShapeAction = "feature:wild-shape"
 // derive is the character's derived sheet, in its beast form if it is in one: the
 // beast's armor class, hit points, speeds, attacks and senses, and no spells. A
 // form that is no longer allowed or known (the content changed) is ignored, so the
-// character never loses its own numbers.
-func derive(content *rules.Content, full *charactersv1.FullSheet, beast *string, active []byte) rules.Derived {
-	d := rules.Derive(buildWithStates(full, stateKeysOf(active)), content)
+// character never loses its own numbers. infusions are the live records of the character as holder: a caller that reads
+// numbers they change (the armor class, the attacks) passes them, and one that reads only the senses, the speeds or the
+// size passes nil.
+func derive(content *rules.Content, full *charactersv1.FullSheet, beast *string, active []byte, characterID string, infusions []rules.InfusionRecord) rules.Derived {
+	b := buildWithStates(full, stateKeysOf(active))
+	b.CharacterID, b.Infusions = characterID, infusions
+	d := rules.Derive(b, content)
 	if beast == nil || *beast == "" {
 		return d
 	}

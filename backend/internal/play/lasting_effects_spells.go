@@ -406,18 +406,24 @@ func immuneCreature(creature rules.Creature, condition string) bool {
 // (SRD 5.1: Bull's Strength, Cat's Grace, Bear's Endurance, Fox's Cunning, Owl's Wisdom, Eagle's
 // Splendor); any other spell takes none and ignores it.
 func (s *Service) abilityChoiceOf(ctx context.Context, c *combatTx, spellKey, ability string) (string, error) {
-	content, err := s.contentOf(ctx, c)
-	if err != nil {
+	asks, err := s.spellAsksAbility(ctx, c, spellKey)
+	if err != nil || !asks {
 		return "", err
-	}
-	def, ok := content.CombatSpellEffect(spellKey)
-	if !ok || !slices.ContainsFunc(def.Modifiers, func(m rules.EffectModifier) bool { return m.Choose }) {
-		return "", nil
 	}
 	if !slices.Contains(effectAbilities, ability) {
 		return "", connect.NewError(connect.CodeInvalidArgument, errors.New("ability_key must be one of str, dex, con, int, wis or cha for this spell"))
 	}
 	return ability, nil
+}
+
+// spellAsksAbility says the spell's effect holds an ability the caster chooses (Enhance Ability).
+func (s *Service) spellAsksAbility(ctx context.Context, c *combatTx, spellKey string) (bool, error) {
+	content, err := s.contentOf(ctx, c)
+	if err != nil {
+		return false, err
+	}
+	def, ok := content.CombatSpellEffect(spellKey)
+	return ok && slices.ContainsFunc(def.Modifiers, func(m rules.EffectModifier) bool { return m.Choose }), nil
 }
 
 // effectAbilities are the abilities an effect may be chosen for.

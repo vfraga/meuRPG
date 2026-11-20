@@ -184,10 +184,13 @@ func checkMagicItems(b *Build, c *content) error {
 	return nil
 }
 
-// AttunedCount is how many items the character is attuned to: the +N gear that asks for attunement and the catalog
-// magic items, counted when Attuned is set.
-func AttunedCount(b Build) int {
+// AttunedCount is how many items the character is attuned to: the +N gear that asks for attunement, the catalog
+// magic items and the valid infusions that ask for attunement, counted when Attuned is set.
+func AttunedCount(b Build, c *Content) int {
 	n := 0
+	if c != nil {
+		n = c.c.attunedInfusions(b)
+	}
 	for _, ib := range b.ItemBonuses {
 		if ib.Attuned && ib.RequiresAttunement {
 			n++

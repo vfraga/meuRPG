@@ -77,3 +77,17 @@ describe('spellSummary (the line under a spell in the list, E8-02)', () => {
     );
   });
 });
+
+describe('spellSummary at a level', () => {
+  const burning = {
+    spell: { level: 1 },
+    range: { kind: SpellRangeKind.SELF },
+    damage: [{ damageTypePt: 'fogo', bySlotLevel: { 1: '3d6', 2: '4d6' }, byCharacterLevel: {} }],
+    healBySlotLevel: {},
+  } as never;
+
+  it('reads the dice at the level it is given, the spell’s own when none', () => {
+    expect(plain(spellSummary(burning, '', 2))).toBe('Pessoal · 4d6 de fogo');
+    expect(plain(spellSummary(burning))).toBe('Pessoal · 3d6 de fogo');
+  });
+});

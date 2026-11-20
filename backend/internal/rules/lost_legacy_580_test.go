@@ -99,3 +99,16 @@ func TestIdentitiesOfReplacesTheRowsThatHoldAnIssue(t *testing.T) {
 		t.Errorf("identities = %v, want %v", got, want)
 	}
 }
+
+// A known limit: a stored old-wording row cannot tell an entry that was renamed from one that was fixed. The row of an
+// entry fixed with no sheet save (it is no longer lost, and was not renamed) is taken by another entry of the same code
+// and list that becomes lost later, so that entry's notice does not show until the next save writes identities.
+func TestARowOfAFixedEntryIsTakenByAnotherEntryLostLaterAKnownLimit(t *testing.T) {
+	t.Parallel()
+	b := lostOf(IssueOptionPrerequisite, "full.feature_choice_keys[1]", "feature:b@mesa", "Beta")
+	rowOfFixedAlfa := IssueOptionPrerequisite + "|full.feature_choice_keys[0]|" + oldStart + "Alfa: precisa de nível 5 de Guerreiro."
+	// Alfa is not lost any more and is not renamed, so only Beta is lost: Beta takes Alfa's row and is told as known.
+	if got := KnownIssues([]string{rowOfFixedAlfa}, []Issue{b}); !slices.Equal(got, []bool{true}) {
+		t.Errorf("known = %v, want [true] (the known limit: Beta took the row of the fixed Alfa)", got)
+	}
+}

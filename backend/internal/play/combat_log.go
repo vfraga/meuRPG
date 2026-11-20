@@ -751,8 +751,8 @@ func (b *logBuilder) moved(_ playdb.ListEncounterEventsRow, entry *logEntry) boo
 	if ev.Contest != nil && ev.Contest.Line == contestLineStoodUp { // "se levantou" (combat_standup.go)
 		return contestLogEntry(entry, ev)
 	}
-	if (!ev.OnTurn && ev.SpendCost == 0) || (ev.DistanceFt == 0 && ev.DistanceDFt == 0 && ev.Jump != jumpHigh) {
-		return false // placing a token is not a move of the fight
+	if (!ev.OnTurn && ev.SpendCost == 0 && ev.Readied == nil) || (ev.DistanceFt == 0 && ev.DistanceDFt == 0 && ev.Jump != jumpHigh) {
+		return false // placing a token is not a move of the fight; a legendary move and a readied move are
 	}
 	entry.kind = playv1.CombatLogKind_COMBAT_LOG_KIND_MOVED
 	if ev.MoveID != "" {

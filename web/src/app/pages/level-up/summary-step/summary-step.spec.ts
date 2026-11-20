@@ -6,7 +6,7 @@ import type { LevelUpSession } from '../level-up-session';
 describe('SummaryStep: the feat taken (MR-025)', () => {
   function render(featSummary: { name: string; increase: string } | null) {
     const session = {
-      draft: { featSummary: () => featSummary, swap: { summary: () => '' } },
+      draft: { featSummary: () => featSummary, swap: { summaries: () => [] } },
       rows: () => [],
       masterAdds: () => '',
     } as unknown as LevelUpSession;

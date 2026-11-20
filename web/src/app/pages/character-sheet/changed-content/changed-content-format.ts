@@ -58,3 +58,37 @@ export function changeAnnouncement(change: ChangedContentVm): string {
   const n = change.messages.length;
   return `${changeTitle(change).replace(/\.$/, '')}: ${n} ${n === 1 ? 'aviso' : 'avisos'}.`;
 }
+
+/** The code of the notice that a table weapon now takes both hands (`rules` package: `IssueShieldIdle`). */
+const SHIELD_IDLE = 'shield_idle';
+
+/**
+ * Whether line `index` of the entry's sentences is the notice that a table weapon now takes both hands, so the equipped
+ * shield does not count (580-16): the code at that place in `ChangedContent.codes` is `shield_idle`. Decided for each line,
+ * never for the whole entry: the owner of the sheet ends this line by stowing the shield or the weapon, while any other
+ * line of the same entry waits for the numbers. Told by the code the server sends, never by the words.
+ */
+export function isShieldLine(change: ChangedContentVm, index: number): boolean {
+  return change.codes[index] === SHIELD_IDLE;
+}
+
+const WHO_SHIELD =
+  'Quem ajusta: o dono da ficha, guardando o escudo ou a arma. O aviso some quando um dos dois deixa de estar em uso.';
+
+/** Who adjusts a line and when it goes: the shield line has its own sentences, any other is about the numbers. */
+export function whoAdjusts(shield: boolean, canEdit: boolean): string {
+  return shield
+    ? WHO_SHIELD
+    : `Quem ajusta: ${canEdit ? 'você, na ficha' : 'o mestre, na ficha'}. O aviso some sozinho quando os números voltam a combinar.`;
+}
+
+/** The "Quem ajusta" sentences of an entry, one for each kind of line it has, in the order the lines first appear. */
+export function whoLines(change: ChangedContentVm, canEdit: boolean): string[] {
+  const kinds = change.messages.map((_, i) => isShieldLine(change, i));
+  return [...new Set(kinds)].map((shield) => whoAdjusts(shield, canEdit));
+}
+
+/** A sentence of the server with "CA 13 → 11" tied by no-break spaces, so a line never breaks inside the two numbers. */
+export function tieAcChange(message: string): string {
+  return message.replace(/CA (\d+) → (\d+)/g, 'CA\u00a0$1\u00a0→\u00a0$2');
+}

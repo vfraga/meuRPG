@@ -9,12 +9,16 @@ import { metersText } from '../units';
  * reaches and what it rolls, from the same details the cast sheet's subtitle reads:
  * "Alcance 27 m · 5d8 PV de criaturas", "Alcance 36 m · 8d6 de fogo". Empty until
  * the details are read; a cantrip's dice are the caster's (`Attack.spellDice`). Nothing is written by hand per spell.
+ * `level` is the level the cast scales at (the spell's own when omitted): a grant's cast level when the grant is the way.
  */
-export function spellSummary(details: SpellDetails | null | undefined, cantripDice = ''): string {
+export function spellSummary(
+  details: SpellDetails | null | undefined,
+  cantripDice = '',
+  level = details?.spell?.level ?? 0,
+): string {
   if (!details) {
     return '';
   }
-  const level = details.spell?.level ?? 0;
   const range = rangePart(details);
   const effect = effectPart(details, level, cantripDice);
   return tight(joinDots([range, effect].filter((part) => part !== '')));

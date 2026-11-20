@@ -3,6 +3,7 @@ import type {
   TableClassLevel,
   TableSubclass,
 } from '../../../gen/meurpg/rules/v1/table_content_pb';
+import { optionsAsked } from './content-read-feat';
 import { joinDots } from '../format/text';
 import { slotsText } from './class-draft';
 import { DEFAULT_SUBCLASS_LEVEL } from './content-kinds';
@@ -137,7 +138,16 @@ function featureSections<T extends { readonly features: TableClassLevel['feature
 ): ReadSection[] {
   const items: ReadItem[] = [];
   levels.forEach((lv, i) =>
-    lv.features.forEach((f) => items.push(featureItem(f, nameOf, `Nível ${levelOf(lv, i)} · `))),
+    lv.features.forEach((f) => {
+      const item = featureItem(f, nameOf, `Nível ${levelOf(lv, i)} · `);
+      // How many the player chooses, as the preview's "Escolha" row says it: "Escolha 3 de 5 opções."
+      const asked = f.effects
+        .filter((e) => e.type === 'choice' && e.choice === 'feature')
+        .map((e) => optionsAsked(e, f.options.length))
+        .filter((a) => a !== '')
+        .map((a) => `Escolha ${a}.`);
+      items.push(asked.length > 0 ? { ...item, text: [item.text, ...asked].join(' ') } : item);
+    }),
   );
   return items.length > 0 ? [{ title: 'Características', items }] : [];
 }

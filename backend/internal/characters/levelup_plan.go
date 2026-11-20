@@ -105,6 +105,11 @@ func checkLevelUpKeys(c *charactersv1.LevelUpChoices) error {
 	if sw := c.GetSwapPick(); len(sw.GetFromKey()) > maxChoiceKeyLength || len(sw.GetToKey()) > maxChoiceKeyLength || len(sw.GetGroup()) > maxChoiceKeyLength {
 		return fieldErr("choices.swap_pick", "keys must be at most %d characters", maxChoiceKeyLength)
 	}
+	for _, sw := range c.GetSwapFeatureOptions() {
+		if len(sw.GetFromKey()) > maxChoiceKeyLength || len(sw.GetToKey()) > maxChoiceKeyLength || len(sw.GetGroup()) > maxChoiceKeyLength {
+			return fieldErr("choices.swap_feature_options", "keys must be at most %d characters", maxChoiceKeyLength)
+		}
+	}
 	if len(c.GetFeatKey()) > maxContentKeyLength {
 		return fieldErr("choices.feat_key", "must be at most %d characters", maxContentKeyLength)
 	}
@@ -127,9 +132,13 @@ type levelUpPlan struct {
 	// switched off, whatever the refusal is: the sheet it builds is not theirs to read
 	// (RN-23).
 	retiredChoice bool
+	// bare says a choice is one the level does not offer this player: the answer is the refusal alone, no sheet is built.
+	bare bool
 	// record is what ListLevelUps keeps: the choices, with the hit points
 	// value the level took.
 	record *charactersv1.LevelUpChoices
+	// applied are the choices the new sheet was made from.
+	applied rules.LevelUpChoices
 	// toLevel is the character's total level after the level-up.
 	toLevel int
 }
@@ -147,6 +156,9 @@ func (s *Service) planLevelUp(ctx context.Context, tx pgx.Tx, q *charactersdb.Qu
 	offer, lerr := rules.LevelUpOptions(t.build, t.classKey, t.content)
 	if lerr != nil {
 		return levelUpPlan{}, levelUpRulesError(lerr)
+	}
+	if refusal, err := unofferedRefusal(t, m, choices); err != nil || refusal != nil {
+		return levelUpPlan{refusal: refusal, bare: refusal != nil}, err
 	}
 	plan := newLevelUpPlan(t, choices, offer)
 	hp, err := s.planHitPoints(ctx, tx, q, m, t, choices, offer, &plan)
@@ -179,6 +191,12 @@ func newLevelUpPlan(t levelUpTarget, choices *charactersv1.LevelUpChoices, offer
 	if swap := pickSwapFromProto(choices.GetSwapPick()); !swap.IsZero() && plan.refusal == nil && (!t.rules.PickSwapAllowed || !offer.Offers(swap)) {
 		plan.refusal = &charactersv1.LevelUpRefusal{
 			Field: "choices.swap_pick", Reason: charactersv1.LevelUpRefusalReason_LEVEL_UP_REFUSAL_REASON_SWAP_NOT_ALLOWED,
+		}
+	}
+	// The swaps of a table feature's options are the feature's own data: only what the level offers, whatever the rule.
+	if plan.refusal == nil && !offer.AllowsFeatureSwaps(featureSwapsFromProto(choices.GetSwapFeatureOptions())) {
+		plan.refusal = &charactersv1.LevelUpRefusal{
+			Field: "choices.swap_feature_options", Reason: charactersv1.LevelUpRefusalReason_LEVEL_UP_REFUSAL_REASON_SWAP_NOT_ALLOWED,
 		}
 	}
 	return plan
@@ -288,7 +306,8 @@ func (s *Service) typedHitPoints(ctx context.Context, tx pgx.Tx, m authz.Members
 // planLevelUpSheet writes the new Build onto a copy of the stored sheet and
 // checks it as any sheet is checked.
 func planLevelUpSheet(t levelUpTarget, choices *charactersv1.LevelUpChoices, hp rules.LevelUpHitPoints, plan *levelUpPlan) error {
-	after, err := rules.ApplyLevelUp(t.build, levelUpChoicesFromProto(t.classKey, choices, hp), t.content)
+	plan.applied = levelUpChoicesFromProto(t.classKey, choices, hp)
+	after, err := rules.ApplyLevelUp(t.build, plan.applied, t.content)
 	if err != nil {
 		return levelUpRulesError(err)
 	}
@@ -326,7 +345,7 @@ func checkPlannedLevel(t levelUpTarget, plan *levelUpPlan) error {
 	if plan.refusal != nil {
 		return nil
 	}
-	err := rules.CheckLevelUp(t.build, buildOf(plan.sheet), t.content)
+	err := rules.CheckLevelUpOf(t.build, t.buildOf(plan.sheet), plan.applied, t.content)
 	if err == nil {
 		return nil
 	}

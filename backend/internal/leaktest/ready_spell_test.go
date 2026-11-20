@@ -3,8 +3,13 @@ package leaktest
 import (
 	"testing"
 
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/timestamppb"
+
 	charactersv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/characters/v1"
 	playv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/play/v1"
+	"github.com/PuraFome/meuRPG/backend/gen/meurpg/play/v1/playv1connect"
 )
 
 // A readied spell (RN-10): the spell held, its level, that it is a spell, and the concentration that holds it are the
@@ -12,8 +17,10 @@ import (
 // that it was lost; never which spell. The master's and Caio's reads are the positive controls.
 
 // readiedSpellWords are what only the master and Caio read of Toren's readied Hold Person: its key and its name (they
-// hold letters outside a-f, so no id matches them), that it is a spell, and Toren's concentration.
-var readiedSpellWords = []string{"spell:hold-person", "Imobilizar Pessoa", "READIED_KIND_SPELL", `"concentrationSpell"`}
+// hold letters outside a-f, so no id matches them), that it is a spell, Toren's concentration, and the slot level of the
+// row (`"slotLevel"`, the key alone: protojson puts a random space after a colon; it omits a zero, and no other read of
+// these tests holds a slot level that is not zero).
+var readiedSpellWords = []string{"spell:hold-person", "Imobilizar Pessoa", "READIED_KIND_SPELL", `"concentrationSpell"`, `"slotLevel"`}
 
 // onTorenTurnAsWizard makes Toren a 3rd-level wizard who prepared Hold Person and plays the combat until his turn.
 func (w *world) onTorenTurnAsWizard() {
@@ -25,6 +32,55 @@ func (w *world) onTorenTurnAsWizard() {
 		CampaignId: w.campaign, CharacterId: w.toren.GetId(), Revision: w.toren.GetRevision(), Name: w.toren.GetName(), Sheet: sheet,
 	})))
 	w.onTurnOf(w.combatant(w.toren).GetId())
+}
+
+// waitRead is what a person who does not answer a window reads of the open windows: the windows themselves (none) and
+// the wait line.
+type waitRead struct {
+	windows []*playv1.ReactionWindow
+	wait    *playv1.ReactionWait
+}
+
+// waitReadOf reads the combat as p and keeps what it says of the open windows.
+func (w *world) waitReadOf(p *person) waitRead {
+	w.t.Helper()
+	e := p.currentEncounter(w)
+	return waitRead{windows: e.GetReactionWindows(), wait: e.GetReactionWait()}
+}
+
+// markRolling calls MarkReactionRolling as p, with off when it takes the mark off.
+func (w *world) markRolling(p *person, windowID string, off bool) reply {
+	return p.call(playv1connect.CombatServiceMarkReactionRollingProcedure, &playv1.MarkReactionRollingRequest{
+		CampaignId: w.campaign, EncounterId: w.encounter.GetId(), WindowId: windowID, Clear: off,
+	})
+}
+
+// waitBeganOf is when the wait began, as the master reads it on the READIED window (nil before the first mark).
+func (w *world) waitBeganOf(p *person) *timestamppb.Timestamp {
+	return windowOfKind(p, w, playv1.ReactionKind_REACTION_KIND_READIED).GetWaitBeganAt()
+}
+
+// sameWaitAs fails unless p, who does not answer the READIED window, reads of it the same as before: no window, and the
+// wait line equal to the one read before the reactor's player marked the window, whatever the marks since (set, cleared,
+// set again). It also fails when any of p's reads, or the TV's answer, holds a `rolling`, a `waitBeganAt` or a `waitedMs` field:
+// the mark, the beginning of the wait and how long it has run are the master's and the reactor's player's alone.
+func (w *world) sameWaitAs(t *testing.T, when string, p *person, before waitRead, title string, tv *playv1.GetTableScreenResponse) {
+	t.Helper()
+	now := w.waitReadOf(p)
+	if len(now.windows) != 0 || now.wait.GetTitlePt() != title || len(before.windows) != 0 {
+		t.Errorf("%s: %s reads the windows %v and the wait %q, want no window and %q", when, p.name, now.windows, now.wait.GetTitlePt(), title)
+	}
+	if !proto.Equal(now.wait, before.wait) {
+		t.Errorf("%s: %s reads the wait %v, want the one read before the mark, %v", when, p.name, now.wait, before.wait)
+	}
+	for _, field := range []string{`"rolling"`, `"waitBeganAt"`, `"waitedMs"`} {
+		if w.readsHold(p, field) {
+			t.Errorf("%s: %s reads a %s field of the window", when, p.name, field)
+		}
+		if body, err := protojson.Marshal(tv); err != nil || contains(body, field) {
+			t.Errorf("%s: the TV's answer holds a %s field (marshal error %v)", when, field, err)
+		}
+	}
 }
 
 // readsHoldAll fails unless the person's reads hold every needle: the positive control.

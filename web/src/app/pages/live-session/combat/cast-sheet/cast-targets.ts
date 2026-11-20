@@ -42,8 +42,9 @@ let nextId = 0;
                 type="button"
                 class="step__btn"
                 [attr.aria-label]="(rays() ? 'Tirar um raio de ' : 'Tirar um dardo de ') + t.label"
-                [disabled]="!!t.blocked || (dealt().get(t.id) ?? 0) === 0"
-                (click)="deal.emit({ id: t.id, delta: -1 })"
+                [disabled]="!!t.blocked"
+                [attr.aria-disabled]="!t.blocked && (dealt().get(t.id) ?? 0) === 0 ? 'true' : null"
+                (click)="step(t.id, -1)"
               >
                 <mat-icon aria-hidden="true">remove</mat-icon>
               </button>
@@ -52,8 +53,9 @@ let nextId = 0;
                 type="button"
                 class="step__btn"
                 [attr.aria-label]="(rays() ? 'Pôr um raio em ' : 'Pôr um dardo em ') + t.label"
-                [disabled]="!!t.blocked || placed() >= total()"
-                (click)="deal.emit({ id: t.id, delta: 1 })"
+                [disabled]="!!t.blocked"
+                [attr.aria-disabled]="!t.blocked && placed() >= total() ? 'true' : null"
+                (click)="step(t.id, 1)"
               >
                 <mat-icon aria-hidden="true">add</mat-icon>
               </button>
@@ -147,6 +149,19 @@ export class CastTargets {
           : `Escolha até ${r.max} alvos (só quem você vê)`;
     }
   });
+
+  /**
+   * A tap on "+" or "−". At a limit (the last dart is placed, none is left to take) the button is `aria-disabled` and does nothing,
+   * as the other steppers do: a button that turned natively `disabled` under the finger would drop the keyboard focus to the page.
+   * A creature the spell cannot reach has its buttons natively disabled from the start; they never change under the focus.
+   */
+  protected step(id: string, delta: 1 | -1): void {
+    const now = this.dealt().get(id) ?? 0;
+    if (delta > 0 ? this.placed() >= this.total() : now === 0) {
+      return;
+    }
+    this.deal.emit({ id, delta });
+  }
 
   protected initial(label: string): string {
     return combatantInitial(label.replace(/ \(você\)$/, ''));

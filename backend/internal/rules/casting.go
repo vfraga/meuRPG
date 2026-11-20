@@ -151,29 +151,57 @@ const (
 	pactOfTheChain = "feature:pact-of-the-chain"
 )
 
+// bookInvocationKey is the warlock invocation that casts two spells of the Book of
+// Shadows, and the warlock spells it knows, as rituals (SRD 5.1, Warlock, Eldritch
+// Invocations: Book of Ancient Secrets). bookRitualsKey is the choice of its two spells.
+const (
+	bookInvocationKey = "feature:eldritch-invocation-book-of-ancient-secrets"
+	bookRitualsKey    = bookInvocationKey + textSeparator + "rituals"
+)
+
 // SpellStanding works out what the derived sheet says about the spell.
 // ritualTag is whether the spell carries the ritual tag (SpellEntry.Ritual).
 //
 // The rituals follow the SRD classes that have a ritual feature (Derived
 // Spellcasting.Ritual): the bard from the spells known, the cleric and the druid
-// from the prepared spells, the wizard from the spellbook.
+// from the prepared spells, the wizard from the spellbook. The warlock's Book of
+// Ancient Secrets adds its two spells (known, not prepared) and the warlock spells known.
 func (d Derived) SpellStanding(spellKey string, ritualTag bool) SpellStanding {
 	var out SpellStanding
+	book := d.holdsBook()
 	for _, cs := range d.Spells {
 		if cs.Spell.Key != spellKey {
 			continue
 		}
 		out.Known, out.Prepared = true, cs.Prepared
-		for _, sc := range d.Spellcasting {
-			if sc.Ritual && ritualTag && (cs.Prepared || sc.Class == wizardClass) {
-				out.CanRitual = true
-			}
+		if ritualTag && d.castsAsRitual(cs, book) {
+			out.CanRitual = true
 		}
 	}
 	if spellKey == findFamiliar && ritualTag && slices.ContainsFunc(d.Features, func(f Feature) bool { return f.Key == pactOfTheChain }) {
 		out.Known, out.CanRitual = true, true
 	}
 	return out
+}
+
+// holdsBook says the sheet has the invocation Book of Ancient Secrets.
+func (d *Derived) holdsBook() bool {
+	return slices.ContainsFunc(d.Features, func(f Feature) bool { return f.Key == bookInvocationKey })
+}
+
+// castsAsRitual says a ritual feature of the sheet casts the spell of the sheet as a ritual:
+// the class's Ritual Casting, or, with the Book of Ancient Secrets, the book's two spells and
+// the warlock spells the character knows (the ones on the character's warlock list, the
+// patron's expanded list included: CharacterSpell.WarlockList). The sheet does not say which
+// class knows a spell, so on a multiclass sheet a spell on the warlock list counts whoever
+// knows it.
+func (d Derived) castsAsRitual(cs CharacterSpell, book bool) bool {
+	for _, sc := range d.Spellcasting {
+		if sc.Ritual && (cs.Prepared || sc.Class == wizardClass) {
+			return true
+		}
+	}
+	return book && (cs.FromBook || (cs.Prepared && cs.WarlockList))
 }
 
 // MageArmorSpell is Mage Armor's key, and mageArmorBase the 13 in its "base AC

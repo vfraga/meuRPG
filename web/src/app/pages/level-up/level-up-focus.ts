@@ -71,9 +71,12 @@ export class LevelUpFocus {
       const card = firstId
         ? root.querySelector<HTMLElement>(`#pick-${firstId}`)
         : root.querySelector<HTMLElement>('.body section');
-      const target = card?.querySelector<HTMLElement>(
-        '.rows input:not(:disabled), input:not(:disabled), [data-pending] .choice__title, button',
-      );
+      // A half-done swap: the focus goes to the group that is half done.
+      const target =
+        card?.querySelector<HTMLElement>('[data-half] input:not(:disabled)') ??
+        card?.querySelector<HTMLElement>(
+          '.rows input:not(:disabled), input:not(:disabled), [data-pending] .choice__title, button',
+        );
       card?.setAttribute('data-attn', '');
       target?.scrollIntoView({ block: 'center' });
       target?.focus({ preventScroll: true, focusVisible: true } as FocusOptions);

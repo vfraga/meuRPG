@@ -107,7 +107,7 @@ Sizes the shared classes fix (the rest belong to their component):
 | `.mr-panel__title` | 21 / 26 / 700, Alegreya |
 | `.mr-label` | 13 / 16 / 500, `ink-muted`, never in capitals |
 | `.mr-list__name` / `.mr-list__sub` | 18 / 700 and 14 `ink-muted` |
-| `.mr-tag` | 14, 26 px high |
+| `.mr-tag` | 14, 26 px high; `--compact`: 12, 22 px high |
 | `.mr-notice` | 16 / 22 |
 | Buttons | 16 / 700 (Material override) |
 

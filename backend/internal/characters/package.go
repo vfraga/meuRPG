@@ -32,7 +32,7 @@ import (
 // that class.
 //
 // A character comes without what happened to it in play: no vitals, no
-// level-up history, no creatures, no lock, no story release, no player.
+// level-up history, no creatures, no infusions, no lock, no story release, no player.
 
 // PackagePart returns the characters' part of the package.
 func (s *Service) PackagePart() campaignpackage.Part { return &packagePart{s: s} }
@@ -305,6 +305,8 @@ func (p *packagePart) stageEntry(in *campaignpackage.Import, te *rulesv1.TableEn
 	if v := featureKeys(te.GetKey(), body, body); len(v) > 0 {
 		return bad(contentReason(v[0].GetReason()))
 	}
+	// What the server keeps of a weapon is its own, never the file's: a package makes a new table, so the row is at revision 1.
+	body = stamped(body, nil, 1)
 	data, err := storedData(body)
 	if err != nil {
 		return bad(pkgv1.PackageProblemReason_PACKAGE_PROBLEM_REASON_INVALID)

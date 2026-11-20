@@ -360,6 +360,31 @@ func prepareWith(
 	return stored{key: key, body: b, kind: kind, data: data}, nil
 }
 
+// stamped is body with what the server keeps of it set for a write at the table revision rev: for a weapon, the revision it
+// last became two-handed at (TableWeapon.two_handed_since_revision), the revision of the write that put the property on,
+// kept by every other write while it stays, and 0 without it. Whatever the request said of it is dropped. Any other kind is
+// returned as it is.
+func stamped(body, old tableBody, rev int32) tableBody {
+	w, ok := body.(*rulesv1.TableWeapon)
+	if !ok {
+		return body
+	}
+	w = proto.CloneOf(w)
+	w.TwoHandedSinceRevision = 0
+	if !slices.Contains(w.GetProperties(), twoHandedProperty) {
+		return w
+	}
+	if was, ok := old.(*rulesv1.TableWeapon); ok && slices.Contains(was.GetProperties(), twoHandedProperty) {
+		w.TwoHandedSinceRevision = was.GetTwoHandedSinceRevision()
+	} else {
+		w.TwoHandedSinceRevision = rev
+	}
+	return w
+}
+
+// twoHandedProperty is the weapon property that takes both hands.
+const twoHandedProperty = "weapon-property:two-handed"
+
 // withRow replaces or adds the entry of key in entries, as it will be stored.
 func withRow(entries []entryRow, st stored, row charactersdb.CampaignContent) []entryRow {
 	out := slices.Clone(entries)
@@ -464,7 +489,7 @@ func (c *createCall) run(ctx context.Context, tx pgx.Tx) error {
 	key := entryKey(c.kind, c.body, rows)
 	// A name another entry has is one more violation of this entry, listed with the ones the rules find (not instead of them).
 	lead := duplicateLead(entries, c.kind, key, c.body.GetNamePt())
-	st, err := prepare(key, c.kind, c.body, nil, lead...)
+	st, err := prepare(key, c.kind, stamped(c.body, nil, rev), nil, lead...)
 	if err != nil {
 		return err
 	}
@@ -687,7 +712,7 @@ func (c *updateCall) check(ctx context.Context, q *charactersdb.Queries, cur cha
 		return updatePlan{}, err
 	}
 	lead := duplicateLead(entries, c.kind, c.key, c.body.GetNamePt())
-	st, err := prepare(c.key, c.kind, c.body, old.body, lead...)
+	st, err := prepare(c.key, c.kind, stamped(c.body, old.body, rev), old.body, lead...)
 	if err != nil {
 		return updatePlan{}, err
 	}

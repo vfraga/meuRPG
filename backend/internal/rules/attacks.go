@@ -103,7 +103,10 @@ func (x *deriver) weaponAttack(i int, key string, martialArts bool, martialDie i
 		a.ReachFt = t.reachFt // the weapon keeps its own range: a reach is not a throwing range
 	}
 	ammo, fires := c.ammunition[key]
-	a.AmmunitionKey = ammo
+	if !x.repeats(key) {
+		a.AmmunitionKey = ammo
+	}
+	a.InfusionNamePT = x.infusionName(key)
 	x.d.Attacks = append(x.d.Attacks, a)
 	if fires {
 		x.d.Attacks = append(x.d.Attacks, x.improvisedMelee(a))

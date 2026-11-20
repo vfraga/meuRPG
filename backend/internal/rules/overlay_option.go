@@ -73,6 +73,9 @@ type TableOption struct {
 	OfferedBy    string
 	Prerequisite TableOptionPrerequisite
 	Effects      []Effect
+	// Infusion is set when the option is an infusion: only an option of the set "table_feature" whose feature has an
+	// InfusionRule.
+	Infusion *TableInfusion
 }
 
 // TableOptionPrerequisite is what a table option asks of the character; every one set must
@@ -132,6 +135,7 @@ func (b *overlayBuilder) addOption(o *TableOption, path string) error {
 	b.checkOfferedBy(&c, o, path)
 	checkTextAt(&c, key, path, ".desc_pt", o.DescPT)
 	b.checkOptionPrerequisite(&c, o, path)
+	b.addInfusion(&c, o.Key, o.OfferedBy, path, o.Infusion)
 	for i := range o.Effects {
 		if o.Effects[i].Type == "choice" {
 			c.at(key, path, fmt.Sprintf(".effects[%d].type", i), ReasonEffect, "an option does not ask for another choice")

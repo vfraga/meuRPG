@@ -405,6 +405,9 @@ type actionEvent struct {
 	// is every pending damage the one roll settled.
 	CastID string   `json:"cast_id,omitempty"`
 	Slot   *slotRef `json:"slot,omitempty"`
+	// CastLevel is the level a cast with no slot was made at when it is not the spell's own: the cast level of the
+	// grant it went through. The undo gives back no slot for it; the replay of the cast reads the spell at it.
+	CastLevel int32 `json:"cast_level,omitempty"`
 	// SlotCounted says an NPC's cast counted Slot on the combatant, so its undo gives it
 	// back; an NPC's cast without it spent nothing and gives nothing back.
 	SlotCounted bool `json:"slot_counted,omitempty"`

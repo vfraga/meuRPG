@@ -31,6 +31,8 @@ export interface RequestSource {
   readonly instrument: string;
   /** The swap of a pick at an Ability Score Improvement, once whole. */
   readonly swapPick?: LevelUpChoicesInit['swapPick'];
+  /** The swaps of the options of table features, one for each group, once whole. */
+  readonly swapFeatureOptions?: LevelUpChoicesInit['swapFeatureOptions'];
   readonly lateDrafts: ChoiceDrafts;
   readonly newDrafts: ChoiceDrafts;
 }
@@ -75,6 +77,7 @@ export function choicesRequest(d: RequestSource, hp: Rolled | null): LevelUpChoi
     expertiseSkillKeys: [...d.expertise],
     instrumentKey: d.instrument,
     ...(d.swapPick ? { swapPick: d.swapPick } : {}),
+    ...(d.swapFeatureOptions?.length ? { swapFeatureOptions: d.swapFeatureOptions } : {}),
     hitPoints: hitPointsOf(hp),
   };
 }

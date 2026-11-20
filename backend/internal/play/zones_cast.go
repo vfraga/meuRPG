@@ -15,7 +15,7 @@ import (
 func (f *castFlow) affectZone(ctx context.Context, def zoneDef) error {
 	if def.keepsCastHits {
 		for i, t := range f.targs {
-			if err := f.hitTarget(ctx, i, t); err != nil {
+			if err := f.hitTarget(ctx, i, t, f.call.in); err != nil {
 				return err
 			}
 		}

@@ -29,6 +29,8 @@ export interface SelectOption<T extends string | number = string> {
   readonly group?: string;
   /** A line at the option's right edge ("do efeito 1"); a browser that draws only text reads it after the label. */
   readonly side?: string;
+  /** A small tag after the name where the pick is a chip ("Opção 1"); a plain list reads it after the label. */
+  readonly badge?: string;
   /** Why a disabled option cannot be picked: drawn under its name (dashed), or after it ("name · reason") where the list is plain text. */
   readonly reason?: string;
   /** A line of explanation that cannot be picked: it wraps, and is drawn smaller and muted. */

@@ -3,7 +3,7 @@ import { test } from './diagnostics';
 import { beginAttackCombatRPC, getEncounterRPC, passTurnsToAndWait, pensantusCasting, tableForCombat, type Encounter } from './combat-support';
 import { openCombatPanel } from './combat-layout';
 import { endSessionOf } from './feature-use-support';
-import { goblinTrigger, readiedOf, readyAttackRPC, readySpellRPC } from './ready-support';
+import { goblinTrigger, pensantusReadyKit, readiedOf, readyAttackRPC, readySpellRPC } from './ready-support';
 import { openSessionPage } from './live-session-support';
 import { waitForEncounterRevision } from './revision-support';
 import { newSignedInContext, openCombatLog } from './support';
@@ -200,33 +200,70 @@ test('um ataque de magia preparado é solto pelo jogador, na criatura que ele es
   }
 });
 
-test('uma magia de dardos preparada é recusada na soltura, e deixá-la passar não gera o aviso de perda', { tag: ['@RN-31', '@RN-22'] }, async ({ browser }) => {
-  test.setTimeout(240_000);
+/** The table where Pensantus readied a spell of the kit with a slot of its level, naming `target` if any, and the master fired it: the readier's prompt is open. */
+async function heldSpellTable(browser: Browser, name: string, spellKey: string, slotLevel: number, target?: string) {
   const master = await newSignedInContext(browser, 'Mestre Teste', { viewport: { width: 1280, height: 900 } });
   const player = await newSignedInContext(browser, 'Jogador Teste', { viewport: { width: 1280, height: 900 } });
   const m = await master.newPage();
   const p = await player.newPage();
   await m.goto('/');
   await p.goto('/');
-  const table = await tableForCombat(m, p, `Preparar magia passa ${Date.now()}`, true, true, { sheet: pensantusCasting });
+  const table = await tableForCombat(m, p, `${name} ${Date.now()}`, true, true, { sheet: pensantusReadyKit });
   const campaignId = table.campaignId;
+  const begun = await beginAttackCombatRPC(m, table, faces, squares);
+  await openSessionPage(p, campaignId);
+  await expect(p.getByRole('heading', { name: 'Sua vez, Pensantus' })).toBeVisible();
+  await waitForEncounterRevision(p, await readySpellRPC(p, campaignId, begun, 'Pensantus', spellKey, slotLevel, target));
+  await openSessionPage(m, campaignId);
+  await passTurnsToAndWait(m, campaignId, 'Capitão Goblin', [m, p]);
+  await fire(m);
+  return { master, player, m, p, campaignId };
+}
+
+/** Mísseis Mágicos at the 1st level, the Capitão named at Ready. */
+const missilesTable = (browser: Browser, name: string) => heldSpellTable(browser, name, 'spell:magic-missile', 1, 'Capitão Goblin');
+
+test('uma magia de dardos preparada é solta com os dardos repartidos pelo jogador', { tag: ['@RN-31', '@RN-22'] }, async ({ browser }) => {
+  test.setTimeout(240_000);
+  const { master, player, m, p, campaignId } = await missilesTable(browser, 'Preparar dardos solta');
   try {
-    const begun = await beginAttackCombatRPC(m, table, faces, squares);
-    await openSessionPage(p, campaignId);
-    await expect(p.getByRole('heading', { name: 'Sua vez, Pensantus' })).toBeVisible();
-    await waitForEncounterRevision(p, await readySpellRPC(p, campaignId, begun, 'Pensantus', 'spell:magic-missile', 1, 'Capitão Goblin'));
-    await openSessionPage(m, campaignId);
-    await passTurnsToAndWait(m, campaignId, 'Capitão Goblin', [m, p]);
-    await fire(m);
     const prompt = p.getByRole('alertdialog', { name: 'Soltar Mísseis Mágicos' });
-    // Magic Missile shares darts among its targets, which AnswerReaction does not carry: the server refuses the release (and nothing is
-    // spent), the prompt says what it needs and the readier can still let it pass.
-    await prompt.getByRole('button', { name: 'Soltar no Capitão Goblin' }).click();
-    await expect(prompt.getByRole('alert')).toContainText('Não deu para soltar a magia por aqui: ela pede dardos ou um ponto no mapa');
-    expect((await getEncounterRPC(p, campaignId)).combatants.find((c) => c.label === 'Pensantus')?.reactionUsed ?? false).toBe(false);
+    await expect(prompt).toBeVisible();
+    // The darts are shared out as the cast screen shares them: the release waits until all three are placed.
+    await expect(prompt.getByText('Divida os 3 dardos entre os alvos')).toBeVisible();
+    await expect(prompt.getByText('Distribua todos os dardos: 0 de 3.')).toBeVisible();
+    const release = prompt.getByRole('button', { name: 'Soltar agora' });
+    await expect(release).toHaveAttribute('aria-disabled', 'true');
+    await prompt.getByRole('button', { name: 'Pôr um dardo em Capitão Goblin' }).click();
+    await prompt.getByRole('button', { name: 'Pôr um dardo em Capitão Goblin' }).click();
+    await prompt.getByRole('button', { name: 'Pôr um dardo em Goblin 1' }).click();
+    await expect(prompt.getByText('3 de 3 dardos distribuídos.')).toBeVisible();
+    await expect(release).not.toHaveAttribute('aria-disabled', 'true');
+    await release.click();
+    await expect(prompt).toHaveCount(0);
+    const after = await getEncounterRPC(p, campaignId);
+    expect(after.reactionWindows ?? []).toHaveLength(0);
+    expect(after.combatants.find((c) => c.label === 'Pensantus')?.reactionUsed).toBe(true);
+    await waitForEncounterRevision(p, after);
+    const log = await openCombatLog(p);
+    await expect(log).toContainText('Mísseis Mágicos');
+  } finally {
+    await endSessionOf(m, campaignId);
+    await master.close();
+    await player.close();
+  }
+});
+
+test('deixar passar uma magia de dardos preparada não gera o aviso de perda', { tag: ['@RN-31', '@RN-22'] }, async ({ browser }) => {
+  test.setTimeout(240_000);
+  const { master, player, m, p, campaignId } = await missilesTable(browser, 'Preparar dardos passa');
+  try {
+    const prompt = p.getByRole('alertdialog', { name: 'Soltar Mísseis Mágicos' });
+    await expect(prompt).toBeVisible();
     await prompt.getByRole('button', { name: 'Deixar passar' }).click();
     await expect(prompt).toHaveCount(0);
     const after = await getEncounterRPC(p, campaignId);
+    expect(after.combatants.find((c) => c.label === 'Pensantus')?.reactionUsed ?? false).toBe(false);
     await waitForEncounterRevision(p, after);
     const log = await openCombatLog(p);
     await expect(log).toContainText('se perdeu');
@@ -271,6 +308,87 @@ test('o mestre escolhe em quem o ataque preparado, sem alvo no gatilho, é feito
     expect(after.combatants.find((c) => c.label === 'Pensantus')?.reactionUsed).toBe(true);
     // The readier's prompt, still open, says the window closed (the reaction was used).
     await expect(p.getByRole('alertdialog', { name: 'Ação preparada: atacar com Adaga' })).toContainText('A janela fechou e a sua reação foi usada.');
+  } finally {
+    await endSessionOf(m, campaignId);
+    await master.close();
+    await player.close();
+  }
+});
+
+test('o seletor de dardos, só com o teclado, mantém o foco dentro do aviso quando o último dardo é posto e quando o último é tirado', { tag: ['@RN-31', '@RN-22', '@a11y'] }, async ({ browser }) => {
+  test.setTimeout(240_000);
+  const { master, player, m, p, campaignId } = await missilesTable(browser, 'Preparar dardos teclado');
+  try {
+    const prompt = p.getByRole('alertdialog', { name: 'Soltar Mísseis Mágicos' });
+    await expect(prompt).toBeVisible();
+    const add = prompt.getByRole('button', { name: 'Pôr um dardo em Capitão Goblin' });
+    const take = prompt.getByRole('button', { name: 'Tirar um dardo de Capitão Goblin' });
+    /** Where the focus is after the page drew twice: inside the prompt, on a control, never on the page behind it (the body). */
+    const focusNow = async () => {
+      await p.evaluate(() => new Promise<void>((done) => requestAnimationFrame(() => requestAnimationFrame(() => done()))));
+      return prompt.evaluate((el) => {
+        const on = document.activeElement;
+        return { inside: !!on && on !== document.body && el.contains(on), label: on?.getAttribute('aria-label') ?? on?.tagName ?? '' };
+      });
+    };
+
+    // Three darts with Enter from the "+" of the Capitão: after the third the "+" has no dart left to place, and the focus stays on it.
+    await add.focus();
+    for (let i = 1; i <= 3; i++) {
+      await p.keyboard.press('Enter');
+      await expect(prompt.getByText(i === 3 ? '3 de 3 dardos distribuídos.' : `Distribua todos os dardos: ${i} de 3.`)).toBeVisible();
+      expect(await focusNow(), `depois do dardo ${i}`).toEqual({ inside: true, label: 'Pôr um dardo em Capitão Goblin' });
+    }
+    await expect(add).toHaveAttribute('aria-disabled', 'true');
+    // Pressed again at the limit it does nothing: no fourth dart.
+    await p.keyboard.press('Enter');
+    await expect(prompt.getByText('3 de 3 dardos distribuídos.')).toBeVisible();
+
+    // And back down with Enter from the "−": after the last dart is taken the "−" is off, and the focus stays on it.
+    await take.focus();
+    for (let i = 2; i >= 0; i--) {
+      await p.keyboard.press('Enter');
+      await expect(prompt.getByText(`Distribua todos os dardos: ${i} de 3.`)).toBeVisible();
+      expect(await focusNow(), `ao tirar até ${i}`).toEqual({ inside: true, label: 'Tirar um dardo de Capitão Goblin' });
+    }
+    await expect(take).toHaveAttribute('aria-disabled', 'true');
+    await prompt.getByRole('button', { name: 'Deixar passar' }).click();
+    await expect(prompt).toHaveCount(0);
+  } finally {
+    await endSessionOf(m, campaignId);
+    await master.close();
+    await player.close();
+  }
+});
+
+test('uma magia de uma criatura preparada é solta na criatura que o jogador escolhe da lista', { tag: ['@RN-31', '@RN-22'] }, async ({ browser }) => {
+  test.setTimeout(240_000);
+  const { master, player, m, p, campaignId } = await heldSpellTable(browser, 'Preparar criatura solta', 'spell:charm-person', 1);
+  try {
+    const prompt = p.getByRole('alertdialog', { name: 'Soltar Enfeitiçar Pessoa' });
+    await expect(prompt).toBeVisible();
+    // No creature was named at Ready: the list asks for one and the release waits.
+    await expect(prompt.getByText('Escolha o alvo (só quem você vê)')).toBeVisible();
+    await expect(prompt.getByRole('radio', { name: /Capitão Goblin/ })).not.toBeChecked();
+    const release = prompt.getByRole('button', { name: 'Soltar agora' });
+    await expect(release).toHaveAttribute('aria-disabled', 'true');
+    await prompt.locator('label', { hasText: 'Capitão Goblin' }).click();
+    await expect(prompt.getByRole('radio', { name: /Capitão Goblin/ })).toBeChecked();
+    // The first touch on the list told the table the player is choosing: their prompt says so, and the master's clock now counts the longer wait.
+    await expect(prompt).toContainText(/Você está escolhendo: a mesa espera 1 min \d+ s\. Depois disso, passa sozinho\./);
+    const queue = m.locator('app-reaction-queue[part="rest"]');
+    await expect
+      .poll(async () => Number(/passa sozinho em (\d+) s/.exec(await queue.innerText())?.[1] ?? '0'), { message: 'os segundos do relógio do mestre' })
+      .toBeGreaterThan(30);
+    await release.click();
+    await expect(prompt).toHaveCount(0);
+    const after = await getEncounterRPC(p, campaignId);
+    expect(after.reactionWindows ?? []).toHaveLength(0);
+    expect(after.combatants.find((c) => c.label === 'Pensantus')?.reactionUsed).toBe(true);
+    await waitForEncounterRevision(p, after);
+    await expect(p.getByTestId('readied-lost')).toHaveCount(0);
+    const log = await openCombatLog(p);
+    await expect(log).toContainText('Enfeitiçar Pessoa');
   } finally {
     await endSessionOf(m, campaignId);
     await master.close();

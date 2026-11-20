@@ -148,6 +148,8 @@ export interface GrantedSpellVm {
   /** The grant waives the material components, and each cast spends this many uses of the resource (1 or more; 0 at will). */
   readonly noMaterialComponents: boolean;
   readonly usesCost: number;
+  /** The level the spell is cast at (`GrantedSpell.cast_level`): the spell's own level when the grant sets none; 0 for a cantrip. */
+  readonly castLevel: number;
   /** The casting ability; `null` while the player has not picked it (`abilityPending`). */
   readonly ability: AbilityKey | null;
   readonly abilityPending: boolean;
@@ -197,6 +199,9 @@ export interface ChangedContentVm {
   /** When the entry last changed. */
   readonly changedAt: Date | null;
   readonly messages: readonly string[];
+  /** The code of the issue each sentence comes from, one per sentence in the same order (`ChangedContent.codes`); empty or
+   * shorter than `messages` for an answer from before the field. */
+  readonly codes: readonly string[];
 }
 
 /** A situational reminder the numbers above cannot express, such as

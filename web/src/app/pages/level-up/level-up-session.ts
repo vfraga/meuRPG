@@ -139,7 +139,7 @@ export class LevelUpSession {
     const d = this.draft;
     const name = (key: string) => d.names().get(key) ?? 'uma opção que saiu da lista';
     const prepared = d.prepared();
-    return changeRows(this.before, this.after(), {
+    const rows = changeRows(this.before, this.after(), {
       classKey: this.options.classKey,
       spellListClassKey: d.effective().spellListClassKey,
       hpSub: this.preview.state().after ? this.hpSub() : '',
@@ -162,6 +162,7 @@ export class LevelUpSession {
           }
         : {}),
     });
+    return [...rows, ...d.swap.rows()];
   });
 
   /** The features the level gives, by name, the ones with a choice too (the choice is its own step). */

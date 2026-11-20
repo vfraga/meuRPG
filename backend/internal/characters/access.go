@@ -112,8 +112,8 @@ func blockedReason(state charactersv1.CharacterState) charactersv1.CharacterBloc
 // characterToProto builds the Character a member sees: m is the caller,
 // who may see the row (canSee), and playerDisplayName the owning player's
 // display name. A full sheet gets its derived numbers, from content (the
-// campaign's).
-func (s *Service) characterToProto(content *rules.Content, row charactersdb.Character, m authz.Membership, playerDisplayName string) (*charactersv1.Character, error) {
+// campaign's) and the live infusion records that name the character as holder.
+func (s *Service) characterToProto(content *rules.Content, row charactersdb.Character, m authz.Membership, playerDisplayName string, infusions []rules.InfusionRecord) (*charactersv1.Character, error) {
 	sheet, err := loadSheet(row.ID, row.Sheet)
 	if err != nil {
 		return nil, err
@@ -155,13 +155,15 @@ func (s *Service) characterToProto(content *rules.Content, row charactersdb.Char
 	}
 	if full := sheet.GetFull(); full != nil {
 		build := buildWithStates(full, stateKeysOf(row.ActiveStates))
+		build.CharacterID, build.Infusions = row.ID, infusions
 		der := rules.Derive(build, content)
 		c.Derived = derivedToProto(der)
 		r := reader{name: row.Name, master: master}
 		r.tell(c.Derived, der.Issues)
 		c.Derived.Gear = mapToProto(rules.DeriveGear(build, content, der), gearToProto)
-		addChangedContent(c.Derived, der.Issues, content, build, full, r)
+		addChangedContent(c.Derived, der.AllIssues(), content, build, full, r)
 		fillMagicItems(content, c.Sheet.GetFull(), build, der)
+		c.Sheet.GetFull().Infusions = sheetInfusionsOf(row.ID, der, infusions)
 		if !master {
 			// The stored issues are the server's bookkeeping of what the sheet already had (the changed entries
 			// above are worked out from them): only the master receives them.

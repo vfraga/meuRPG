@@ -368,7 +368,7 @@ func (c *content) unmetKnowledge(p FeatPrerequisite, b Build, d Derived) []FeatU
 			out = append(out, FeatUnmet{Kind: FeatUnmetClassLevel, Key: p.ClassKey, NamePT: c.namePT(p.ClassKey), Value: p.ClassLevel})
 		}
 	}
-	owns := ownedBy(b, d)
+	owns := appliedBy(b, d)
 	if p.RequiresPact != "" && !owns(p.RequiresPact) {
 		out = append(out, FeatUnmet{Kind: FeatUnmetPact, Key: p.RequiresPact, NamePT: c.namePT(p.RequiresPact)})
 	}

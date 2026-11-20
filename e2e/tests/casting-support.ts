@@ -1,7 +1,9 @@
 import { expect, type Locator, type Page } from '@playwright/test';
 
+import { brisa, brisaSheet } from './combat-support';
 import { openSheetTab, startSessionRPC } from './live-session-support';
 import { tableForMaps, type MapsTable } from './maps-support';
+import { setTableRulesRPC } from './table-rules-support';
 import { pensantus } from './support';
 
 // Setup for the casting specs (MR-048), through the API: these tests prove the casting screens, not the
@@ -28,6 +30,16 @@ export async function tableForCasting(master: Page, player: Page, name: string):
     },
     { ...pensantus, level: 5 },
   );
+  return { ...base, sessionId: await startSessionRPC(master, base.campaignId) };
+}
+
+/**
+ * Brisa, a level 5 Cleric (two 3rd-level slots) with Curar Ferimentos prepared, at a table whose dice are all physical, and an
+ * open session: the heal's dice are typed as a sum.
+ */
+export async function tableForHealing(master: Page, player: Page, name: string): Promise<CastingTable> {
+  const base = await tableForMaps(master, player, name, false, brisaSheet, { ...brisa, level: 5 });
+  await setTableRulesRPC(master, base.campaignId, { diceMode: 'DICE_MODE_PHYSICAL' });
   return { ...base, sessionId: await startSessionRPC(master, base.campaignId) };
 }
 

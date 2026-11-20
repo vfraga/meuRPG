@@ -1,14 +1,20 @@
 import { create } from '@bufbuild/protobuf';
 
 import {
+  FeatureSwapLevelsSchema,
+  InfusionAccepts,
+  InfusionEffect,
   OptionPrerequisiteSchema,
   TableBackgroundSchema,
   TableFeatureSchema,
+  TableInfusionRuleSchema,
+  TableInfusionSchema,
   TableRaceSchema,
   TableSubraceSchema,
 } from '../../../gen/meurpg/rules/v1/table_content_pb';
 import { abilities, feature } from './content-testing';
 import { menu } from './content-testing-menu';
+import { inputFor } from './content-violations';
 import {
   backgroundToDraft,
   bonusText,
@@ -304,11 +310,98 @@ describe('the option list of a feature (a table feature the player picks from)',
     });
   });
 
+  it('keeps the levels a pack allows the swap of its options at, through a load and a save (#715)', () => {
+    const f = withOptions();
+    f.swapLevels = create(FeatureSwapLevelsSchema, { levels: [3, 7], everyLevel: false });
+    const sent = draftToFeature(featureToDraft(f), m);
+    expect(sent.swapLevels).toMatchObject({ levels: [3, 7], everyLevel: false });
+    f.swapLevels = create(FeatureSwapLevelsSchema, { everyLevel: true });
+    expect(draftToFeature(featureToDraft(f), m).swapLevels).toMatchObject({ everyLevel: true });
+    expect(draftToFeature(featureToDraft(withOptions()), m).swapLevels).toBeUndefined();
+  });
+
+  it('keeps the infusion rule of a feature and the infusion of its options, through a load and a save', () => {
+    const f = withOptions();
+    f.infusionRule = create(TableInfusionRuleSchema, {
+      limitSteps: [
+        { classLevel: 2, active: 2 },
+        { classLevel: 6, active: 3 },
+      ],
+    });
+    f.options[0].infusion = create(TableInfusionSchema, {
+      accepts: InfusionAccepts.WEAPON,
+      effect: InfusionEffect.ITEM_BONUS,
+      requiresAttunement: true,
+      bonusSteps: [
+        { classLevel: 2, bonus: 1 },
+        { classLevel: 10, bonus: 2 },
+      ],
+    });
+    f.options[1].infusion = create(TableInfusionSchema, {
+      accepts: InfusionAccepts.ARMOR,
+      effect: InfusionEffect.RESISTANCE_LABEL,
+      damageTypes: ['damage-type:fire', 'damage-type:cold'],
+    });
+    const sent = draftToFeature(featureToDraft(f), m);
+    expect(sent.infusionRule?.limitSteps).toMatchObject([
+      { classLevel: 2, active: 2 },
+      { classLevel: 6, active: 3 },
+    ]);
+    expect(sent.infusion).toBeUndefined();
+    expect(sent.options?.[0].infusion).toMatchObject({
+      accepts: InfusionAccepts.WEAPON,
+      effect: InfusionEffect.ITEM_BONUS,
+      requiresAttunement: true,
+      bonusSteps: [
+        { classLevel: 2, bonus: 1 },
+        { classLevel: 10, bonus: 2 },
+      ],
+    });
+    expect(sent.options?.[1].infusion).toMatchObject({
+      effect: InfusionEffect.RESISTANCE_LABEL,
+      damageTypes: ['damage-type:fire', 'damage-type:cold'],
+    });
+    expect(sent.options?.[0].infusionRule).toBeUndefined();
+  });
+
+  it('sends no infusion data for a feature that has none', () => {
+    const sent = draftToFeature(featureToDraft(withOptions()), m);
+    expect(sent.infusionRule).toBeUndefined();
+    expect(sent.options?.[0].infusion).toBeUndefined();
+  });
+
   it('a feature with no options sends none (an absent repeated field is an empty list), and the paths include each option', () => {
     expect(draftToFeature(emptyFeature(), m).options).toBeUndefined();
     const draft = featureToDraft(withOptions());
     const paths = featurePaths('table_subclass.levels[0].features', [draft], m);
     expect(paths).toContain('table_subclass.levels[0].features[0].options[1].name_pt');
+  });
+});
+
+describe('the fields an option row of a feature asks at (#580, board 580-03)', () => {
+  it('names each field of "O que a opção pede" for each option, so a refusal lands on its field and not on the option', () => {
+    const f = { ...emptyFeature(), options: [emptyFeature(), { ...emptyFeature(), name: 'B' }] };
+    const paths = featureOwnPaths('t', f, menu());
+    for (const field of [
+      'class_level',
+      'class_level.class_key',
+      'class_level.level',
+      'requires_pact',
+      'requires_spell_key',
+      'requires_option_keys',
+    ]) {
+      expect(paths).toContain(`t.options[1].prerequisite.${field}`);
+    }
+    expect(paths).not.toContain('t.prerequisite.requires_pact');
+  });
+
+  it('places the refusal of one picked option on the list, since each pick has no field of its own', () => {
+    const known = new Set(
+      featureOwnPaths('t', { ...emptyFeature(), options: [emptyFeature()] }, menu()),
+    );
+    expect(inputFor('t.options[0].prerequisite.requires_option_keys[1]', (p) => known.has(p))).toBe(
+      't.options[0].prerequisite.requires_option_keys',
+    );
   });
 });
 

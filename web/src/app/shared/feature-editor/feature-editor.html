@@ -1,29 +1,15 @@
-<div class="feature" [class.feature--flat]="flat()" [class.feature--framed]="framed()" role="group" [attr.aria-label]="groupLabel()">
-  @if (heading() || index() >= 0 || rowMenu()) {
+<div class="feature" [class.feature--flat]="flat()" [attr.role]="inRow() ? null : 'group'" [attr.aria-label]="inRow() ? null : groupLabel()">
+  @if (index() >= 0 && !inRow()) {
     <div class="feature__head">
-      @if (heading()) {
-        <h3 class="feature__title">{{ heading() }}</h3>
-      } @else {
-        <span class="feature__title feature__title--n">{{ index() + 1 }}</span>
-      }
-      @if ((index() >= 0 && count() > 1) || rowMenu()) {
+      <span class="feature__title feature__title--n">{{ index() + 1 }}</span>
+      @if (count() > 1) {
         <span class="feature__move">
-          @if (index() >= 0 && count() > 1) {
-            <button type="button" class="icon" aria-label="Subir {{ feature().name || nameLabel() }}" [disabled]="index() === 0" (click)="moved.emit(-1)">
-              <mat-icon aria-hidden="true">arrow_upward</mat-icon>
-            </button>
-            <button type="button" class="icon" aria-label="Descer {{ feature().name || nameLabel() }}" [disabled]="index() === count() - 1" (click)="moved.emit(1)">
-              <mat-icon aria-hidden="true">arrow_downward</mat-icon>
-            </button>
-          }
-          @if (rowMenu()) {
-            <button type="button" class="icon" aria-label="Mais ações de {{ feature().name || heading() || nameLabel() }}" [matMenuTriggerFor]="rowActions">
-              <mat-icon aria-hidden="true">more_vert</mat-icon>
-            </button>
-            <mat-menu #rowActions="matMenu">
-              <button mat-menu-item type="button" (click)="removed.emit()"><mat-icon aria-hidden="true">delete</mat-icon>{{ removeLabel() }}</button>
-            </mat-menu>
-          }
+          <button matIconButton type="button" class="act" aria-label="Subir {{ moveName() }}" [disabled]="index() === 0" (click)="moved.emit(-1)">
+            <mat-icon aria-hidden="true">arrow_upward</mat-icon>
+          </button>
+          <button matIconButton type="button" class="act" aria-label="Descer {{ moveName() }}" [disabled]="index() === count() - 1" (click)="moved.emit(1)">
+            <mat-icon aria-hidden="true">arrow_downward</mat-icon>
+          </button>
         </span>
       }
     </div>
@@ -134,7 +120,10 @@
   }
   @if (allowOptions()) {
     <section class="options" [attr.aria-label]="'Opções para escolher de ' + (feature().name || 'esta característica')">
-      <h4 class="options__title">Opções para escolher</h4>
+      <div class="options__head">
+        <h4 class="options__title">Opções para escolher</h4>
+        <span class="options__count">{{ rows().length === 1 ? '1 opção' : rows().length + ' opções' }}</span>
+      </div>
       @if (oneOf()) {
         <p class="options__hint">
           @if (feature().options.length === 0) {
@@ -145,38 +134,75 @@
         </p>
       } @else {
         <p class="options__hint">
-          Uma lista que o jogador escolhe, uma opção por vez (como manobras). Ponha na característica um efeito "Escolha" de "Uma opção de uma lista" com a quantidade, sem lista: ele oferece estas opções.
+          O jogador escolhe entre estas opções, uma por vez, como nas manobras. Quantas ele escolhe é o efeito de escolha da característica que diz.
         </p>
       }
-      @for (o of feature().options; track o.id; let k = $index) {
-        <app-feature-editor
-          [feature]="o"
-          [menu]="menu()"
-          [basePath]="path('options[' + k + ']')"
-          [issuesOf]="issuesOf()"
-          [spellOptions]="spellOptions()"
-          [catalog]="catalog()"
-          [entries]="entries()"
-          [isOption]="true"
-          [framed]="flat()"
-          [allowAsks]="!oneOf() && !featEditor() && !featOption()"
-          [featOption]="featEditor() || featOption()"
-          nameLabel="Nome da opção"
-          textLabel="Texto da opção"
-          removeLabel="Remover opção"
-          [heading]="'Opção ' + (k + 1)"
-          (featureChange)="setOption(k, $event)"
-          (removed)="removeOption(k)"
-        />
+      @for (r of rows(); track r.option.id) {
+        <div class="opt" [class.opt--open]="r.open" [class.opt--bad]="r.bad" [attr.data-opt]="r.index" role="group" [attr.aria-label]="r.place">
+          <div class="opt__head">
+            <button type="button" class="opt__toggle" [attr.aria-expanded]="r.open" [attr.aria-controls]="r.open ? r.bodyId : null" (click)="toggleOption(r.option.id)">
+              <mat-icon aria-hidden="true">{{ r.open ? 'expand_more' : 'chevron_right' }}</mat-icon>
+              <span class="opt__text">
+                <span class="opt__line">
+                  <span class="opt__title" [attr.title]="r.title">{{ r.title }}</span>
+                  @if (r.bad) {
+                    <span class="opt__bad"><mat-icon aria-hidden="true">error</mat-icon>Precisa de ajuste</span>
+                  }
+                </span>
+                <span class="opt__sub">{{ r.summary }}</span>
+              </span>
+            </button>
+            @if (rows().length > 1) {
+              <button matIconButton type="button" class="act" data-move="up" aria-label="Subir {{ r.ref }}" [disabled]="r.index === 0" (click)="moveOption(r.index, -1)">
+                <mat-icon aria-hidden="true">arrow_upward</mat-icon>
+              </button>
+              <button matIconButton type="button" class="act" data-move="down" aria-label="Descer {{ r.ref }}" [disabled]="r.index === rows().length - 1" (click)="moveOption(r.index, 1)">
+                <mat-icon aria-hidden="true">arrow_downward</mat-icon>
+              </button>
+            }
+            <button matIconButton type="button" class="act" aria-label="Mais ações d{{ r.ref }}" [matMenuTriggerFor]="optionActions" [matMenuTriggerData]="{ i: r.index }">
+              <mat-icon aria-hidden="true">more_vert</mat-icon>
+            </button>
+          </div>
+          @if (r.open) {
+            <div class="opt__body" [id]="r.bodyId">
+              <app-feature-editor
+                [feature]="r.option"
+                [menu]="menu()"
+                [basePath]="path('options[' + r.index + ']')"
+                [issuesOf]="r.issues"
+                [spellOptions]="spellOptions()"
+                [catalog]="catalog()"
+                [entries]="entries()"
+                [isOption]="true"
+                [inRow]="true"
+                [peers]="feature().options"
+                [flat]="true"
+                [allowAsks]="!oneOf() && !featEditor() && !featOption()"
+                [featOption]="featEditor() || featOption()"
+                nameLabel="Nome da opção"
+                textLabel="Texto da opção"
+                (featureChange)="setOption(r.index, $event)"
+              />
+            </div>
+          }
+        </div>
       }
-      <button type="button" class="link" (click)="addOption()"><mat-icon aria-hidden="true">add</mat-icon>Adicionar uma opção</button>
+      <mat-menu #optionActions="matMenu">
+        <ng-template matMenuContent let-i="i">
+          <button mat-menu-item type="button" (click)="removeOption(i)"><mat-icon aria-hidden="true">delete</mat-icon>Remover opção</button>
+        </ng-template>
+      </mat-menu>
+      <button type="button" class="link options__add" (click)="addOption()"><mat-icon aria-hidden="true">add</mat-icon>Adicionar uma opção</button>
     </section>
   }
   @if (isOption() && allowAsks()) {
     <section class="asks" [attr.aria-label]="'O que ' + (feature().name || 'a opção') + ' pede'">
-      <h4 class="options__title">O que a opção pede</h4>
-      <p class="options__hint">Vale só para quem vai escolher a opção. Deixe vazio o que ela não pede: quem não cumpre vê a opção na lista, apagada, com o que falta.</p>
-      <app-ask-rows [base]="path('prerequisite')" [value]="asks()" [issuesOf]="issuesOf()" [classOptions]="classOptions()" [pactOptions]="pactOptions()" [requirable]="requirable()" [spellSearch]="spellSearch()" [resetKey]="feature().id" (asksChange)="setAsks($event)" />
+      <div class="asks__head">
+        <h4 class="options__title">O que a opção pede</h4>
+        <span class="asks__all">O jogador precisa de todos</span>
+      </div>
+      <app-ask-rows [base]="path('prerequisite')" [value]="asks()" [issuesOf]="issuesOf()" [classOptions]="classOptions()" [pactOptions]="pactOptions()" [requirable]="requirable()" [inList]="peers().length > 0" [unsavedPeers]="unsavedPeers()" [flaggedOptions]="flaggedOptions()" [spellSearch]="spellSearch()" [resetKey]="feature().id" (asksChange)="setAsks($event)" />
       @for (m of issuesOf()(path('prerequisite')); track m) {
         <p class="inline-issue" role="note">{{ m }}</p>
       }
@@ -186,7 +212,7 @@
     @if (canAddEffect()) {
       <button type="button" class="link" (click)="addEffect()"><mat-icon aria-hidden="true">add</mat-icon>Adicionar um efeito</button>
     }
-    @if (removeLabel() && !rowMenu()) {
+    @if (removeLabel()) {
       <button matButton="outlined" type="button" class="remove" (click)="removed.emit()">{{ removeLabel() }}</button>
     }
   </div>

@@ -117,6 +117,21 @@ func TestSpellStandingRituals(t *testing.T) {
 		{"a spell that is not on the sheet", Derived{Spellcasting: []Spellcasting{wizard}}, "spell:detect-magic", true, SpellStanding{}},
 		{"the Pact of the Chain casts Find Familiar as a ritual without having it", Derived{Features: []Feature{{Key: "feature:pact-of-the-chain"}}}, "spell:find-familiar", true, SpellStanding{Known: true, CanRitual: true}},
 		{"the pact gives no other ritual", Derived{Features: []Feature{{Key: "feature:pact-of-the-chain"}}}, "spell:detect-magic", true, SpellStanding{}},
+		// SRD 5.1, Warlock, Book of Ancient Secrets: the two rituals are in the book, not
+		// prepared, and cast only as rituals; a warlock spell known with the ritual tag
+		// can be cast as one too.
+		{"a ritual of the book is known, not prepared, and cast as a ritual", bookSheet(true, bookRitual("spell:detect-magic", false)), "spell:detect-magic", true, SpellStanding{Known: true, CanRitual: true}},
+		{"a ritual of the book without the invocation is an ordinary spell", bookSheet(false, bookRitual("spell:detect-magic", false)), "spell:detect-magic", true, SpellStanding{Known: true}},
+		{"a spell of the book without the tag casts no ritual", bookSheet(true, bookRitual("spell:detect-magic", false)), "spell:detect-magic", false, SpellStanding{Known: true}},
+		{"a ritual of the book that the warlock also knows keeps being prepared", bookSheet(true, bookRitual("spell:comprehend-languages", true)), "spell:comprehend-languages", true, SpellStanding{Known: true, Prepared: true, CanRitual: true}},
+		{"a warlock spell known with the tag is cast as a ritual with the invocation", bookSheet(true, warlockSpell("spell:comprehend-languages")), "spell:comprehend-languages", true, SpellStanding{Known: true, Prepared: true, CanRitual: true}},
+		{"a warlock spell known with the tag is no ritual without the invocation", bookSheet(false, warlockSpell("spell:comprehend-languages")), "spell:comprehend-languages", true, SpellStanding{Known: true, Prepared: true}},
+		{"a warlock spell known without the tag is no ritual with the invocation", bookSheet(true, warlockSpell("spell:charm-person")), "spell:charm-person", false, SpellStanding{Known: true, Prepared: true}},
+		{"a spell off the warlock's list is no ritual through the invocation", bookSheet(true, CharacterSpell{Spell: SpellEntry{Key: "spell:detect-magic", Ritual: true, Classes: []string{"class:wizard"}}, Prepared: true}), "spell:detect-magic", true, SpellStanding{Known: true, Prepared: true}},
+		// The sheet does not say which class knows a spell, so a sorcerer/warlock with a spell on both
+		// lists casts it as a ritual with the invocation: the rule pins what the data can tell.
+		{"a multiclass sheet's spell on the warlock list is a ritual with the invocation", multiclassBook(), "spell:comprehend-languages", true, SpellStanding{Known: true, Prepared: true, CanRitual: true}},
+		{"a spell the book does not hold is not on the sheet", bookSheet(true, bookRitual("spell:detect-magic", false)), "spell:alarm", true, SpellStanding{}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -212,4 +227,30 @@ func TestMageArmorBaseArmorClass(t *testing.T) {
 	if got := Derive(b, c).ArmorClass; got != base {
 		t.Errorf("a barbarian with Unarmored Defense 10 + DEX + CON has AC %d, and Mage Armor must not lower it (got %d)", base, got)
 	}
+}
+
+// bookSheet is a warlock's sheet with the spells given, with the Book of Ancient Secrets or without it.
+func bookSheet(invocation bool, spells ...CharacterSpell) Derived {
+	d := Derived{Spellcasting: []Spellcasting{{Class: "class:warlock"}}, Spells: spells}
+	if invocation {
+		d.Features = []Feature{{Key: "feature:eldritch-invocation-book-of-ancient-secrets"}}
+	}
+	return d
+}
+
+// bookRitual is a spell picked for the Book of Ancient Secrets, prepared when the warlock knows it too.
+func bookRitual(key string, prepared bool) CharacterSpell {
+	return CharacterSpell{Spell: SpellEntry{Key: key, Ritual: true, Classes: []string{"class:wizard"}}, Prepared: prepared, FromBook: true}
+}
+
+// warlockSpell is a ritual on the warlock's list that the warlock knows.
+func warlockSpell(key string) CharacterSpell {
+	return CharacterSpell{Spell: SpellEntry{Key: key, Ritual: true, Classes: []string{"class:warlock", "class:wizard"}}, Prepared: true, WarlockList: true}
+}
+
+// multiclassBook is a sorcerer/warlock with the Book of Ancient Secrets that knows Comprehend Languages.
+func multiclassBook() Derived {
+	d := bookSheet(true, warlockSpell("spell:comprehend-languages"))
+	d.Spellcasting = append(d.Spellcasting, Spellcasting{Class: "class:sorcerer"})
+	return d
 }

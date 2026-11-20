@@ -161,6 +161,11 @@ func (s *Service) holdCast(ctx context.Context, c *combatTx, m authz.Membership,
 	if c.replay != nil {
 		return actionEvent{}, false, nil
 	}
+	// The answer to a question about the d20 comes after the windows: they were answered before the d20 was kept (a cast that
+	// the windows held asks its question in the replay, which the answer runs again).
+	if _, answering := heldReplyOf(ctx); answering {
+		return actionEvent{}, false, nil
+	}
 	specs, err := s.counterspellWindows(ctx, c, cs, caster, spellKey, level, targs)
 	if err != nil {
 		return actionEvent{}, false, err

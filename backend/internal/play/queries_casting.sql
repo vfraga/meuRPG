@@ -4,10 +4,10 @@
 -- name: InsertSpellCast :one
 INSERT INTO spell_casts (
     campaign_id, game_session_id, caster_id, spell_key, ritual, slot_level, slot_pact, status, concentrating,
-    casting_minutes, lasts, duration_seconds, rest_ends, secret, started_at
+    casting_minutes, lasts, duration_seconds, rest_ends, secret, started_at, grant_source
 ) VALUES (
     $1, $2, $3, $4, $5, $6, $7, $8, $9,
-    $10, $11, $12, $13, $14, $15
+    $10, $11, $12, $13, $14, $15, $16
 )
 RETURNING *;
 

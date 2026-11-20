@@ -51,6 +51,25 @@ type hints struct {
 	seq int64
 }
 
+// hintMark is what hints held at one moment: how many events and steps, and the flags.
+type hintMark struct {
+	events, afters              int
+	touched, heldTold, replayed bool
+}
+
+// mark keeps what the hints hold now, for rewind.
+func (h *hints) mark() hintMark {
+	return hintMark{events: len(h.events), afters: len(h.afters), touched: h.touched, heldTold: h.heldTold, replayed: h.replayed}
+}
+
+// rewind forgets what was told since m, as a rolled-back savepoint forgets its writes: the streams must not hear of them.
+func (h *hints) rewind(m hintMark) {
+	clear(h.events[m.events:])
+	clear(h.afters[m.afters:])
+	h.events, h.afters = h.events[:m.events], h.afters[:m.afters]
+	h.touched, h.heldTold, h.replayed = m.touched, m.heldTold, m.replayed
+}
+
 // told is one collected event and the campaign whose streams receive it.
 type told struct {
 	campaignID string

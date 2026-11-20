@@ -78,6 +78,7 @@ async function open(
     targets?: typeof fireballTargets;
     answer?: ReturnType<typeof preview>;
     castSpell?: ReturnType<typeof vi.fn>;
+    grant?: Record<string, unknown>;
   } = {},
 ) {
   TestBed.resetTestingModule();
@@ -104,6 +105,7 @@ async function open(
     usage: [{ level: 3, total: 2, used: 0 }],
     pact: null,
     targets: over.targets ?? fireballTargets,
+    grant: over.grant,
     shieldFree: null,
     shieldName: '',
     attackBonus: 0,
@@ -248,6 +250,21 @@ describe('CastSheet: an area spell placed on the map', () => {
     button('Conjurar mesmo assim')!.click();
     await settle();
     expect(castSpell).toHaveBeenCalledTimes(1);
+  });
+
+  it('says no slot is spent when the area is cast through a grant', async () => {
+    const { el, button, placeAt, settle } = await open({
+      answer: preview([]),
+      grant: { sourceKey: 'feat:graca@mesa', alsoWithSlot: false, castLevel: 4 },
+    });
+    await placeAt(6, 4);
+    button('Confirmar local')!.click();
+    await settle();
+    const text = plain(el.querySelector('app-area-notice')!.textContent);
+    expect(text).toContain(
+      'Ninguém que você vê está na área. A magia gasta a sua ação mesmo assim.',
+    );
+    expect(text).not.toContain('espaço');
   });
 
   it('"Mudar o local" goes back to the map with the point where it was, nothing spent', async () => {

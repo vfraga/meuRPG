@@ -37,7 +37,11 @@ describe('OpenDown', () => {
     vi.spyOn(select.nativeElement, 'getBoundingClientRect').mockReturnValue({
       bottom: selectBottom,
     } as DOMRect);
-    return { select: select.componentInstance as MatSelect, field };
+    return {
+      select: select.componentInstance as MatSelect,
+      selectElement: select.nativeElement as HTMLElement,
+      field,
+    };
   }
 
   it('keeps only the positions under the field', () => {
@@ -68,6 +72,25 @@ describe('OpenDown', () => {
     const { select } = setup(200);
     select.open();
     expect(select.panelOpen).toBe(true);
+    expect(scrollIntoView).not.toHaveBeenCalled();
+  });
+
+  it('does not scroll the field when the select is disabled and cannot open', () => {
+    vi.stubGlobal('innerHeight', 900);
+    const { select } = setup(800);
+    select.disabled = true;
+    select.open();
+    expect(select.panelOpen).toBe(false);
+    expect(scrollIntoView).not.toHaveBeenCalled();
+  });
+
+  it('does not scroll the field when the list is already open', () => {
+    vi.stubGlobal('innerHeight', 900);
+    const { select, selectElement } = setup(200);
+    select.open();
+    expect(select.panelOpen).toBe(true);
+    vi.mocked(selectElement.getBoundingClientRect).mockReturnValue({ bottom: 800 } as DOMRect);
+    select.open();
     expect(scrollIntoView).not.toHaveBeenCalled();
   });
 });

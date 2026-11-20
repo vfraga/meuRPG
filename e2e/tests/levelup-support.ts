@@ -65,7 +65,15 @@ export async function tableForLevelUp(
   masterPage: Page,
   playerPage: Page,
   name: string,
-  options: { build?: CharacterBuild; sheet?: Record<string, unknown>; milestone?: boolean; xpMode?: string; session?: boolean } = {},
+  options: {
+    build?: CharacterBuild;
+    sheet?: Record<string, unknown>;
+    milestone?: boolean;
+    xpMode?: string;
+    session?: boolean;
+    /** Content the sheet needs, made in the campaign before the character: the sheet fields it gives are added to `sheet`. */
+    prepare?: (campaignId: string) => Promise<Record<string, unknown>>;
+  } = {},
 ): Promise<LevelUpTable> {
   const build = options.build ?? pensantus;
   const created = await callRPC(masterPage, 'meurpg.campaigns.v1.CampaignService/CreateCampaign', {
@@ -79,8 +87,9 @@ export async function tableForLevelUp(
   const accepted = await callRPC(playerPage, 'meurpg.campaigns.v1.CampaignService/AcceptInvite', { token: (await invite.json()).token });
   expect(accepted.ok()).toBeTruthy();
 
+  const prepared = options.prepare ? await options.prepare(campaignId) : {};
   const body = characterRpcBody('PLAYER', build) as { sheet: { full: object } };
-  body.sheet.full = { ...body.sheet.full, ...(build === pensantus ? pensantusBook : {}), ...options.sheet };
+  body.sheet.full = { ...body.sheet.full, ...(build === pensantus ? pensantusBook : {}), ...prepared, ...options.sheet };
   const character = await createCharacterRPC(playerPage, campaignId, body);
   expect(character.ok(), await character.text()).toBeTruthy();
   const characterId = (await character.json()).character.id as string;

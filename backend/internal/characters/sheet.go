@@ -122,7 +122,7 @@ func checkFullSheet(content *rules.Content, sent *charactersv1.FullSheet) (*char
 		hasFeat[k] = struct{}{}
 	}
 	maps.DeleteFunc(full.FeatSlots, func(feat, _ string) bool { _, ok := hasFeat[feat]; return !ok })
-	full.KnownIssues = issueIDs(rules.Derive(buildOf(full), content).Issues)
+	full.KnownIssues = issueIDs(rules.Derive(buildOf(full), content).AllIssues())
 	full.ContentBaselines = nil // the server's: carryFlags sets it when a save keeps a flag
 	if err := rules.Validate(buildOf(full), content); err != nil {
 		if ve, ok := errors.AsType[*rules.ValidationError](err); ok {

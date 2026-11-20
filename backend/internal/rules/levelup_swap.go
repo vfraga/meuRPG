@@ -2,6 +2,7 @@ package rules
 
 import (
 	"slices"
+	"strings"
 )
 
 // The groups of picks an Ability Score Improvement level may swap, when the table plays
@@ -128,8 +129,24 @@ func applySwap(after *Build, s PickSwap) {
 	if s.Group == SwapGroupCantrip {
 		list = &after.Cantrips
 	}
-	*list = slices.DeleteFunc(*list, func(k string) bool { return k == s.From })
+	*list = slices.DeleteFunc(*list, func(k string) bool { return k == s.From || ownPick(s.From, k) })
 	*list = append(*list, s.To)
+}
+
+// ownPick says the stored pick k is a pick of the choice that belongs to the option `from`
+// (the two rituals of the Book of Ancient Secrets), which goes away with it.
+func ownPick(from, k string) bool {
+	return strings.HasPrefix(k, from+textSeparator)
+}
+
+// ownedByAnyOf says the stored pick k belongs to the choice of one of the options in keys.
+func ownedByAnyOf(keys []string, k string) bool {
+	choiceKey, _, ok := SplitScopedChoice(k)
+	if !ok {
+		return false
+	}
+	owner, _, _ := strings.Cut(choiceKey, textSeparator)
+	return slices.Contains(keys, owner)
 }
 
 // swapOf finds the swap the new sheet shows: a group of the offer in which the sheet gave
@@ -172,8 +189,11 @@ func swapInGroup(before, after Build, g SwapGroup) (swap PickSwap, found bool) {
 
 // Offers says the offer lets the swap be made: the group is offered, from is one of its
 // picks and to is in its pool.
-func (o LevelUpOffer) Offers(s PickSwap) bool {
-	for _, g := range o.PickSwaps {
+func (o LevelUpOffer) Offers(s PickSwap) bool { return groupOffers(o.PickSwaps, s) }
+
+// groupOffers says the swap is one of the groups: its group is there, from is one of its picks and to is in its pool.
+func groupOffers(groups []SwapGroup, s PickSwap) bool {
+	for _, g := range groups {
 		if g.Group == s.Group {
 			return slices.ContainsFunc(g.Picks, func(n NamedKey) bool { return n.Key == s.From }) &&
 				slices.ContainsFunc(g.Pool, func(n NamedKey) bool { return n.Key == s.To })

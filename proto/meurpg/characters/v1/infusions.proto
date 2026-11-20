@@ -1,0 +1,235 @@
+syntax = "proto3";
+
+// The infusions of an artificer-like class: a character puts one known infusion on a piece of gear or on an object, and
+// the piece's numbers follow (SheetInfusion, in characters.proto, is what a sheet reads). The class and its infusions
+// are the table's own content (TableFeature.infusion and TableFeature.infusion_rule, in rules/v1/table_content.proto);
+// this file is what a player does with them: list what the character knows and keeps, list the pieces an infusion can
+// go on, put one on, move it and end it.
+package meurpg.characters.v1;
+
+import "meurpg/characters/v1/characters.proto";
+import "meurpg/rules/v1/table_content.proto";
+
+// InfusionService runs the infusions of a campaign's characters.
+//
+// Every method needs a valid session cookie and fails with `unauthenticated` without one. For a campaign the caller is
+// not a member of, and for a character the caller may not see (it is neither the character's player nor the master),
+// methods answer `not_found`. A rule's refusal is `failed_precondition` with an InfusionBlocked detail, or with a
+// CharacterBlocked detail (characters.proto) for a dead character (a write only) or an attunement the character may not
+// have. A locked sheet does not stop a write, as it does not stop equipping.
+// In this version the holder of an infusion is always the infuser: `holder_character_id` is the infuser itself, and any
+// other id is `invalid_argument` on that field.
+service InfusionService {
+  // ListCharacterInfusions lists the infusions the character keeps live, the ones it knows and the limit.
+  // The character's player and the master.
+  rpc ListCharacterInfusions(ListCharacterInfusionsRequest) returns (ListCharacterInfusionsResponse);
+
+  // ListInfusionTargets lists the pieces of the holder's sheet an infusion can go on, each with the reason it cannot
+  // when it cannot. An infusion that goes on an object (any object, or a spellcasting focus) also gets one row with an
+  // empty `item_key` and no reason: the object the player names in InfuseItem. An infusion the character does not
+  // know, whatever the reason, is answered as a key that is no infusion: the same code and an empty list. The character's player
+  // and the master.
+  rpc ListInfusionTargets(ListInfusionTargetsRequest) returns (ListInfusionTargetsResponse);
+
+  // InfuseItem puts a known infusion on a piece of the holder's gear, or on an object it names. When the character
+  // already keeps as many infusions as the limit allows, `end_infusion_id` names the one that ends in the same call.
+  // The character's player and the master.
+  //
+  // At its limit, the oldest valid infusion of the same feature ends (since, then id) when none is named. A write
+  // never pushes a valid record out with no event: at the limit `end_infusion_id` must name a record that counts toward
+  // the limit, and one that is over the limit is refused with ITEM_CHANGED, since ending it frees no place (EndInfusion
+  // ends it). A piece that carries a record over the limit is refused the same way at the limit, named or not. A named
+  // record on the piece that is not valid for another reason ends with the piece's others, as when none is named. A live record of the same
+  // infusion that the sheet no longer counts ends with it, so what ListCharacterInfusions offers as known can be put on. `attune_now` attunes in
+  // the same call, with the checks of SetAttunement: a refusal of those refuses the whole call and writes nothing.
+  // A retry with the same `idempotency_key` and the same request returns the first answer and writes nothing again.
+  //
+  // Errors: `failed_precondition` with InfusionBlocked: INFUSION_NOT_KNOWN (also for a feature with no limit),
+  // ITEM_ALREADY_INFUSED, ITEM_NOT_ACCEPTED, ITEM_CHANGED (the infusion is in use, `end_infusion_id` is not a live record
+  // of the character's, or the limit is full and the record to end is over it or the piece carries one over it); with CharacterBlocked: CHARACTER_DEAD and the ATTUNEMENT_* reasons;
+  // `invalid_argument` for a parameter the infusion does not take, an object name that is empty, over 40 characters or
+  // has control or hidden characters, or another holder; `aborted` for a stale `revision`.
+  rpc InfuseItem(InfuseItemRequest) returns (InfuseItemResponse);
+
+  // MoveInfusion moves a live infusion to another piece of the holder, or to an object it names, with the checks of
+  // InfuseItem on the item. The time of the infusion begins again and the attunement is cleared.
+  // The character's player and the master.
+  //
+  // A move never pushes a valid record out with no event: it begins the time of the infusion again, so a record that is
+  // not valid now (over the limit, or whose piece left the sheet) may count after it and make the oldest valid one give
+  // way. At a full limit such a move is refused with ITEM_CHANGED and nothing changes; with a place free it moves.
+  //
+  // Errors: `failed_precondition` with InfusionBlocked: ITEM_CHANGED (the infusion is not live, or not the character's),
+  // INFUSION_NOT_KNOWN, ITEM_NOT_ACCEPTED, ITEM_ALREADY_INFUSED; with CharacterBlocked: CHARACTER_DEAD;
+  // `invalid_argument` for an object name that is not valid, or an item and an object name together; `aborted` for a
+  // stale `revision`. A retry with the same `idempotency_key` and the same request returns the first answer.
+  rpc MoveInfusion(MoveInfusionRequest) returns (MoveInfusionResponse);
+
+  // EndInfusion ends a live infusion. The character's player and the master. It has no idempotency key: a retry of an
+  // infusion that ended answers ITEM_CHANGED. CHARACTER_DEAD for a dead character, `aborted` for a stale `revision`.
+  rpc EndInfusion(EndInfusionRequest) returns (EndInfusionResponse);
+}
+
+message ListCharacterInfusionsRequest {
+  string campaign_id = 1;
+  string character_id = 2;
+}
+
+message ListCharacterInfusionsResponse {
+  // The infusions the character keeps live. In this version the holder is always the infuser, so they are on its own
+  // gear and on objects it names.
+  repeated SheetInfusion active = 1;
+  // The infusions the character knows now and keeps in no live valid record, in the order of the character's choices.
+  repeated KnownInfusion known = 2;
+  // How many live infusions the character may keep at its class level; 0 when it has no such class. A character that
+  // has two features that hold infusions gets the sum of their limits.
+  int32 limit = 3;
+  // How many of them it keeps now (the ones the sheet still knows), summed the same way.
+  int32 used = 4;
+}
+
+// KnownInfusion is an infusion the character may put on a piece.
+message KnownInfusion {
+  // The table content key of the infusion.
+  string infusion_key = 1;
+  string name_pt = 2;
+  // The infusion's text, one paragraph for each entry joined by a blank line.
+  string description_pt = 3;
+  // The kind of piece it goes on.
+  meurpg.rules.v1.InfusionAccepts accepts = 4;
+  // The holder must attune to the piece.
+  bool requires_attunement = 5;
+  // The app gives its numbers; false means text only.
+  bool computed = 6;
+  // The damage types the holder picks one of when the infusion is put on; empty when it takes no parameter.
+  repeated InfusionParameterOption parameters = 7;
+}
+
+// InfusionParameterOption is one value an infusion's parameter may take.
+message InfusionParameterOption {
+  // The damage type key ("damage-type:fire").
+  string key = 1;
+  string name_pt = 2;
+}
+
+message ListInfusionTargetsRequest {
+  string campaign_id = 1;
+  // The character that infuses.
+  string character_id = 2;
+  string infusion_key = 3;
+  // Required: the character whose gear is looked at, the infuser itself (any other id is `invalid_argument`).
+  string holder_character_id = 4;
+}
+
+message ListInfusionTargetsResponse {
+  repeated InfusionTarget targets = 1;
+}
+
+// InfusionTarget is a piece of the holder's gear and whether the infusion may go on it.
+message InfusionTarget {
+  // The gear key of the holder's sheet; empty for the row of "another object, by name" (no reason, no copies).
+  string item_key = 1;
+  string name_pt = 2;
+  // The piece's kind word in Portuguese ("armadura", "arma", "escudo").
+  string kind_pt = 3;
+  // How many copies of the piece the sheet lists; an infusion goes on one copy.
+  int32 copies = 4;
+  // Why the piece cannot take the infusion; UNSPECIFIED means it may.
+  InfusionTargetReason reason = 5;
+  // The reason in Portuguese; empty when the piece may take the infusion.
+  string reason_pt = 6;
+}
+
+// InfusionTargetReason says why a piece cannot take an infusion.
+enum InfusionTargetReason {
+  INFUSION_TARGET_REASON_UNSPECIFIED = 0;
+  // The piece already carries an infusion.
+  INFUSION_TARGET_REASON_TAKEN = 1;
+  // The piece is a magic item already.
+  INFUSION_TARGET_REASON_ALREADY_MAGICAL = 2;
+  // The piece is not of the kind the infusion goes on.
+  INFUSION_TARGET_REASON_WRONG_KIND = 3;
+}
+
+message InfuseItemRequest {
+  string campaign_id = 1;
+  // The character that infuses.
+  string character_id = 2;
+  string infusion_key = 3;
+  // Required: the character whose gear takes the infusion, the infuser itself (any other id is `invalid_argument`).
+  string holder_character_id = 4;
+  // The gear key of the holder's sheet; empty for an object.
+  string item_key = 5;
+  // The name of the object, when the infusion goes on an object and not on a piece of the sheet.
+  string object_name_pt = 6;
+  // The damage type key an infusion with a parameter takes; empty for any other.
+  string parameter = 7;
+  // The holder attunes to the piece in the same call (the infusion asks for attunement).
+  bool attune_now = 8;
+  // The live infusion that ends in the same call, to make room at the limit; empty for none. At a full limit it must be
+  // one that counts toward the limit: one that is over the limit is refused with ITEM_CHANGED and nothing changes.
+  string end_infusion_id = 9;
+  // A UUID the app makes once for the action: a retry with the same key does it once.
+  string idempotency_key = 10;
+  // The revision of the holder's sheet the caller holds; a stale one is refused with `aborted`. 0 skips the check.
+  int32 revision = 11;
+}
+
+message InfuseItemResponse {
+  // The infusion as it stands now.
+  SheetInfusion infusion = 1;
+  // The id of the infusion that ended in the same call; empty when none did.
+  string ended_infusion_id = 2;
+  // The revision of the character's sheet after the write: a follow-up write may send it.
+  int32 revision = 3;
+}
+
+message MoveInfusionRequest {
+  string campaign_id = 1;
+  string character_id = 2;
+  string infusion_id = 3;
+  // The gear key of the holder's sheet the infusion moves to; empty for an object.
+  string item_key = 4;
+  string object_name_pt = 5;
+  string idempotency_key = 6;
+  // The revision of the holder's sheet the caller holds; a stale one is refused with `aborted`. 0 skips the check.
+  int32 revision = 7;
+}
+
+message MoveInfusionResponse {
+  SheetInfusion infusion = 1;
+  // The revision of the character's sheet after the write.
+  int32 revision = 2;
+}
+
+message EndInfusionRequest {
+  string campaign_id = 1;
+  string character_id = 2;
+  string infusion_id = 3;
+  // The revision of the holder's sheet the caller holds; a stale one is refused with `aborted`. 0 skips the check.
+  int32 revision = 4;
+}
+
+message EndInfusionResponse {
+  string ended_infusion_id = 1;
+  // The revision of the character's sheet after the write.
+  int32 revision = 2;
+}
+
+// InfusionBlocked is the detail of InfusionService's `failed_precondition` for a rule of its own.
+message InfusionBlocked {
+  InfusionBlockedReason reason = 1;
+}
+
+// InfusionBlockedReason says why an infusion could not be put on, moved or ended.
+enum InfusionBlockedReason {
+  INFUSION_BLOCKED_REASON_UNSPECIFIED = 0;
+  // The piece already carries an infusion.
+  INFUSION_BLOCKED_REASON_ITEM_ALREADY_INFUSED = 1;
+  // The piece is not of the kind the infusion goes on.
+  INFUSION_BLOCKED_REASON_ITEM_NOT_ACCEPTED = 2;
+  // The piece or the infusion's record changed while the player chose: choose again.
+  INFUSION_BLOCKED_REASON_ITEM_CHANGED = 3;
+  // The character does not know the infusion.
+  INFUSION_BLOCKED_REASON_INFUSION_NOT_KNOWN = 4;
+}

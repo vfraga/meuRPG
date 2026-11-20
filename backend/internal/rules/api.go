@@ -168,6 +168,12 @@ type Build struct {
 	// MagicItems are the catalog magic items of the sheet that are no +N gear (at most MaxMagicItems; a key may repeat, each copy is an entry).
 	// They change no number: the sheet shows them and counts the attuned ones toward MaxAttunements.
 	MagicItems []SheetMagicItem `json:",omitempty"`
+	// CharacterID is the id of the character the build is of; the infusion records are judged against it (infusion.go).
+	// The loader sets it with Infusions; a build with no records needs none.
+	CharacterID string `json:",omitempty"`
+	// Infusions are the live infusion records of the character as holder (infusion.go). The loader sets them; the sheet
+	// never stores them.
+	Infusions []InfusionRecord `json:",omitempty"`
 	// Cantrips are level-0 spells. SpellsKnown is the list of spells the
 	// character knows (the wizard's spellbook, the sorcerer's known
 	// spells). SpellsPrepared are the prepared ones, for classes that
@@ -710,6 +716,11 @@ type Derived struct {
 	// It keeps the order of the bonuses, the counting ones and the ones that add nothing now.
 	// ArmorClass, AttackBonus and Damage already include the counting ones.
 	ItemModifiers []ItemModifier `json:",omitempty"`
+	// Infusions has one entry per Build.Infusions record, in its order: what the sheet's infusion block reads.
+	Infusions []InfusionStatus `json:",omitempty"`
+	// InfusionHosts has one entry per feature of the character that holds infusions: the limit of live ones and how
+	// many valid records use it.
+	InfusionHosts []InfusionHostStatus `json:",omitempty"`
 	// Gear lists (DeriveGear fills it; Derive leaves it empty, as it is the sheet's projection alone that reads it) the armor, the shield and the weapons the sheet lists, equipped or carried, by the catalog's
 	// names, in the order armor, shield, weapons (see GearPiece).
 	Gear []GearPiece
@@ -871,6 +882,10 @@ type Derived struct {
 	// are missing: skills, cantrips, spells known and spells prepared. A
 	// sheet with none is complete.
 	OpenChoices []OpenChoice
+	// Notices are what the sheet tells and does not ask the player to fix: an issue that is no problem of the sheet, such as
+	// IssueShieldIdle. They are left out of Issues, so no validation, no level-up check and no list of pending problems sees
+	// them; the sheet stores their identity and a changed table entry is told with them (AllIssues).
+	Notices []Issue `json:",omitempty"`
 	// Issues are problems found while deriving: unknown keys, unusual
 	// choices, a broken formula. They never stop the sheet from opening.
 	Issues []Issue
@@ -893,6 +908,14 @@ type CharacterSpell struct {
 	// spell of a class that knows its spells, the prepared list and the
 	// subclass's always-prepared spells.
 	Prepared bool
+	// FromBook says the spell is one of the two rituals of the warlock's Book of
+	// Ancient Secrets: known, outside the numbers of the class and cast only as a
+	// ritual, unless the warlock has the spell another way.
+	FromBook bool `json:",omitempty"`
+	// WarlockList says the spell is on the character's warlock list, the class's own or the patron's
+	// expanded list. It is set only on a sheet with the Book of Ancient Secrets, which casts the
+	// warlock spells the character knows as rituals.
+	WarlockList bool `json:",omitempty"`
 }
 
 // NamedKey is a content key with its Portuguese name.
@@ -1041,6 +1064,10 @@ type ItemModifier struct {
 	SourceNamePT string
 	Counts       bool
 	ReasonPT     string
+	// InfusionNamePT and InfusionID name the infusion record the line comes from; both are empty when the line
+	// comes from the piece itself.
+	InfusionNamePT string `json:",omitempty"`
+	InfusionID     string `json:",omitempty"`
 }
 
 // Grip says how a versatile weapon is held, from the gear on the sheet.
@@ -1152,6 +1179,8 @@ type Attack struct {
 	// AmmunitionKey is the key of the ammunition a character's ranged weapon fires ("equipment:arrow"); empty for
 	// every other line. The combat spends a piece of it for each attack roll made with the line.
 	AmmunitionKey string `json:",omitempty"`
+	// InfusionNamePT is the Portuguese name of the valid infusion on the weapon, or "".
+	InfusionNamePT string `json:",omitempty"`
 	// Improvised says the line is the melee use of a weapon that is not made for it (a bow used as a club), keyed
 	// "<weapon key>:melee": 1d4 plus Strength with no proficiency. It spends no ammunition.
 	Improvised bool `json:",omitempty"`
@@ -1297,6 +1326,12 @@ type Issue struct {
 	// particular, with no hidden name; the sheet stores neither (known issues hold the issue's ID). Never
 	// in JSON: it may name a hidden entry.
 	Lost *LostPrerequisite `json:"-"`
+	// Named is the sentence the master reads in place of Message when Message names nobody: an issue about an entry the
+	// players may not read tells them a sentence without it. Empty when Message is for every reader. Never in JSON.
+	Named string `json:"-"`
+	// Idle is what a notice of the code IssueShieldIdle says: the weapon that takes both hands and the armor class with and
+	// without the shield. Only on a notice (Derived.Notices). Never in JSON.
+	Idle *ShieldIdle `json:"-"`
 }
 
 // Issue codes.

@@ -7,6 +7,7 @@ import {
 import type { Attack } from '../../../gen/meurpg/rules/v1/rules_pb';
 import { stateWord } from './combat-view';
 import { type ReadiedTargetRow, readiedLegend, readiedTargetRows } from './reaction-readied';
+import { type ReleasePlan, releasePlan } from './readied-release';
 
 /**
  * Who a readied attack or spell is aimed at when its window is answered (#582): read from the readier's own turn options and the
@@ -22,6 +23,8 @@ export interface ReadiedAim {
   readonly legend: string;
   /** The creature named at Ready when it can be aimed at now, else `null`. */
   readonly chosen: string | null;
+  /** A held spell the server lists the targets of: what its window asks (darts, creatures), in place of the list above. */
+  readonly plan: ReleasePlan | null;
 }
 
 /** What a melee attack reaches when it says nothing, in feet. */
@@ -36,8 +39,8 @@ function attackReachFt(a: Attack): number {
 }
 
 /**
- * The creatures a spell that is not an attack may name: everyone in the combat. The readier is off its turn while the window is
- * open, and the server lists the targets of the spells it can cast now only, so it has no list (or darts, or placement) for a held spell.
+ * The creatures a spell that is not an attack may name when the server lists no targets for it: everyone in the combat. The server lists
+ * a held spell's targets while its row waits, so this is the fallback.
  */
 function spellRows(e: Encounter | null, reactorId: string, named: string): ReadiedTargetRow[] {
   return (e?.combatants ?? []).map((c) => ({
@@ -77,9 +80,20 @@ export function readiedAim(
       rows,
       legend: readiedLegend(rows),
       chosen: mine ? named : null,
+      plan: null,
     };
+  }
+  const plan = releasePlan(res, r, reactorId);
+  if (plan) {
+    return { need: 'optional', rows: [], legend: '', chosen: null, plan };
   }
   const rows = spellRows(e, reactorId, named);
   const mine = rows.find((x) => x.id === named);
-  return { need: 'optional', rows, legend: 'Em quem (opcional)', chosen: mine ? named : null };
+  return {
+    need: 'optional',
+    rows,
+    legend: 'Em quem (opcional)',
+    chosen: mine ? named : null,
+    plan: null,
+  };
 }

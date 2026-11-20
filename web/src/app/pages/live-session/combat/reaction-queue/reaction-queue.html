@@ -377,6 +377,10 @@
             (needChange)="aim.setNeed(row, $event)"
             [target]="aim.targetOf(row)"
             (targetChange)="aim.setTarget(row, $event)"
+            [release]="aim.pickOf(row)"
+            (releaseChange)="aim.setPick(row, $event)"
+            [plan]="aim.planOf(row)"
+            (planChange)="aim.setPlan(row, $event)"
           />
         }
         <div class="btns">

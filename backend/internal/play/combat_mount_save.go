@@ -2,7 +2,6 @@ package play
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"slices"
 
@@ -88,14 +87,7 @@ func (s *Service) carrySaveOn(ctx context.Context, c *combatTx, w playdb.Reactio
 		t.Before = append(t.Before, [2]int32{t.AtCol, t.AtRow})
 	}
 	t.Cause, t.AtCol, t.AtRow = mountsave.Key(cause), here[0], here[1]
-	body, err := json.Marshal(t)
-	if err != nil {
-		return fmt.Errorf("encode the window's trigger: %w", err)
-	}
-	if _, err := c.q.SetReactionWindowTrigger(ctx, playdb.SetReactionWindowTriggerParams{ID: w.ID, Trigger: body}); err != nil {
-		return fmt.Errorf("move a mount save on: %w", err)
-	}
-	return nil
+	return setWindowTrigger(ctx, c.q, w.ID, t)
 }
 
 // throwDownRider is the fall of a rider at 0 hit points: the same fall and landing as a failed save, written as an automatic failure

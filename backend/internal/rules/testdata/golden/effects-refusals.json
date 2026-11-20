@@ -8,6 +8,7 @@
   "bad: beast_spells with a condition": "effect feature:x (beast_spells): beast_spells takes no fields",
   "bad: beast_spells with a field": "effect feature:x (beast_spells): beast_spells takes no fields",
   "bad: cap on another target": "effect feature:x (modifier): a score modifier is an add with a cap from 20 to 30, and nothing else has a cap",
+  "bad: cast_level on a note": "effect feature:x (note): spell, from_level, uses, also_with_slot, ritual_only, counts_as_known, no_material_components, uses_cost and cast_level belong to granted_spell",
   "bad: choice from an unknown key": "effect feature:x (choice): unknown key \"skill:nope\" in from",
   "bad: choice unknown": "effect feature:x (choice): unknown choice \"shade\"",
   "bad: choice with a negative count": "effect feature:x (choice): unknown choice \"skill\"",

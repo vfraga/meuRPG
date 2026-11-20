@@ -47,14 +47,23 @@ describe('the prompt of a readied window (582-06, 582-07, 582-08)', () => {
 
   it('names a spell and says that passing loses it, and offers to release it', () => {
     const p = readiedPrompt(
-      held({ kind: ReadiedKind.SPELL, actionNamePt: 'Mísseis Mágicos' }),
+      held({ kind: ReadiedKind.SPELL, actionNamePt: 'Mísseis Mágicos', slotLevel: 1 }),
       2,
       'Pensantus',
     );
     expect(p.title).toBe('Soltar Mísseis Mágicos');
     expect(p.subtitle).toBe('Reação · a ação preparada de Pensantus');
     expect(p.releasable).toBe(true);
-    expect(p.note).toContain('Deixar passar perde a magia');
+    expect(p.note).toContain('Deixar passar perde a magia e o espaço');
+  });
+
+  it('does not say a held cantrip loses a slot', () => {
+    const p = readiedPrompt(
+      held({ kind: ReadiedKind.SPELL, actionNamePt: 'Raio de Fogo', slotLevel: 0 }),
+      2,
+      'Pensantus',
+    );
+    expect(p.note).toBe('A concentração acaba quando a magia sai. Deixar passar perde a magia.');
   });
 
   it('says a move with its limit and a standard action by its name, with one button', () => {

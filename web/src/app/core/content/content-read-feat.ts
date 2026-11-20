@@ -8,7 +8,7 @@ import { CHOICE_KINDS, choiceKindOf } from './effect-choices';
 import { optionSetName } from './option-text';
 
 /** How much a choice of options asks: "1 de 4 opções" for the feat's own or marked ones, "1 estilo de luta" for a whole set. */
-function optionsAsked(e: TableEffect, own: number): string {
+export function optionsAsked(e: TableEffect, own: number): string {
   if (e.set !== '') {
     return `${e.count} ${optionSetName(e.set).toLowerCase()}`;
   }
@@ -17,7 +17,7 @@ function optionsAsked(e: TableEffect, own: number): string {
 }
 
 /** The "Escolha" row of each choice of the feat that the player makes when taking it. */
-export function featChoiceRows(f: TableFeat): ReadRow[] {
+export function featChoiceRows(f: Pick<TableFeat, 'effects' | 'options'>): ReadRow[] {
   return f.effects.flatMap((e): ReadRow[] => {
     if (e.type !== 'choice') {
       return [];

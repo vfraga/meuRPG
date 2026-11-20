@@ -9,6 +9,7 @@ import {
   Item,
   ItemBonus,
   SheetAmmunition,
+  SheetInfusion,
   SheetMagicItem,
   WeaponMark,
 } from '../../../gen/meurpg/characters/v1/characters_pb';
@@ -194,6 +195,8 @@ export function toFullSheetInit(v: CharacterFormValue) {
     // as it was read (`SetAttunement` is the one call that changes who is attuned).
     magicItems: [] as SheetMagicItem[],
     ammunition: [] as SheetAmmunition[],
+    // Nor for the infusions: the server fills them on every read and a save ignores them.
+    infusions: [] as SheetInfusion[],
     // Nor for the daily picks and the short-rest mark: the server keeps them (`SetDailyChoice` and the rests are the
     // calls that change them), so a save of a loaded sheet carries them as read.
     dailyPicks: [] as DailyPick[],
@@ -270,6 +273,7 @@ export function mergeFullSheetInit(original: GenFullSheet | undefined, v: Charac
     // Nor for the ammunition: the server fills it on every read and a save ignores it, so the loaded list goes back as it
     // was read and the editor never drops or invents a count.
     ammunition: original.ammunition,
+    infusions: original.infusions,
     dailyPicks: original.dailyPicks,
     shortRested: original.shortRested,
   };

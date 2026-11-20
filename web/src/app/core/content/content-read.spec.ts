@@ -237,6 +237,22 @@ describe('what a player reads of an entry (E10-01 state 9)', () => {
     noRawKeys(read.rows.map((r) => r.value));
   });
 
+  it('says how many the player chooses in a class feature that lists options (580-03)', () => {
+    const f = feature('Truques de lâmina', [{ type: 'choice', choice: 'feature', count: 2 }]);
+    f.options = [feature('Golpe'), feature('Asa'), feature('Bico')];
+    const levels = [create(TableClassLevelSchema, { features: [f] })];
+    const read = readEntry(
+      entry(TableContentKind.CLASS, 'Guardião', {
+        body: {
+          case: 'tableClass',
+          value: create(TableClassSchema, { namePt: 'Guardião', hitDie: 10, levels }),
+        },
+      }),
+      nameOf,
+    );
+    expect(read.sections[0].items[0].text).toBe('Texto. Escolha 2 de 3 opções.');
+  });
+
   it('reads the table of a class level by level, and the multiclass prerequisites, in words', () => {
     const levels = Array.from({ length: 20 }, (_, i) =>
       create(TableClassLevelSchema, {

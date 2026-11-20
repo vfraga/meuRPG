@@ -266,6 +266,7 @@ type moveRequest struct {
 	// forced (a teleport, a token put right) and place (the first square of a
 	// combatant that has none) are the master's.
 	forced, place bool
+	release       bool // release_readied: the master's walk releases the combatant's readied move (readiedMoveOf)
 	// legendary is the key of the legendary option of kind "move" the move is made as (the master's, off the
 	// creature's own turn, with a budget of its own, see spendLegendaryMove).
 	legendary string
@@ -289,7 +290,7 @@ func readMoveRequest(ctx context.Context, msg *playv1.MoveCombatantRequest) (mov
 	}
 	r := moveRequest{
 		m: m, key: key, encID: encID, combID: combID, col: msg.GetCol(), row: msg.GetRow(),
-		jump: msg.GetJump(), height: msg.GetJumpHeightDft(), forced: msg.GetForced(), place: msg.GetPlace(), legendary: msg.GetLegendaryOption(),
+		jump: msg.GetJump(), height: msg.GetJumpHeightDft(), forced: msg.GetForced(), place: msg.GetPlace(), legendary: msg.GetLegendaryOption(), release: msg.GetReleaseReadied(),
 	}
 	return r, r.validate()
 }
@@ -369,6 +370,9 @@ type moveAttempt struct {
 	// readied is the readied move the mover makes off its turn while its READIED window is open (ready_answer.go): it
 	// pays its way and offers opportunity attacks as a walk on its turn does.
 	readied *readiedUse
+	// idle is a readied move that went nowhere (length 0): the call writes no event and tells nobody; only its reply says it
+	// stopped early.
+	idle bool
 	// made is the move's event.
 	made actionEvent
 	// what the publishers read after the commit.
@@ -442,6 +446,10 @@ func (s *Service) moveInTx(ctx context.Context, a *moveAttempt) (any, error) {
 	}
 	if err := s.planMove(ctx, a); err != nil {
 		return nil, err
+	}
+	if a.readied != nil && a.length == 0 { // a release that went nowhere is no move: nothing is written, nothing is told (idle)
+		a.idle, a.made.StoppedEarly = true, true
+		return nil, nil
 	}
 	if err := s.writeMove(ctx, a); err != nil {
 		return nil, err
@@ -946,6 +954,9 @@ func (a *moveAttempt) describeMove() {
 
 // publishMove tells the streams about the move, after the commit.
 func (s *Service) publishMove(ctx context.Context, campaignID string, d *encounterData, a *moveAttempt) {
+	if a.idle {
+		return
+	}
 	s.publishCombatantMoved(ctx, campaignID, d.enc, a.moved, squareOfState(a.made.From))
 	if a.draggedMoved != nil { // the creature it dragged moved too
 		s.publishCombatantMoved(ctx, campaignID, d.enc, *a.draggedMoved, a.draggedFrom)
@@ -1140,8 +1151,11 @@ func (s *Service) moverToPlan(ctx context.Context, m authz.Membership, d *encoun
 	if err := notEnded(enc); err != nil {
 		return who, sight, nil, err
 	}
+	if v.master { // his walk is free: the readied move's budget is the player's, and release_readied is not in the options
+		return who, sight, nil, nil
+	}
 	readied, err := s.openReadiedMove(ctx, d, who)
-	if err != nil || v.master {
+	if err != nil {
 		return who, sight, readied, err
 	}
 	return who, sight, readied, s.playerMovesNow(ctx, m, d, who, readied)

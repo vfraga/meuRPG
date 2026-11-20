@@ -79,8 +79,14 @@ describe('toCharacterSheetVm on a bare and on a dense character', () => {
           { prepared: false },
         ],
         changedContent: [
-          { key: 'k', namePt: 'Mudou', changedAt: timestampFromDate(when), messages: ['a'] },
-          { key: 'k2', namePt: 'Sem data', messages: [] },
+          {
+            key: 'k',
+            namePt: 'Mudou',
+            changedAt: timestampFromDate(when),
+            messages: ['a'],
+            codes: ['skill_count'],
+          },
+          { key: 'k2', namePt: 'Sem data', messages: [], codes: [] },
         ],
         features: [{ key: 'feature:wild-shape', namePt: 'Forma Selvagem' }],
       }),
@@ -167,6 +173,7 @@ describe('toCharacterSheetVm on a bare and on a dense character', () => {
       },
     ]);
     expect(sheet.changedContent.map((c) => c.changedAt)).toEqual([when, null]);
+    expect(sheet.changedContent.map((c) => c.codes)).toEqual([['skill_count'], []]);
   });
 
   it('falls back to empty texts, zeroes and nulls on a bare full sheet', () => {

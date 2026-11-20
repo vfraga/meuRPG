@@ -574,6 +574,34 @@ describe('granted_spell: the cost of a cast and the waived material', () => {
   });
 });
 
+describe('granted_spell: the level it is cast at', () => {
+  const m = grantedSpellMenu();
+
+  it('writes the cast level and reads it back unchanged', () => {
+    const stored = create(TableEffectSchema, {
+      type: 'granted_spell',
+      spell: 'spell:bless',
+      ability: 'cha',
+      uses: 'at_will',
+      castLevel: 2,
+    });
+    expect(effectToDraft(stored).castLevel).toBe(2);
+    expect(draftToEffect(effectToDraft(stored), m)).toEqual({
+      type: 'granted_spell',
+      spell: 'spell:bless',
+      ability: 'cha',
+      uses: 'at_will',
+      castLevel: 2,
+    });
+  });
+
+  it('sends no cast level when it is empty', () => {
+    const d = { ...emptyEffect('granted_spell'), spell: 'spell:light', ability: 'int' };
+    expect(d.castLevel).toBe(0);
+    expect(draftToEffect(d, m)).not.toHaveProperty('castLevel');
+  });
+});
+
 describe('spell_modifier: the change decides the fields', () => {
   const m = spellModifierMenu();
   const base = { ...emptyEffect('spell_modifier'), appliesTo: 'damage_spell' };

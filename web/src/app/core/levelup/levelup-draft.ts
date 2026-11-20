@@ -193,7 +193,7 @@ export class LevelUpDraft {
         skills: this.skills(),
         expertise: this.expertise(),
         instrument: this.instrument(),
-        swapPick: this.swap.pick(),
+        ...this.swap.request(),
         lateDrafts: this.lateDrafts(),
         newDrafts: this.newDrafts(),
       },

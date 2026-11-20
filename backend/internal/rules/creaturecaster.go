@@ -156,7 +156,7 @@ func (c *content) addInnateCasting(out *MonsterCaster, key string, profBonus int
 		for _, name := range listedSpellNames(line[4]) {
 			if entry, ok := c.spellEntries["spell:"+slugOf(name)]; ok {
 				g := base
-				g.Spell, g.AtWill = entry, strings.EqualFold(line[1], "At will")
+				g.Spell, g.AtWill, g.CastLevel = entry, strings.EqualFold(line[1], "At will"), entry.Level
 				grantInnate(out, g, perDay, line[3] != "")
 			}
 		}

@@ -8,7 +8,12 @@ import {
   ReadiedKind,
   ReadiedStatus,
 } from '../../../../gen/meurpg/play/v1/combat_pb';
-import { ActionEconomy, AttackKind } from '../../../../gen/meurpg/rules/v1/rules_pb';
+import {
+  ActionEconomy,
+  AttackKind,
+  SpellDamageChoice,
+  SpellDetailsSchema,
+} from '../../../../gen/meurpg/rules/v1/rules_pb';
 import { combatant, encounter } from '../../../core/combat/combat-testing';
 import { settle } from '../../../../test-settle';
 import { PHONE_QUERY } from '../../../shared/map-view/media-query';
@@ -82,7 +87,7 @@ async function setup(opts: Parameters<typeof mountCombatView>[0]) {
 describe('CombatView: Preparar (#582)', () => {
   it('opens the Ready sheet with the turn, the creatures of the fight and where the readier stands', async () => {
     const m = await setup({ enc: theatre(), matches: [PHONE_QUERY], turnOptions: turns() });
-    m.view['sheets'].actions.openReady();
+    await m.view['sheets'].actions.openReady();
     expect(m.opened).toHaveLength(1);
     expect(m.opened[0].component).toBe(ReadySheet);
     expect(m.opened[0].config.ariaLabel).toBe('Preparar uma ação');
@@ -102,6 +107,68 @@ describe('CombatView: Preparar (#582)', () => {
     expect(m.callsOf('takeAction')).toHaveLength(0);
   });
 
+  it('opens one sheet for a double tap, and the next tap after it opens another', async () => {
+    let release: (v: { spells: never[] }) => void = () => undefined;
+    const reads = new Promise<{ spells: never[] }>((resolve) => (release = resolve));
+    const summonOptions = vi.fn(() => reads);
+    const m = await setup({
+      enc: theatre(),
+      matches: [PHONE_QUERY],
+      turnOptions: turns(),
+      creatures: { summonOptions },
+    });
+    const first = m.view['sheets'].actions.openReady();
+    const second = m.view['sheets'].actions.openReady();
+    release({ spells: [] });
+    await Promise.all([first, second]);
+    expect(m.opened).toHaveLength(1);
+    expect(summonOptions).toHaveBeenCalledTimes(1);
+    await m.view['sheets'].actions.openReady();
+    expect(m.opened).toHaveLength(2);
+  });
+
+  it('hands the sheet the spells that ask an ability, creatures or a damage type, read the way the cast sheet reads them', async () => {
+    const spell = (key: string) => ({
+      enabled: true,
+      economy: ActionEconomy.ACTION,
+      spell: { key, name: key, namePt: key, level: 1 },
+      slots: [{ level: 1, free: 2, total: 2 }],
+    });
+    const m = await setup({
+      enc: theatre(),
+      matches: [PHONE_QUERY],
+      turnOptions: (id) =>
+        ({
+          ...turns()(id),
+          options: {
+            ...turns()(id)?.options,
+            spells: [
+              spell('spell:enhance-ability'),
+              spell('spell:conjure-animals'),
+              spell('spell:flame-strike'),
+              spell('spell:bless'),
+            ],
+          },
+        }) as never,
+      creatures: {
+        summonOptions: async () => ({ spells: [{ spellKey: 'spell:conjure-animals' }] }),
+      },
+      spellDetails: (key) =>
+        key === 'spell:flame-strike'
+          ? create(SpellDetailsSchema, {
+              damageChoice: SpellDamageChoice.ALTERNATIVE,
+              damage: [{ damageTypeKey: 'fire' }, { damageTypeKey: 'radiant' }],
+            } as never)
+          : null,
+    });
+    await m.view['sheets'].actions.openReady();
+    expect([...(m.opened[0].config.data['choices'] as Map<string, string>)]).toEqual([
+      ['spell:enhance-ability', 'ability'],
+      ['spell:conjure-animals', 'summon'],
+      ['spell:flame-strike', 'damage'],
+    ]);
+  });
+
   it('names the concentration the readier keeps now, for the warning over a held spell', async () => {
     const m = await setup({
       enc: theatre({
@@ -111,7 +178,7 @@ describe('CombatView: Preparar (#582)', () => {
       matches: [PHONE_QUERY],
       turnOptions: turns(),
     });
-    m.view['sheets'].actions.openReady();
+    await m.view['sheets'].actions.openReady();
     expect(m.opened[0].config.data['concentrating']).toBe('Névoa Obscurecente');
   });
 

@@ -276,3 +276,66 @@ func TestAGrantedSpellArrivesAtItsMinimumLevelWithTheNumbersOfItsAbility(t *test
 		t.Errorf("granted = %+v (%v), want from level 5 with Wisdom: DC 10, attack +2", g, ok)
 	}
 }
+
+// The cast level of a grant: at the spell's own level or above, up to 9, for a leveled spell cast with
+// no slot. Every refusal names the effect's field.
+func TestAGrantedSpellCastLevelIsRefusedAtItsField(t *testing.T) {
+	t.Parallel()
+	srd := loadForTest(t)
+	cases := []struct {
+		name   string
+		effect Effect
+		field  string
+	}{
+		{"below the spell's own level", grant("spell:misty-step", "cha", func(e *Effect) { e.CastLevel = 1 }), ".cast_level"},
+		{"negative", grant("spell:bless", "cha", func(e *Effect) { e.CastLevel = -1 }), ".cast_level"},
+		{"above 9", grant("spell:bless", "cha", func(e *Effect) { e.CastLevel = 10 }), ".cast_level"},
+		{"on a cantrip", grant("spell:light", "cha", func(e *Effect) { e.CastLevel = 2 }), ".cast_level"},
+		{"with ritual_only", grant("spell:detect-magic", "wis", func(e *Effect) { e.RitualOnly, e.CastLevel = true, 2 }), ".cast_level"},
+	}
+	for _, tc := range cases {
+		_, err := srd.With(graceOverlayNoRace([]Effect{tc.effect}))
+		oe, ok := errors.AsType[*OverlayError](err)
+		if !ok {
+			t.Errorf("%s: err = %v, want an overlay error", tc.name, err)
+			continue
+		}
+		if !strings.HasSuffix(oe.Field, tc.field) || oe.Reason != ReasonValue {
+			t.Errorf("%s: refused at %q (%s), want the field %s (%s)", tc.name, oe.Field, oe.Reason, tc.field, ReasonValue)
+		}
+	}
+	// Another effect type refuses it at its field when the entry is being written.
+	o := graceOverlayNoRace([]Effect{{Type: "note", CastLevel: 2, TextPT: "texto"}})
+	o.Strict = []string{graceFeat}
+	_, err := srd.With(o)
+	oe, ok := errors.AsType[*OverlayError](err)
+	if !ok || !strings.HasSuffix(oe.Field, ".cast_level") || oe.Reason != ReasonValue {
+		t.Errorf("a cast level on a note: err = %v, want an overlay error at .cast_level (%s)", err, ReasonValue)
+	}
+}
+
+// A cast level equal to the spell's own, above it or at 9 goes through, and the grant says it.
+func TestAGrantedSpellCastLevelIsAcceptedAndCarried(t *testing.T) {
+	t.Parallel()
+	srd := loadForTest(t)
+	at := func(spell string, level int) Effect {
+		return grant(spell, "cha", func(e *Effect) { e.CastLevel = level })
+	}
+	for _, e := range []Effect{at("spell:bless", 1), at("spell:bless", 2), at("spell:bless", 9), at("spell:misty-step", 2), at("spell:misty-step", 3)} {
+		if _, err := srd.With(graceOverlayNoRace([]Effect{e})); err != nil {
+			t.Errorf("%s at level %d is refused: %v", e.Spell, e.CastLevel, err)
+		}
+	}
+	c := withOverlay(t, graceOverlay([]Effect{
+		at("spell:bless", 2), at("spell:misty-step", 0), at("spell:detect-magic", 0), grant("spell:light", "int"),
+	}, nil))
+	d := Derive(graceBuild(5, []string{graceFeat}), c)
+	for _, w := range []struct {
+		spell string
+		level int
+	}{{"spell:bless", 2}, {"spell:misty-step", 2}, {"spell:detect-magic", 1}, {"spell:light", 0}} {
+		if g, ok := grantedOf(d, w.spell); !ok || g.CastLevel != w.level {
+			t.Errorf("%s = %+v (granted %v), want the cast level %d", w.spell, g, ok, w.level)
+		}
+	}
+}

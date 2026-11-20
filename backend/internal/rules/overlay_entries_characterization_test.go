@@ -578,6 +578,7 @@ func effectErrorCases() map[string]effectErrorCase {
 	add("extra_attack needs", Effect{}, "extra_attack needs a count")
 	add("empty tag", Effect{}, "empty tag")
 	add("unknown spell", Effect{}, "unknown spell \"x\"")
+	add("a cast level below the spell's", Effect{Type: "granted_spell"}, "effect feat:x (granted_spell): cast_level: at least the spell's own level (2)")
 	add("anything else", Effect{}, "something else went wrong")
 	add("ranged fields on a modifier", Effect{Type: "modifier", IgnoreCover: true}, "ignore_cover and the like belong to ranged_attack")
 	add("ranged attack refused", Effect{Type: "ranged_attack"}, "unknown target \"x\"")

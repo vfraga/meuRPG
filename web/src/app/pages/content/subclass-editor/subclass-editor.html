@@ -2,6 +2,7 @@
 <app-editor-alerts [saver]="saver" (reload)="reload.emit()" />
 <p class="mr-visually-hidden" role="status" aria-live="polite">{{ status() }}</p>
 <div class="editor">
+  <div class="editor__main">
   <section class="mr-panel block" aria-labelledby="sc-basics-t">
     <h2 class="mr-panel__title" id="sc-basics-t">Dados da subclasse</h2>
     @if (d.classKey) {
@@ -123,9 +124,14 @@
     <p class="hint">As sempre preparadas não gastam o limite de magias preparadas. A escolha mostra as magias do SRD e as da mesa.</p>
   </section>
 
-  @if (entry(); as saved) {
-    <app-players-switch [campaignId]="campaignId()" [entry]="saved" (switched)="switched.emit($event)" />
-  }
+  </div>
 
-  <app-editor-bar [sticky]="true" saveLabel="Salvar subclasse" [saving]="saver.saving()" [blocked]="saveBlocked()" (save)="save()" (cancel)="cancelled.emit()" />
+  <aside class="editor__side" [attr.aria-label]="previewing() ? 'Como os jogadores veem' : null">
+    <app-feature-preview [features]="d.features" [openId]="openFeature()" [menu]="menu()" [catalog]="catalog()" [entries]="entries()" [unsaved]="saver.placement().fields.length > 0" />
+    @if (entry(); as saved) {
+      <app-players-switch [campaignId]="campaignId()" [entry]="saved" (switched)="switched.emit($event)" />
+    }
+  </aside>
 </div>
+
+<app-editor-bar [sticky]="true" saveLabel="Salvar subclasse" [saving]="saver.saving()" [blocked]="saveBlocked()" (save)="save()" (cancel)="cancelled.emit()" />

@@ -341,3 +341,25 @@ func TestAMulticlassLevelAsksTheChoicesOfTheNewClassesFirstLevel(t *testing.T) {
 		})
 	}
 }
+
+// A level-up of a class that is not the Warlock refuses an invocation swap, whether the sheet holds the key sent or not.
+func TestALevelUpOfANonWarlockRefusesAnInvocationSwap(t *testing.T) {
+	t.Parallel()
+	c := loadForTest(t)
+	b := sweepBase(t, c, "class:fighter", "")
+	ch := satisfy(t, c, b, "class:fighter", "")
+	keys := map[string]string{"a key the sheet holds": "", "a key the sheet does not hold": "feature:eldritch-invocation-devils-sight"}
+	if len(b.FeatureChoices) == 0 {
+		t.Fatal("the fighter holds no feature choice")
+	}
+	keys["a key the sheet holds"] = b.FeatureChoices[0]
+	for name, key := range keys {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			swap := ch
+			swap.SwapInvocation = key
+			after := mustApply(t, c, b, swap)
+			wantRefusal(t, CheckLevelUpOf(b, after, swap, c), LevelUpReasonFeatureChoice, "full.feature_choice_keys")
+		})
+	}
+}

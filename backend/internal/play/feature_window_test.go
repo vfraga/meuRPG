@@ -197,6 +197,22 @@ func TestAnsweringTheFeatureWindowUseSpendsTheReaction(t *testing.T) {
 	}
 }
 
+// A feature takes no darts: a "Usar" that carries targets is refused as invalid, and the window, the reaction and the uses stay.
+func TestAnsweringTheFeatureWindowWithTargetsIsRefused(t *testing.T) {
+	t.Parallel()
+	m := haloTable(t)
+	e, w := m.haloWindow(t)
+	_, err := m.answerReaction(t, m.ana, e, w.GetId(), func(r *playv1.AnswerReactionRequest) {
+		useAnswer(0)(r)
+		r.Targets = []*playv1.SpellTarget{darts(m.armed, t, "Goblin", 1)}
+	})
+	wantCode(t, "a feature window used with targets", err, connect.CodeInvalidArgument)
+	if m.windowOf(t, m.master, kindFeature) == nil || m.pensantus(t).GetReactionUsed() || m.row(t, m.ana, m.get(t, m.ana), "Pensantus", "Halo").GetUseLeft() != 2 {
+		t.Errorf("after the refusal: window open %v, reaction used %v, Halo uses left %d (want it open, free and 2)",
+			m.windowOf(t, m.master, kindFeature) != nil, m.pensantus(t).GetReactionUsed(), m.row(t, m.ana, m.get(t, m.ana), "Pensantus", "Halo").GetUseLeft())
+	}
+}
+
 // "Deixar passar" spends nothing: the reaction stays free, the uses stay, no line is written, the turn goes on.
 func TestAnsweringTheFeatureWindowPassSpendsNothing(t *testing.T) {
 	t.Parallel()

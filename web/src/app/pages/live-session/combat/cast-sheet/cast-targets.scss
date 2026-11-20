@@ -147,7 +147,8 @@
   color: var(--mr-accent-text);
   cursor: pointer;
 
-  &:disabled {
+  &:disabled,
+  &[aria-disabled='true'] {
     border-style: dashed;
     color: var(--mr-ink-muted);
     cursor: default;

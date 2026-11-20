@@ -69,10 +69,7 @@ export class CastChoices {
       ? []
       : slotRows(this.s.data.level, this.s.data.slots, this.s.data.usage, this.s.data.pact),
   );
-  /** The cast goes through the grant, with no slot: a grant with no slot allowed, or one the caster did not ask a slot for. */
-  readonly viaGrant = computed(
-    () => !!this.grant && (!this.grant.alsoWithSlot || this.s.freeCast()),
-  );
+  readonly viaGrant = computed(() => this.s.viaGrant());
   readonly kind = computed(() => spellKind(this.s.data.spellKey, this.s.details()));
   /** Sono and Leque Cromático roll a pool of dice: the dice at this slot. */
   readonly pool = computed(() =>
@@ -86,7 +83,7 @@ export class CastChoices {
   /** A spell that reads hit points says its area: who is in it is for the caster to say. */
   readonly hpArea = computed(() => this.kind() === 'pool');
   readonly rule = computed(() =>
-    targetRule(this.s.data.targets, this.s.data.casterId, this.s.data.level, this.s.slotLevel()),
+    targetRule(this.s.data.targets, this.s.data.casterId, this.s.entryLevel(), this.s.slotLevel()),
   );
   readonly dartsTotal = computed(() =>
     dartsAt(this.s.data.targets?.darts ?? [], this.s.slotLevel()),

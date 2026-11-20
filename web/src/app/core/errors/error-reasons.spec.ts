@@ -46,15 +46,34 @@ function sources(dir: string): string[] {
 }
 const CODE = sources(APP).join('\n');
 
-/** The names a source gives an enum: its own, and the ones it imports it as. */
-function namesOf(enumName: string): string {
-  const aliases = [...CODE.matchAll(new RegExp(`\\b${enumName} as (\\w+)`, 'g'))].map((m) => m[1]);
-  return [enumName, ...aliases].join('|');
+/**
+ * The values of an enum the sources name (`Enum.VALUE`), under its own name and the ones it is imported as. The
+ * sources are read once for each enum, not once for each reason: the list of reasons grows with every feature.
+ */
+const NAMED = new Map<string, Set<string>>();
+function namedValues(enumName: string): Set<string> {
+  let named = NAMED.get(enumName);
+  if (!named) {
+    const aliases = [...CODE.matchAll(new RegExp(`\\b${enumName} as (\\w+)`, 'g'))].map(
+      (m) => m[1],
+    );
+    const names = [enumName, ...aliases].join('|');
+    named = new Set(
+      [...CODE.matchAll(new RegExp(`\\b(?:${names})\\.(\\w+)`, 'g'))].map((m) => m[1]),
+    );
+    NAMED.set(enumName, named);
+  }
+  return named;
 }
 
 /** Whether a source names the enum value (`Enum.VALUE`, or `Enum.PREFIX_VALUE` for the enums whose generated names keep the prefix). */
 function isHandled(enumName: string, value: string): boolean {
-  return new RegExp(`\\b(?:${namesOf(enumName)})\\.(?:[A-Z_]*?_)?${value}\\b`).test(CODE);
+  const named = namedValues(enumName);
+  if (named.has(value)) {
+    return true;
+  }
+  const suffix = `_${value}`;
+  return [...named].some((n) => n.endsWith(suffix) && /^[A-Z_]*$/.test(n.slice(0, -suffix.length)));
 }
 
 describe('error reasons: a typed detail', () => {

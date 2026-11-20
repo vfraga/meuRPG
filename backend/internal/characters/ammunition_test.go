@@ -481,3 +481,53 @@ func TestAnotherPlayerNeverReadsTheAmmunition(t *testing.T) {
 	}
 	et.requireHiddenFromOthers(t, pc, arrowKey)
 }
+
+// The infusions of a sheet are the server's, like the ammunition: a save that carries some changes nothing, and the
+// stored document never holds them.
+func TestSaveIgnoresTheInfusionsOfASheet(t *testing.T) {
+	t.Parallel()
+	et, pc := attuneTable(t)
+	req := editorSaveOf(et.read(t, et.master, pc.GetId()))
+	req.Sheet = editorClone(req.GetSheet(), func(f *charactersv1.FullSheet) {
+		f.Infusions = []*charactersv1.SheetInfusion{{Id: "inf-1", InfusionKey: "feature:forjada@mesa", NamePt: "Fio forjado", HolderCharacterId: pc.GetId(), ItemKey: "weapon:longsword", Bonus: 2}}
+	})
+	saved, err := editorUpdate(et.master, req)
+	if err != nil {
+		t.Fatalf("save: %v", err)
+	}
+	if got := saved.GetSheet().GetFull().GetInfusions(); len(got) != 0 {
+		t.Errorf("after the save: %+v", got)
+	}
+	var doc string
+	if err := et.h.pool.QueryRow(t.Context(), "SELECT sheet::text FROM characters WHERE id = $1", pc.GetId()).Scan(&doc); err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(doc, "infusions") || strings.Contains(doc, "Fio forjado") {
+		t.Errorf("the document holds infusions: %s", doc)
+	}
+}
+
+// A new sheet that carries infusions stores none: the create path ignores them as a save does.
+func TestCreateIgnoresTheInfusionsOfASheet(t *testing.T) {
+	t.Parallel()
+	et := newEditorTable(t, nil)
+	sheet := editorFighter()
+	sheet.GetFull().Infusions = []*charactersv1.SheetInfusion{{Id: "inf-1", InfusionKey: "feature:forjada@mesa", NamePt: "Fio forjado", ItemKey: "weapon:longsword", Bonus: 2}}
+	created, err := editorCreate(et.dona, &charactersv1.CreateCharacterRequest{
+		CampaignId: et.campaign, Kind: editorPlayer, Name: "Bruna", Sheet: sheet,
+		AbilityMethod: charactersv1.AbilityMethod_ABILITY_METHOD_STANDARD_ARRAY,
+	})
+	if err != nil {
+		t.Fatalf("CreateCharacter error = %v", err)
+	}
+	if got := created.GetSheet().GetFull().GetInfusions(); len(got) != 0 {
+		t.Errorf("the created sheet carries %+v", got)
+	}
+	var doc string
+	if err := et.h.pool.QueryRow(t.Context(), "SELECT sheet::text FROM characters WHERE id = $1", created.GetId()).Scan(&doc); err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(doc, "infusions") || strings.Contains(doc, "Fio forjado") {
+		t.Errorf("the document holds infusions: %s", doc)
+	}
+}

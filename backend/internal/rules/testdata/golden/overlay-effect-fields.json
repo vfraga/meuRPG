@@ -1,5 +1,6 @@
 {
   "clear: an unknown name": "{\"type\":\"\",\"target\":\"ac\",\"mode\":\"add\",\"value\":\"1\",\"when\":\"true\",\"tags\":[\"x\"],\"proficiency\":\"skill:arcana\",\"level\":\"full\",\"roll\":\"advantage\",\"targets\":[\"save.str\"],\"sense\":\"darkvision\",\"range_ft\":60,\"ability\":\"str\",\"progression\":\"full\",\"prepares\":true,\"prepared_max\":\"1\",\"spellbook\":true,\"ritual\":true,\"resource\":\"x\",\"max\":\"1\",\"recharge\":\"long_rest\",\"recharge_if\":\"true\",\"cap\":1,\"choice\":\"skill\",\"count\":1,\"from\":[\"x\"],\"economy\":\"action\",\"applies\":\"damage\",\"ignore_cover\":true,\"range_multiplier\":2,\"no_long_range_disadvantage\":true,\"max_cr\":\"1\",\"no_fly\":true,\"no_swim\":true,\"sides\":6,\"replaces\":\"x\",\"handler\":\"x\",\"spells\":[\"spell:light\"],\"text_pt\":\"x\"}",
+  "error: a cast level below the spell's": ".cast_level bad_value",
   "error: a value needs": ".value bad_value",
   "error: ability_increase well shaped": ".value bad_value",
   "error: ability_increase with a shape problem": ".from bad_value",

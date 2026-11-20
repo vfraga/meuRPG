@@ -124,3 +124,30 @@ describe('EntryRead next-hit effect (#577)', () => {
     );
   });
 });
+
+describe('EntryRead: what an option of a feature asks (#580, board 580-03)', () => {
+  it('draws "Pede …" after the text of the option, muted, and nothing for an option that asks nothing', () => {
+    const el = render({
+      rows: [],
+      sections: [],
+      text: [],
+      options: [
+        { title: 'Golpe do Corvo', text: 'Soma o dado ao dano.' },
+        {
+          title: 'Asa Partida',
+          text: 'Soma o dado ao ataque.',
+          asks: 'Pede Guerreiro 7 e Golpe do Corvo',
+        },
+      ],
+    });
+    const items = Array.from(el.querySelectorAll('.items--nested li'));
+    expect(items).toHaveLength(2);
+    expect(items[0].querySelector('.asks')).toBeNull();
+    expect(items[1].textContent?.replace(/\s+/g, ' ').trim()).toBe(
+      'Asa Partida. Soma o dado ao ataque. Pede Guerreiro 7 e Golpe do Corvo.',
+    );
+    expect(items[1].querySelector('.asks')?.textContent?.trim()).toBe(
+      'Pede Guerreiro 7 e Golpe do Corvo.',
+    );
+  });
+});

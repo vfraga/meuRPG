@@ -206,6 +206,11 @@ export function playerRollingText(seconds: number): string {
   return `Você está rolando: a mesa espera ${clockText(seconds)}. Depois disso a reação passa sozinha.`;
 }
 
+/** What the player of a readied action reads once they are choosing its targets: the table waits the longer time. */
+export function playerChoosingText(seconds: number): string {
+  return `Você está escolhendo: a mesa espera ${clockText(seconds)}. Depois disso, passa sozinho.`;
+}
+
 /** The seconds left of the longer wait, counted from when the player said they were rolling (`startedAt`, ms). */
 export function playerRollingSecondsLeft(startedAt: number, now: number): number {
   // The screen's clock ticks once a second, so `now` can be a hair older than `startedAt`: never above the wait.

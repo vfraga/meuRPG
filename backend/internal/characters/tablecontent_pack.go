@@ -341,7 +341,7 @@ func (p *planner) classify(i int, pe packEntry) {
 	if exists {
 		oldBody = old.body
 	}
-	st, err := prepareWith(importFeatureKeys, pe.key, pe.kind, pe.body, oldBody)
+	st, err := prepareWith(importFeatureKeys, pe.key, pe.kind, stamped(pe.body, oldBody, p.revision), oldBody)
 	if err != nil {
 		p.lead[i] = append(p.lead[i], violationsOfRefusal(err, pe.key)...)
 		p.excluded[i] = true

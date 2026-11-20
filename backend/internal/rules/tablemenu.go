@@ -361,12 +361,13 @@ var menuTypes = []MenuType{
 		{Name: "when", Kind: "condition"},
 		{Name: "text_pt", Kind: "text"},
 	}},
-	{Type: "granted_spell", NamePT: "Magia concedida", HintPT: "Uma magia que a entrada dá ao personagem fora das listas das classes dele: à vontade ou gastando usos de um recurso que a entrada define, sem espaço de magia. A magia de nível acima de truque é conjurada no próprio nível. A habilidade escolhida dá o bônus de ataque e a CD de resistência (8 + proficiência + modificador); \"o jogador escolhe\" pede essa escolha uma vez, ao pegar a entrada. Magias de ritual com \"só como ritual\" não gastam espaço nem preparo. O gasto por conjuração é 1 uso, ou o número de \"custo em usos\" (só com um recurso). O material que a magia pede só é dispensado pela opção de dispensar o material, e só na ficha e na folha de conjuração: o servidor não confere o que a magia pede.", Fields: []MenuField{
+	{Type: "granted_spell", NamePT: "Magia concedida", HintPT: "Uma magia que a entrada dá ao personagem fora das listas das classes dele: à vontade ou gastando usos de um recurso que a entrada define, sem espaço de magia. A magia de nível acima de truque é conjurada no próprio nível, ou no \"nível de conjuração\", do nível da magia até o 9, sem gastar espaço; com espaço de magia, vale o nível do espaço. Truque e \"só como ritual\" não têm nível de conjuração. A habilidade escolhida dá o bônus de ataque e a CD de resistência (8 + proficiência + modificador); \"o jogador escolhe\" pede essa escolha uma vez, ao pegar a entrada. Magias de ritual com \"só como ritual\" não gastam espaço nem preparo. O gasto por conjuração é 1 uso, ou o número de \"custo em usos\" (só com um recurso). O material que a magia pede só é dispensado pela opção de dispensar o material, e só na ficha e na folha de conjuração: o servidor não confere o que a magia pede.", Fields: []MenuField{
 		{Name: "spell", Required: true, Kind: "choice"},
 		{Name: "ability", Required: true, Kind: "choice", List: ListGrantAbilities},
 		{Name: "from_level", Kind: "formula"},
 		{Name: "uses", Kind: "resource_ref"},
 		{Name: "uses_cost", Kind: "number", Min: 1, Max: MaxGrantUsesCost},
+		{Name: "cast_level", Kind: "number", Min: 1, Max: MaxGrantCastLevel},
 		{Name: "also_with_slot", Kind: "yes_no", AlwaysShown: true},
 		{Name: "ritual_only", Kind: "yes_no", AlwaysShown: true},
 		{Name: "counts_as_known", Kind: "yes_no", AlwaysShown: true},

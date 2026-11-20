@@ -170,13 +170,13 @@ func narratedTargets(plan castPlan) []castTarget {
 	return out
 }
 
-// levelOf is the level the spell has in this casting: the slot's, or its own (SRD
-// 5.1, "Casting a Spell at a Higher Level").
+// levelOf is the level the spell has in this casting: the slot's, the cast level of its grant or its own
+// (SRD 5.1, "Casting a Spell at a Higher Level").
 func levelOf(plan castPlan) int {
 	if plan.slot != nil {
 		return int(plan.slot.Level)
 	}
-	return plan.osp.Spell.Level
+	return plan.grant.LevelOr(plan.osp.Spell.Level)
 }
 
 // healTargets heals each player character among the targets. The spell's dice are one

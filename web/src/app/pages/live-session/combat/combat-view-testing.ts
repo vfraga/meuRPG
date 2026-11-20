@@ -55,6 +55,8 @@ export interface MountOptions {
   readonly inputs?: Readonly<Record<string, unknown>>;
   /** Replaces `CreaturesClient` methods. */
   readonly creatures?: Readonly<Record<string, (...args: unknown[]) => unknown>>;
+  /** What `SpellCatalog.details` answers for a spell key (`null`: nothing read). */
+  readonly spellDetails?: (spellKey: string) => unknown;
   readonly tableRules?: unknown;
   readonly mapState?: MapState;
   /** The media queries that match (e.g. `PHONE_QUERY`, `'(min-width: 1024px)'`); a phone's sheets open as bottom sheets, with an `ariaLabel`. */
@@ -150,7 +152,10 @@ export function mountCombatView(opts: MountOptions) {
       { provide: CombatClient, useValue: api },
       { provide: RosterClient, useValue: { list: async () => [] } },
       { provide: MapsClient, useValue: { layers: async () => ({}) } },
-      { provide: SpellCatalog, useValue: { details: async () => null } },
+      {
+        provide: SpellCatalog,
+        useValue: { details: async (_c: string, key: string) => opts.spellDetails?.(key) ?? null },
+      },
       {
         provide: CreaturesClient,
         useValue: {

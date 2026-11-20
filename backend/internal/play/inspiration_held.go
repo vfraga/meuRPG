@@ -29,6 +29,9 @@ type spellAttackPre struct {
 	truth  modeResult
 	choice modeChoice
 	step   gateResult
+	// toHit is the bonus the d20 was made with: the held roll's when an answer settles it, with the die of a Cutting Words that a
+	// reaction window took off already (the cast run again for the answer does not have the window's replay to take it off).
+	toHit int
 	// die is the combatant's die as it was before the answer used it, for the undo of the cast.
 	die heldDie
 }
@@ -44,13 +47,13 @@ func (s *Service) holdSpellAttack(
 	caster playdb.Combatant, targs []playdb.Combatant, sp link.Spell, in rollInput, modes *spellModes,
 	armor func(playdb.Combatant) (int, error),
 ) (*outsideAsk, error) {
-	if !spellMayAsk(c, m, caster, sp, targs) {
+	if !spellMayAsk(caster, m, sp, targs) {
 		return nil, nil
 	}
 	target := targs[0]
 	env := s.inspirationGate(c)
 	spec := rollSpec{
-		Kind: heldSpellAttack, Key: key, Request: req, Roller: heldRoller{CampaignID: m.CampaignID, CharacterID: caster.CharacterID, UserID: m.UserID},
+		Kind: heldSpellAttack, Key: key, Window: c.replay != nil, Request: req, Roller: heldRoller{CampaignID: m.CampaignID, CharacterID: caster.CharacterID, UserID: m.UserID},
 		In: in, Modifier: sp.ToHit, Lucky: modes.traits.Lucky, MayAsk: true, // a halfling: a d20 of 1 may be rolled again
 		Floor: floorFor(modes.traits, rules.RollAppliesAttack, false),
 	}
@@ -71,6 +74,9 @@ func (s *Service) holdSpellAttack(
 		return nil, err
 	}
 	spec.FavorSpent = modes.favor.Used
+	if spec.Modifier, err = s.spellToHit(ctx, env, spec, forced); err != nil {
+		return nil, err
+	}
 	choice, err := s.chooseMode(ctx, c, modes.v, caster, target, sp.Key, truth.Mode, ask)
 	if err != nil {
 		return nil, err
@@ -83,21 +89,40 @@ func (s *Service) holdSpellAttack(
 	case step.Held != nil:
 		return s.outsideAskOf(ctx, c.tx, step.Held), nil
 	case step.Settled:
-		if !forced { // a lucky caster's d20 that showed no 1 goes on: the reason of its mode is written now
-			if choice, err = s.keepReason(ctx, c, choice); err != nil {
-				return nil, err
-			}
+		pre := spellAttackPre{target: target.ID, truth: truth, choice: choice, step: step, toHit: spec.Modifier, die: before.Die}
+		if modes.pre, err = s.settledSpellAttack(ctx, c, pre, forced); err != nil {
+			return nil, err
 		}
-		modes.pre = &spellAttackPre{target: target.ID, truth: truth, choice: choice, step: step, die: before.Die}
 	}
 	return nil, nil // settled, or no die after all: the cast goes on
 }
 
+// spellToHit is the bonus the spell attack is rolled with. An answer settles the roll on the bonus it was held with, which has the
+// die of a Cutting Words already off it when a reaction window held the cast: the cast run again for the answer has no replay to take
+// it off.
+func (s *Service) spellToHit(ctx context.Context, env gateEnv, spec rollSpec, forced bool) (int, error) {
+	if !forced {
+		return spec.Modifier, nil
+	}
+	return s.heldModifier(ctx, env, spec)
+}
+
+// settledSpellAttack is the d20 the cast goes on with. A lucky caster's d20 that showed no 1 goes on at once, and the reason of its
+// mode is written now; an answer's was written when the roll was made.
+func (s *Service) settledSpellAttack(ctx context.Context, c *combatTx, pre spellAttackPre, forced bool) (*spellAttackPre, error) {
+	if forced {
+		return &pre, nil
+	}
+	var err error
+	pre.choice, err = s.keepReason(ctx, c, pre.choice)
+	return &pre, err
+}
+
 // spellMayAsk says the cast has a spell attack that may wait: one against a single target, by a player's
-// character (the NPCs roll without a die; the master's cast for a player's character asks, E4-10), and not a cast
-// that waited for a reaction window.
-func spellMayAsk(c *combatTx, m authz.Membership, caster playdb.Combatant, sp link.Spell, targs []playdb.Combatant) bool {
-	return sp.AttackType != "" && len(targs) == 1 && c.replay == nil &&
+// character (the NPCs roll without a die; the master's cast for a player's character asks, E4-10). A cast that waited for a
+// reaction window asks too, when it is replayed: the question is kept as the window's own (rollSpec.Window).
+func spellMayAsk(caster playdb.Combatant, m authz.Membership, sp link.Spell, targs []playdb.Combatant) bool {
+	return sp.AttackType != "" && len(targs) == 1 &&
 		caster.Kind == kindPlayer && backedByCharacter(caster) && playedBy(caster, m)
 }
 

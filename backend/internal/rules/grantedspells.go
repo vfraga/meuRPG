@@ -28,6 +28,9 @@ var GrantedAbilities = []Ability{INT, WIS, CHA}
 // MaxGrantUsesCost is the most uses one cast of a granted spell can cost on the menu.
 const MaxGrantUsesCost = 20
 
+// MaxGrantCastLevel is the highest level a grant can cast its spell at.
+const MaxGrantCastLevel = 9
+
 // GrantedAbilityChoiceKey is the key of the choice of the casting ability of the
 // grants an entry (a trait, a feature or a feat) makes, shared by all of them.
 func GrantedAbilityChoiceKey(owner string) string { return owner + grantedAbilityChoiceSuffix }
@@ -55,6 +58,9 @@ type GrantedSpell struct {
 	SaveDC         int
 	// FromLevel is the level the grant starts at.
 	FromLevel int
+	// CastLevel is the level the grant casts the spell at with no slot: the effect's cast level, the
+	// spell's own level when it sets none, 0 for a cantrip (which scales with the character).
+	CastLevel int
 	// FeatureSummon says the spell is the summon of a table feature: not a spell the character casts, so the turn's
 	// spell limit does not apply to it.
 	FeatureSummon bool
@@ -82,6 +88,9 @@ func (x effectCompiler) grantedSpell() error {
 	if err := x.grantedCost(e); err != nil {
 		return err
 	}
+	if err := x.grantedCastLevel(e, sp.Level); err != nil {
+		return err
+	}
 	var err error
 	e.fromLevel, err = x.compile(e.FromLevel, formula.Int)
 	return err
@@ -98,6 +107,34 @@ func (x *effectCompiler) grantedCost(e *Effect) error {
 		return x.fail("uses_cost: a resource in uses is needed")
 	}
 	return nil
+}
+
+// grantedCastLevel checks the level a grant casts its spell at: empty (0) is the spell's own level; otherwise
+// at least that level and at most MaxGrantCastLevel. A cantrip scales with the character and a ritual is cast
+// at the spell's own level, so neither has one.
+func (x *effectCompiler) grantedCastLevel(e *Effect, spellLevel int) error {
+	switch {
+	case e.CastLevel == 0:
+		return nil
+	case spellLevel == 0:
+		return x.fail("cast_level: a cantrip has no cast level")
+	case e.RitualOnly:
+		return x.fail("cast_level: a ritual is cast at the spell's own level")
+	case e.CastLevel < spellLevel:
+		return x.fail("cast_level: at least the spell's own level (%d)", spellLevel)
+	case e.CastLevel > MaxGrantCastLevel:
+		return x.fail("cast_level: at most %d", MaxGrantCastLevel)
+	}
+	return nil
+}
+
+// castLevelOf is the level a grant of the spell casts it at with no slot: the effect's, the spell's own
+// level when it sets none, 0 for a cantrip.
+func castLevelOf(e *Effect, spellLevel int) int {
+	if e.CastLevel > 0 {
+		return e.CastLevel
+	}
+	return spellLevel
 }
 
 func grantedAbilityKeys() []string {
@@ -149,6 +186,7 @@ func (x *deriver) grantedSpellOf(a activeEffect) (GrantedSpell, bool) {
 	g := GrantedSpell{
 		Spell: entry, Source: a.owner, SourcePT: x.c.namePT(a.owner), AtWill: e.Uses == "" || e.Uses == GrantedAtWill,
 		AlsoWithSlot: e.AlsoWithSlot, RitualOnly: e.RitualOnly, CountsAsKnown: e.CountsAsKnown, FromLevel: from,
+		CastLevel: castLevelOf(e, entry.Level),
 	}
 	g.NoMaterialComponents = e.NoMaterialComponents
 	if !g.AtWill {

@@ -18,6 +18,7 @@ import { MatIconModule } from '@angular/material/icon';
 
 import { DiceMode, DicePreference } from '../../../../../gen/meurpg/campaigns/v1/campaigns_pb';
 import { AreaPlacement } from '../../../../../gen/meurpg/play/v1/combat_pb';
+import type { SpellGrantOption } from '../../../../../gen/meurpg/rules/v1/rules_pb';
 import { effectivePreference } from '../../../../core/campaigns/dice-labels';
 import type { SlotRow } from '../../../../core/combat/cast-flow';
 import { CombatClient } from '../../../../core/combat/combat-client';
@@ -143,7 +144,7 @@ export class CastSheet {
   protected readonly preferApp =
     effectivePreference(this.data.diceMode, this.data.preference) === DicePreference.APP;
   protected readonly Placement = AreaPlacement;
-  protected readonly grantLine = grantLine;
+  protected readonly grantLine = (g: SpellGrantOption) => grantLine(g, this.data.level);
   protected readonly d20Fields = D20_FIELDS;
 
   protected readonly s = new CastState(this.data);

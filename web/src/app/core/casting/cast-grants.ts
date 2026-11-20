@@ -1,4 +1,5 @@
 import type { CastingGrant, CastingSpell } from '../../../gen/meurpg/play/v1/casting_pb';
+import { aboveOwnLevel } from '../combat/combat-grid';
 import { abilityLabel } from '../characters/character-labels';
 import type { AbilityKey } from '../characters/characters.types';
 import type { CastWay } from './cast-out-flow';
@@ -92,7 +93,10 @@ export function grantNumbers(g: CastingGrant): string {
 }
 
 /** The card of a grant's way ("Legado · À vontade"); a grant with no use left is off, unless it is cast with a slot. */
-export function grantCard(p: WayPick): {
+export function grantCard(
+  p: WayPick,
+  spellLevel: number,
+): {
   id: string;
   title: string;
   detail: string;
@@ -110,7 +114,7 @@ export function grantCard(p: WayPick): {
     title: [g.sourceNamePt, how].filter((x) => x !== '').join(' · '),
     detail: p.slot
       ? `${grantNumbers(g)} · não gasta usos`
-      : `${grantUsesText(g)} · ${grantNumbers(g)}`,
+      : `${grantUsesText(g)} · ${grantNumbers(g)}${aboveOwnLevel(g.castLevel, spellLevel)}`,
     enabled: usable,
     reason: usable ? '' : 'Sem usos restantes.',
   };

@@ -67,7 +67,7 @@ export class GearList {
   readonly blocked = input<(piece: GearVm) => string>(() => '');
   /** The combat's fold: "Sacar" for "Equipar", the cost in the button, "Carregados" folded when there are many. */
   readonly combat = input(false);
-  /** The shield counts for nothing (a two-handed weapon is equipped): its row says "Parado". */
+  /** The shield counts for nothing (a two-handed weapon is equipped): its row says "Não conta na CA". */
   readonly shieldIdle = input(false);
   /** The pieces whose drawing changes the armor class for the worse (a two-handed weapon with the shield in hand). */
   readonly warned = input<readonly string[]>([]);

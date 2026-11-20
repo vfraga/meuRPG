@@ -59,7 +59,7 @@ A pull request that touches no file of a workflow still starts it, and its jobs 
 | `go (integration tests against CockroachDB)` | Waits for every group, the group check and the list check; the stable check for a branch protection rule. The name is stable for a branch protection rule; a preflight runs it on PostgreSQL |
 | `go (coverage)` | Merges the groups' profiles and enforces the [coverage floor](#coverage-floors) |
 
-**The groups** are defined in `.github/scripts/go-db-shard.sh`: `play-1` to `play-6`, `maps`, `characters`, `migrations-1` to `migrations-3`, `rules-1` to `rules-3`, `dungeon` (with `rules/puzzle` and the pure subpackages of `play`, `play/advantage`, `play/damagesteps`), `leak-1` to `leak-6`, and `rest`.
+**The groups** are defined in `.github/scripts/go-db-shard.sh`: `play-1` to `play-8`, `maps`, `characters`, `migrations-1` to `migrations-3`, `rules-1` to `rules-3`, `dungeon` (with `rules/puzzle` and the pure subpackages of `play`, `play/advantage`, `play/damagesteps`), `leak-1` to `leak-6`, and `rest`.
 The heavy packages are named by hand and `rest` holds everything else, so a new package lands in `rest` and is never skipped.
 The `play`, `leaktest`, `rules` and `migrations` packages are split by test: each part runs the tests whose name hashes (`cksum`) to it, so a new test lands in a part by itself and adding one never moves the others.
 A test that takes more than about a third of the 25-minute `-timeout` on CockroachDB is pinned: `pinned_tests` in the script lists "test part" lines per split package, a pinned test runs alone in its part, and the other tests are hashed over the parts that are not pinned. `leak-4` holds `TestAHiddenWriteMovesThePlayersNumberAndNothingElse` alone, and `migrations-1` holds `TestMigrationsUpDownUp`, which migrates a database up, down and up again through every migration. To pin another test, give its package a part of its own (raise `split_parts`, add the part to the matrices of `backend.yml` and `nightly-hunt.yml`) and add its line to `pinned_tests`; `--check` fails for a pinned test that does not exist, a part outside the package's parts, and a package with every part pinned.
@@ -95,6 +95,13 @@ Two checks keep the list true (`.github/scripts/cockroach-only.sh`):
 - `check-names` runs in the job `go-db cockroach-only list`: each entry is a top-level test of its package, and no other package has a test with that name.
 - `check-list` runs in the job `go-db cockroach-only list` on PostgreSQL: every listed test must fail there.
   A test that passes on PostgreSQL does not need CockroachDB, and leaves the list.
+
+### When the test database stops
+
+A `go-db` job whose test database stops fails with connection errors in every later test, and the first failing line names the database ("cannot reach the database", "connection refused").
+The step "Say how the test database ended" then runs `.github/scripts/database-evidence.sh`: it prints the container's state (exited or running, killed for memory or not, its exit code) and memory, the runner's memory and disk, the last lines of the database's own log, and the processes the kernel killed for memory.
+After a job that passed, the same step prints the container's state and memory and how full CockroachDB's in-memory store is: compare a part that passed with one that failed to see how much room it had.
+Read that step before anything else: a database that stopped is a red run with a cause to find, not a reason to run the job again.
 
 ### How the test database image reaches the jobs
 

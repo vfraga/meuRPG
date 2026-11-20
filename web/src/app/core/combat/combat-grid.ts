@@ -75,6 +75,11 @@ export function circleLabel(level: number): string {
   return level === 0 ? 'Truque' : `${level}º\u00a0nível`;
 }
 
+/** " · no 2º nível" for a cast above the spell's own level (`spellLevel`); empty otherwise. The words never break apart. */
+export function aboveOwnLevel(castLevel: number, spellLevel: number): string {
+  return castLevel > spellLevel ? ` · no\u00a0${circleLabel(castLevel)}` : '';
+}
+
 /** What a choice is called: its circle, "(pacto)" for a pact slot, or the uses left of an innate spell. */
 export function slotTitle(s: {
   level: number;

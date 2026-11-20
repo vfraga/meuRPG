@@ -9,6 +9,7 @@ import { CampaignsService } from '../../../core/campaigns/campaigns.service';
 import { TableContentClient } from '../../../core/content/content-client';
 import { classDefaults, fakeContentWatcher, mirathel } from '../../../core/content/content-testing';
 import { menuResponse } from '../../../core/content/content-testing-menu';
+import { SwitchesStore } from '../../../core/content/switches-store';
 import { ContentEntry } from './content-entry';
 import { nextTurn } from '../../../../test-settle';
 
@@ -24,7 +25,9 @@ describe('ContentEntry refresh after a content change', () => {
     });
     const watcher = fakeContentWatcher();
     TestBed.resetTestingModule();
-    TestBed.overrideComponent(ContentEntry, { set: { providers: [watcher.provider] } });
+    TestBed.overrideComponent(ContentEntry, {
+      set: { providers: [watcher.provider, SwitchesStore] },
+    });
     TestBed.configureTestingModule({
       providers: [
         provideRouter([]),

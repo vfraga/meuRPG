@@ -14,7 +14,8 @@ import (
 // #580 S2 through the service: the master edits a table weapon a locked sheet carries. The numbers follow at once
 // on the owner's read; and no "A arma mudou" banner shows, because a banner needs a new issue tied to the weapon and a
 // weapon edit makes none (the only weapon issue is a key the content lacks, and an archived entry stays readable for
-// the sheet that carries it). If a weapon issue is ever added, this is where its banner is asserted.
+// the sheet that carries it). The one weapon edit that does tell the owner is "Duas mãos" on a sheet with an equipped shield: a notice, not an
+// issue (shieldidle_580_test.go).
 func TestAWeaponEditReachesTheSheetThatCarriesIt(t *testing.T) {
 	t.Parallel()
 	h := newHarness(t)

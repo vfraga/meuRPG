@@ -81,6 +81,11 @@ func (o OutsideSpell) GrantedWithoutSlot() bool {
 	return slices.ContainsFunc(o.Grants, func(g OutsideGrant) bool { return !g.RitualOnly })
 }
 
+// HasFreeSlot says the caster has a free slot of this level and kind (pact or not).
+func (o OutsideSpell) HasFreeSlot(level int, pact bool) bool {
+	return slices.ContainsFunc(o.Slots, func(sl CastSlot) bool { return sl.Level == level && sl.Pact == pact })
+}
+
 // OutsideGrant is a way to cast a spell the character has from a granted_spell effect: with
 // no slot, spending a use of Resource unless AtWill. RitualOnly limits it to the ritual way;
 // AlsoWithSlot lets a spell slot cast it too. Ready says a cast works now (an at-will grant,
@@ -95,6 +100,48 @@ type OutsideGrant struct {
 	AlsoWithSlot     bool
 	RitualOnly       bool
 	Ready            bool
+	CastLevel        int // the level a cast with no slot has (0 for a cantrip): see combat.SpellGrant
+}
+
+// LevelOr is the level a cast of the spell through the grant has with no slot: the grant's cast level, or the
+// spell's own level when the grant sets none or there is no grant (a nil g).
+func (g *OutsideGrant) LevelOr(own int) int {
+	if g == nil {
+		return own
+	}
+	return max(g.CastLevel, own)
+}
+
+// GrantIndex is the place among the spell's grants of the one a casting finishes through: the grant of that source
+// when there is one, or (for a casting that remembers none) the first that casts it the way the casting is, as a
+// ritual or not. It is -1 when there is none.
+func (o OutsideSpell) GrantIndex(source string, ritual bool) int {
+	return slices.IndexFunc(o.Grants, func(g OutsideGrant) bool {
+		return g.RitualOnly == ritual && (source == "" || g.Source == source)
+	})
+}
+
+// SourceOf is the source of the grant a cast goes through: "" when there is no grant (a nil g).
+func (g *OutsideGrant) SourceOf() string {
+	if g == nil {
+		return ""
+	}
+	return g.Source
+}
+
+// ScorchingRays is how many rays Scorching Ray makes at a slot level: 3 at its own level, one more for each level above.
+func (sp Spell) ScorchingRays(slotLevel int) int {
+	const baseRays = 3
+	return baseRays + max(slotLevel-sp.Level, 0)
+}
+
+// GrantCastLevel is the level a cast made with no slot has when it is not the spell's own: the grant's cast level,
+// else 0. A cast with a slot (noSlot false) or at the spell's own level has none to keep.
+func GrantCastLevel(noSlot bool, level, own int) int {
+	if !noSlot || level == own {
+		return 0
+	}
+	return level
 }
 
 // MageArmor is what Mage Armor would do for a character: Wears says it wears armor (the

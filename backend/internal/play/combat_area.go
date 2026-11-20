@@ -382,13 +382,9 @@ func (s *Service) previewSpell(ctx context.Context, m authz.Membership, msg *pla
 	if err != nil {
 		return link.Spell{}, err
 	}
-	slot, err := slotOf(msg.GetSlot(), cast)
+	slotLevel, err := s.previewSlotLevel(ctx, msg, caster, cast)
 	if err != nil {
 		return link.Spell{}, err
-	}
-	slotLevel := int(cast.level)
-	if slot != nil {
-		slotLevel = int(slot.Level)
 	}
 	sp, err := s.roster.GrantedCombatSpell(ctx, nil, m.CampaignID, caster.CharacterID, msg.GetSpellKey(), msg.GetGrantedBy(), slotLevel, "")
 	if err != nil {
@@ -399,6 +395,24 @@ func (s *Service) previewSpell(ctx context.Context, m authz.Membership, msg *pla
 		sp = withZoneSize(sp, slotLevel)
 	}
 	return sp, nil
+}
+
+// previewSlotLevel is the level a preview reads the spell at: the slot the request names, which must be a free one of the
+// caster's, else the cast level of the grant, else the spell's own. A caster whose open READIED window holds the spell previews it at the slot it spent at Ready, and the
+// request's slot is not read.
+func (s *Service) previewSlotLevel(ctx context.Context, msg *playv1.PreviewSpellAreaRequest, caster playdb.Combatant, cast castable) (int, error) {
+	_, row, held, err := heldByWindow(ctx, s.queries, caster.EncounterID, caster.ID, msg.GetSpellKey())
+	if err != nil {
+		return 0, s.dbError(ctx, "find the readied spell", err)
+	}
+	if held && msg.GetGrantedBy() == "" { // a preview that names a grant is the grant's, not the held spell's
+		return int(row.SlotLevel), nil
+	}
+	slot, err := slotOf(msg.GetSlot(), cast)
+	if err != nil {
+		return 0, err
+	}
+	return cast.levelWith(slot), nil
 }
 
 // previewPlan places the area of a preview on the map as the viewer knows it.
@@ -529,11 +543,11 @@ func (s *Service) areaSpellOf(ctx context.Context, campaignID string, caster pla
 	return spellOfPlan(plan), nil
 }
 
-// slotLevelOf is the level a cast was made at, for reading the spell again: the
-// slot's, 0 for a cantrip.
+// slotLevelOf is the level a cast was made at, for reading the spell again: the slot's, else the cast level
+// of the grant it went through, else 0 (a cantrip, or a cast at the spell's own level).
 func slotLevelOf(ev actionEvent) int {
 	if ev.Slot == nil {
-		return 0
+		return int(ev.CastLevel)
 	}
 	return int(ev.Slot.Level)
 }

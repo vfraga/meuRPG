@@ -9,6 +9,7 @@ import {
   autoPassText,
   autoPasses,
   playerAutoPassText,
+  playerChoosingText,
   playerRollingSecondsLeft,
   playerRollingText,
   playerSecondsLeft,
@@ -227,6 +228,22 @@ describe('a reaction its player is rolling', () => {
     // Bounded: a player who walked away does not hold the table forever.
     expect(clock.secondsLeft('w1', Date.now())).toBe(0);
     expect(clock.due(Date.now())).toEqual(['w1']);
+  });
+
+  it('waits the longer time for a readied action too: the master reads the same mark of a READIED window (#857)', () => {
+    const clock = new AutoPassClock();
+    const held = win('w1', ReactionKind.READIED, { rolling: true });
+    clock.sync([held], Date.now());
+    expect(clock.secondsLeft('w1', Date.now())).toBe(ROLLING_WAIT_SECONDS);
+    vi.advanceTimersByTime(AUTO_PASS_SECONDS * MS);
+    clock.sync([held], Date.now());
+    expect(clock.due(Date.now())).toEqual([]);
+  });
+
+  it('tells the player who is choosing the targets how long the table waits', () => {
+    expect(playerChoosingText(120)).toBe(
+      'Você está escolhendo: a mesa espera 2 min. Depois disso, passa sozinho.',
+    );
   });
 
   it('forgets the mark when the window is gone', () => {

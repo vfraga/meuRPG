@@ -16,6 +16,12 @@
       <dd class="box__value">{{ formatModifier(init) }}</dd>
     </div>
   }
+  @if (shieldNote()) {
+    <div class="shield-note">
+      <dt class="mr-visually-hidden">Escudo</dt>
+      <dd class="shield-note__text">O escudo não conta na CA: há uma arma de duas mãos equipada. Guarde o escudo ou a arma de duas mãos.</dd>
+    </div>
+  }
   <div class="box box--speed">
     <dt class="stat__label">Deslocamento</dt>
     <!-- The box stacks its children in reverse: this one reads under the walking speed. -->

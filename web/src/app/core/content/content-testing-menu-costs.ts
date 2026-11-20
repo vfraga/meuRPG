@@ -123,6 +123,7 @@ export function grantedSpellMenu(): EffectMenuVm {
         { name: 'from_level', kind: 'formula' },
         { name: 'uses', kind: 'resource_ref' },
         { name: 'uses_cost', kind: 'number', min: 1, max: 20 },
+        { name: 'cast_level', kind: 'number', min: 1, max: 9 },
         { name: 'also_with_slot', kind: 'yes_no', alwaysShown: true },
         { name: 'ritual_only', kind: 'yes_no', alwaysShown: true },
         { name: 'counts_as_known', kind: 'yes_no', alwaysShown: true },

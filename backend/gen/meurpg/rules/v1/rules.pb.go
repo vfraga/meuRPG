@@ -4938,7 +4938,13 @@ type ItemModifier struct {
 	// The bonus is in the numbers of the sheet.
 	Counts bool `protobuf:"varint,5,opt,name=counts,proto3" json:"counts,omitempty"`
 	// Why it adds nothing now, in Portuguese; empty when it counts.
-	ReasonPt      string `protobuf:"bytes,6,opt,name=reason_pt,json=reasonPt,proto3" json:"reason_pt,omitempty"`
+	ReasonPt string `protobuf:"bytes,6,opt,name=reason_pt,json=reasonPt,proto3" json:"reason_pt,omitempty"`
+	// The Portuguese name of the infusion this bonus comes from; empty when it comes from the piece itself. Read by the
+	// owner and the master only.
+	InfusionNamePt string `protobuf:"bytes,7,opt,name=infusion_name_pt,json=infusionNamePt,proto3" json:"infusion_name_pt,omitempty"`
+	// The id of the infusion record the bonus comes from; empty when it comes from the piece itself. Read by the owner
+	// and the master only.
+	InfusionId    string `protobuf:"bytes,8,opt,name=infusion_id,json=infusionId,proto3" json:"infusion_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -5011,6 +5017,20 @@ func (x *ItemModifier) GetCounts() bool {
 func (x *ItemModifier) GetReasonPt() string {
 	if x != nil {
 		return x.ReasonPt
+	}
+	return ""
+}
+
+func (x *ItemModifier) GetInfusionNamePt() string {
+	if x != nil {
+		return x.InfusionNamePt
+	}
+	return ""
+}
+
+func (x *ItemModifier) GetInfusionId() string {
+	if x != nil {
+		return x.InfusionId
 	}
 	return ""
 }
@@ -5288,9 +5308,11 @@ type GearEntry struct {
 	ArmorClassIfToggled int32 `protobuf:"varint,6,opt,name=armor_class_if_toggled,json=armorClassIfToggled,proto3" json:"armor_class_if_toggled,omitempty"`
 	// How many of this piece the sheet lists: weapons with the same key are one row (their state is kept by key, so the
 	// copies move together). 1 for armor and the shield.
-	Count         int32 `protobuf:"varint,7,opt,name=count,proto3" json:"count,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	Count int32 `protobuf:"varint,7,opt,name=count,proto3" json:"count,omitempty"`
+	// The Portuguese name of the infusion on the piece, empty when it has none. Read by the owner and the master only.
+	InfusionNamePt string `protobuf:"bytes,8,opt,name=infusion_name_pt,json=infusionNamePt,proto3" json:"infusion_name_pt,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
 func (x *GearEntry) Reset() {
@@ -5370,6 +5392,13 @@ func (x *GearEntry) GetCount() int32 {
 		return x.Count
 	}
 	return 0
+}
+
+func (x *GearEntry) GetInfusionNamePt() string {
+	if x != nil {
+		return x.InfusionNamePt
+	}
+	return ""
 }
 
 // Resistance is a damage type the character resists, and what gives it.
@@ -5469,7 +5498,9 @@ type ChangedContent struct {
 	// a escolha Estilo de Luta: Defesa; ela não vale mais nesta ficha." Any other issue
 	// tied to the entry is told with its own sentence in `issues`. What no longer
 	// matches, for the sheet of what changed.
-	Messages      []string `protobuf:"bytes,7,rep,name=messages,proto3" json:"messages,omitempty"`
+	Messages []string `protobuf:"bytes,7,rep,name=messages,proto3" json:"messages,omitempty"`
+	// The code of each line of `messages`, in the same order: one code per line. A reader who gets the line gets its code.
+	Codes         []string `protobuf:"bytes,8,rep,name=codes,proto3" json:"codes,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -5549,6 +5580,13 @@ func (x *ChangedContent) GetChangedAt() *timestamppb.Timestamp {
 func (x *ChangedContent) GetMessages() []string {
 	if x != nil {
 		return x.Messages
+	}
+	return nil
+}
+
+func (x *ChangedContent) GetCodes() []string {
+	if x != nil {
+		return x.Codes
 	}
 	return nil
 }
@@ -6973,8 +7011,12 @@ type GrantedSpell struct {
 	// (1 or more; 0 for an at-will grant).
 	NoMaterialComponents bool  `protobuf:"varint,14,opt,name=no_material_components,json=noMaterialComponents,proto3" json:"no_material_components,omitempty"`
 	UsesCost             int32 `protobuf:"varint,15,opt,name=uses_cost,json=usesCost,proto3" json:"uses_cost,omitempty"`
-	unknownFields        protoimpl.UnknownFields
-	sizeCache            protoimpl.SizeCache
+	// The level the grant casts the spell at, with no slot: the effect's `cast_level`, or the spell's own
+	// level when it sets none; 0 for a cantrip, which scales with the character. A cast with a slot (a grant
+	// with `also_with_slot`) uses the slot's level.
+	CastLevel     int32 `protobuf:"varint,16,opt,name=cast_level,json=castLevel,proto3" json:"cast_level,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *GrantedSpell) Reset() {
@@ -7112,6 +7154,13 @@ func (x *GrantedSpell) GetUsesCost() int32 {
 	return 0
 }
 
+func (x *GrantedSpell) GetCastLevel() int32 {
+	if x != nil {
+		return x.CastLevel
+	}
+	return 0
+}
+
 // Attack is an attack with a weapon on the sheet.
 type Attack struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -7207,9 +7256,11 @@ type Attack struct {
 	// For a versatile weapon (versatile_damage is set): how the character holds it, from the gear on the
 	// sheet. The attack rolls the dice of the grip: versatile_damage_dice with both hands, damage_dice with one.
 	// UNSPECIFIED for every other line.
-	Grip          VersatileGrip `protobuf:"varint,30,opt,name=grip,proto3,enum=meurpg.rules.v1.VersatileGrip" json:"grip,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	Grip VersatileGrip `protobuf:"varint,30,opt,name=grip,proto3,enum=meurpg.rules.v1.VersatileGrip" json:"grip,omitempty"`
+	// The Portuguese name of the infusion on the weapon, empty when it has none. Read by the owner and the master only.
+	InfusionNamePt string `protobuf:"bytes,31,opt,name=infusion_name_pt,json=infusionNamePt,proto3" json:"infusion_name_pt,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
 func (x *Attack) Reset() {
@@ -7450,6 +7501,13 @@ func (x *Attack) GetGrip() VersatileGrip {
 		return x.Grip
 	}
 	return VersatileGrip_VERSATILE_GRIP_UNSPECIFIED
+}
+
+func (x *Attack) GetInfusionNamePt() string {
+	if x != nil {
+		return x.InfusionNamePt
+	}
+	return ""
 }
 
 // Feature is a class feature, racial trait or background feature.
@@ -12287,8 +12345,11 @@ type SpellGrantOption struct {
 	// 0 for an at-will grant). A cast works only while `uses_left` covers it.
 	NoMaterialComponents bool  `protobuf:"varint,10,opt,name=no_material_components,json=noMaterialComponents,proto3" json:"no_material_components,omitempty"`
 	UsesCost             int32 `protobuf:"varint,11,opt,name=uses_cost,json=usesCost,proto3" json:"uses_cost,omitempty"`
-	unknownFields        protoimpl.UnknownFields
-	sizeCache            protoimpl.SizeCache
+	// The level the grant casts the spell at, with no slot: the effect's `cast_level`, or the spell's own
+	// level when it sets none; 0 for a cantrip. A cast with a slot (`also_with_slot`) uses the slot's level.
+	CastLevel     int32 `protobuf:"varint,12,opt,name=cast_level,json=castLevel,proto3" json:"cast_level,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *SpellGrantOption) Reset() {
@@ -12394,6 +12455,13 @@ func (x *SpellGrantOption) GetNoMaterialComponents() bool {
 func (x *SpellGrantOption) GetUsesCost() int32 {
 	if x != nil {
 		return x.UsesCost
+	}
+	return 0
+}
+
+func (x *SpellGrantOption) GetCastLevel() int32 {
+	if x != nil {
+		return x.CastLevel
 	}
 	return 0
 }
@@ -14951,7 +15019,7 @@ const file_meurpg_rules_v1_rules_proto_rawDesc = "" +
 	"\x05value\x18\x02 \x01(\x05R\x05value\x12\x1f\n" +
 	"\vfeature_key\x18\x03 \x01(\tR\n" +
 	"featureKey\x12!\n" +
-	"\ffeature_name\x18\x04 \x01(\tR\vfeatureName\"\xb6\x01\n" +
+	"\ffeature_name\x18\x04 \x01(\tR\vfeatureName\"\x81\x02\n" +
 	"\fItemModifier\x12\x16\n" +
 	"\x06target\x18\x01 \x01(\tR\x06target\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\x05R\x05value\x12\x1d\n" +
@@ -14959,7 +15027,10 @@ const file_meurpg_rules_v1_rules_proto_rawDesc = "" +
 	"source_key\x18\x03 \x01(\tR\tsourceKey\x12$\n" +
 	"\x0esource_name_pt\x18\x04 \x01(\tR\fsourceNamePt\x12\x16\n" +
 	"\x06counts\x18\x05 \x01(\bR\x06counts\x12\x1b\n" +
-	"\treason_pt\x18\x06 \x01(\tR\breasonPt\"\xbc\x02\n" +
+	"\treason_pt\x18\x06 \x01(\tR\breasonPt\x12(\n" +
+	"\x10infusion_name_pt\x18\a \x01(\tR\x0einfusionNamePt\x12\x1f\n" +
+	"\vinfusion_id\x18\b \x01(\tR\n" +
+	"infusionId\"\xbc\x02\n" +
 	"\fDerivedState\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x17\n" +
@@ -14985,7 +15056,7 @@ const file_meurpg_rules_v1_rules_proto_rawDesc = "" +
 	"\fsave_ability\x18\b \x01(\x0e2\x18.meurpg.rules.v1.AbilityR\vsaveAbility\x12\x0e\n" +
 	"\x02dc\x18\t \x01(\x05R\x02dc\x12\x17\n" +
 	"\atext_pt\x18\n" +
-	" \x01(\tR\x06textPt\"\xeb\x01\n" +
+	" \x01(\tR\x06textPt\"\x95\x02\n" +
 	"\tGearEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x17\n" +
 	"\aname_pt\x18\x02 \x01(\tR\x06namePt\x12-\n" +
@@ -14994,14 +15065,15 @@ const file_meurpg_rules_v1_rules_proto_rawDesc = "" +
 	"\n" +
 	"two_handed\x18\x05 \x01(\bR\ttwoHanded\x123\n" +
 	"\x16armor_class_if_toggled\x18\x06 \x01(\x05R\x13armorClassIfToggled\x12\x14\n" +
-	"\x05count\x18\a \x01(\x05R\x05count\"{\n" +
+	"\x05count\x18\a \x01(\x05R\x05count\x12(\n" +
+	"\x10infusion_name_pt\x18\b \x01(\tR\x0einfusionNamePt\"{\n" +
 	"\n" +
 	"Resistance\x12\x1f\n" +
 	"\vdamage_type\x18\x01 \x01(\tR\n" +
 	"damageType\x12-\n" +
 	"\x13damage_type_name_pt\x18\x02 \x01(\tR\x10damageTypeNamePt\x12\x1d\n" +
 	"\n" +
-	"source_key\x18\x03 \x01(\tR\tsourceKey\"\xeb\x01\n" +
+	"source_key\x18\x03 \x01(\tR\tsourceKey\"\x81\x02\n" +
 	"\x0eChangedContent\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x17\n" +
 	"\aname_pt\x18\x02 \x01(\tR\x06namePt\x12\x14\n" +
@@ -15010,7 +15082,8 @@ const file_meurpg_rules_v1_rules_proto_rawDesc = "" +
 	"\x0esaved_revision\x18\x05 \x01(\x05R\rsavedRevision\x129\n" +
 	"\n" +
 	"changed_at\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\tchangedAt\x12\x1a\n" +
-	"\bmessages\x18\a \x03(\tR\bmessages\"\xe2\x01\n" +
+	"\bmessages\x18\a \x03(\tR\bmessages\x12\x14\n" +
+	"\x05codes\x18\b \x03(\tR\x05codes\"\xe2\x01\n" +
 	"\n" +
 	"SaveAction\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x12\n" +
@@ -15124,7 +15197,7 @@ const file_meurpg_rules_v1_rules_proto_rawDesc = "" +
 	"\x05count\x18\x02 \x01(\x05R\x05count\"Z\n" +
 	"\x0eCharacterSpell\x12,\n" +
 	"\x05spell\x18\x01 \x01(\v2\x16.meurpg.rules.v1.SpellR\x05spell\x12\x1a\n" +
-	"\bprepared\x18\x02 \x01(\bR\bprepared\"\x96\x04\n" +
+	"\bprepared\x18\x02 \x01(\bR\bprepared\"\xb5\x04\n" +
 	"\fGrantedSpell\x12,\n" +
 	"\x05spell\x18\x01 \x01(\v2\x16.meurpg.rules.v1.SpellR\x05spell\x12\x1d\n" +
 	"\n" +
@@ -15144,7 +15217,9 @@ const file_meurpg_rules_v1_rules_proto_rawDesc = "" +
 	"\n" +
 	"from_level\x18\r \x01(\x05R\tfromLevel\x124\n" +
 	"\x16no_material_components\x18\x0e \x01(\bR\x14noMaterialComponents\x12\x1b\n" +
-	"\tuses_cost\x18\x0f \x01(\x05R\busesCost\"\xc0\b\n" +
+	"\tuses_cost\x18\x0f \x01(\x05R\busesCost\x12\x1d\n" +
+	"\n" +
+	"cast_level\x18\x10 \x01(\x05R\tcastLevel\"\xea\b\n" +
 	"\x06Attack\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x17\n" +
@@ -15183,7 +15258,8 @@ const file_meurpg_rules_v1_rules_proto_rawDesc = "" +
 	"improvised\x12\x16\n" +
 	"\x06thrown\x18\x1c \x01(\bR\x06thrown\x12%\n" +
 	"\x0eammunition_key\x18\x1d \x01(\tR\rammunitionKey\x122\n" +
-	"\x04grip\x18\x1e \x01(\x0e2\x1e.meurpg.rules.v1.VersatileGripR\x04gripB\x12\n" +
+	"\x04grip\x18\x1e \x01(\x0e2\x1e.meurpg.rules.v1.VersatileGripR\x04grip\x12(\n" +
+	"\x10infusion_name_pt\x18\x1f \x01(\tR\x0einfusionNamePtB\x12\n" +
 	"\x10_ammunition_left\"\xf9\x02\n" +
 	"\aFeature\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x12\n" +
@@ -15601,7 +15677,7 @@ const file_meurpg_rules_v1_rules_proto_rawDesc = "" +
 	"\x05grant\x18  \x01(\v2!.meurpg.rules.v1.SpellGrantOptionR\x05grant\x12F\n" +
 	"\rtable_options\x18! \x03(\v2!.meurpg.rules.v1.SpellTableOptionR\ftableOptions\x12\x1d\n" +
 	"\n" +
-	"also_steed\x18\" \x01(\bR\talsoSteed\"\xf8\x02\n" +
+	"also_steed\x18\" \x01(\bR\talsoSteed\"\x97\x03\n" +
 	"\x10SpellGrantOption\x12\x1d\n" +
 	"\n" +
 	"source_key\x18\x01 \x01(\tR\tsourceKey\x12$\n" +
@@ -15615,7 +15691,9 @@ const file_meurpg_rules_v1_rules_proto_rawDesc = "" +
 	"\asave_dc\x18\t \x01(\x05R\x06saveDc\x124\n" +
 	"\x16no_material_components\x18\n" +
 	" \x01(\bR\x14noMaterialComponents\x12\x1b\n" +
-	"\tuses_cost\x18\v \x01(\x05R\busesCost\"\xd0\x02\n" +
+	"\tuses_cost\x18\v \x01(\x05R\busesCost\x12\x1d\n" +
+	"\n" +
+	"cast_level\x18\f \x01(\x05R\tcastLevel\"\xd0\x02\n" +
 	"\x10SpellTableOption\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x17\n" +
 	"\aname_pt\x18\x02 \x01(\tR\x06namePt\x12\x1d\n" +

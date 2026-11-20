@@ -48,7 +48,9 @@ type world struct {
 	campaign                             string
 	// The stored spells the rules refuse (buildTableContent): the live one and the one the master retired, with their names.
 	leftOutKey, retiredLeftOutKey, retiredLeftOutName string
-	session                                           string
+	// unofferedKey is an option of a feature of a retired subclass (buildTableContent), unofferedLabel its text: no level offers it.
+	unofferedKey, unofferedLabel string
+	session                      string
 
 	// The characters.
 	pens, toren  *charactersv1.Character // Ana's and Caio's player characters

@@ -68,7 +68,7 @@ Events, after `ready`:
 | `scene_changed`, `scene_check_rolled`, `stage_changed`, `notes_changed` | Scenes (see [Scenes and stage](scenes-and-stage.md)) |
 | `xp_changed` | The campaign's XP changed |
 | `spell_casts_changed` | A cast outside combat started, finished or ended |
-| `creatures_changed`, `revivify_changed`, `character_changes_requested`, `character_resubmitted`, `character_revived`, `content_changed` | Contentless hints; the app reads again |
+| `creatures_changed`, `revivify_changed`, `character_changes_requested`, `character_resubmitted`, `character_revived`, `character_infusions_changed`, `content_changed` | Contentless hints; the app reads again. `character_infusions_changed` carries the character's id and goes to the master and the character's owner only |
 | `table_screen_changed` | The master's choice for the TV changed, or a TV tab connected or left; the choice revision and, for presence, whether a tab is open and when the last one was lost. To the master alone; no player's stream gets it |
 | `puzzle_changed` | A puzzle changed; only its id |
 | `calling_you` | The master's nudge, to one player's streams only |
@@ -195,6 +195,8 @@ A stream carries it on `ready` and on every `heartbeat`, and nothing else about 
   A save of a sheet moves it even when it changes nothing a player sees (a master's correction of an NPC), and tells nobody then: the number is all the table's screens get of it.
   Every save of a sheet while a session is open takes the session's row, a player's save of their own sheet included: it waits behind the writes of the combat that hold the row, the one order every write of the funnel follows.
   A change of gear tells play through the same transaction (`EquipInCombat`, `ArmorWorn`, `GearChanged` take the write's `Tell`), so the combat, the casts and the vitals it changes carry the write's number.
+  An infusion write (`InfuseItem`, `MoveInfusion`, `EndInfusion`, and a sheet save that takes an infused piece off the sheet) moves the number once and tells the master and the owner `character_infusions_changed`.
+  The stream exists only while a session is open (`WatchGameSession` answers `NO_OPEN_SESSION` otherwise), so a write with no open session has no one to tell: the record is written and the sheet shows it at its next read.
   A revival that repeats its key moves nothing and tells the master and the owner again with the number as it stands.
   A `SetEquipped` that finds the piece as asked, and a refused call, move nothing.
   With no play module wired in (a tool, a test) those writes run in a plain transaction and tell through the creature host with no number.

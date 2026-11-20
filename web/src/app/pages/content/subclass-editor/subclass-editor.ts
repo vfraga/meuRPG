@@ -58,6 +58,7 @@ import { type GridEdit, type GridRowVm, LevelGrid } from '../../../shared/level-
 import { CastingFields } from '../class-parts/casting-fields';
 import { TableQuestion } from '../class-parts/table-question';
 import { ClassFeatures } from '../class-parts/class-features';
+import { FeaturePreview } from '../class-parts/feature-preview';
 import { PlayersSwitch } from '../players-switch/players-switch';
 import { EditorAlerts, EditorBar } from '../editor-bar/editor-bar';
 import type { EditorSaved } from '../spell-editor/spell-editor';
@@ -74,6 +75,7 @@ import type { EditorSaved } from '../spell-editor/spell-editor';
   imports: [
     CastingFields,
     ClassFeatures,
+    FeaturePreview,
     TableQuestion,
     EditorAlerts,
     EditorBar,
@@ -116,6 +118,10 @@ export class SubclassEditor {
   protected readonly nameMax = NAME_MAX;
   protected readonly draft = signal<SubclassDraft>(emptySubclass(''));
   protected readonly openFeature = signal('');
+  /** A feature is open: only then is there a "Como os jogadores veem" to read (no empty landmark before). */
+  protected readonly previewing = computed(() =>
+    this.draft().features.some((f) => f.id === this.openFeature()),
+  );
   protected readonly question = signal<CastingDraft | null>(null);
   protected readonly status = signal('');
 

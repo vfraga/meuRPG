@@ -370,6 +370,18 @@ ON CONFLICT (character_id) DO UPDATE SET
     updated_at = excluded.updated_at
 RETURNING revision, updated_at;
 
+-- name: GetResourcesUsed :one
+-- The stored used counts of a character's resources, as a JSON object {key: n}. No row when the
+-- character has no vitals row.
+SELECT resources_used FROM character_vitals WHERE character_id = sqlc.arg(character_id);
+
+-- name: SetResourcesUsed :exec
+-- Replaces the stored used counts of a character's resources and moves the vitals' revision. Only
+-- for a character that has a vitals row.
+UPDATE character_vitals
+SET resources_used = sqlc.arg(resources_used)::JSONB, revision = revision + 1, updated_at = sqlc.arg(now)
+WHERE character_id = sqlc.arg(character_id);
+
 -- name: SetVitalsExhaustion :one
 -- Sets a character's level of exhaustion (SRD, Conditions: Exhaustion) and, when the new
 -- hit point maximum cut the hit points, the hit points: the first call creates the row, as
@@ -1086,3 +1098,67 @@ UPDATE characters
 SET sheet = jsonb_set(jsonb_set(sheet, '{full,daily_picks}', sqlc.arg(picks)::JSONB), '{full,short_rested}', sqlc.arg(short_rested)::JSONB),
     revision = revision + 1, updated_at = sqlc.arg(now)
 WHERE id = sqlc.arg(id) AND sheet ? 'full';
+
+-- An Artificer's infusions. A record is "live" until it ends; an ended one is kept (ended_at, ended_reason).
+
+-- name: InsertCharacterInfusion :one
+INSERT INTO character_infusions
+    (id, campaign_id, artificer_character_id, holder_character_id, infusion_key, item_kind, item_key, object_name, parameter, attuned, since, created_at)
+VALUES (
+    sqlc.arg(id)::UUID, sqlc.arg(campaign_id)::UUID, sqlc.arg(artificer_character_id)::UUID, sqlc.arg(holder_character_id)::UUID, sqlc.arg(infusion_key),
+    sqlc.arg(item_kind), sqlc.arg(item_key), sqlc.arg(object_name)::TEXT, sqlc.arg(parameter)::TEXT, sqlc.arg(attuned)::BOOLEAN,
+    sqlc.arg(since), sqlc.arg(created_at)
+)
+RETURNING *;
+
+-- name: GetCharacterInfusion :one
+-- A record of the campaign, live or ended.
+SELECT * FROM character_infusions
+WHERE campaign_id = sqlc.arg(campaign_id)::UUID AND id = sqlc.arg(id)::UUID;
+
+-- name: GetCharacterInfusionForUpdate :one
+-- A record of the campaign, live or ended, locking its row until the transaction ends.
+SELECT * FROM character_infusions
+WHERE campaign_id = sqlc.arg(campaign_id)::UUID AND id = sqlc.arg(id)::UUID
+FOR UPDATE;
+
+-- name: ListLiveInfusionsOfHolder :many
+-- The live records on the items of a holder's sheet.
+SELECT * FROM character_infusions
+WHERE holder_character_id = sqlc.arg(holder_character_id)::UUID AND ended_at IS NULL
+ORDER BY since, id;
+
+-- name: EndCharacterInfusion :one
+-- Ends a record that is live and returns it as it was; no row means it was not live.
+UPDATE character_infusions
+SET ended_at = sqlc.arg(at)::TIMESTAMPTZ, ended_reason = sqlc.arg(reason)::TEXT
+WHERE campaign_id = sqlc.arg(campaign_id)::UUID AND id = sqlc.arg(id)::UUID AND ended_at IS NULL
+RETURNING *;
+
+-- name: MoveCharacterInfusion :execrows
+-- Puts a live record on another item, begins its time again and clears the attunement (the item changed); the count says whether it was live.
+UPDATE character_infusions
+SET item_kind = sqlc.arg(item_kind), item_key = sqlc.arg(item_key), object_name = sqlc.arg(object_name)::TEXT, since = sqlc.arg(at), attuned = false
+WHERE campaign_id = sqlc.arg(campaign_id)::UUID AND id = sqlc.arg(id)::UUID AND ended_at IS NULL;
+
+-- name: SetCharacterInfusionAttuned :execrows
+-- Says whether the holder is attuned to the item of a live record; the count says whether it was live.
+UPDATE character_infusions
+SET attuned = sqlc.arg(attuned)::BOOLEAN
+WHERE campaign_id = sqlc.arg(campaign_id)::UUID AND id = sqlc.arg(id)::UUID AND ended_at IS NULL;
+
+-- name: TouchCharacterRevision :one
+-- An infusion changed what the sheet reads: the revision goes up, so an editor that holds the old one is told.
+UPDATE characters
+SET revision = revision + 1, updated_at = sqlc.arg(now)
+WHERE campaign_id = sqlc.arg(campaign_id)::UUID AND id = sqlc.arg(id)::UUID
+RETURNING *;
+
+-- name: GetCharacterInfusionRequest :one
+-- The answer kept under an idempotency key of the campaign, if any.
+SELECT * FROM character_infusion_requests
+WHERE campaign_id = sqlc.arg(campaign_id)::UUID AND idempotency_key = sqlc.arg(idempotency_key)::UUID;
+
+-- name: InsertCharacterInfusionRequest :exec
+INSERT INTO character_infusion_requests (campaign_id, idempotency_key, request_hash, infusion_id, ended_infusion_id, created_at)
+VALUES (sqlc.arg(campaign_id)::UUID, sqlc.arg(idempotency_key)::UUID, sqlc.arg(request_hash), sqlc.arg(infusion_id)::UUID, sqlc.narg(ended_infusion_id)::UUID, sqlc.arg(created_at));

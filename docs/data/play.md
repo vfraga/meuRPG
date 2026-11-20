@@ -287,6 +287,8 @@ Ids, spell keys and numbers, no personal data; cascades with the campaign, the s
 - `caster_id` is a player character or an NPC.
   `slot_level` (0 for a cantrip or ritual) and `slot_pact` only record the slot; it is spent in `character_vitals` when the casting finishes.
   An NPC caster spends nothing.
+- `grant_source` is the source of the granted-spell effect the casting started through, empty for none.
+  The end of a long casting reads that grant; it is never sent to a client.
 - `concentrating` says the caster concentrates on this cast now.
   `duration_seconds` is the spell's timed duration (`NULL`: nothing to count) and `rest_ends` the rest long enough to end it.
   The app never counts a duration: the master, the caster's concentration or a rest ends the spell.
@@ -350,7 +352,7 @@ In a combat the die is the combatant's (`combatants.inspiration_*`) and this row
 `counted_by` (`TEXT NOT NULL DEFAULT ''`) is the content key of the feature whose floor the total counts, a table's `roll_minimum` or Reliable Talent; it is empty when the die counts as it came up.
 `round` is the combat's round for a roll held in a combat and `NULL` out of one.
 `combatant_id` (the roller in a combat, `CASCADE`) and `encounter_id` (the combat the roll was held in, `CASCADE`) are `NULL` out of a combat; when `combatant_id` is set it is the owner of the hold (the copies of an NPC and the creatures of a combat share a `character_id`).
-`window_hold` says the hold is the attack a reaction window kept.
+`window_hold` says the hold is the roll a reaction window kept (a weapon attack, a spell attack, a contest or a Hide).
 The weapon attack waits here too (kind `weapon_attack`, `window_hold` for the one a reaction window held, whose `idempotency_key` is the request's own); `roll_holds` is empty and unused ([held rolls](../architecture/play/held-rolls.md)). Every roll held in a combat names its combatant and its combat; an older one has both `NULL` and belongs to its character.
 The partial index `inspiration_holds_open_combat_idx` on `(encounter_id, combatant_id)` where `answer_key IS NULL` serves the open questions of a combat.
 Lucky: `lucky_index` is the die that shows a 1 (0 for a single d20; 0 or 1 for a pair, in the order rolled; `NULL` with no Lucky question), `lucky_answer_key` the key of the answer and `lucky_to` the new face (1 to 20; `NULL` when the player kept the 1).

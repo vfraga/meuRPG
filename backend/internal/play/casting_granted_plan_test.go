@@ -158,3 +158,60 @@ func TestACombatCastThroughAGrantIsCastAtItsOwnLevelWithNoSlot(t *testing.T) {
 		t.Errorf("a leveled spell of the class with no slot: code = %v, want invalid_argument", connect.CodeOf(err))
 	}
 }
+
+// A cast with no slot through a grant that has a cast level reads the spell at that level, and the level is the
+// plan's: the grant's cast level, the slot's when a slot casts it, the spell's own when the grant sets none.
+func TestAGrantedCastReadsTheSpellAtTheGrantsCastLevel(t *testing.T) {
+	t.Parallel()
+	roster := &levelRoster{}
+	s := &Service{roster: roster}
+	plan := grantPlan(readyGrant(func(g *link.OutsideGrant) { g.CastLevel = 3 }))
+	got, err := s.planGranted(t.Context(), &combatTx{}, authz.Membership{}, plan, planFeat, nil)
+	if err != nil {
+		t.Fatalf("planGranted() error = %v", err)
+	}
+	if roster.level != 3 || levelOf(got) != 3 {
+		t.Errorf("the spell was read at level %d and the plan's level is %d, want 3 for both", roster.level, levelOf(got))
+	}
+	own, err := s.planGranted(t.Context(), &combatTx{}, authz.Membership{}, grantPlan(readyGrant()), planFeat, nil)
+	if err != nil || roster.level != 1 || levelOf(own) != 1 {
+		t.Errorf("a grant with no cast level: read at %d, plan level %d (%v), want the spell's own 1", roster.level, levelOf(own), err)
+	}
+	withSlot := grantPlan(readyGrant(func(g *link.OutsideGrant) { g.CastLevel, g.AlsoWithSlot = 2, true }))
+	withSlot.osp.Slots = []link.CastSlot{{Level: 3, Free: 1}}
+	slotted, err := s.planGranted(t.Context(), &combatTx{}, authz.Membership{}, withSlot, planFeat, &playv1.SpellSlot{Level: 3})
+	if err != nil || levelOf(slotted) != 3 || roster.level != 3 {
+		t.Errorf("a slot cast of a grant: plan level %d, read at %d (%v), want the slot's 3 for both", levelOf(slotted), roster.level, err)
+	}
+}
+
+// levelRoster remembers the level a granted spell was read at.
+type levelRoster struct {
+	grantRoster
+	level int
+}
+
+func (r *levelRoster) GrantedCombatSpell(_ context.Context, _ pgx.Tx, _, _, key, _ string, level int, _ string) (link.Spell, error) {
+	r.level = level
+	return link.Spell{Key: key, Level: 1}, nil
+}
+
+// The level of a combat cast through a grant: the grant's cast level with no slot, the slot's with one, the
+// spell's own when the grant sets none.
+func TestACombatCastThroughAGrantHasTheGrantsCastLevel(t *testing.T) {
+	t.Parallel()
+	via := castable{level: 1, grant: &rulesv1.SpellGrantOption{SourceKey: planFeat, CastLevel: 2, AlsoWithSlot: true}}
+	if got := via.levelWith(nil); got != 2 {
+		t.Errorf("no slot: level = %d, want the grant's 2", got)
+	}
+	if got := via.levelWith(&slotRef{Level: 4}); got != 4 {
+		t.Errorf("a slot: level = %d, want the slot's 4", got)
+	}
+	via.grant.CastLevel = 0
+	if got := via.levelWith(nil); got != 1 {
+		t.Errorf("a grant with no cast level: level = %d, want the spell's own 1", got)
+	}
+	if got := (castable{level: 2}).levelWith(nil); got != 2 {
+		t.Errorf("a spell of the class: level = %d, want its own 2", got)
+	}
+}

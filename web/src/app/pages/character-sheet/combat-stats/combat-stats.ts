@@ -32,6 +32,8 @@ export class CombatStats {
   /** What Ajuda adds to `hitPointsMax` (0 without it); the effective numbers show only with it. */
   readonly aid = input(0);
   readonly hitDice = input<string | null>(null);
+  /** The equipped shield does not count (a two-handed weapon is equipped): the sentence sits right under the shield's row. */
+  readonly shieldNote = input(false);
 
   protected readonly formatModifier = formatModifier;
   protected readonly aidTag = aidTag;

@@ -191,7 +191,7 @@ describe('GearList', () => {
     expect(rows[2].querySelector('app-bonus-chip')).toBeNull();
   });
 
-  it('marks the shield "Parado" with a dashed chip when a two-handed weapon leaves it idle', () => {
+  it('marks the shield "Não conta na CA" with a dashed chip when a two-handed weapon leaves it idle', () => {
     const shield: GearVm = {
       ...sword,
       key: 'equipment:shield',
@@ -204,7 +204,7 @@ describe('GearList', () => {
     fixture.componentRef.setInput('shieldIdle', true);
     fixture.detectChanges();
     const row = (fixture.nativeElement as HTMLElement).querySelector('.gear-row')!;
-    expect(row.querySelector('.gear-row__idle')!.textContent!.trim()).toBe('Parado');
+    expect(row.querySelector('.gear-row__idle')!.textContent!.trim()).toBe('Não conta na CA');
     expect(row.querySelector('.bonus-chip--idle')).not.toBeNull();
   });
 

@@ -23,6 +23,19 @@
   grid-column: 1 / -1;
 }
 
+// The idle-shield sentence takes its own row between the shield and the speed.
+.shield-note {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+
+.shield-note__text {
+  margin: 0;
+  font-size: var(--mr-font-14);
+  line-height: 20px;
+  color: var(--mr-ink-muted);
+}
+
 // A basic sheet has no Iniciativa: the shield stands alone in its row.
 .stats--basic .shield {
   grid-column: 1 / -1;

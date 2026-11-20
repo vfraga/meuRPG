@@ -11,6 +11,7 @@ import {
   ReadiedActionSchema,
   ReadiedKind,
   ReadiedStatus,
+  SpellTargetsSchema,
   TargetInReachSchema,
 } from '../../../../../gen/meurpg/play/v1/combat_pb';
 import {
@@ -59,10 +60,17 @@ const window = reactionWindow({
 
 describe('ReadiedWindowSheet (#582, boards 582-06 to 582-08)', () => {
   const answerReaction = vi.fn();
+  const markReactionRolling = vi.fn();
   const close = vi.fn();
 
   function setup(
-    opts: { row?: Record<string, unknown>; fail?: boolean; gone?: boolean; used?: boolean } = {},
+    opts: {
+      row?: Record<string, unknown>;
+      fail?: boolean;
+      gone?: boolean;
+      used?: boolean;
+      spellTargets?: Record<string, unknown>;
+    } = {},
   ) {
     const state = new State();
     state.apply(
@@ -93,6 +101,9 @@ describe('ReadiedWindowSheet (#582, boards 582-06 to 582-08)', () => {
             } as never),
           ],
         }),
+        spellTargets: opts.spellTargets
+          ? [create(SpellTargetsSchema, opts.spellTargets as never)]
+          : [],
         attackTargets: [
           create(AttackTargetsSchema, {
             attackKey: 'equipment:longsword',
@@ -117,7 +128,11 @@ describe('ReadiedWindowSheet (#582, boards 582-06 to 582-08)', () => {
         { provide: MatDialogRef, useValue: { close, disableClose: false } },
         {
           provide: CombatClient,
-          useValue: fakeCombatClient({ answerReaction, turnOptions: loadOptions }),
+          useValue: fakeCombatClient({
+            answerReaction,
+            markReactionRolling,
+            turnOptions: loadOptions,
+          }),
         },
       ],
     });
@@ -135,6 +150,14 @@ describe('ReadiedWindowSheet (#582, boards 582-06 to 582-08)', () => {
 
   beforeEach(() => {
     answerReaction.mockReset();
+    markReactionRolling.mockReset();
+    markReactionRolling.mockResolvedValue(
+      encounter({
+        revision: 3,
+        combatants: [combatant({ id: 'tor', label: 'Tor', mine: true })],
+        reactionWindows: [window],
+      } as never),
+    );
     close.mockReset();
   });
 
@@ -283,6 +306,132 @@ describe('ReadiedWindowSheet (#582, boards 582-06 to 582-08)', () => {
     expect(close).toHaveBeenCalled();
   });
 
+  it('splits the darts of a held Magic Missile among the creatures and sends them as targets', async () => {
+    answerReaction.mockResolvedValue({ encounter: encounter({ revision: 9 } as never) });
+    const { el, settle, button } = setup({
+      row: {
+        kind: ReadiedKind.SPELL,
+        actionKey: 'spell:magic-missile',
+        actionNamePt: 'Mísseis Mágicos',
+        targetCombatantId: 'z1',
+      },
+      spellTargets: {
+        spellKey: 'spell:magic-missile',
+        maxTargets: 3,
+        darts: [{ slotLevel: 1, darts: 3 }],
+        targets: [reach('tor', 'Tor', 0), reach('z1', 'Zumbi 1', 5)],
+      },
+    });
+    await settle();
+    expect(flat(el.querySelector('.cap'))).toBe('Divida os 3 dardos entre os alvos');
+    expect(flat(el.querySelector('[role=status]:not(.foot__clock)'))).toContain('0 de 3');
+    const use = () => button('Soltar');
+    expect(use().getAttribute('aria-disabled')).toBe('true');
+    const add = (label: string) =>
+      (
+        el.querySelector(`button[aria-label="Pôr um dardo em ${label}"]`) as HTMLButtonElement
+      ).click();
+    add('Zumbi 1');
+    add('Zumbi 1');
+    add('Tor (você)');
+    await settle();
+    expect(use().getAttribute('aria-disabled')).toBeNull();
+    use().click();
+    await settle();
+    expect(answerReaction).toHaveBeenCalledWith(
+      'c',
+      'enc',
+      'w1',
+      {
+        use: true,
+        targets: [
+          { combatantId: 'z1', darts: 2 },
+          { combatantId: 'tor', darts: 1 },
+        ],
+        die: { inApp: true },
+      },
+      expect.any(String),
+    );
+  });
+
+  describe('the table waits longer once the player is choosing (#857)', () => {
+    const missiles = {
+      row: {
+        kind: ReadiedKind.SPELL,
+        actionKey: 'spell:magic-missile',
+        actionNamePt: 'Mísseis Mágicos',
+        targetCombatantId: '',
+      },
+      spellTargets: {
+        spellKey: 'spell:magic-missile',
+        maxTargets: 3,
+        darts: [{ slotLevel: 1, darts: 3 }],
+        targets: [reach('tor', 'Tor', 0), reach('z1', 'Zumbi 1', 5)],
+      },
+    };
+    const add = (el: HTMLElement, label: string) =>
+      (
+        el.querySelector(`button[aria-label="Pôr um dardo em ${label}"]`) as HTMLButtonElement
+      ).click();
+
+    it('marks the window once, on the first dart placed, and says how long the table waits', async () => {
+      const { el, settle } = setup(missiles);
+      await settle();
+      expect(markReactionRolling).not.toHaveBeenCalled();
+      expect(flat(el.querySelector('.foot__clock'))).toMatch(/^Se você não responder/);
+      add(el, 'Zumbi 1');
+      add(el, 'Zumbi 1');
+      add(el, 'Tor (você)');
+      await settle();
+      expect(markReactionRolling).toHaveBeenCalledTimes(1);
+      expect(markReactionRolling).toHaveBeenCalledWith('c', 'enc', 'w1');
+      expect(flat(el.querySelector('.foot__clock'))).toBe(
+        'Você está escolhendo: a mesa espera 2 min. Depois disso, passa sozinho.',
+      );
+    });
+
+    it('marks it on the first creature ticked of a spell that takes several, and on the first of an attack', async () => {
+      const bless = setup({
+        row: { kind: ReadiedKind.SPELL, actionKey: 'spell:bless', targetCombatantId: '' },
+        spellTargets: {
+          spellKey: 'spell:bless',
+          maxTargets: 3,
+          targets: [reach('tor', 'Tor', 0), reach('z1', 'Zumbi 1', 5)],
+        },
+      });
+      await bless.settle();
+      (bless.el.querySelectorAll('input[type=checkbox]')[1] as HTMLInputElement).click();
+      (bless.el.querySelectorAll('input[type=checkbox]')[0] as HTMLInputElement).click();
+      await bless.settle();
+      expect(markReactionRolling).toHaveBeenCalledTimes(1);
+      markReactionRolling.mockClear();
+      const attack = setup({ row: { targetCombatantId: '' } });
+      await attack.settle();
+      (attack.el.querySelector('input[type=radio]') as HTMLInputElement).click();
+      await attack.settle();
+      expect(markReactionRolling).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not mark it when the player only lets the window pass', async () => {
+      answerReaction.mockResolvedValue({ encounter: encounter({ revision: 6 } as never) });
+      const { settle, button } = setup(missiles);
+      await settle();
+      button('Deixar passar').click();
+      await settle();
+      expect(markReactionRolling).not.toHaveBeenCalled();
+    });
+
+    it('goes back to the 30 s when the master could not be told', async () => {
+      markReactionRolling.mockRejectedValue(new Error('down'));
+      const { el, settle } = setup(missiles);
+      await settle();
+      add(el, 'Zumbi 1');
+      await settle();
+      expect(markReactionRolling).toHaveBeenCalledTimes(1);
+      expect(flat(el.querySelector('.foot__clock'))).toMatch(/^Se você não responder/);
+    });
+  });
+
   it('releases a readied spell with no creature chosen: the server uses the one named at Ready', async () => {
     answerReaction.mockResolvedValue({ encounter: encounter({ revision: 8 } as never) });
     const { settle, button } = setup({
@@ -325,6 +474,38 @@ describe('ReadiedWindowSheet (#582, boards 582-06 to 582-08)', () => {
     await settle();
     expect(el.querySelector('[role=alert]')).not.toBeNull();
     expect(close).not.toHaveBeenCalled();
+  });
+
+  it('names the darts in the refusal of a held Magic Missile', async () => {
+    answerReaction.mockRejectedValue(new ConnectError('não', Code.InvalidArgument));
+    const dart = setup({
+      row: {
+        kind: ReadiedKind.SPELL,
+        actionKey: 'spell:magic-missile',
+        actionNamePt: 'Mísseis Mágicos',
+        targetCombatantId: 'z1',
+      },
+      spellTargets: {
+        spellKey: 'spell:magic-missile',
+        maxTargets: 3,
+        darts: [{ slotLevel: 1, darts: 3 }],
+        targets: [reach('z1', 'Zumbi 1', 5)],
+      },
+    });
+    await dart.settle();
+    (
+      dart.el.querySelector('button[aria-label="Pôr um dardo em Zumbi 1"]') as HTMLButtonElement
+    ).click();
+    (
+      dart.el.querySelector('button[aria-label="Pôr um dardo em Zumbi 1"]') as HTMLButtonElement
+    ).click();
+    (
+      dart.el.querySelector('button[aria-label="Pôr um dardo em Zumbi 1"]') as HTMLButtonElement
+    ).click();
+    await dart.settle();
+    dart.button('Soltar').click();
+    await dart.settle();
+    expect(flat(dart.el.querySelector('[role=alert]'))).toContain('Confira os alvos e os dardos.');
   });
 
   it('says only that the window closed when it did before the clock ran out, and only closes', async () => {

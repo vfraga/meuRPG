@@ -121,7 +121,7 @@ func readiedView(rows []playdb.ReadiedAction, c playdb.Combatant, names func(key
 		}
 		out := &playv1.ReadiedAction{
 			Id: row.ID, TriggerText: row.TriggerText, Kind: readiedKindToProto[row.Kind], MoveFt: row.MoveFt, Round: row.Round,
-			Status: readiedStatusToProto[row.Status],
+			Status: readiedStatusToProto[row.Status], SlotLevel: row.SlotLevel,
 		}
 		if row.ActionKey != nil {
 			out.ActionKey, out.ActionNamePt = *row.ActionKey, row.ActionNamePt

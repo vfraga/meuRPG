@@ -140,12 +140,13 @@ import { SelectField, type SelectOption } from '../../../shared/form-fields/sele
       border-top: 1px solid var(--mr-rule);
     }
 
-    // The open feature is one frame (the accent contour); its editor inside has no card of its own.
+    // The open feature is one grey frame (board 580-03: the accent frame belongs to the open option inside it); its editor has no card of its own.
     .item--open {
       margin: var(--mr-space-2) 0;
       padding: var(--mr-space-3);
-      border: 2px solid var(--mr-accent);
+      border: 1px solid var(--mr-line);
       border-radius: var(--mr-radius-md);
+      background: var(--mr-ground);
     }
 
     .row {

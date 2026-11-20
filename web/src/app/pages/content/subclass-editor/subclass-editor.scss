@@ -3,10 +3,32 @@
 }
 
 .editor {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--mr-space-4);
+  align-items: start;
   min-width: 0;
+
+  @media (min-width: 1100px) {
+    grid-template-columns: minmax(0, 1fr) 368px;
+    gap: var(--mr-space-5);
+  }
+
+  &__main,
+  &__side {
+    display: flex;
+    flex-direction: column;
+    gap: var(--mr-space-4);
+    min-width: 0;
+  }
+
+  // From 1100 px the preview and the players' switch sit beside the form and stay in view; below it they come under it.
+  &__side {
+    @media (min-width: 1100px) {
+      position: sticky;
+      top: 88px;
+    }
+  }
 }
 
 .block {

@@ -7,7 +7,6 @@ import {
 import {
   type MetamagicOption,
   type SpellDetails,
-  SpellDamageChoice,
   SpellRangeKind,
 } from '../../../../../gen/meurpg/rules/v1/rules_pb';
 import {
@@ -19,6 +18,7 @@ import {
   dartsStatus,
 } from '../../../../core/combat/cast-flow';
 import { article } from '../../../../core/combat/combat-log';
+import { asksDamageType } from '../../../../core/combat/ready-choices';
 import { groupFeminine, groupName, isCreature } from '../../../../core/combat/creature-names';
 import { abilityMissing } from '../../../../core/effects/ability-choice';
 import { type MetamagicPicks, metamagicMissing } from '../../../../core/resources/metamagic';
@@ -43,7 +43,7 @@ export {
 
 /** The damage types a spell lets the caster pick among; empty when it offers no choice. */
 export function damageChoicesOf(d: SpellDetails | null): { key: string; name: string }[] {
-  return d && d.damageChoice !== SpellDamageChoice.UNSPECIFIED && d.damage.length > 1
+  return d && asksDamageType(d)
     ? d.damage.map((x) => ({ key: x.damageTypeKey, name: x.damageTypePt }))
     : [];
 }

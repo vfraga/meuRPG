@@ -70,6 +70,7 @@ Quando um comportamento veio de uma resposta do produto, o [arquivo](../../archi
 | [MR-055](#mr-055-responder-ao-efeito-extra-de-uma-criatura) | Combate | MVP |
 | [MR-056](#mr-056-mostrar-a-mesa-em-uma-tela) | Sessão | MVP |
 | [MR-057](#mr-057-ligar-o-sol-num-combate) | Combate | MVP |
+| [MR-059](#mr-059-infundir-um-item) | Personagem | MVP |
 | [MR-002](#mr-002-gerar-convite) | Campanha | MVP (pré-requisito) |
 | [MR-005](#mr-005-criar-npcs) | Personagem | MVP (pré-requisito) |
 | [MR-007](#mr-007-importar-ficha-em-pdf) | Personagem | Depois |
@@ -745,13 +746,15 @@ As regras de dados, os limites e o lado do servidor estão em [Conteúdo da mesa
   No combate o combatente leva os quatro deslocamentos (`Combatant.speed_fly_ft`, `speed_swim_ft`, `speed_climb_ft`, `speed_burrow_ft`) para o mestre e o jogador do personagem, como leva o deslocamento de caminhada; uma forma de Forma Selvagem e uma criatura trazem os seus.
   A criatura se move no deslocamento de voo quando ele é o melhor dos dois; a grade não gasta o deslocamento de natação, escalada ou escavação, então um movimento custa o que custaria a pé.
 - **Dado** um efeito "Respira na água", **quando** um personagem o tem, **então** a ficha diz "Respira na água" na caixa do deslocamento; o app não conta fôlego nem afogamento.
-- **Dado** um talento, um traço ou uma característica com o efeito "Magia concedida" (uma magia do SRD ou da mesa, o nível em que começa, a habilidade de conjuração — Inteligência, Sabedoria, Carisma ou "o jogador escolhe" —, o recurso que cada conjuração gasta, uma chave para conjurar também com espaço, uma chave para só ritual, uma chave para listá-la entre as conhecidas, uma chave para dispensar o material e, numa concessão limitada, quantos usos cada conjuração gasta), **quando** um personagem o tem, **então** a ficha lista a magia em "Magias concedidas" com a origem, como se conjura e a CD e o bônus de ataque da concessão, **e** os números de magias conhecidas, truques e preparadas do personagem continuam como estavam.
-  Uma magia de círculo é conjurada no próprio círculo, um truque cresce com o nível do personagem e os componentes materiais só são dispensados se a concessão disser; então a ficha e a folha de conjuração tiram o "M" da linha de componentes (nada mais muda: o servidor nunca confere componentes).
+- **Dado** um talento, um traço ou uma característica com o efeito "Magia concedida" (uma magia do SRD ou da mesa, o nível em que começa, a habilidade de conjuração — Inteligência, Sabedoria, Carisma ou "o jogador escolhe" —, o recurso que cada conjuração gasta, uma chave para conjurar também com espaço, uma chave para só ritual, uma chave para listá-la entre as conhecidas, uma chave para dispensar o material, numa concessão limitada quantos usos cada conjuração gasta e, numa magia acima de truque, o nível de conjuração), **quando** um personagem o tem, **então** a ficha lista a magia em "Magias concedidas" com a origem, como se conjura e a CD e o bônus de ataque da concessão, **e** os números de magias conhecidas, truques e preparadas do personagem continuam como estavam.
+  Uma magia acima de truque é conjurada no próprio nível, ou no nível de conjuração da concessão (do nível da magia até o 9, sem espaço): os dados, a cura e os alvos que crescem com o nível seguem esse nível.
+  Uma conjuração com espaço tem o nível do espaço.
+  Um truque cresce com o nível do personagem e os componentes materiais só são dispensados se a concessão disser; então a ficha e a folha de conjuração tiram o "M" da linha de componentes (nada mais muda: o servidor nunca confere componentes).
   Quando a habilidade é "o jogador escolhe", o jogador escolhe uma vez, nas escolhas da ficha, e até lá a concessão não tem números.
 - **Dado** uma magia concedida, **quando** o jogador a conjura, em combate ou fora dele, **então** a ficha de conjuração a oferece como um jeito próprio, sem espaço de magia (espaço só quando a concessão permite), usando a habilidade da concessão para a jogada de ataque e a CD do teste de resistência.
   Uma concessão limitada gasta os usos que o custo diz (um, se nada for dito): uma conjuração que os usos restantes não cobrem é recusada ("A concessão não tem mais usos."), o desfazer da primeira devolve o uso, e uma concessão à vontade nunca acaba.
   Uma concessão só de ritual conjura como ritual.
-- **Dado** o editor de efeitos, **quando** cadastro uma magia concedida, **então** o servidor recusa uma magia que não existe, uma concessão só de ritual numa magia sem a etiqueta de ritual, um recurso que a entrada não define, um custo sem recurso e uma habilidade que não é uma das quatro, cada um no seu campo.
+- **Dado** o editor de efeitos, **quando** cadastro uma magia concedida, **então** o servidor recusa uma magia que não existe, uma concessão só de ritual numa magia sem a etiqueta de ritual, um recurso que a entrada não define, um custo sem recurso, uma habilidade que não é uma das quatro e um nível de conjuração abaixo do nível da magia, acima de 9, num truque ou numa concessão só de ritual, cada um no seu campo.
 
 **Opções para os conjuntos de opções do SRD.**
 
@@ -1394,6 +1397,8 @@ As regras de dados, os limites e o lado do servidor estão em [Conteúdo da mesa
 - **Dado** uma raça, um traço ou um antecedente que deixa o jogador escolher idiomas (o idioma extra do Meio-elfo, os dois do Acólito), ou um traço, antecedente ou característica que deixa escolher ferramentas (as ferramentas de artesão do Anão, "um tipo de ferramenta de artesão" de um antecedente), **quando** o jogador chega ao passo "Escolhas", **então** cada um é uma escolha entre os idiomas ou as ferramentas do catálogo, uma de cada, com as que o personagem já tem pontilhadas e o motivo, e as escolhas aparecem nos "Idiomas" e nas "Proficiências" da ficha; o campo livre "Idiomas" fica para os do mestre, e o que está escrito ali também aparece na ficha. Enquanto uma está aberta, a ficha diz "Falta escolher N idiomas: faça a escolha no passo “Escolhas”" e o salvar não é impedido (RN-33).
 - **Dado** uma ficha travada com escolhas em aberto, **quando** o dono a abre, **então** ela diz "N escolhas pendentes" e "Completar" leva a uma página só com elas; o mestre vê "N escolhas em aberto" na campanha (RN-33).
 - **Dado** um subir de nível, **quando** o personagem tem escolhas que ficaram para trás, **então** "Escolhas que ficaram para trás" vem antes de "Próximo", e uma invocação que pede algo que a ficha não tem fica pontilhada com o motivo (RN-33).
+- **Dado** um bruxo que toma o Pacto do Tomo ou o Livro de Segredos Antigos num subir de nível, **quando** o jogador confirma sem os truques ou os rituais que eles abrem, **então** o nível é salvo com eles em aberto, e o nível seguinte os pede primeiro em "Escolhas que ficaram para trás" e recusa o nível sem eles (RN-33).
+- **Dado** um bruxo que troca o Livro de Segredos Antigos ou o Pacto do Tomo, **quando** o nível é confirmado, **então** os dois rituais ou os três truques vão junto, e uma única escolha deles nunca é removida sozinha (RN-33).
 
 #### No app
 - Os números de "O que muda" e do resumo vêm do servidor, que também lista os ataques cujo acerto ou dano o nível move. O dado de vida usa o mesmo seletor de rolagem do combate e da cena (RN-18).
@@ -1556,6 +1561,10 @@ As regras de dados, os limites e o lado do servidor estão em [Conteúdo da mesa
 - **Dado** um combate em andamento, **quando** o conjurador tenta conjurar fora dele, **então** a conjuração é recusada e a magia é conjurada no combate.
 - **Dado** Bênção conjurada num personagem antes de uma luta, **quando** o combate começa, **então** o efeito entra nele com o tempo que lhe resta em rodadas (uma rodada tem 6 segundos, rodada parcial não conta), os testes de resistência do personagem recebem o d4, e quando o combate termina as rodadas que sobraram voltam para o tempo de jogo (RN-22).
 - **Dado** Ajuda conjurada fora do combate, **então** a conjuração é registrada e o mestre narra; os pontos de vida máximos só aumentam com uma Ajuda conjurada em combate.
+- **Dado** um bruxo com o Pacto do Tomo e a invocação Livro de Segredos Antigos, **quando** o jogador abre o passo "Escolhas", **então** "Rituais do Livro" pede duas magias de 1º nível com a etiqueta de ritual, da lista de qualquer classe, e as duas não contam nas magias conhecidas (RN-33).
+- **Dado** os dois rituais do livro, **quando** o jogador conjura um deles, **então** ele só é conjurado "Como ritual": nenhum espaço é gasto, a conjuração leva 10 minutos a mais, uma conjuração com espaço é recusada, e as magias do livro não estão na lista de conjuração de nenhum combate (RN-32).
+- **Dado** um bruxo com a invocação que conhece uma magia com a etiqueta de ritual que está na lista de bruxo do personagem (a lista expandida do patrono incluída), **quando** o jogador a conjura, **então** ela também pode ser conjurada como ritual; uma magia conhecida que não está nessa lista não pode (RN-32).
+- **Dado** que o mestre desligou uma magia, **quando** um jogador escolhe uma magia para os rituais do livro, os truques do Pacto do Tomo, uma Arcana Mística ou um truque adicional, **então** a magia não é oferecida em nenhuma delas; uma ficha que já a tem a mantém, e o mestre a escolhe do mesmo jeito (RN-23).
 
 #### No app
 - "Conjurar" lista as magias que o personagem pode conjurar, com os espaços, "Como ritual" quando a magia permite, o tempo que leva e os alvos. "Magias ativas" lista as conjurações em andamento ou duradouras, com "Concluir conjuração" (mestre) e "Encerrar".
@@ -1816,6 +1825,45 @@ Ver [Arquitetura](../../architecture/campaign-package.md).
 #### Relacionadas
 - [MR-042](#mr-042-bestiário), [RN-29](regras.md#rn-29-monstros-no-combate).
 
+
+### MR-059: Infundir um item
+
+**Como** jogador de um artífice (ou o mestre, por esse personagem), **quero** pôr numa peça uma infusão que conheço, mudá-la de peça e encerrá-la, **para que** a ficha mostre o item com a infusão e os números que ela dá.
+
+- Prioridade: MVP
+- Regras: RN-44, RN-02
+- Módulos: characters, rules, play
+
+**Construída em parte.**
+Construído: o lado do servidor para os itens do próprio artífice.
+Espera as telas: o bloco "Infusões" da ficha, o diálogo "Infundir", a linha da infusão no item, no ataque e nos modificadores, e as escolhas de infusões na subida de nível.
+Não construído: um item de outro personagem, as cargas de um item infundido e o fim de uma infusão pela troca da subida de nível.
+
+#### Critérios de aceitação
+- **Dado** um artífice que conhece uma infusão, **quando** leio as infusões, **então** leio as que estão em uso, as conhecidas fora de uso, o limite e quantas estão em uso; **dado** que sou outro jogador, **então** o personagem não existe para mim.
+- **Dado** uma infusão, **quando** pergunto onde ela vai, **então** cada peça da ficha tem uma linha, e uma peça que não pode recebê-la diz por quê em palavras ("Pede uma arma com munição.", "Já é um item mágico (+1): a infusão pede um item comum.", "Já tem <infusão>: um item guarda uma infusão só."); uma infusão para qualquer objeto oferece também uma linha para nomear um objeto.
+- **Dado** uma infusão e uma peça que a recebe, **quando** a ponho, **então** a ficha a lista, a nomeia na peça, no ataque e na linha de modificador, e os números a incluem como o bônus manual faz; **dado** que a peça está guardada, ou pede sintonização e não está sintonizada, **então** ela não soma nada e diz por quê.
+- **Dado** uma infusão que pede sintonização, **quando** a ponho com "Sintonizar agora" na janela de um descanso, **então** ela fica sintonizada e conta entre os três; **dado** que a janela está fechada, **então** o pedido é recusado e nada muda.
+- **Dado** que o limite foi atingido, **quando** ponho mais uma, **então** a que eu escolher termina, ou a mais antiga; a ficha lê uma só mudança.
+- **Dado** uma infusão para um objeto, **quando** dou um nome de 1 a 40 caracteres, **então** a ficha lista a infusão com esse nome; dois objetos podem ter o mesmo nome; **dado** um nome com quebra de linha ou caractere de controle, **então** ele é limpo ou recusado.
+- **Dado** que mudo uma infusão para outra peça, **então** o tempo dela recomeça e a sintonização é limpa; **dado** que a encerro, **então** a peça volta a ser uma peça comum.
+- **Dado** que a peça sai da ficha, **quando** salvo, **então** a infusão dela termina.
+- **Dado** o mesmo pedido com a mesma chave, **então** a resposta é a primeira e nada é escrito duas vezes.
+- **Dado** que o limite foi atingido e ponho uma na peça que já tem uma, escolhendo essa para encerrar, **então** ela é substituída, e a ficha lê uma só mudança.
+- **Dado** que mais infusões valem do que o limite (uma escolha devolvida, ou um nível tirado), **então** as mais antigas dizem "acima do limite", não dão número nem ocupam lugar de sintonização, e nenhuma termina sozinha.
+- **Dado** que o limite foi atingido, **quando** escolho para encerrar um registro que está acima do limite, **então** o pedido é recusado e nada muda, pois encerrá-lo não libera lugar; **dado** que o encerro sozinho, **então** ele termina e nenhum lugar é liberado.
+- **Dado** que o limite foi atingido e uma peça tem um registro acima do limite, **quando** ponho uma infusão nessa peça, com ou sem registro escolhido, **então** o pedido é recusado e nada muda.
+- **Dado** que o limite foi atingido, **quando** mudo de peça um registro que está acima do limite (ou cuja peça saiu da ficha), **então** o pedido é recusado e nada muda; **dado** que há um lugar livre, **então** ele muda de peça.
+- **Dado** que uma peça tem um registro que não vale por outro motivo (um pré-requisito perdido), **quando** ponho uma infusão nessa peça no limite, escolhendo esse registro ou não, **então** a resposta é a mesma: ele termina e o registro válido mais antigo cede com o seu encerramento.
+- **Dado** um personagem morto, **então** pôr uma infusão e mudá-la de peça são recusados para todos; **dado** o mestre, **então** encerrar um registro é permitido, e **dado** o dono, **então** é recusado; **dado** uma ficha trancada pela sessão, **então** as escritas ainda funcionam.
+- **Dado** um combate que tem o artífice, **quando** uma infusão muda, **então** as telas abertas do combate leem o turno e os ataques de novo; **dado** que o artífice está escondido, **então** só o mestre é avisado.
+- **Dado** que sou jogador de outro personagem, **então** nunca leio a infusão, o resultado de um ataque nunca a nomeia, e nenhuma transmissão me diz o que mudou: uma mudança de infusão num combate manda a todos os jogadores o aviso comum de que "o combate mudou", sem conteúdo, e o aviso da própria infusão vai só ao mestre e ao dono (RN-44).
+
+#### No app
+- O bloco "Infusões" e o diálogo "Infundir" estão nos quadros do artífice; as telas esperam a fatia da web.
+
+#### Relacionadas
+- [MR-004](#mr-004-ficha-no-formato-do-pdf), [MR-040](#mr-040-subir-de-nível-pela-ficha), [RN-44](regras.md#rn-44-infusões-do-artífice).
 
 ## Prioridade: MVP (pré-requisito)
 

@@ -247,6 +247,19 @@ var reads = []read{
 			return &charactersv1.GetSummonOptionsRequest{CampaignId: w.campaign, CharacterId: w.pens.GetId()}
 		},
 	},
+	{
+		procedure: charactersv1connect.InfusionServiceListCharacterInfusionsProcedure, label: "Ana's character", allow: onlyAna,
+		req: func(w *world) proto.Message {
+			return &charactersv1.ListCharacterInfusionsRequest{CampaignId: w.campaign, CharacterId: w.pens.GetId()}
+		},
+	},
+	{
+		procedure: charactersv1connect.InfusionServiceListInfusionTargetsProcedure, label: "Ana's character", allow: onlyAna,
+		why: "a key that is no infusion lists no piece, so the answer holds nothing: the owner and the master get the empty list, the others the not_found of a character they cannot read",
+		req: func(w *world) proto.Message {
+			return &charactersv1.ListInfusionTargetsRequest{CampaignId: w.campaign, CharacterId: w.pens.GetId(), InfusionKey: "feature:no-such-infusion", HolderCharacterId: w.pens.GetId()}
+		},
+	},
 
 	// ===== ContentService (the rules: public SRD data plus the table's own content)
 	{

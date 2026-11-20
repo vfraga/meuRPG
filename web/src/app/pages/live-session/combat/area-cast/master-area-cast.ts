@@ -70,6 +70,8 @@ export interface MasterAreaCastData {
   readonly encounterId: string;
   readonly caster: Combatant;
   readonly spellKey: string;
+  /** The source of the grant the NPC has the spell through; `''` for a spell of its classes. */
+  readonly grantedBy?: string;
   readonly name: string;
   /** 0 for a cantrip. */
   readonly level: number;
@@ -143,8 +145,8 @@ export class MasterAreaCast {
       data.slot,
     ] as const;
     return wall
-      ? this.api.casts.previewSpellArea(...args, area, '', wall)
-      : this.api.casts.previewSpellArea(...args, area);
+      ? this.api.casts.previewSpellArea(...args, area, data.grantedBy ?? '', wall)
+      : this.api.casts.previewSpellArea(...args, area, data.grantedBy ?? '');
   }
 
   protected readonly details = signal<SpellDetails | null>(null);
@@ -304,7 +306,12 @@ export class MasterAreaCast {
         '',
         undefined,
         [],
-        { area, revealHidden, ...(this.flow.wall() ? { wall: this.flow.wall() } : {}) },
+        {
+          area,
+          revealHidden,
+          ...(this.flow.wall() ? { wall: this.flow.wall() } : {}),
+          ...(this.data.grantedBy ? { grantedBy: this.data.grantedBy } : {}),
+        },
       );
       this.data.state.apply(res.encounter);
       this.sheet.close(true);

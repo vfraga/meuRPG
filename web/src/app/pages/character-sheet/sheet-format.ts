@@ -4,6 +4,7 @@ import {
   spellLevelLabel,
 } from '../../core/characters/character-labels';
 import { AbilityKey, CharacterState } from '../../core/characters/characters.types';
+import { circleLabel } from '../../core/combat/combat-grid';
 import {
   CoinsVm,
   GrantedSpellVm,
@@ -299,6 +300,9 @@ export function spellStateSummary(groups: readonly SpellGroup[]): string {
 export function grantedSpellTags(g: GrantedSpellVm): string[] {
   const spent = g.usesCost > 1 ? `Gasta ${g.usesCost} usos de` : 'Gasta um uso de';
   const tags = [g.atWill ? 'À vontade' : `${spent} ${g.resourceNamePt}`];
+  if (g.castLevel > g.level) {
+    tags.push(`Conjurada no\u00a0${circleLabel(g.castLevel)}`);
+  }
   if (g.alsoWithSlot) {
     tags.push('Também com espaço');
   }

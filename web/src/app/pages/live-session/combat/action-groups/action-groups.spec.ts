@@ -89,6 +89,49 @@ describe('ActionGroups: the spells (E8-02)', () => {
     ]);
   });
 
+  it('shows the dice of the grant’s cast level on a granted spell, the own level on the class’s', () => {
+    const fixture = TestBed.createComponent(ActionGroups);
+    const grant = create(SpellOptionSchema, {
+      ...spell('spell:cure-wounds', 'Curar Ferimentos', 1),
+      grant: {
+        sourceKey: 'feat:graca@mesa',
+        sourceNamePt: 'Graça',
+        usesLeft: 1,
+        castLevel: 2,
+      } as never,
+    });
+    fixture.componentRef.setInput(
+      'options',
+      create(TurnOptionsSchema, {
+        spells: [spell('spell:cure-wounds', 'Curar Ferimentos', 1), grant],
+      }),
+    );
+    fixture.componentRef.setInput(
+      'own',
+      create(CombatantSchema, { movementLeftFt: 25, speedFt: 25 }),
+    );
+    fixture.componentRef.setInput(
+      'details',
+      new Map([
+        [
+          'spell:cure-wounds',
+          {
+            spell: { level: 1 },
+            damage: [{ damageTypePt: 'radiante', bySlotLevel: { 1: '1d8', 2: '2d8' } }],
+            healBySlotLevel: {},
+          } as never,
+        ],
+      ]),
+    );
+    fixture.detectChanges();
+    const details = ([...fixture.nativeElement.querySelectorAll('app-action-row')] as HTMLElement[])
+      .map((r) => r.querySelector('.row__detail')?.textContent ?? '')
+      .filter(Boolean);
+    expect(details[0]).toContain('1d8');
+    expect(details[1]).toContain('2d8');
+    expect(details[1]).not.toContain('1d8');
+  });
+
   it('gives a spell row no "?": the details are the cast sheet\'s own "?"', () => {
     const { el } = setup(SERVER_ORDER);
     expect(el.querySelector('app-spell-help')).toBeNull();

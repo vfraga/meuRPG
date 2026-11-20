@@ -102,11 +102,13 @@ test('um jogador prepara uma magia com o espaço e o servidor recusa quando a a�
     await sheet.getByRole('button', { name: 'Magia', exact: true }).click();
     const shield = sheet.locator('label', { hasText: 'Escudo Arcano' });
     await expect(shield).toContainText('É uma reação: só uma magia de 1 ação pode ser preparada.');
-    // What the window cannot release yet (darts, several targets, a point) is listed off with its reason, and a click on it holds nothing.
-    for (const name of ['Mísseis Mágicos', 'Sono', 'Mãos Flamejantes']) {
+    // What the window cannot release yet (a point, a direction) is listed off with its reason, and a click on it holds nothing.
+    for (const name of ['Sono', 'Mãos Flamejantes']) {
       await expect(sheet.locator('label', { hasText: name })).toContainText(spellOffText);
     }
-    await expect(sheet.getByRole('radio', { name: /Mísseis Mágicos/ })).toBeDisabled();
+    await expect(sheet.getByRole('radio', { name: /Sono/ })).toBeDisabled();
+    // The darts are released from the window (#857): Mísseis Mágicos is on.
+    await expect(sheet.locator('label', { hasText: 'Mísseis Mágicos' })).not.toContainText(spellOffText);
     // A spell of one creature stays on: the circle to hold it with, and the warning that it is the concentration.
     const charm = sheet.locator('label', { hasText: 'Enfeitiçar Pessoa' });
     await expect(charm).not.toContainText('Soltar pela janela');

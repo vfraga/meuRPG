@@ -91,7 +91,7 @@ func (s *Service) fillTurnLists(ctx context.Context, m authz.Membership, res *pl
 		return err
 	}
 	listAttackTargets(res, d, v, who, terrain, modes)
-	if err := s.listSpellTargets(ctx, m, res, d, v, who, terrain, modes); err != nil {
+	if err := s.listSpellTargets(ctx, m, res, d, v, sight, who, terrain, modes); err != nil {
 		return err
 	}
 	if err := s.listPendingDamage(ctx, m, res, d, v, who); err != nil {
@@ -251,14 +251,40 @@ func listAttackTargets(res *playv1.GetTurnOptionsResponse, d *encounterData, v c
 	}
 }
 
-// listSpellTargets lists who each spell can target, and the targets of the resources.
-func (s *Service) listSpellTargets(ctx context.Context, m authz.Membership, res *playv1.GetTurnOptionsResponse, d *encounterData, v combatViewer, who playdb.Combatant, terrain grid.Terrain, modes turnModes) error {
+// listSpellTargets lists who each spell can target, and the targets of the resources. The held spell of a readier is
+// listed as its release picks: under the sight of the readier's player, the master's too.
+func (s *Service) listSpellTargets(ctx context.Context, m authz.Membership, res *playv1.GetTurnOptionsResponse, d *encounterData, v combatViewer, sight *fogSight, who playdb.Combatant, terrain grid.Terrain, modes turnModes) error {
 	scene := spellTargetScene{terrain: terrain, who: who, cs: d.cs, v: v, theatre: isTheatre(d.enc), modes: modes}
 	var err error
-	if res.SpellTargets, err = s.spellTargetsFor(ctx, m.CampaignID, scene, res.GetOptions()); err != nil {
+	if res.SpellTargets, err = s.spellTargetsFor(ctx, m.CampaignID, scene, spellsToList(res.GetOptions())); err != nil {
 		return s.dbError(ctx, "work out the spell targets", err)
 	}
+	if !actsNow(d.enc, who) { // the window opens off the turn, and on it an ordinary entry of the same spell could be listed too
+		if err := s.listHeldTargets(ctx, m, res, d, v, sight, scene); err != nil {
+			return err
+		}
+	}
 	res.ResourceTargets = resourceTargetsFor(terrain, d.cs, who, v, res.GetOptions(), d.enc)
+	return nil
+}
+
+// listHeldTargets adds the targets of the spell the combatant holds readied: the release picks only what the readier's
+// player could pick, whoever answers, so the master reads the list of that player's eyes (an NPC they do not see is not in it).
+func (s *Service) listHeldTargets(ctx context.Context, m authz.Membership, res *playv1.GetTurnOptionsResponse, d *encounterData, v combatViewer, sight *fogSight, scene spellTargetScene) error {
+	entries := heldEntry(d.readied, scene.who)
+	if len(entries) == 0 {
+		return nil
+	}
+	eyes, _, err := s.actorSightFor(ctx, m, d.enc, d.cs, v, sight, scene.who)
+	if err != nil {
+		return s.dbError(ctx, "work out what the readier sees", err)
+	}
+	scene.v = eyes
+	held, err := s.spellTargetsFor(ctx, m.CampaignID, scene, entries)
+	if err != nil {
+		return s.dbError(ctx, "work out the held spell's targets", err)
+	}
+	res.SpellTargets = append(res.SpellTargets, held...)
 	return nil
 }
 

@@ -4,7 +4,7 @@ import type { Square } from '../../../../core/combat/combat-grid';
 import type { SpellCast } from '../../../../../gen/meurpg/play/v1/combat_pb';
 import type { RollMode } from '../../../../../gen/meurpg/play/v1/combat_rolls_pb';
 import type { SpellDetails } from '../../../../../gen/meurpg/rules/v1/rules_pb';
-import type { Dealt, SlotRow } from '../../../../core/combat/cast-flow';
+import { castLevelOf, type Dealt, type SlotRow } from '../../../../core/combat/cast-flow';
 import { tableOptionPicks } from '../../../../core/combat/table-cast-options';
 import { type MetamagicPicks, NO_PICKS } from '../../../../core/resources/metamagic';
 import type { CastSheetData } from './cast-sheet-types';
@@ -54,7 +54,16 @@ export class CastState {
   readonly teleportFt: number;
   /** A list spell that may hit nobody, with nobody ticked: "Conjurar" asks in place first (PM-02d state 13). */
   readonly listAsking = signal(false);
-  readonly slotLevel = computed(() => this.slot()?.level ?? this.data.level);
+  /** The cast goes through the grant, with no slot: a grant with no slot allowed, or one the caster did not ask a slot for. */
+  readonly viaGrant = computed(
+    () => !!this.data.grant && (!this.data.grant.alsoWithSlot || this.freeCast()),
+  );
+  /** The level the cast scales at: the slot's, else the level the grant casts at (a cast through the grant spends no slot), else the spell's own. */
+  readonly slotLevel = computed(() =>
+    castLevelOf(this.slot(), this.viaGrant() ? this.data.grant : null, this.data.level),
+  );
+  /** The level the targets of the sheet's entry were listed at: the grant's cast level for a grant, else the spell's own. */
+  readonly entryLevel = computed(() => castLevelOf(null, this.data.grant, this.data.level));
   /** Whether the cast happened (or is being resumed): the result stage. */
   readonly done = computed(() => this.cast() !== null || !!this.data.resume);
 

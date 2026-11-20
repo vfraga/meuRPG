@@ -38,6 +38,10 @@ import (
 // revivifyKey is the spell.
 const revivifyKey = "spell:revivify"
 
+// castsAsRevival says a cast of the spell goes the way of a revival (castRevivify), not an ordinary cast: CastSpell
+// routes by it and Ready refuses by it, so a spell the cast cannot release as a revival is never held.
+func castsAsRevival(spellKey string) bool { return spellKey == revivifyKey }
+
 // errRevivifyTarget is the one answer a player gets for a target that cannot be revived: it does
 // not exist, is not dead, is far, too long dead, hidden, not seen or marked by the master. No
 // reason, so none can be learned from it (RN-10).
@@ -270,8 +274,8 @@ func revivifyShape(in *playv1.CastSpellRequest) (string, error) {
 	if !in.GetMaterialConfirmed() {
 		return "", bad("material_confirmed is required: the spell consumes diamonds worth 300 gp")
 	}
-	if in.GetRoll() != nil || in.GetSummon() != nil || in.GetDamageTypeKey() != "" {
-		return "", bad("Revivify rolls nothing and takes no summon or damage type")
+	if in.GetRoll() != nil || in.GetSummon() != nil || in.GetDamageTypeKey() != "" || len(in.GetRayRolls()) > 0 {
+		return "", bad("Revivify rolls nothing and takes no summon, damage type or ray_rolls")
 	}
 	return targetID, nil
 }

@@ -747,6 +747,9 @@ func TestWriterQueries(t *testing.T) {
 var charactersSeamWriters = []seamWriter{
 	{"characters revive.go (*Service).ReviveCharacter", "inSession"},
 	{"characters equip.go (*Service).SetEquipped", "inSession"},
+	{"characters infusions_write.go (*Service).InfuseItem", "inSession"},
+	{"characters infusions_write.go (*Service).MoveInfusion", "inSession"},
+	{"characters infusions_write.go (*Service).EndInfusion", "inSession"},
 	{"characters rpc.go (*Service).UpdateCharacter", "writeSheetSave"}, // the only caller of writeSheetSave
 	{"characters updatecharacter.go (*Service).writeSheetSave", "inSession"},
 	{"characters choices.go (*Service).CompleteCharacterChoices", "inSession"},

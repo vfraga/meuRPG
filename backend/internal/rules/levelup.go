@@ -199,10 +199,16 @@ type LevelUpOffer struct {
 	// invocation to swap: one may be replaced at each level (SRD 5.1, Warlock,
 	// Eldritch Invocations).
 	CanSwapInvocation bool
+	// InvocationSwaps are the Eldritch Invocations the warlock may take in the place of the one given up.
+	InvocationSwaps []NamedKey `json:"-"`
 	// PickSwaps are the groups of picks the level may swap one in, at a level with an
 	// Ability Score Improvement. The rules always list them; the server leaves them out
 	// unless the table plays with the swap rule.
 	PickSwaps []SwapGroup
+	// FeatureSwaps are the groups of picks of a table feature's options the level may swap one in: one group for
+	// each class or subclass feature that allows a swap at this class level (FeatureSwapLevels), with the feature's
+	// key as the group. They are listed at any level, whatever the table's swap rule.
+	FeatureSwaps []SwapGroup
 
 	// Automatic.
 
@@ -307,6 +313,9 @@ type LevelUpChoices struct {
 	// Swap is one pick given up for another of the same group, at a level with an
 	// Ability Score Improvement (the table's rule); zero for none.
 	Swap PickSwap
+	// FeatureSwaps are the swaps of a table feature's options, at most one for each feature (the group is the
+	// feature's key): the pick given up and the option of the feature's pool taken in its place.
+	FeatureSwaps []PickSwap
 	// HitPoints is the gain of this level.
 	HitPoints LevelUpHitPoints
 	// Instrument is the musical instrument (a proficiency key) that taking the Bard
@@ -450,6 +459,11 @@ func levelUpOptionsWith(b Build, idx int, classKey string, c *content, sub *srd5
 			o.PickSwaps = slices.DeleteFunc(o.PickSwaps, func(g SwapGroup) bool { return g.Group == SwapGroupInvocation })
 		}
 	}
+
+	if classKey == classWarlock {
+		o.InvocationSwaps = c.invocationPool(b)
+	}
+	o.FeatureSwaps = c.featureSwapGroups(b, classKey, sub, newLevel, newClass)
 
 	// Features the level adds, by name; and the ones the guided flow does not
 	// cover, which the master adds in the editor.
@@ -673,6 +687,13 @@ func addBlockedReasons(reasons map[string]string, options []ChoiceOption) {
 			reasons[o.Key] = o.ReasonPT
 		}
 	}
+}
+
+// invocationPool are the Eldritch Invocations the sheet does not have: what a warlock may take in the place of one.
+func (c *content) invocationPool(b Build) []NamedKey {
+	g := SwapGroup{Group: SwapGroupInvocation}
+	c.fillChoiceGroup(&g, b)
+	return g.Pool
 }
 
 // isInvocation says whether a key is one of the Warlock's Eldritch Invocations.
@@ -1059,8 +1080,11 @@ func applyPicks(after *Build, ch LevelUpChoices, c *content) {
 	after.SpellsKnown = append(after.SpellsKnown, ch.Spells...)
 	after.SpellsPrepared = append(after.SpellsPrepared, ch.Prepared...)
 	applySwap(after, ch.Swap)
-	if ch.SwapInvocation != "" {
-		after.FeatureChoices = slices.DeleteFunc(after.FeatureChoices, func(k string) bool { return k == ch.SwapInvocation })
+	for _, s := range ch.FeatureSwaps {
+		applyFeatureSwap(after, s)
+	}
+	if ch.SwapInvocation != "" && ch.Class == classWarlock {
+		after.FeatureChoices = slices.DeleteFunc(after.FeatureChoices, func(k string) bool { return k == ch.SwapInvocation || ownPick(ch.SwapInvocation, k) })
 	}
 	after.FeatureChoices = append(after.FeatureChoices, ch.LateChoices...)
 	after.FeatureChoices = append(after.FeatureChoices, ch.FeatureChoices...)
@@ -1115,13 +1139,45 @@ func applyHitPoints(after, before Build, ch LevelUpChoices, idx int, c *content)
 // ends with a problem the old one did not have (a spell off the class list,
 // too many prepared spells) is refused as LevelUpReasonSheetIssue.
 func CheckLevelUp(before, after Build, c *Content) error {
-	if err := checkLevelUp(before, after, c.c); err != nil {
+	if err := checkLevelUp(before, after, sentSwaps{}, c.c); err != nil {
 		return err
 	}
 	return nil
 }
 
-func checkLevelUp(before, after Build, c *content) *LevelUpError {
+// CheckLevelUpOf is CheckLevelUp for a sheet that ApplyLevelUp made from the choices ch: a pick the new sheet lost is
+// excused only by a swap of a table feature's options that ch sent for it (or by the warlock's invocation swap), not
+// by one the offer merely allows.
+func CheckLevelUpOf(before, after Build, ch LevelUpChoices, c *Content) error {
+	if ch.SwapInvocation != "" && ch.Class != classWarlock {
+		return refuse(levelUpChoicesField, LevelUpReasonFeatureChoice, "an option was removed")
+	}
+	if err := checkLevelUp(before, after, sentSwaps{known: true, swaps: ch.FeatureSwaps}, c.c); err != nil {
+		return err
+	}
+	return nil
+}
+
+// sentSwaps are the swaps of a table feature's options a request sent. Without known, the check does not know what was
+// sent and takes any swap the offer allows.
+type sentSwaps struct {
+	known bool
+	swaps []PickSwap
+}
+
+// groups are the feature groups of the offer that removals may be excused by.
+func (s sentSwaps) groups(offered []SwapGroup) []SwapGroup {
+	if !s.known {
+		return offered
+	}
+	var out []SwapGroup
+	for _, sw := range s.swaps {
+		out = append(out, SwapGroup{Group: sw.Group, Picks: []NamedKey{{Key: sw.From}}})
+	}
+	return out
+}
+
+func checkLevelUp(before, after Build, sent sentSwaps, c *content) *LevelUpError {
 	// One class, one level. A class added at level 1 is checked as if the
 	// character had it at level 0.
 	ext, tools, newClass, lerr := checkNewClass(before, after, c)
@@ -1163,6 +1219,7 @@ func checkLevelUp(before, after Build, c *content) *LevelUpError {
 	// subclass's, which are not in the options' top level while it is due.
 	offer, _ := levelUpOptionsWith(before, idx, classKey, c, sub)
 	swap, swapped := swapOf(before, after, offer)
+	swaps := levelSwaps{pick: swap, picked: swapped, features: sent.groups(offer.FeatureSwaps)}
 	offOwnList, lerr := checkSpells(before, after, offer, offer.SpellList, swapped && swap.Group == SwapGroupCantrip, c)
 	if lerr != nil {
 		return lerr
@@ -1170,7 +1227,7 @@ func checkLevelUp(before, after Build, c *content) *LevelUpError {
 	gains := c.levelGains(classKey, sub, newLevel)
 
 	// Options, skills and expertise.
-	if lerr := checkLevelUpChoices(before, after, classKey, swap, swapped, c); lerr != nil {
+	if lerr := checkLevelUpChoices(before, after, classKey, swaps, c); lerr != nil {
 		return lerr
 	}
 	if lerr := c.checkLevelUpSkills(before, after, mc, gains); lerr != nil {
@@ -1309,8 +1366,8 @@ func checkNewIssues(dBefore, dAfter Derived, offOwnList map[string]bool) *LevelU
 // warlock swaps (SRD 5.1, Warlock, Eldritch Invocations: "when you gain a level in
 // this class, you can choose one of the invocations you know and replace it with
 // another invocation that you could learn at that level").
-func checkLevelUpChoices(before, after Build, classKey string, swap PickSwap, swapped bool, c *content) *LevelUpError {
-	if lerr := checkRemovedChoices(before, after, classKey, swap, swapped, c); lerr != nil {
+func checkLevelUpChoices(before, after Build, classKey string, swaps levelSwaps, c *content) *LevelUpError {
+	if lerr := checkRemovedChoices(before, after, classKey, swaps, c); lerr != nil {
 		return lerr
 	}
 	for k, v := range before.FeatureChoiceText {
@@ -1318,21 +1375,49 @@ func checkLevelUpChoices(before, after Build, classKey string, swap PickSwap, sw
 			return refuse("full.feature_choice_text", LevelUpReasonLocked, "a text already written does not change")
 		}
 	}
-	return checkChoiceProblems(c.choiceSet(before), c.choiceSet(after))
+	return checkChoiceProblems(c.choiceSet(before), c.choiceSet(after), openedByPick(before, after))
+}
+
+// openedByPick are the plain options the new sheet picked that the sheet before did not have:
+// the choices they open (the Pact of the Tome's cantrips, the Book of Ancient Secrets' rituals)
+// may stay open at this level, and the next level asks them as late choices.
+func openedByPick(before, after Build) map[string]bool {
+	opened := map[string]bool{}
+	for _, k := range after.FeatureChoices {
+		if _, _, scoped := SplitScopedChoice(k); !scoped && !slices.Contains(before.FeatureChoices, k) {
+			opened[k] = true
+		}
+	}
+	return opened
 }
 
 // levelUpChoicesField is the sheet field of the choice engine's picks.
 const levelUpChoicesField = "full.feature_choice_keys"
 
-// checkRemovedChoices refuses a pick of before that after lost, but for one
-// Eldritch Invocation a warlock swaps.
-func checkRemovedChoices(before, after Build, classKey string, swap PickSwap, swapped bool, c *content) *LevelUpError {
+// levelSwaps are the swaps a level may make, as the offer lists them: the one pick the table's rule swaps (swapOf finds it
+// on the new sheet) and the groups of the table features' options, each of which takes in one removal.
+type levelSwaps struct {
+	pick     PickSwap
+	picked   bool
+	features []SwapGroup
+}
+
+// excuses says the swap of the table's rule gives up the pick k.
+func (s levelSwaps) excuses(k string) bool {
+	return s.picked && s.pick.Group != SwapGroupCantrip && (s.pick.From == k || ownPick(s.pick.From, k))
+}
+
+// checkRemovedChoices refuses a pick of before that after lost, but for the one the table's rule swaps, one for each
+// group of a table feature's options and one Eldritch Invocation a warlock swaps.
+func checkRemovedChoices(before, after Build, classKey string, swaps levelSwaps, c *content) *LevelUpError {
 	var gone []string
 	for _, k := range before.FeatureChoices {
-		if !slices.Contains(after.FeatureChoices, k) && (!swapped || swap.Group == SwapGroupCantrip || swap.From != k) {
+		if !slices.Contains(after.FeatureChoices, k) && !swaps.excuses(k) {
 			gone = append(gone, k)
 		}
 	}
+	gone = slices.DeleteFunc(slices.Clone(gone), func(k string) bool { return ownedByAnyOf(gone, k) })
+	gone = unmatchedRemovals(gone, swaps.features)
 	if len(gone) > 1 || (len(gone) == 1 && (classKey != classWarlock || !c.isInvocation(gone[0]))) {
 		return refuse(levelUpChoicesField, LevelUpReasonFeatureChoice, "an option was removed")
 	}
@@ -1342,7 +1427,9 @@ func checkRemovedChoices(before, after Build, classKey string, swap PickSwap, sw
 // checkChoiceProblems refuses the first problem of the sheet after's choices that
 // the sheet before did not have: a choice left open (a late one, which an earlier
 // level left open, or a new one), an unmet prerequisite or an option not offered.
-func checkChoiceProblems(setBefore, setAfter ChoiceSet) *LevelUpError {
+// A choice that a plain option picked at this level opens (opened) may stay open:
+// the next level asks it as a late choice.
+func checkChoiceProblems(setBefore, setAfter ChoiceSet, opened map[string]bool) *LevelUpError {
 	had := map[string]bool{}
 	for _, p := range setBefore.ChoiceProblems(false) {
 		had[p.Code+"|"+p.ChoiceKey+"|"+p.OptionKey] = true
@@ -1351,12 +1438,36 @@ func checkChoiceProblems(setBefore, setAfter ChoiceSet) *LevelUpError {
 	for _, p := range setBefore.Pending() {
 		late[p.ChoiceKey] = true
 	}
+	opens := openedChoices(setBefore, setAfter, opened)
 	for _, p := range setAfter.ChoiceProblems(true) {
+		if p.Code == ChoiceProblemMissing && opens[p.ChoiceKey] {
+			continue
+		}
 		if lerr := choiceProblemRefusal(p, late[p.ChoiceKey], had[p.Code+"|"+p.ChoiceKey+"|"+p.OptionKey]); lerr != nil {
 			return lerr
 		}
 	}
 	return nil
+}
+
+// openedChoices are the choices of the new sheet that the sheet before did not ask and that a plain option
+// picked at this level opens.
+func openedChoices(setBefore, setAfter ChoiceSet, opened map[string]bool) map[string]bool {
+	asked := map[string]bool{}
+	for _, g := range setBefore.Groups {
+		for _, ch := range g.Choices {
+			asked[ch.Key] = true
+		}
+	}
+	out := map[string]bool{}
+	for _, g := range setAfter.Groups {
+		for _, ch := range g.Choices {
+			if !asked[ch.Key] && opened[ch.FeatureKey] {
+				out[ch.Key] = true
+			}
+		}
+	}
+	return out
 }
 
 // choiceProblemRefusal is the refusal of one problem of the new sheet's choices,

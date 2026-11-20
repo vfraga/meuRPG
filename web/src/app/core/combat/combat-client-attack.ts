@@ -287,6 +287,7 @@ export class CombatAttackCalls {
         : undefined,
       useRacial: answer.useRacial ?? false,
       creatureIds: [...(answer.creatureIds ?? [])],
+      targets: (answer.targets ?? []).map((t) => ({ combatantId: t.combatantId, darts: t.darts })),
       maneuverKey: answer.maneuverKey ?? '',
       roll: !answer.die
         ? { case: undefined }

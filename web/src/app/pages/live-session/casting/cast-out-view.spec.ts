@@ -1,10 +1,15 @@
 import { create } from '@bufbuild/protobuf';
 
-import { CastingEffectKind, CastingGrantSchema } from '../../../../gen/meurpg/play/v1/casting_pb';
+import {
+  CastingDiceSchema,
+  CastingEffectKind,
+  CastingGrantSchema,
+} from '../../../../gen/meurpg/play/v1/casting_pb';
 import { castingSpell } from '../../../core/casting/casting-testing';
 import {
   castRequestOf,
   diceOf,
+  diceTextAt,
   endsConfirmText,
   missingOf,
   spellRowsOf,
@@ -62,6 +67,19 @@ describe('diceOf', () => {
     expect(diceOf('2d6')).toEqual({ count: 2, sides: 6 });
     expect(diceOf('')).toEqual({ count: 1, sides: 4 });
     expect(diceOf('1d8+2')).toEqual({ count: 1, sides: 4 });
+  });
+});
+
+describe('diceTextAt', () => {
+  const upcast = castingSpell('spell:cure-wounds', 'Curar Ferimentos', 1, {
+    rollDice: '1d8',
+    diceByLevel: [1, 2, 3].map((level) => create(CastingDiceSchema, { level, dice: `${level}d8` })),
+  });
+  it('reads the dice of the level, and the spell’s own when no entry has the level', () => {
+    expect(diceTextAt(upcast, 1)).toBe('1d8');
+    expect(diceTextAt(upcast, 3)).toBe('3d8');
+    expect(diceTextAt(upcast, 7)).toBe('1d8');
+    expect(diceTextAt(castingSpell('spell:x', 'X', 1, { rollDice: '2d4' }), 5)).toBe('2d4');
   });
 });
 
@@ -192,6 +210,21 @@ describe('the ways to cast a granted spell', () => {
     expect(own.title).toBe('Graça de teste');
     expect(own.detail).toBe('2 usos restantes · Sabedoria · CD 13 · ataque +5');
     expect(withSlot.detail).toContain('não gasta usos');
+  });
+
+  it('says the level the grant casts at only in the grant’s detail, and only above the spell’s own', () => {
+    const up = castingSpell('spell:bless', 'Bênção', 1, {
+      grants: [create(CastingGrantSchema, { ...grant, castLevel: 2 })],
+    });
+    const [, own, withSlot] = wayCardsOf(up);
+    expect(own.detail).toBe(
+      '2 usos restantes · Sabedoria · CD 13 · ataque +5 · no\u00a02º\u00a0nível',
+    );
+    expect(withSlot.detail).not.toContain('nível');
+    const same = castingSpell('spell:bless', 'Bênção', 1, {
+      grants: [create(CastingGrantSchema, { ...grant, castLevel: 1 })],
+    });
+    expect(wayCardsOf(same)[1].detail).not.toContain('nível');
   });
 
   it('lists a spell castable only through a grant, and not one whose grant is spent', () => {

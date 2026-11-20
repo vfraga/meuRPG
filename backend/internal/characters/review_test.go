@@ -17,6 +17,7 @@ import (
 	campaignsv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/campaigns/v1"
 	charactersv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/characters/v1"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/sessiontell"
+	"github.com/PuraFome/meuRPG/backend/internal/play/link"
 )
 
 // "Pedir ajustes" (RN-15, MR-024): the master sends a pending character back with a reason, the
@@ -26,8 +27,18 @@ import (
 
 // hostSpy is a ReviewHost that records what the module tells the streams.
 type hostSpy struct {
-	mu     sync.Mutex
-	events []string // "event:character_id"
+	mu        sync.Mutex
+	events    []string // "event:character_id"
+	infusions [][]link.InfusionChange
+	failWith  error // what InfusionChanged answers
+}
+
+// InfusionChanged records the changes of one write and answers failWith.
+func (h *hostSpy) InfusionChanged(_ context.Context, _ pgx.Tx, _, _ string, changes []link.InfusionChange, _ sessiontell.Tell) error {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	h.infusions = append(h.infusions, append([]link.InfusionChange(nil), changes...))
+	return h.failWith
 }
 
 func (h *hostSpy) PublishCharacterEvent(_ context.Context, _, _, characterID, event string) {

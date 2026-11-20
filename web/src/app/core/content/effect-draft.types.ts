@@ -69,6 +69,8 @@ export interface EffectDraft {
   /** granted_spell: the material components are waived (on the sheet and the cast sheet), and the uses each cast spends (0: one). */
   noMaterialComponents: boolean;
   usesCost: number;
+  /** granted_spell: the level the spell is cast at, from its own level to 9 (0: its own level). */
+  castLevel: number;
   /** resistance: the damage types it covers (or "all", "nonmagical_bps") and its kind ("resist", "immune", "vulnerable"). */
   damageTypes: string[];
   kind: string;

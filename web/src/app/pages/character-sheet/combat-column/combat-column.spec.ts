@@ -88,7 +88,7 @@ describe('CombatColumn item modifiers', () => {
   it('shows the idle shield note with the app words when the shield has no bonus', () => {
     const el = setup({ shieldIdle: true, gear: [shield()] });
     expect(el.querySelector('.shield-note')!.textContent).toContain(
-      'O escudo não conta na CA: há uma arma de duas mãos equipada. Guarde a arma de duas mãos.',
+      'O escudo não conta na CA: há uma arma de duas mãos equipada. Guarde o escudo ou a arma de duas mãos.',
     );
   });
 

@@ -19,6 +19,9 @@ type SpellGrant struct {
 	// NoMaterialComponents says the grant waives the material components (display only).
 	Cost                 int
 	NoMaterialComponents bool
+	// CastLevel is the level a cast with no slot has: the grant's cast level, the spell's level when
+	// the effect sets none, 0 for a cantrip. A cast with a slot has the slot's level.
+	CastLevel int
 	// Recharge is when the resource comes back (a rules.Recharge* constant), for the refusal.
 	Recharge string
 	// AlsoWithSlot says a spell slot casts it too.
@@ -33,7 +36,7 @@ type SpellGrant struct {
 func GrantOf(d rules.Derived, u Usage, g rules.GrantedSpell) SpellGrant {
 	out := SpellGrant{
 		Source: g.Source, SourcePT: g.SourcePT, AtWill: g.AtWill, Resource: g.Resource, AlsoWithSlot: g.AlsoWithSlot,
-		Cost: g.Cost, NoMaterialComponents: g.NoMaterialComponents, Ability: g.Ability, AttackBonus: g.AttackBonus, SaveDC: g.SaveDC,
+		Cost: g.Cost, NoMaterialComponents: g.NoMaterialComponents, CastLevel: g.CastLevel, Ability: g.Ability, AttackBonus: g.AttackBonus, SaveDC: g.SaveDC,
 	}
 	if !g.AtWill {
 		out.UsesLeft, _ = ResourceLeft(d, u, g.Resource)

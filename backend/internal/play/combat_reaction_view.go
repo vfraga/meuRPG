@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math"
 	"slices"
+	"time"
 
 	playv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/play/v1"
 	"github.com/PuraFome/meuRPG/backend/internal/authz"
@@ -349,12 +350,21 @@ func (wv *windowView) holdsOf(w playdb.ReactionWindow) (reaction.Holds, error) {
 	return reaction.HoldsTurn, nil
 }
 
+// waitedMs is how long a wait has run on the server's clock: now minus its beginning, 0 before the first mark.
+func waitedMs(began *time.Time, now time.Time) int64 {
+	if began == nil {
+		return 0
+	}
+	return max(now.Sub(*began).Milliseconds(), 0)
+}
+
 // window builds one window for whoever answers it.
 func (wv *windowView) window(w playdb.ReactionWindow, reactor *playdb.Combatant, answerNow bool) (*playv1.ReactionWindow, error) {
 	kind := reaction.Kind(w.Kind)
+	mark := windowTriggerOf(w) // the master's and the reactor's player's alone: only they are given this window
 	out := &playv1.ReactionWindow{
 		Id: w.ID, Kind: reactionKindProto[kind], Status: playv1.ReactionWindowStatus_REACTION_WINDOW_STATUS_OPEN, GroupId: w.GroupID,
-		ForYou: true, SecondStep: w.Step == stepSecond, Rolling: windowTriggerOf(w).Rolling,
+		ForYou: true, SecondStep: w.Step == stepSecond, Rolling: mark.Rolling, WaitBeganAt: timestampOrNil(mark.WaitBegan), WaitedMs: waitedMs(mark.WaitBegan, wv.s.now()),
 	}
 	if reactor != nil {
 		out.ReactorId, out.ReactorLabel, out.ReactorIsPlayer = reactor.ID, reactor.Label, reactor.Kind == kindPlayer

@@ -76,6 +76,15 @@ export function optionPrerequisiteSupport(
   return listWith(optionPrerequisiteParts(p, nameOf), 'e');
 }
 
+/**
+ * "Pede Guerreiro 7 e Golpe do Corvo": what an option asks, led by the word the players' text and the editor's rows use; empty when
+ * it asks nothing. The one place that words the sentence (the editor's summary line and "Como os jogadores veem" read it here).
+ */
+export function optionAsksPhrase(p: OptionPrerequisite | undefined, nameOf: KeyName): string {
+  const asks = optionPrerequisiteSupport(p, nameOf);
+  return asks ? `Pede ${asks}` : '';
+}
+
 /** The one line of a list row: the set, then what the option asks (nothing more when it asks nothing). */
 export function optionSupport(
   set: string,

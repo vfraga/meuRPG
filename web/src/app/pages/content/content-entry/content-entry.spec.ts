@@ -31,6 +31,7 @@ import {
   mirathel,
 } from '../../../core/content/content-testing';
 import { menuResponse } from '../../../core/content/content-testing-menu';
+import { SwitchesStore } from '../../../core/content/switches-store';
 import { ContentEntry } from './content-entry';
 import { settle } from '../../../../test-settle';
 
@@ -98,7 +99,9 @@ describe('ContentEntry', () => {
     })) as never;
     TestBed.resetTestingModule();
     watcher = fakeContentWatcher();
-    TestBed.overrideComponent(ContentEntry, { set: { providers: [watcher.provider] } });
+    TestBed.overrideComponent(ContentEntry, {
+      set: { providers: [watcher.provider, SwitchesStore] },
+    });
     TestBed.configureTestingModule({
       providers: [
         provideRouter([]),
@@ -258,7 +261,7 @@ describe('ContentEntry', () => {
     ).toBe(true);
   });
 
-  it('has the switch "Disponível para os jogadores" in the class editor (under the section list) and in the subclass editor (before the save bar)', async () => {
+  it('has the switch "Disponível para os jogadores" in the class editor (under the section list) and in the subclass editor (in the side column, under the preview, as board 580-03 has it)', async () => {
     const klass = await setup(Role.MASTER, 'class:guardi-o-do-vale@mesa');
     expect(
       klass.el
@@ -273,9 +276,9 @@ describe('ContentEntry', () => {
     // The header and the state follow, in the feminine for a class.
     expect(text(klass.el.querySelector('.tags')!)).toContain('Desligada para os jogadores');
     const sub = await setup(Role.MASTER, 'subclass:tradi-o-da-tinta@mesa');
-    const panel = sub.el.querySelector('app-subclass-editor app-players-switch');
-    expect(panel).not.toBeNull();
-    expect(panel!.nextElementSibling?.tagName.toLowerCase()).toBe('app-editor-bar');
+    expect(
+      sub.el.querySelector('app-subclass-editor aside.editor__side app-players-switch'),
+    ).not.toBeNull();
   });
 
   it("writes the background's switch in the masculine", async () => {

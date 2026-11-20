@@ -178,6 +178,14 @@ type levelUpTarget struct {
 	rules TableRules
 }
 
+// buildOf is the build of a sheet of this character (the one planned, say) with the infusion records the target was read
+// with: the level a character reaches changes what its infusions give.
+func (t levelUpTarget) buildOf(f *charactersv1.FullSheet) rules.Build {
+	b := buildOf(f)
+	b.CharacterID, b.Infusions = t.build.CharacterID, t.build.Infusions
+	return b
+}
+
 // newLevelUpTarget runs the checks every guided level-up call shares, on a
 // row the caller already read (locked, in a write). It answers `not_found` for
 // a character the caller may not see, the CharacterBlocked detail for one
@@ -201,7 +209,10 @@ func (s *Service) newLevelUpTarget(ctx context.Context, tx pgx.Tx, m authz.Membe
 	if err := s.checkLevelUpDue(ctx, tx, row, full, content); err != nil {
 		return levelUpTarget{}, err
 	}
-	build := buildOf(full)
+	build, err := s.withInfusions(ctx, s.queriesIn(tx), row.ID, buildOf(full))
+	if err != nil {
+		return levelUpTarget{}, err
+	}
 	if err := sheetNeedsMaster(build, content); err != nil {
 		return levelUpTarget{}, err
 	}
@@ -416,6 +427,8 @@ func levelUpOptionsFor(m authz.Membership, r levelUpOptionsRead) *charactersv1.L
 	if !t.rules.PickSwapAllowed {
 		out.SwapGroups = nil // the table does not use the swap rule
 	}
+	// A table feature's own swaps do not depend on the rule, nor on an Ability Score Improvement.
+	out.SwapGroups = append(out.SwapGroups, swapGroupsToProto(r.offer.FeatureSwaps)...)
 	if !isMaster(m) {
 		hideFromPlayer(out, t)
 	}
@@ -566,19 +579,19 @@ func (s *Service) PreviewLevelUp(
 	}
 	// A retired or switched-off choice builds no sheet, whatever else is refused: a
 	// player who guesses such a key must not read its features in `after` (RN-23).
-	if plan.retiredChoice {
+	if plan.retiredChoice || plan.bare {
 		return connect.NewResponse(&charactersv1.PreviewLevelUpResponse{Refusal: plan.refusal}), nil
 	}
 	res := &charactersv1.PreviewLevelUpResponse{
-		After:   reader{name: t.row.Name, master: isMaster(m)}.derived(rules.Derive(buildOf(plan.sheet), t.content)),
+		After:   reader{name: t.row.Name, master: isMaster(m)}.derived(rules.Derive(t.buildOf(plan.sheet), t.content)),
 		Refusal: plan.refusal,
 	}
 	newClass := ""
 	if t.idx == len(t.build.Classes) {
 		newClass = t.classKey
 	}
-	if sum, ok := rules.MulticlassSummaryOf(t.build, buildOf(plan.sheet), newClass, t.content); ok {
-		res.MulticlassSummary = multiclassSummaryToProto(sum, rules.Derive(buildOf(plan.sheet), t.content))
+	if sum, ok := rules.MulticlassSummaryOf(t.build, t.buildOf(plan.sheet), newClass, t.content); ok {
+		res.MulticlassSummary = multiclassSummaryToProto(sum, rules.Derive(t.buildOf(plan.sheet), t.content))
 	}
 	return connect.NewResponse(res), nil
 }
@@ -720,7 +733,7 @@ func (s *Service) LevelUpCharacter(
 	// Under the funnel: the session's row first, then the character's, and the level-up moves the session's number once.
 	err = s.inSession(ctx, m.CampaignID, func(tx pgx.Tx, t sessiontell.Tell) error {
 		var err error
-		done, err = s.levelUpIn(ctx, tx, m, id, req.Msg.GetRevision(), req.Msg.GetChoices())
+		done, err = s.levelUpIn(ctx, tx, t, m, id, req.Msg.GetRevision(), req.Msg.GetChoices())
 		if err == nil {
 			t.XPChanged()
 			t.VitalsChanged(id)
@@ -770,7 +783,7 @@ func checkLevelUpRequest(m authz.Membership, req *charactersv1.LevelUpCharacterR
 }
 
 // levelUpIn checks and plans the level-up on the locked row, then writes it, in tx.
-func (s *Service) levelUpIn(ctx context.Context, tx pgx.Tx, m authz.Membership, id string, revision int32, choices *charactersv1.LevelUpChoices) (leveledUp, error) {
+func (s *Service) levelUpIn(ctx context.Context, tx pgx.Tx, tell sessiontell.Tell, m authz.Membership, id string, revision int32, choices *charactersv1.LevelUpChoices) (leveledUp, error) {
 	q := s.queries.WithTx(tx)
 	current, err := visibleForUpdate(ctx, q, m, id)
 	if err != nil {
@@ -801,6 +814,12 @@ func (s *Service) levelUpIn(ctx context.Context, tx pgx.Tx, m authz.Membership, 
 	carryFlags(t.content, t.full, plan.sheet)
 	row, err := s.writeLevelUp(ctx, q, m, current, revision, t, plan)
 	if err != nil {
+		return leveledUp{}, err
+	}
+	if err := s.endGivenUpOptions(ctx, tx, current, t, plan); err != nil {
+		return leveledUp{}, err
+	}
+	if err := s.tellOptionSwaps(ctx, tx, tell, m.CampaignID, id, t.classKey, plan); err != nil {
 		return leveledUp{}, err
 	}
 	return leveledUp{row: row, content: t.content}, nil
@@ -976,6 +995,13 @@ func levelUpNames(content *rules.Content, classKey string, c *charactersv1.Level
 			names[k] = name
 		}
 	}
+	for _, s := range c.GetSwapFeatureOptions() {
+		for _, k := range []string{s.GetGroup(), s.GetFromKey(), s.GetToKey()} {
+			if name := content.NamePT(k); k != "" && name != "" {
+				names[k] = name
+			}
+		}
+	}
 	return names
 }
 
@@ -986,7 +1012,7 @@ func levelUpChoicesFromProto(classKey string, c *charactersv1.LevelUpChoices, hp
 		Cantrips: c.GetCantripKeys(), Spells: c.GetKnownSpellKeys(), Prepared: c.GetPreparedSpellKeys(),
 		FeatureChoices: c.GetFeatureChoiceKeys(), SkillProficiencies: c.GetSkillProficiencyKeys(), Expertise: c.GetExpertiseSkillKeys(),
 		LateChoices: c.GetLateChoiceKeys(), FeatureChoiceText: c.GetFeatureChoiceText(), SwapInvocation: c.GetSwapInvocationKey(), Swap: pickSwapFromProto(c.GetSwapPick()),
-		Feat: c.GetFeatKey(), HitPoints: hp, Instrument: c.GetInstrumentKey(),
+		Feat: c.GetFeatKey(), HitPoints: hp, Instrument: c.GetInstrumentKey(), FeatureSwaps: featureSwapsFromProto(c.GetSwapFeatureOptions()),
 	}
 	for a, v := range abilityMap(c.GetAbilityIncrease()) {
 		if v != 0 {
@@ -1095,6 +1121,15 @@ func swapGroupsToProto(groups []rules.SwapGroup) []*charactersv1.LevelUpSwapGrou
 // pickSwapFromProto is the swap asked for; the zero value for none.
 func pickSwapFromProto(s *charactersv1.LevelUpPickSwap) rules.PickSwap {
 	return rules.PickSwap{Group: s.GetGroup(), From: s.GetFromKey(), To: s.GetToKey()}
+}
+
+// featureSwapsFromProto are the swaps of table features' options asked for, in the order sent.
+func featureSwapsFromProto(in []*charactersv1.LevelUpPickSwap) []rules.PickSwap {
+	var out []rules.PickSwap
+	for _, s := range in {
+		out = append(out, pickSwapFromProto(s))
+	}
+	return out
 }
 
 func levelUpNamedKeysToProto(keys []rules.NamedKey) []*charactersv1.LevelUpNamedKey {

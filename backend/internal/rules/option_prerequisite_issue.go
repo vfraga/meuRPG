@@ -14,8 +14,8 @@ func (x *deriver) checkOptionPrerequisites() {
 	}
 	owns := ownedBy(x.b, *x.d)
 	for i, key := range x.b.FeatureChoices {
-		if !owns(key) {
-			continue
+		if !owns(key) || slices.ContainsFunc(x.d.Issues, func(is Issue) bool { return is.Lost != nil && is.Lost.Key == key }) {
+			continue // not on the sheet, or already told lost (the option of a lost feat)
 		}
 		l := x.lost[key] // what it lacked with the options in place, when it was judged lost
 		if l == nil {
@@ -44,16 +44,26 @@ func (x *deriver) tieToOwners(is *Issue, option string) {
 
 // lostOption is what the option key's prerequisite lacks on the sheet d, or nil when it has a prerequisite it meets or none.
 func (c *content) lostOption(key string, b Build, d Derived) *LostPrerequisite {
-	p, ok := c.optionPrereq[key]
-	if !ok {
-		return nil
-	}
-	asked := FeatPrerequisite{ClassKey: p.ClassKey, ClassLevel: p.ClassLevel, RequiresPact: p.RequiresPact, RequiresSpell: p.RequiresSpell, RequiresOptions: p.RequiresOptions}
-	unmet := c.unmetKnowledge(asked, b, d)
+	unmet := c.unmetOf(key, true, b, d)
 	if len(unmet) == 0 {
 		return nil
 	}
 	return c.lost(key, true, unmet, b, d)
+}
+
+// unmetOf is what the prerequisite of the feat or the option key lacks on the sheet d.
+func (c *content) unmetOf(key string, option bool, b Build, d Derived) []FeatUnmet {
+	if !option {
+		if f, ok := c.feats[key]; ok {
+			return c.unmetPrerequisite(c.featEntry(f), b, d)
+		}
+		return nil
+	}
+	p, ok := c.optionPrereq[key]
+	if !ok {
+		return nil
+	}
+	return c.unmetKnowledge(FeatPrerequisite{ClassKey: p.ClassKey, ClassLevel: p.ClassLevel, RequiresPact: p.RequiresPact, RequiresSpell: p.RequiresSpell, RequiresOptions: p.RequiresOptions}, b, d)
 }
 
 // lostOptions are the options the build picked and owns whose prerequisite the derived sheet no longer meets (as

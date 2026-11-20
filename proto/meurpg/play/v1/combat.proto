@@ -368,6 +368,16 @@ service CombatService {
   // walls, creatures and squares marked "Não dá para passar"), and one past the movement left is
   // refused (TOO_FAR) unless `forced`. Out of its turn, and for a player's character, it stays free.
   //
+  // A readied move (ReadyService.ReadyAction, kind MOVE) is released by this call while the combatant's
+  // READIED window of that move is open, off its turn. The player's own walk is the release: it spends the
+  // reaction, fires the row, closes the window and is limited to the speed held at Ready, on each surface
+  // (TOO_FAR past it). A walk stopped after at least one square is still the use; one stopped before the
+  // first (`stopped_early`, a creature the player does not see in the way) travels nowhere and spends
+  // nothing: the reaction stays free, the row waits and the window stays open. The master's plain walk of
+  // that combatant is not the release: it is free and unlimited as ever, and leaves the window as it was,
+  // unless `release_readied` says it is. A move that is not a walk (forced, a jump, a placement, a legendary
+  // move) is never one.
+  //
   // `jump` turns it into a jump (D3): LONG goes to the square without paying for
   // difficult terrain on the way (it cannot cross a wall or land on a creature),
   // and costs its length in movement; HIGH spends `jump_height_dft` of movement
@@ -393,6 +403,12 @@ service CombatService {
   // sees now or remembers; the rest is plain floor), so it may offer a square that
   // is really a wall, and the real move is then cut short at the last square it
   // can reach (MoveCombatantResponse.stopped_early).
+  //
+  // For the master the options are those of a free walk, also for a readier whose
+  // READIED move window is open: the call answers early and reads no readied budget,
+  // so the master's move flagged `release_readied` learns that a square is too far
+  // from the refusal (TOO_FAR), not from these options. The readier's own player
+  // reads the readied budget.
   //
   // Errors:
   //   - `not_found`: the combat or the combatant is not in the open session.
@@ -1112,6 +1128,16 @@ service CombatService {
   //     COMBATANT_DOWN, ACTION_USED or BONUS_ACTION_USED (a player),
   //     NO_SLOT (with min_level), NOT_PLACED and TARGET_OUT_OF_REACH (with
   //     missing_ft; a player), TARGET_DEFEATED and WRONG_DICE_MODE.
+  //
+  // The off-turn release of a readied spell (ReadyService.ReadyAction, kind SPELL): off the caster's turn, a
+  // cast of the spell its own open READIED window holds is the release, as the reaction. It is the way to
+  // release a spell placed on a map (a point, a direction, a wall) or laying a zone, which AnswerReaction
+  // cannot carry. It spends no slot and the reaction instead of the action, takes the slot the spell was
+  // held with. Ready records no grant: a held spell is released naming none (a `granted_by` is
+  // `invalid_argument`). A slot of another level than the held one, and any Metamagic, are
+  // `invalid_argument`. Another spell, or a window of another kind or another combatant's, makes it an
+  // ordinary cast, refused off the turn (NOT_YOUR_TURN). A refused release spends nothing and the window
+  // stays open.
   rpc CastSpell(CastSpellRequest) returns (CastSpellResponse);
 
   // PreviewSpellArea says who an area spell reaches when it is placed at a point
@@ -1152,6 +1178,11 @@ service CombatService {
   //   - `invalid_argument`: the spell is not one of the caster's, is no placed area,
   //     the slot does not fit, both or neither of origin and direction for a spell
   //     that needs one, a point off the map, or a direction with both numbers 0.
+  //     While the caster's READIED window holds this spell, off its turn, the preview reads it at the
+  //     slot level the spell was held with: it takes no free slot of that level and reads no slot from
+  //     the request (the release spends none).
+  //     A request that names a `granted_by` is the preview of that grant, not of the held spell: it
+  //     reads the request's slot as any other preview does.
   //   - `failed_precondition` (EncounterBlocked): NOT_ACTIVE, NOT_PLACED (the
   //     caster has no square), and, for a player, TARGET_OUT_OF_REACH (with
   //     missing_ft) for an origin beyond the spell's range.
@@ -1410,8 +1441,13 @@ service CombatService {
   // is rolling its die now (a physical die takes a while to type). It sets
   // `ReactionWindow.rolling`, which the master's screen reads: the 30 s automatic
   // pass then waits a longer, still bounded time (the screen's clock; the master can
-  // always pass it by hand). It changes nothing else, writes no log line, and is
-  // idempotent: marking a window twice is the same as once.
+  // always pass it by hand). With `clear` it takes the mark off, when the player came
+  // back from the map. It changes nothing else, writes no log line, and is idempotent:
+  // marking or clearing a window twice is the same as once, and writes and publishes nothing.
+  // The first mark of a window records when the wait began (`wait_began_at`), once; no later mark
+  // or clear moves it. A READIED window is where the mark means the player is on the map to place
+  // a spell or a move; on a window of any other kind it is the player rolling a die. In no kind
+  // does it keep the window from being answered or closed.
   //
   // Only the reactor's player may call it: the master is refused (`permission_denied`),
   // and so is a player for a window that is not theirs, the same answer for a real
@@ -2210,6 +2246,11 @@ enum EncounterBlockedReason {
 
   // UseConsumable and ListConsumableTargets: the entry is not on the sheet (it was used or taken off). Nothing is written.
   ENCOUNTER_BLOCKED_REASON_ITEM_GONE = 147;
+
+  // ReadyService.ReadyAction: the spell asks for a choice that only a cast on the caster's turn carries and the READIED window's
+  // answer does not: a point or a direction on a map, an ability, a damage type, the creatures of a summon, or the dead creature of a
+  // revival. Held, it could only be let pass. Nothing is spent.
+  ENCOUNTER_BLOCKED_REASON_READY_SPELL_NOT_RELEASABLE = 148;
 }
 
 // FamiliarSightBlockedReason says why "Ver pelos olhos do familiar" was refused
@@ -3250,6 +3291,8 @@ message ReadiedAction {
   // The round it was readied in.
   int32 round = 8;
   ReadiedStatus status = 9;
+  // A spell: the slot level it was held with; 0 for a cantrip or another kind.
+  int32 slot_level = 10;
 }
 
 // The trait of a stat block that makes the sun count against a creature's rolls (SRD 5.1, Monsters).
@@ -3546,6 +3589,13 @@ message MoveCombatantRequest {
   // move, no placement. It makes no opportunity offer. Refused (EncounterBlocked LEGENDARY_*) on
   // its own turn, with too few actions left, or for an option that is not a move.
   string legendary_option = 11;
+  // The master's move releases the combatant's readied move; a player's own off-turn move while its window
+  // is open is the release without it. For the master it is a plain walk, paid and limited as the player's,
+  // and refused with the checks of a release (a pending concentration save, a held question, surprise).
+  // Sent by the master for a combatant with no open READIED window of a move, or with a move that is not a
+  // plain walk, it is refused (EncounterBlocked NOT_YOUR_TURN, nothing written). A player sending it gets the
+  // same as without it: their move is the release anyway.
+  bool release_readied = 12;
 }
 
 // MoveCombatantResponse returns the combat after the move.
@@ -4278,7 +4328,10 @@ message GetTurnOptionsResponse {
   // For each spell of options.spells, and each save cantrip of options.attacks,
   // who it can target, as the caller sees them: the caster itself and the other
   // combatants that are not defeated (a combatant at 0 hit points can be
-  // healed), with the distance and whether the spell cannot reach it.
+  // healed), with the distance and whether the spell cannot reach it. Off the combatant's turn,
+  // while it holds a readied spell (not a spell attack cantrip), the list also has that spell,
+  // with the targets it is released on and the darts of the slot it was held with (the only
+  // slot listed). On its own turn the list has no held spell, so a key is listed once.
   repeated SpellTargets spell_targets = 5;
   // The table's critical rule (RN-24), read now: what a critical hit of this
   // combatant's attacks and spells will do to the damage dice, so the screen can
@@ -4338,7 +4391,11 @@ message ResourceTarget {
   string disabled_reason_pt = 2;
 }
 
-// SpellTargets lists the targets one spell can choose.
+// SpellTargets lists the targets one cast option of a spell can choose.
+// The turn lists one entry per enabled option of a spell (`SpellOption`), in the order of the options: the class's
+// first, then the grants. The entry of an option is the n-th entry of its spell key, n being the place of the option
+// among the enabled options of that key. The entry of a grant is read at the grant's `cast_level`: `max_targets`,
+// the darts and the area; the targets a higher slot adds are counted from that level.
 message SpellTargets {
   // The spell, as in rules.v1.Spell.key.
   string spell_key = 1;
@@ -4347,21 +4404,23 @@ message SpellTargets {
   // out of the caster, such as a cone), Touch 5 ft.
   repeated TargetInReach targets = 2;
   // How many targets the spell takes at its own level; 0 means any number (an
-  // area), and no target at all for a spell that targets the caster only.
+  // area), and no target at all for a spell that targets the caster only. For the entry of a
+  // grant it is the number at the grant's `cast_level`, the level of a cast with no slot.
   int32 max_targets = 3;
   // True when the spell takes one more target for each slot level above its own.
   bool extra_target_per_level = 4;
   // Magic Missile: how many darts each slot level makes (3 at the 1st, one more
   // for each level above). Scorching Ray: how many rays (3 at the 2nd, one more
-  // for each level above). Empty for any other spell.
+  // for each level above). Empty for any other spell. The entry of a grant also lists the
+  // grant's `cast_level` as a level, the one a cast with no slot makes.
   repeated DartsAtSlot darts = 5;
   // How many more targets the spell takes for each slot level above its own: 1 for
   // an SRD spell that says "one additional creature", the master's number for a
   // table spell ("três criaturas, duas a mais por nível"). 1 for Magic Missile
   // (a dart more) and Scorching Ray (a ray more): with `max_targets`, the targets
   // at a slot level are `max_targets + targets_per_level * (slot level - the
-  // spell's level)`. 0 when it takes no more. `extra_target_per_level` is true
-  // when this is above 0.
+  // spell's level)`; for the entry of a grant, the level counted from is its `cast_level`.
+  // 0 when it takes no more. `extra_target_per_level` is true when this is above 0.
   int32 targets_per_level = 6;
   // How the spell is placed on a map with a grid; UNSPECIFIED for a spell that is
   // not a placed area (it takes `targets` as before, and in a combat without a map
@@ -5157,7 +5216,7 @@ message CastSpellRequest {
   string idempotency_key = 7;
   // How the d20 of a spell attack comes: exactly one for a spell with an attack
   // roll, ignored by the others. roll_in_app rolls one d20 for each target;
-  // d20_face is the face of a physical die and fits a single target.
+  // d20_face is the face of a physical die and fits a single attack roll (several take ray_rolls).
   oneof roll {
     // True: the app rolls the d20 on the server (RN-18).
     bool roll_in_app = 8;
@@ -5245,9 +5304,10 @@ message CastSpellRequest {
   SpellOrigin destination = 32;
   // The trait, feat or feature whose granted_spell effect casts the spell (the
   // `grant.source_key` of the turn option): the cast takes no slot, spends a use of the
-  // grant's resource unless it is at will, the spell is cast at its own level and the spell
-  // attack and the save DC are the grant's. With a `slot` it casts through the slot instead
-  // (when the grant allows it). Empty for a spell of the character's classes.
+  // grant's resource unless it is at will, the spell is cast at the grant's `cast_level` (its
+  // own level when that is 0) and the spell attack and the save DC are the grant's. With a
+  // `slot` it casts through the slot instead (when the grant allows it). Empty for a spell of
+  // the character's classes.
   string granted_by = 33;
   // The cast options of the character's table features the caster ticked
   // (SpellOption.table_options that are not always on). Each must be an option the
@@ -5273,6 +5333,20 @@ message CastSpellRequest {
   // A spell with a lasting effect puts it on the steed's combatant as it does on the caster's.
   // Any other spell leaves the steed to the table, and the cast says so in `SpellCast.steed_note`.
   bool also_steed = 37;
+
+  // At a table that rolls physical dice, a spell with several attack rolls (rays: Scorching Ray's, or one for each target of a spell
+  // that attacks several) takes the physical d20s of each: one entry per attack roll, in the order of the targets and, for each
+  // target, of the rays it takes (its darts). The request's roll_mode applies to every one, as d20_faces does for every target:
+  // each entry holds one face, or two where that roll is made with advantage or disadvantage.
+  // Required for such a cast (d20_face and d20_faces fit a single attack roll); `invalid_argument` for any other cast: a single
+  // attack roll, a roll_in_app, a spell with no attack roll. A wrong count of entries or of faces, or a face outside 1 to 20, is
+  // `invalid_argument`.
+  repeated RayRoll ray_rolls = 38;
+}
+
+// RayRoll is the physical d20s of one ray of a spell: one face, or two for advantage or disadvantage under the request's roll_mode.
+message RayRoll {
+  repeated int32 d20_faces = 1;
 }
 
 // SpellOptionChoice is a table cast option ticked on a casting.
@@ -7144,15 +7218,27 @@ message ReactionWindow {
   // an answer that asks one more thing (Hellish Rebuke's saving throw, the
   // monk's throw back). A second step is answered like the first.
   bool second_step = 12;
-  // The reactor's player said they are using the reaction and rolling now
-  // (MarkReactionRolling). The master reads "Rolando…" and the automatic pass waits
-  // longer; the player reads their own mark back. Never sent for a window nobody
-  // marked.
+  // The reactor's player is on the map now: they set the mark on entering it and
+  // cleared it on going back (MarkReactionRolling, with `clear`). The master reads
+  // "Rolando…"; the player reads their own mark back (a second device shows it).
+  // False when nobody marked the window or the mark was cleared; read by the master
+  // and the reactor's player only. On a READIED window the mark means the player is on the map
+  // choosing the square or the point of a release; on any other kind, rolling a die. It never
+  // changes what the window accepts.
   bool rolling = 13;
   // Only the master: the reactor is a player's character and nobody answered in the first 10 s, so the question has come
   // to the master ("10 s sem resposta"). The player may still answer; the first answer wins and the other reads
   // REACTION_ALREADY_ANSWERED.
   bool unanswered = 14;
+  // When the reactor's player first marked the window (entered the map): the wait of
+  // 120 s began then, once, and no later mark or clear changes it. Unset before that.
+  // Read by the master and the reactor's player only. The master's screen passes the
+  // window when the 120 s end.
+  google.protobuf.Timestamp wait_began_at = 15;
+  // The milliseconds the wait has run, as the read works them out with the server's clock
+  // (now minus `wait_began_at`); 0 before the first mark. The clock is the server's, so a screen
+  // with a wrong clock still counts the wait right. Read by the master and the reactor's player only.
+  int64 waited_ms = 16;
   // Only whoever answers: the question, by kind.
   oneof prompt {
     ShieldPrompt shield = 20;
@@ -7477,7 +7563,9 @@ message AnswerReactionRequest {
   bool use_racial = 6;
   // Feather Fall: the falling creatures to save, at most the prompt's max_targets.
   // READIED: the one target of a readied attack, when it is not the creature named
-  // at Ready.
+  // at Ready; for a readied spell, the creatures it is released on, with no darts (as
+  // `targets` with each darts left out). `targets` and creature_ids together are
+  // `invalid_argument`.
   repeated string creature_ids = 7;
   // The die the answer needs, when it needs one (Counterspell's check, Cutting
   // Words' die, Deflect Missiles' die, the saving throw of Hellish Rebuke): exactly
@@ -7485,11 +7573,33 @@ message AnswerReactionRequest {
   oneof roll {
     bool roll_in_app = 8;
     int32 typed = 9;
+    // READIED, a readied spell that rolls a pool of dice (Sleep, Color Spray), released at a table with
+    // physical dice: the sum of the pool, as CastSpellRequest.pool_sum.
+    int32 pool_sum = 17;
   }
   string idempotency_key = 10;
   // A maneuver reduction (ManeuverReducePrompt.options[].key): the one the player uses. Needed
   // to answer USE a REACTION_KIND_MANEUVER_REDUCE window; the roll is the maneuver's die.
   string maneuver_key = 11;
+  // READIED, a readied spell: the targets with the darts of each (Magic Missile,
+  // Scorching Ray), as CastSpellRequest.targets. It replaces creature_ids; the two
+  // together are `invalid_argument`. The server checks them as CastSpell does.
+  repeated SpellTarget targets = 14;
+  // READIED: the physical d20s of the held attack or spell attack the release rolls (one face for a
+  // normal roll, the pair for advantage or disadvantage, 1 to 20 each), as RollAttackRequest.d20_faces and
+  // CastSpellRequest.d20_faces. Instead of the `roll` oneof: with roll_in_app, typed or pool_sum it is
+  // `invalid_argument`. Copied one to one into the request the release builds, which checks it as it does.
+  repeated int32 d20_faces = 18;
+  // READIED: the mode of the release's d20 instead of the server's suggestion, with the reason, as
+  // RollAttackRequest.roll_mode and mode_reason (CastSpellRequest's too). Copied one to one into the request the
+  // release builds. `invalid_argument` on an answer that rolls no d20 of its own.
+  RollMode roll_mode = 19;
+  string mode_reason = 20;
+  // READIED, a readied spell with several attack rolls (rays: Scorching Ray's) at a table that rolls physical dice: the physical
+  // d20s of each, as CastSpellRequest.ray_rolls (one entry per attack roll, in the order of the targets and of the rays each
+  // target takes). Copied one to one into the request the release builds, which checks it as it does. `invalid_argument` on a
+  // pass, on another kind of window, or on a row that is not a spell.
+  repeated RayRoll ray_rolls = 21;
 }
 
 // MarkReactionRollingRequest marks a window as being rolled.
@@ -7497,6 +7607,9 @@ message MarkReactionRollingRequest {
   string campaign_id = 1;
   string encounter_id = 2;
   string window_id = 3;
+  // The player came back from the map: it takes the mark off. It does not restart the
+  // wait: the wait began at the first mark and no later mark or clear changes that.
+  bool clear = 4;
 }
 
 message MarkReactionRollingResponse {

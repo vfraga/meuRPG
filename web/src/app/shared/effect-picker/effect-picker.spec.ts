@@ -236,6 +236,34 @@ describe('EffectPicker (the closed menu of ADR-0018, from the server)', () => {
     expect(text(el)).not.toContain('saiu do menu');
   });
 
+  it('asks the cast level of a granted spell, labelled and with its hint, and writes it', () => {
+    setup(
+      { ...emptyEffect('granted_spell'), spell: 'spell:bless', ability: 'cha', castLevel: 2 },
+      { menu: grantedSpellMenu() },
+    );
+    const input = field('cast_level') as HTMLInputElement;
+    expect(input.value).toBe('2');
+    const row = text(input.closest('.frow')!);
+    expect(row).toContain('Nível de conjuração');
+    expect(row).toContain(
+      'Do nível da magia até o 9. Vazio: o nível da própria magia. Não vale para truque nem para ritual.',
+    );
+    input.value = '3';
+    input.dispatchEvent(new Event('input'));
+    expect(emitted.at(-1)?.castLevel).toBe(3);
+  });
+
+  it('shows the server’s refusal of the cast level under it, even while the field is empty', () => {
+    setup(
+      { ...emptyEffect('granted_spell'), spell: 'spell:bless', ability: 'cha' },
+      {
+        menu: grantedSpellMenu(),
+        issues: { 'table_race.traits[0].effects[0].cast_level': ['Abaixo do nível da magia.'] },
+      },
+    );
+    expect(text(field('cast_level')!.closest('.frow')!)).toContain('Abaixo do nível da magia.');
+  });
+
   it("asks a sense's range in metres and keeps feet underneath", () => {
     setup({ ...emptyEffect('sense'), sense: 'darkvision', rangeM: '18' });
     const range = field('range_ft') as HTMLInputElement;

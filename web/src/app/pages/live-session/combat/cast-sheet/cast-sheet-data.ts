@@ -14,8 +14,13 @@ import {
   type SpellOption,
   type TurnOptions,
 } from '../../../../../gen/meurpg/rules/v1/rules_pb';
-import { defaultSlot, slotRows } from '../../../../core/combat/cast-flow';
-import { optionOfRef, splitCastRef } from '../../../../core/combat/cast-ref';
+import { castLevelOf, defaultSlot, slotRows } from '../../../../core/combat/cast-flow';
+import {
+  optionOfRef,
+  splitCastRef,
+  targetsOfOption,
+  targetsOfRef,
+} from '../../../../core/combat/cast-ref';
 import type { CombatState } from '../../../../core/combat/combat-state';
 import type { VitalsVm } from '../../../../core/play/live-session.types';
 import { SORCERY_POINTS_RESOURCE, poolOf } from '../../../../core/resources/pools';
@@ -127,7 +132,9 @@ export function castSheetData(req: CastSheetRequest): CastSheetData {
     ...spellFacts(spell),
     ...optionFacts(spell, cantrip),
     ...casterFacts(req.vitals),
-    targets: spellTargets.find((t) => t.spellKey === key),
+    targets: spell
+      ? targetsOfOption(options.spells, spellTargets, spell)
+      : spellTargets.find((t) => t.spellKey === key), // a save cantrip lists under its attack's key
     ...shieldOf(options.spells),
     attackBonus:
       spell?.grant?.attackBonus ??
@@ -159,8 +166,8 @@ export function castAriaLabel(name: string, resume: boolean): string {
 
 /** A spell of the options with its targets, its level and its Portuguese name; `null` when the options lack it. */
 export function areaSpellOf(turn: GetTurnOptionsResponse | null | undefined, key: string) {
-  const spell = turn?.options?.spells.find((s) => s.spell?.key === key);
-  const targets = turn?.spellTargets.find((t) => t.spellKey === key);
+  const spell = optionOfRef(turn?.options?.spells ?? [], key);
+  const targets = targetsOfRef(turn?.options?.spells ?? [], turn?.spellTargets ?? [], key);
   if (!spell?.spell || !targets) {
     return null;
   }
@@ -178,21 +185,26 @@ export function masterAreaCastData(req: {
   readonly campaignId: string;
   readonly encounter: Encounter;
   readonly caster: Combatant;
+  /** The option's reference (`castRefOf`): the spell's key, with the grant's source when the NPC casts it through one. */
   readonly key: string;
   readonly found: NonNullable<ReturnType<typeof areaSpellOf>>;
   readonly map: CastMapData;
   readonly state: CombatState;
 }): MasterAreaCastData {
   const { spell, targets, level, name } = req.found;
+  const { key, grantedBy } = splitCastRef(req.key);
   const row = defaultSlot(slotRows(level, spell.slots, [], null));
+  // A leveled spell the NPC has through a grant that allows no slot is cast with none, at the grant's cast level.
+  const free = level > 0 && !!spell.grant && !spell.grant.alsoWithSlot;
   return {
     campaignId: req.campaignId,
     encounterId: req.encounter.id,
     caster: req.caster,
-    spellKey: req.key,
+    spellKey: key,
+    grantedBy,
     name,
-    level,
-    slot: level > 0 ? { level: row?.level ?? level, pact: row?.pact ?? false } : null,
+    level: free ? castLevelOf(null, spell.grant, level) : level,
+    slot: level > 0 && !free ? { level: row?.level ?? level, pact: row?.pact ?? false } : null,
     economy: spell.economy,
     targets,
     map: req.map,

@@ -140,7 +140,7 @@ func flags(content *rules.Content, full *charactersv1.FullSheet, build rules.Bui
 	for _, ch := range changed {
 		f := flag{entry: ch}
 		for i, is := range issues {
-			if slices.Contains(is.Keys, ch.Key) && !known[i] {
+			if slices.Contains(is.Keys, ch.Key) && !known[i] && told(content, is, ch.Key, ch.Since) {
 				f.issues = append(f.issues, is)
 			}
 		}
@@ -151,15 +151,32 @@ func flags(content *rules.Content, full *charactersv1.FullSheet, build rules.Bui
 	return out
 }
 
+// told says the issue is one to tell for the changed table entry key, which the sheet fits as of revision since. All are but
+// the notice that a weapon leaves the shield idle: that one only when the weapon became two-handed after since, so a sheet
+// that already had the weapon as it is (saved before the notice existed, with no identity stored) is told nothing when the
+// weapon is edited for anything else.
+func told(content *rules.Content, is rules.Issue, key string, since int) bool {
+	return is.Idle == nil || content.TwoHandedSince(key) > since
+}
+
+// sinceOf is the revision of the table's content the sheet fits key as of: the baseline it keeps for the entry, or the
+// revision it was saved at.
+func sinceOf(full *charactersv1.FullSheet, key string) int {
+	if r, ok := full.GetContentBaselines()[key]; ok {
+		return int(r)
+	}
+	return int(full.GetContentRevision())
+}
+
 // issuesTiedTo are the new issues of a sheet (not in its known issues) that depend
 // on a table entry: what a change of the entry just did to it, for the master's
 // "Fichas com aviso".
 func issuesTiedTo(content *rules.Content, full *charactersv1.FullSheet, key string) []rules.Issue {
 	var out []rules.Issue
-	issues := rules.Derive(buildOf(full), content).Issues
+	issues := rules.Derive(buildOf(full), content).AllIssues()
 	known := rules.KnownIssues(full.GetKnownIssues(), issues)
 	for i, is := range issues {
-		if slices.Contains(is.Keys, key) && !known[i] {
+		if slices.Contains(is.Keys, key) && !known[i] && told(content, is, key, sinceOf(full, key)) {
 			out = append(out, is)
 		}
 	}
@@ -178,7 +195,7 @@ func carryFlags(content *rules.Content, stored, next *charactersv1.FullSheet) {
 		return
 	}
 	nextBuild := buildOf(next)
-	issues := rules.Derive(nextBuild, content).Issues
+	issues := rules.Derive(nextBuild, content).AllIssues()
 	// The flags are worked out against what stored knew, with next's own build and issues.
 	fl := flags(content, stored, nextBuild, issues)
 	if len(fl) == 0 {
@@ -208,11 +225,12 @@ func carryFlags(content *rules.Content, stored, next *charactersv1.FullSheet) {
 func addChangedContent(d *rulesv1.DerivedSheet, issues []rules.Issue, content *rules.Content, build rules.Build, full *charactersv1.FullSheet, r reader) {
 	for _, f := range flags(content, full, build, issues) {
 		name := content.NamePT(f.entry.Key)
-		var messages []string
+		var messages, codes []string
 		for _, is := range f.issues {
+			codes = append(codes, is.Code)
 			// The sentence as a change reads it ("agora dá 2 perícias"), when the
 			// engine has one for this issue; otherwise the issue's own.
-			if is.Lost != nil {
+			if is.Lost != nil || is.Idle != nil {
 				messages = append(messages, r.say(is))
 				continue
 			}
@@ -220,7 +238,7 @@ func addChangedContent(d *rulesv1.DerivedSheet, issues []rules.Issue, content *r
 		}
 		d.ChangedContent = append(d.ChangedContent, &rulesv1.ChangedContent{
 			Key: f.entry.Key, NamePt: name, Field: f.entry.Field, Revision: i32(f.entry.Revision), SavedRevision: i32(f.entry.Since),
-			ChangedAt: timestampOf(f.entry.ChangedAt), Messages: messages,
+			ChangedAt: timestampOf(f.entry.ChangedAt), Messages: messages, Codes: codes,
 		})
 		d.Issues = append(d.Issues, &rulesv1.Issue{
 			Code: IssueTableContentChanged, Field: f.entry.Field,
@@ -237,19 +255,26 @@ type reader struct {
 	master bool
 }
 
-// say is the issue's sentence for the reader.
+// say is the issue's sentence for the reader: a lost prerequisite and a notice are built for the reader, the master reads
+// an issue's named sentence, any other is as stored.
 func (r reader) say(is rules.Issue) string {
-	if is.Lost == nil {
-		return is.Message
+	switch {
+	case is.Lost != nil:
+		return is.Lost.SentencePT(r.name, r.master)
+	case is.Idle != nil:
+		return is.Idle.SentencePT(r.name)
+	case is.Named != "" && r.master:
+		return is.Named
 	}
-	return is.Lost.SentencePT(r.name, r.master)
+	return is.Message
 }
 
 // tell rewrites, in the sheet's derived issues (made from issues, in its order), the message of each lost
-// prerequisite to the reader's sentence.
+// prerequisite to the reader's sentence. issues are Derived.Issues alone: the notices (Derived.Notices) are no part of
+// the derived sheet's issues, so the two lists stay aligned.
 func (r reader) tell(d *rulesv1.DerivedSheet, issues []rules.Issue) {
 	for i, is := range issues {
-		if is.Lost != nil && i < len(d.GetIssues()) {
+		if (is.Lost != nil || is.Named != "") && i < len(d.GetIssues()) {
 			d.Issues[i].Message = r.say(is)
 		}
 	}

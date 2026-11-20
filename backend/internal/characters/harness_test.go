@@ -164,6 +164,7 @@ type user struct {
 	api       charactersv1connect.CharacterServiceClient
 	content   rulesv1connect.ContentServiceClient
 	table     rulesv1connect.TableContentServiceClient
+	infusions charactersv1connect.InfusionServiceClient
 }
 
 // newUser creates an account, as a first sign-in would, with a display
@@ -203,6 +204,7 @@ func (h *harness) clients(userID string) *user {
 		api:       charactersv1connect.NewCharacterServiceClient(c, url, opts...),
 		content:   rulesv1connect.NewContentServiceClient(c, url, opts...),
 		table:     rulesv1connect.NewTableContentServiceClient(c, url, opts...),
+		infusions: charactersv1connect.NewInfusionServiceClient(c, url, opts...),
 	}
 }
 

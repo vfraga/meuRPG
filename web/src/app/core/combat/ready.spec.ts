@@ -206,7 +206,7 @@ describe('Ready (#582): the lists', () => {
     ]);
   });
 
-  it('turns off, with a reason, the spell the window cannot release: darts, a point or an area, several targets', () => {
+  it('offers the spells the window releases (darts, one or several creatures) and turns off, with a reason, the ones placed on the map: a point or a direction', () => {
     const targets = (spellKey: string, over: Record<string, unknown> = {}) =>
       create(SpellTargetsSchema, { spellKey, maxTargets: 1, ...over } as never);
     const rows = readySpellRows(
@@ -220,14 +220,14 @@ describe('Ready (#582): the lists', () => {
       ],
     );
     const why =
-      'Soltar pela janela ainda não dá para esta magia: ela pede dardos, alvos ou um ponto no mapa.';
+      'Soltar pela janela ainda não dá para esta magia: ela pede um ponto ou uma direção no mapa.';
     expect(rows.map((r) => [r.id, r.blocked])).toEqual([
-      ['spell:magic-missile', why],
+      ['spell:magic-missile', ''],
       ['spell:shield', 'É uma reação: só uma magia de 1 ação pode ser preparada.'],
       ['spell:charm-person', ''],
       ['spell:burning-hands', why],
       ['spell:sleep', why],
-      ['spell:bless', why],
+      ['spell:bless', ''],
     ]);
   });
 

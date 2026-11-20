@@ -290,9 +290,10 @@ func TestRevivifyFrozen_CastRefusals(t *testing.T) {
 	shape("a dead_target_id that is not an id", func(r *playv1.CastSpellRequest) { r.Targets[0].DeadTargetId = "toren" }, connect.CodeFailedPrecondition, revivifyTargetMsg)
 	shape("no diamonds", func(r *playv1.CastSpellRequest) { r.MaterialConfirmed = false }, connect.CodeInvalidArgument,
 		"material_confirmed is required: the spell consumes diamonds worth 300 gp")
-	const rolls = "Revivify rolls nothing and takes no summon or damage type"
+	const rolls = "Revivify rolls nothing and takes no summon, damage type or ray_rolls"
 	shape("a roll", func(r *playv1.CastSpellRequest) { r.Roll = &playv1.CastSpellRequest_RollInApp{RollInApp: true} }, connect.CodeInvalidArgument, rolls)
 	shape("a summon", func(r *playv1.CastSpellRequest) { r.Summon = &playv1.SummonChoice{} }, connect.CodeInvalidArgument, rolls)
+	shape("ray_rolls", func(r *playv1.CastSpellRequest) { r.RayRolls = []*playv1.RayRoll{{D20Faces: []int32{12}}} }, connect.CodeInvalidArgument, rolls)
 	shape("a damage type", func(r *playv1.CastSpellRequest) { r.DamageTypeKey = "damage:fire" }, connect.CodeInvalidArgument, rolls)
 
 	// Who may cast, and the options the caster has.

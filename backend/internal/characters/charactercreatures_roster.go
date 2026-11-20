@@ -558,32 +558,14 @@ func (s *Service) CheckSummon(ctx context.Context, tx pgx.Tx, campaignID, charac
 
 // summonStanding is what a character's sheet says about a summoning spell: the
 // spell is on it (known), ready (prepared) and castable as a ritual. CheckSummon
-// and GetSummonOptions share it, so the read and the cast agree.
+// and GetSummonOptions share it, so the read and the cast agree with the cast menu.
 type summonStanding struct{ known, prepared, canRitual bool }
 
-// summonStanding works it out from the derived sheet; ritualSpell is whether the
+// summonStanding is the sheet's standing for the spell; ritualSpell is whether the
 // spell is a ritual at all.
 func (s *Service) summonStanding(d rules.Derived, spellKey string, ritualSpell bool) summonStanding {
-	var out summonStanding
-	for _, cs := range d.Spells {
-		if cs.Spell.Key != spellKey {
-			continue
-		}
-		out.known, out.prepared = true, cs.Prepared
-		// A ritual is cast from the spellbook (a wizard) or from the prepared
-		// list (the other classes that cast rituals).
-		for _, sc := range d.Spellcasting {
-			if sc.Ritual && ritualSpell && (cs.Prepared || sc.Class == "class:wizard") {
-				out.canRitual = true
-			}
-		}
-	}
-	// The Pact of the Chain lets a warlock cast Convocar Familiar as a ritual
-	// without having the spell (SRD 5.1): it is never prepared for a slot.
-	if spellKey == "spell:find-familiar" && ritualSpell && slices.ContainsFunc(d.Features, func(f rules.Feature) bool { return f.Key == "feature:pact-of-the-chain" }) {
-		out.known, out.canRitual = true, true
-	}
-	return out
+	st := d.SpellStanding(spellKey, ritualSpell)
+	return summonStanding{known: st.Known, prepared: st.Prepared, canRitual: st.CanRitual}
 }
 
 // creatureDerived is the stat block of a creature as the combat reads it: the

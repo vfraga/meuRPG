@@ -25,6 +25,8 @@ type GearPiece struct {
 	// Count is how many of the piece the sheet lists: weapons with the same key are one row, because the state
 	// (equipped or carried) is kept by key, so the copies always move together. 1 for armor and shield.
 	Count int
+	// InfusionNamePT is the Portuguese name of the valid infusion on the piece, or "".
+	InfusionNamePT string
 }
 
 // DeriveGear lists the gear of b, derived as d (what Derive returned for b). It is not part of Derive: it derives the
@@ -42,7 +44,7 @@ func gearOf(b Build, c *content, d Derived) []GearPiece {
 		if name == "" {
 			name = key
 		}
-		p := GearPiece{Key: key, NamePT: name, Kind: kind, Equipped: !b.IsCarried(key), TwoHanded: twoHanded, Count: 1}
+		p := GearPiece{Key: key, NamePT: name, Kind: kind, Equipped: !b.IsCarried(key), TwoHanded: twoHanded, Count: 1, InfusionNamePT: infusionOn(d, key)}
 		if kind != GearWeapon || twoHanded {
 			if ac := derive(toggled(b, key), c).ArmorClass; ac != d.ArmorClass {
 				p.ArmorClassIfToggled = ac
@@ -87,4 +89,14 @@ func countOf(keys []string, key string) int {
 		}
 	}
 	return n
+}
+
+// infusionOn is the name of the first valid infusion of d on the gear key, or "".
+func infusionOn(d Derived, key string) string {
+	for _, s := range d.Infusions {
+		if s.Valid && s.ItemKind == InfusionItemGear && s.ItemKey == key {
+			return s.NamePT
+		}
+	}
+	return ""
 }

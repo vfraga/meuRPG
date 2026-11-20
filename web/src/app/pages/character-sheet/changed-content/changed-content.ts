@@ -5,7 +5,12 @@ import { MatDialog } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 
 import type { ChangedContentVm } from '../character-sheet.types';
-import { changeAnnouncement, changeIntro, changeTitle } from './changed-content-format';
+import {
+  changeAnnouncement,
+  changeIntro,
+  changeTitle,
+  tieAcChange,
+} from './changed-content-format';
 import { openChangedContent } from './changed-content-sheet';
 
 /**
@@ -31,7 +36,7 @@ import { openChangedContent } from './changed-content-sheet';
           </p>
           <ul class="change__list">
             @for (m of c.messages; track $index) {
-              <li>{{ m }}</li>
+              <li>{{ tie(m) }}</li>
             }
           </ul>
           <button matButton="outlined" type="button" class="change__open" (click)="open(c)">Ver o que mudou</button>
@@ -63,7 +68,6 @@ import { openChangedContent } from './changed-content-sheet';
 
     .change__open {
       width: 100%;
-      margin-top: var(--mr-space-2);
 
       @media (min-width: 600px) {
         width: auto;
@@ -84,6 +88,7 @@ export class ChangedContentNotice {
   protected readonly title = changeTitle;
   protected readonly intro = changeIntro;
   protected readonly announcement = changeAnnouncement;
+  protected readonly tie = tieAcChange;
 
   protected open(change: ChangedContentVm): void {
     openChangedContent(this.dialog, this.bottomSheet, {

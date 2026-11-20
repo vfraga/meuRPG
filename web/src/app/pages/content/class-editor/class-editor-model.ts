@@ -68,6 +68,11 @@ const SECTION_PATHS: Readonly<Record<string, (p: string) => boolean>> = {
   features: (p) => /^levels\[\d+\]\.features/.test(p) || p === 'features',
 };
 
+/** Whether the feature with this id is in the draft: only then is there a "Como os jogadores veem" to read. */
+export function hasFeature(d: ClassDraft, id: string): boolean {
+  return d.features.some((f) => f.id === id);
+}
+
 /** Whether a section has a refusal in it. */
 export function sectionHasIssue(id: string, fields: readonly string[]): boolean {
   const owns = SECTION_PATHS[id] ?? ((p: string) => p.startsWith('subclass_level'));

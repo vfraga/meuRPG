@@ -147,6 +147,22 @@ describe('an option the master retired (RN-23, 10.1d)', () => {
     expect(f.message).toContain('troca de escolha');
   });
 
+  it('sends a refused swap of a table feature option to the step where the panel is', () => {
+    const err = refusedAt(LevelUpRefusalReason.SWAP_NOT_ALLOWED, 'choices.swap_feature_options');
+    // No ability step at the level: the panel is in Escolhas. With one: in Habilidades.
+    expect(describeLevelUpFailure(err, false)).toMatchObject({ kind: 'refusal', step: 'picks' });
+    expect(describeLevelUpFailure(err, true)).toMatchObject({ kind: 'refusal', step: 'abilities' });
+    expect(
+      refusalStep(LevelUpRefusalReason.SWAP_NOT_ALLOWED, 'choices.swap_feature_options', false),
+    ).toBe('picks');
+    expect(
+      refusalStep(LevelUpRefusalReason.SWAP_NOT_ALLOWED, 'choices.swap_feature_options', true),
+    ).toBe('abilities');
+    expect(refusalStep(LevelUpRefusalReason.SWAP_NOT_ALLOWED, 'choices.swap_pick', false)).toBe(
+      'abilities',
+    );
+  });
+
   it('words the refusals of a feat and sends the player to the Habilidades step', () => {
     for (const reason of [
       LevelUpRefusalReason.FEAT,

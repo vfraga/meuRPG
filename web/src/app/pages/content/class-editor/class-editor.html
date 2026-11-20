@@ -3,7 +3,9 @@
 <p class="mr-visually-hidden" role="status" aria-live="polite">{{ status() }}</p>
 <div class="page">
   <aside class="side">
-    <app-section-nav [sections]="sections()" label="Seções da classe" />
+    <div class="side__nav">
+      <app-section-nav [sections]="sections()" label="Seções da classe" />
+    </div>
     @if (entry(); as saved) {
       <app-players-switch [campaignId]="campaignId()" [entry]="saved" (switched)="switched.emit($event)" />
     }
@@ -189,9 +191,15 @@
       />
     </section>
 
+    @if (previewing()) {
+      <aside aria-label="Como os jogadores veem">
+        <app-feature-preview [features]="d.features" [openId]="openFeature()" [menu]="menu()" [catalog]="catalog()" [entries]="entries()" [unsaved]="saver.placement().fields.length > 0" />
+      </aside>
+    }
+
     <section class="mr-panel block" id="sec-subclasses" tabindex="-1" aria-labelledby="sub-t">
       <h2 class="mr-panel__title" id="sub-t">Subclasse</h2>
-      <div class="grid grid--4">
+      <div class="grid grid--level">
         <app-select-field label="A subclasse se escolhe no nível" [options]="levelOptions" [value]="d.subclassLevel" path="table_class.subclass_level" [issues]="issuesOf('table_class.subclass_level')" (valueChange)="patch({ subclassLevel: $event })" />
       </div>
       @if (isNew()) {

@@ -139,6 +139,16 @@ type TableFeature struct {
 	// Prerequisite is what an option of a class or subclass feature (or of a feat) asks of the character; only an
 	// entry of Options has it. An option whose prerequisite is not met is listed in the choice, blocked.
 	Prerequisite TableOptionPrerequisite
+	// SwapLevels says at which class levels a player may swap a pick of the feature's option pool for another option
+	// of the pool when leveling up; the zero value is never. Only a class or subclass feature that has options may set
+	// it.
+	SwapLevels FeatureSwapLevels
+	// Infusion is set on an option of a class or subclass feature that has an InfusionRule: the option is an infusion
+	// a character puts on a piece of gear (see TableInfusion). Nil everywhere else.
+	Infusion *TableInfusion
+	// InfusionRule is set on the feature that has the options: how many infusions a character keeps live, by class
+	// level (see TableInfusionRule). Only a class or subclass feature with options has it.
+	InfusionRule *TableInfusionRule
 }
 
 // TableCasting is how a class (or, for a third caster, a subclass) casts.
@@ -864,6 +874,11 @@ func (c *content) isSwitchable(key string) bool {
 	return false
 }
 
+// isPickedKey says the value of a scoped pick is a content key of the sheet: a feat or a spell.
+func isPickedKey(v string) bool {
+	return strings.HasPrefix(v, "feat:") || strings.HasPrefix(v, "spell:")
+}
+
 func buildKeys(b Build, want func(string) bool) []string {
 	seen := map[string]bool{}
 	add := func(keys ...string) {
@@ -882,8 +897,8 @@ func buildKeys(b Build, want func(string) bool) []string {
 	add(b.SpellsPrepared...)
 	add(b.FeatureChoices...)
 	for _, k := range b.FeatureChoices {
-		if _, v, ok := SplitScopedChoice(k); ok && strings.HasPrefix(v, "feat:") {
-			add(v) // a feat picked through a choice is a feat of the sheet
+		if _, v, ok := SplitScopedChoice(k); ok && isPickedKey(v) {
+			add(v) // a feat or a spell picked through a choice is a key of the sheet
 		}
 	}
 	add(b.Feats...)
@@ -943,7 +958,7 @@ func BuildKeys(b Build) []KeyField {
 	}
 	for i, k := range b.FeatureChoices {
 		add(k, fmt.Sprintf("full.feature_choice_keys[%d]", i))
-		if _, v, ok := SplitScopedChoice(k); ok && strings.HasPrefix(v, "feat:") {
+		if _, v, ok := SplitScopedChoice(k); ok && isPickedKey(v) {
 			add(v, fmt.Sprintf("full.feature_choice_keys[%d]", i))
 		}
 	}
@@ -1474,6 +1489,8 @@ func (c *content) cloneForOverlay() *content {
 	n.weaponOf = map[string]WeaponTableEntry{}
 	n.creatureSpecs = map[string]*creatureSpec{}
 	n.optionPrereq = map[string]TableOptionPrerequisite{}
+	n.featureSwaps = map[string]FeatureSwapLevels{}
+	n.infusions = newInfusionBook()
 	n.spells = maps.Clone(c.spells)
 	n.classLevels = maps.Clone(c.classLevels)
 	n.subclassLevels = maps.Clone(c.subclassLevels)

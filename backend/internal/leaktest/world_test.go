@@ -696,15 +696,17 @@ func (w *world) buildTableContent() {
 	// the option, the feature's key or the feature's name. It does not prove the blanking of `offered_by` in a copy a player reads
 	// through a sheet that holds the option; that case needs a sheet holding the option without its subclass, which no world sheet can
 	// have, so the characters package tests it through the listing (TestASheetHeldOptionNamesNoHiddenOfferingFeature).
+	w.unofferedLabel = w.secrets.marker("subclass-feature-option-name")
 	archivedSubclass := create("subclass-archived", &rulesv1.TableSubclass{
 		ClassKey: "class:fighter",
 		Levels: []*rulesv1.TableSubclassLevel{{Level: 3, Features: []*rulesv1.TableFeature{{
 			NamePt: w.secrets.marker("subclass-feature-name"), Effects: []*rulesv1.TableEffect{{Type: "choice", Choice: "feature", Count: 1}},
-			Options: []*rulesv1.TableFeature{{NamePt: w.secrets.marker("subclass-feature-option-name")}},
+			Options: []*rulesv1.TableFeature{{NamePt: w.unofferedLabel}},
 		}}}},
 	})
 	offeredBy := archivedSubclass.GetTableSubclass().GetLevels()[0].GetFeatures()[0].GetKey()
 	w.secrets.id("subclass-feature", offeredBy)
+	w.unofferedKey = archivedSubclass.GetTableSubclass().GetLevels()[0].GetFeatures()[0].GetOptions()[0].GetKey()
 	create("option-offered-by-archived", &rulesv1.TableOption{Set: "table_feature", OfferedBy: offeredBy, DescPt: []string{w.secrets.marker("option-text")}})
 	must(m.table.ArchiveTableEntry(ctx, rq(&rulesv1.ArchiveTableEntryRequest{CampaignId: w.campaign, Key: archivedSubclass.GetKey()})))
 	offRace := create("race-off", race())

@@ -23,6 +23,9 @@ func (b Build) listsGear(key string) bool {
 	return slices.Contains(b.Weapons, key)
 }
 
+// ListsGear says the sheet lists the gear key: it is the armor, the shield or one of the weapons, equipped or carried.
+func (b Build) ListsGear(key string) bool { return b.listsGear(key) }
+
 // IsCarried says the piece of gear key is carried, not equipped.
 func (b Build) IsCarried(key string) bool { return slices.Contains(b.Carried, key) }
 

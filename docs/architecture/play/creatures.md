@@ -12,7 +12,7 @@ The two meet in two small interfaces wired in `cmd/api`: `play.CombatRoster` (wh
 | `PlayService.CastSummon` | Casting outside combat what does not fit inside it (below) |
 | `CombatService.CastSpell` | Conjure Animals in combat (below) |
 | `CombatService.EndConcentration` | Ends concentration (the player or the master) and dismisses that casting's creatures, with a `creature_dismissed` for each. `SetCombatantConditions` with `end_concentration` and casting another concentration spell do the same (RN-22) |
-| Stream hints | `creatures_changed` for the master and the owner outside combat (in combat `encounter_changed` covers it). `revivify_changed`, `character_changes_requested`, `character_resubmitted` and `character_revived` are contentless; `revivify_changed` goes to the master and the caster's player, the others to the master and the owner (the reason of a review is read with `GetCharacter`, never streamed; RN-10) |
+| Stream hints | `creatures_changed` for the master and the owner outside combat (in combat `encounter_changed` covers it). `revivify_changed`, `character_changes_requested`, `character_resubmitted`, `character_revived` and `character_infusions_changed` are contentless; `revivify_changed` goes to the master and the caster's player, the others to the master and the owner (the reason of a review is read with `GetCharacter`, never streamed; RN-10) |
 
 ## Casting summons
 

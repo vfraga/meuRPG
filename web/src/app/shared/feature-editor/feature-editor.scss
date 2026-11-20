@@ -12,10 +12,6 @@
   background: var(--mr-ground);
 }
 
-.feature--framed {
-  border-color: transparent;
-}
-
 .feature--flat {
   padding: 0;
   border: 0;
@@ -54,27 +50,10 @@
   gap: 2px;
 }
 
-.icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
-  padding: 0;
-  border: 0;
-  border-radius: var(--mr-radius-sm);
-  background: transparent;
-  color: var(--mr-ink-muted);
-  cursor: pointer;
-
-  &:hover:not(:disabled) {
-    color: var(--mr-accent-text);
-  }
-
-  &:disabled {
-    opacity: 0.4;
-    cursor: default;
-  }
+// The arrows and the "⋮" are the system's icon buttons (matIconButton): in a row they keep their size whatever the line beside them
+// does, so a long summary or the tag never shrinks them.
+.act {
+  flex: none;
 }
 
 // "Nome do traço" and "Efeito" on one row from a tablet up; the effect's own fields, the hint beside each, and the one text
@@ -162,10 +141,24 @@
   padding-top: var(--mr-space-3);
   border-top: 1px dashed var(--mr-line);
 
+  &__head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--mr-space-3);
+    width: 100%;
+  }
+
   &__title {
     margin: 0;
     font: inherit;
-    font-weight: 600;
+    font-weight: 700;
+  }
+
+  &__count {
+    font-size: var(--mr-font-14);
+    font-weight: 700;
+    color: var(--mr-ink-muted);
   }
 
   &__hint {
@@ -175,6 +168,113 @@
 
   app-feature-editor {
     width: 100%;
+  }
+}
+
+// One option of the list (board 580-03): a closed row of the surface colour with its place and name, a summary line, the two arrows and
+// the "⋮" menu. The open one has the accent frame on its head alone (2 px: the line plus an inset line, so the row does not move); its
+// fields stand under it, 36 px in (the width of the chevron), not inside the frame.
+.opt {
+  width: 100%;
+
+  &__head {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    min-height: 58px;
+    padding-right: var(--mr-space-2);
+    border: 1px solid var(--mr-line);
+    border-radius: var(--mr-radius-md);
+    background: var(--mr-surface);
+  }
+
+  &--open &__head {
+    border-color: var(--mr-accent);
+    box-shadow: inset 0 0 0 1px var(--mr-accent);
+  }
+
+  // A refused row reads as refused closed and open: the danger line and tint (open, the 2 px frame is the danger colour too).
+  &--bad &__head {
+    border-color: var(--mr-danger-ink);
+    background: var(--mr-danger-surface);
+  }
+
+  &--bad#{&}--open &__head {
+    box-shadow: inset 0 0 0 1px var(--mr-danger-ink);
+  }
+
+  &__toggle {
+    flex: 1 1 auto;
+    display: flex;
+    align-items: center;
+    gap: var(--mr-space-3);
+    min-width: 0;
+    min-height: 56px;
+    padding: var(--mr-space-2) var(--mr-space-3);
+    border: 0;
+    border-radius: var(--mr-radius-md);
+    background: transparent;
+    color: var(--mr-ink);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+
+    &:focus-visible {
+      outline: 2px solid var(--mr-focus);
+      outline-offset: -2px;
+    }
+
+    .mat-icon {
+      flex: none;
+      color: var(--mr-ink-muted);
+    }
+  }
+
+  &__text {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  // The name and the tag on one baseline: the tag is a no-wrap item after the name, outside the summary, so the row keeps its height.
+  &__line {
+    display: flex;
+    align-items: baseline;
+    gap: var(--mr-space-2);
+    min-width: 0;
+  }
+
+  &__title {
+    min-width: 0;
+    font-weight: 700;
+    overflow-wrap: anywhere;
+  }
+
+  &__sub {
+    font-size: var(--mr-font-14);
+    color: var(--mr-ink-muted);
+    overflow-wrap: anywhere;
+  }
+
+  &__bad {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    gap: 4px;
+    font-size: var(--mr-font-14);
+    white-space: nowrap;
+    font-weight: 700;
+    color: var(--mr-danger-ink);
+
+    .mat-icon {
+      width: 16px;
+      height: 16px;
+      font-size: var(--mr-font-16);
+    }
+  }
+
+  &__body {
+    padding: var(--mr-space-4) 0 var(--mr-space-2) 36px;
   }
 }
 
@@ -189,6 +289,19 @@
   .options__title,
   .options__hint {
     margin: 0;
+  }
+
+  &__head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--mr-space-3);
+  }
+
+  &__all {
+    font-size: var(--mr-font-14);
+    font-weight: 700;
+    color: var(--mr-ink-muted);
   }
 
   .options__title {
