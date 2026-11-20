@@ -3,6 +3,7 @@ package rules
 import (
 	"fmt"
 	"slices"
+	"strconv"
 	"strings"
 )
 
@@ -26,28 +27,36 @@ func (c *Content) UnplacedNewPick(stored *Build, now Build) (field, key string, 
 	if stored != nil {
 		held, xs = *stored, c.deriverFor(*stored)
 	}
-	skill := func(d *deriver) func(string) bool {
-		return func(k string) bool { _, ok := c.c.skills[k]; return ok && !d.automaticSkills[k] }
-	}
-	expertise := func(k string) bool { _, ok := c.c.skills[k]; return ok }
-	var stuckSkills, stuckExpertise []string
-	if xs != nil {
-		stuckSkills = unplacedPicks(xs.skillSources(), pickList(held.SkillProficiencies, skill(xs)))
-		stuckExpertise = unplacedPicks(xs.expertiseSources(), pickList(held.Expertise, expertise))
-	}
-	if f, k, ok := unplacedNewList("full.skill_proficiency_keys", x.skillSources(), now.SkillProficiencies, held.SkillProficiencies, stuckSkills, skill(x)); ok {
-		return f, k, true
-	}
-	if f, k, ok := unplacedNewList("full.expertise_skill_keys", x.expertiseSources(), now.Expertise, held.Expertise, stuckExpertise, expertise); ok {
+	if f, k, ok := c.c.unplacedNewSkillPick(x, xs, held, now); ok {
 		return f, k, true
 	}
 	return x.unplacedNewTool(held, xs)
 }
 
+// unplacedNewSkillPick is UnplacedNewPick for the skills and the expertise: x is the deriver of the new sheet now, xs the
+// one of the stored sheet (nil when there is none) and held the stored sheet.
+func (c *content) unplacedNewSkillPick(x, xs *deriver, held, now Build) (field, key string, found bool) {
+	skill := func(d *deriver) func(string) bool {
+		return func(k string) bool { _, ok := c.skills[k]; return ok && !d.automaticSkills[k] }
+	}
+	expertise := func(k string) bool { _, ok := c.skills[k]; return ok }
+	var stuckSkills, stuckExpertise []string
+	if xs != nil {
+		stuckSkills = unplacedPicks(xs.skillSources(), pickList(held.SkillProficiencies, skill(xs)))
+		stuckExpertise = unplacedPicks(xs.expertiseSources(), pickList(held.Expertise, expertise))
+	}
+	if f, k, ok := unplacedNewList(skillsField, x.skillSources(), now.SkillProficiencies, held.SkillProficiencies, stuckSkills, skill(x)); ok {
+		return f, k, true
+	}
+	return unplacedNewList(expertiseField, x.expertiseSources(), now.Expertise, held.Expertise, stuckExpertise, expertise)
+}
+
 // deriverFor is the deriver of the sheet b, made with the entries it loses left out.
-func (c *Content) deriverFor(b Build) *deriver {
-	_, lost, _ := c.c.settleLost(b)
-	return deriverOf(b, c.c, lost)
+func (c *Content) deriverFor(b Build) *deriver { return c.c.deriverFor(b) }
+
+func (c *content) deriverFor(b Build) *deriver {
+	_, lost, _ := c.settleLost(b)
+	return deriverOf(b, c, lost)
 }
 
 // pickList are the entries of the list that count, each once.
@@ -177,16 +186,37 @@ func allowedBy(sources []pickSource) PickAllowed {
 	return out
 }
 
-// OnAList says whether some source of the sheet b lists key for the pick field ("full.skill_proficiency_keys" or
-// "full.expertise_skill_keys"). A source that names no list lists every key. A field of another kind is never on a list.
+// OnAList says whether some source of the sheet b lists key for the pick field (the skill, the expertise or a tool pick
+// of the sheet's choice keys). A source that names no list lists every key. A field of another kind is never on a list.
 func (c *Content) OnAList(b Build, field, key string) bool {
 	x := c.deriverFor(b)
 	var sources []pickSource
 	switch {
-	case strings.HasPrefix(field, "full.skill_proficiency_keys"):
+	case strings.HasPrefix(field, skillsField):
 		sources = x.skillSources()
-	case strings.HasPrefix(field, "full.expertise_skill_keys"):
+	case strings.HasPrefix(field, expertiseField):
 		sources = x.expertiseSources()
+	case strings.HasPrefix(field, choiceKeysField):
+		sources = x.toolSourcesAt(field)
 	}
 	return slices.ContainsFunc(sources, func(s pickSource) bool { return s.allows(key) })
+}
+
+// toolSourcesAt are the sources of the tool pick the sheet's choice keys hold at the field's place: the lists of the tool
+// choices of its owner. A place that holds no tool pick has none.
+func (x *deriver) toolSourcesAt(field string) []pickSource {
+	place, ok := strings.CutPrefix(field, choiceKeysField+"[")
+	if !ok {
+		return nil
+	}
+	i, err := strconv.Atoi(strings.TrimSuffix(place, "]"))
+	if err != nil || i < 0 || i >= len(x.b.FeatureChoices) {
+		return nil
+	}
+	choiceKey, _, ok := SplitScopedChoice(x.b.FeatureChoices[i])
+	owner, isTool := strings.CutSuffix(choiceKey, toolPickSuffix)
+	if !ok || !isTool {
+		return nil
+	}
+	return x.c.toolSources(owner)
 }

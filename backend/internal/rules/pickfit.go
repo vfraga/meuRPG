@@ -16,6 +16,13 @@ const (
 	expertiseField = "full.expertise_skill_keys"
 )
 
+// The same fields, for the callers that name the list a pick is on.
+const (
+	SkillsField     = skillsField
+	ExpertiseField  = expertiseField
+	ChoiceKeysField = choiceKeysField
+)
+
 // readsFit says the derivation is the master's: a player's view of the table never carries the fit issue.
 func (x *deriver) readsFit() bool {
 	return x.c.table && !x.c.player && len(x.classes) > 0
@@ -26,10 +33,11 @@ func (x *deriver) checkPickFit(chosen map[string]bool) {
 	if !x.readsFit() {
 		return
 	}
-	x.checkFitOf(skillsField, x.skillSources(), x.b.SkillProficiencies, func(k string) bool { return chosen[k] },
+	skills, expertise := x.skillAllowance()
+	x.checkFitOf(skillsField, x.skillSources(), skills, x.b.SkillProficiencies, func(k string) bool { return chosen[k] },
 		"A perícia %s não cabe em nenhuma das listas de onde o personagem escolhe perícias.")
 	_, known := x.knownExpertise()
-	x.checkFitOf(expertiseField, x.expertiseSources(), x.b.Expertise, func(k string) bool { return known[k] },
+	x.checkFitOf(expertiseField, x.expertiseSources(), expertise, x.b.Expertise, func(k string) bool { return known[k] },
 		"A especialização em %s não cabe em nenhuma das listas de onde o personagem escolhe especializações.")
 	x.checkToolFit()
 }
@@ -47,17 +55,13 @@ func (x *deriver) knownExpertise() (list []string, known map[string]bool) {
 }
 
 // checkFitOf places the sheet's list (the entries counted: keys, each once) in the sources and gives an issue to each one
-// left out. field is the sheet's list; the issue is on the entry's place in it.
-func (x *deriver) checkFitOf(field string, sources []pickSource, list []string, counted func(string) bool, format string) {
+// left out, when the picks are as many as total. field is the sheet's list; the issue is on the entry's place in it.
+func (x *deriver) checkFitOf(field string, sources []pickSource, total int, list []string, counted func(string) bool, format string) {
 	var picks []string
 	for _, k := range list {
 		if counted(k) && !slices.Contains(picks, k) {
 			picks = append(picks, k)
 		}
-	}
-	total := 0
-	for _, s := range sources {
-		total += s.Count
 	}
 	if len(picks) != total {
 		return

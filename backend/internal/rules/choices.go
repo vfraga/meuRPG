@@ -172,14 +172,17 @@ func (x *deriver) checkChoices() {
 // some multiclass classes, and those that effects or traits offer (Skill
 // Versatility, the bard's Bonus Proficiencies). Race and background skills come
 // automatically and do not count.
+//
+// Each kind asks for no more than its sources can take: the largest matching of the sources (each with its count) to the
+// keys the sheet can still pick, the held ones counted.
 func (x *deriver) skillAllowance() (skills, expertise int) {
-	for _, s := range x.skillSources() {
-		skills += s.Count
-	}
-	for _, s := range x.effectSources("expertise") {
-		expertise += s.Count
-	}
-	return skills, expertise
+	return placedCount(x.skillSources(), x.pickableSkills()), placedCount(x.expertiseSources(), x.c.skillOrder)
+}
+
+// pickableSkills are the skills a pick can still give: the ones the sheet does not have by another means. A skill the
+// sheet holds as a pick is among them.
+func (x *deriver) pickableSkills() []string {
+	return slices.DeleteFunc(slices.Clone(x.c.skillOrder), func(k string) bool { return x.automaticSkills[k] })
 }
 
 // skillSources are the lists the player chooses skills from: the starting class's, a later class's multiclass pick, the
@@ -283,12 +286,9 @@ func (x *deriver) checkSkillCount(allowed, n int) {
 	}
 }
 
-// checkExpertiseCount adds the expertise of features such as the rogue's
-// Expertise to what the effects give, and compares the sheet's with it.
+// checkExpertiseCount compares the sheet's expertise with the allowance, which counts the effects and the features such as
+// the rogue's Expertise.
 func (x *deriver) checkExpertiseCount(allowed int) {
-	for _, s := range x.featureExpertiseSources() {
-		allowed += s.Count
-	}
 	switch n := len(x.b.Expertise); {
 	case n > allowed:
 		x.issue(IssueExpertise, "full.expertise_skill_keys", "Há %d perícias com especialização; o personagem tem %d.", n, allowed)

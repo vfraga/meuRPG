@@ -98,6 +98,7 @@ const ISSUE_TITLES = new Map<string, string>([
   ['formula', 'Efeito ignorado.'],
   ['feat_prerequisite', 'Pré-requisito perdido.'],
   ['option_prerequisite', 'Pré-requisito perdido.'],
+  ['pick_fit', 'Escolha fora das listas.'],
 ]);
 
 /** The bold first phrase of a rules issue in the notice under the header:

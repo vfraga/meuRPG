@@ -385,7 +385,7 @@ func CasterLevel(b Build, c *Content) (level, casters int) {
 // class: Skills.Choose of them come from the class's list and are not skills the
 // character has. Anything else is a refusal of the level's skills.
 func (c *content) checkMulticlassSkills(offer *MulticlassOffer, got []string, extra int) *LevelUpError {
-	const field = "full.skill_proficiency_keys"
+	const field = skillsField
 	want := extra
 	if offer.Skills != nil {
 		want += offer.Skills.Choose
@@ -616,16 +616,4 @@ func (c *content) levelSkillSources(classKey string, g levelGains, mc *Multiclas
 		out = append(out, LevelSkillSource{Owner: s.Owner, NamePT: c.namePT(s.Owner), Count: s.Count, From: s.From})
 	}
 	return out
-}
-
-// checkSkillSources refuses a new skill that the level's sources cannot place together with the others.
-func (c *content) checkSkillSources(got []string, sources []LevelSkillSource) *LevelUpError {
-	picks := make([]pickSource, len(sources))
-	for i, s := range sources {
-		picks[i] = pickSource{Owner: s.Owner, Count: s.Count, From: s.From, Any: len(s.From) == 0}
-	}
-	if left := unplacedPicks(picks, got); len(left) > 0 {
-		return refuse(skillsField, LevelUpReasonSkills, "no choice of the new level lets the player choose %s", left[0])
-	}
-	return nil
 }

@@ -178,6 +178,17 @@ func TestAToolNoChoiceOffersIsRefusedWithItsOwnSentence(t *testing.T) {
 	wantUnfitSentence(t, err, "sheet.full.feature_choice_keys[1]", "não está em nenhuma das escolhas de ferramenta do personagem")
 }
 
+func TestAToolOnAListWithNoRoomLeftIsRefusedWithTheSentenceOfNoRoom(t *testing.T) {
+	t.Parallel()
+	u := newUnfitTable(t, "skill:nature")
+	bg := u.master.addEntry(t, u.campaign, toolRace(toolEffect(1, smithsTools)))
+	tool := u.player.create(t, u.campaign, charactersv1.CharacterKind_CHARACTER_KIND_PLAYER, "Ferreira", u.toolSheet(t, bg, thievesTools, smithsTools))
+	// The first list takes one of its two tools and the second takes smiths: herbalism is on a list that has no room.
+	_, err := u.player.update(t, tool, "Ferreira", u.toolSheet(t, bg, thievesTools, smithsTools, herbalismKit))
+	wantUnfitSentence(t, err, "sheet.full.feature_choice_keys[2]", "Não há vaga para a ferramenta")
+	wantUnfitSentence(t, err, "sheet.full.feature_choice_keys[2]", "as listas que a oferecem já estão preenchidas pelas outras ferramentas marcadas. Desmarque uma delas para marcar")
+}
+
 func expertiseTraitRace(from ...string) *rulesv1.TableRace {
 	r := skillTraitRace("skill:nature")
 	r.Traits = append(r.Traits, &rulesv1.TableFeature{NamePt: "Estudo", Effects: []*rulesv1.TableEffect{{Type: "choice", Choice: "expertise", Count: 1, From: from}}})
@@ -193,7 +204,7 @@ func wantUnfitSentence(t *testing.T, err error, field, sentence string) {
 }
 
 // A pick made when completing the choices is refused as it is on a save: the choice offers the tool, but no source takes it
-// together with the picks the sheet holds.
+// together with the picks the sheet holds (the first list lists it and its one slot is taken).
 func TestCompletingChoicesRefusesAToolNoSourceTakesWithTheHeldPicks(t *testing.T) {
 	t.Parallel()
 	u := newUnfitTable(t, "skill:nature")
@@ -207,8 +218,8 @@ func TestCompletingChoicesRefusesAToolNoSourceTakesWithTheHeldPicks(t *testing.T
 	owner := u.traitOf(t, bg)
 	_, err := (&choiceTable{h: u.h, campaign: u.campaign}).complete(u.player, u.player.get(t, u.campaign, pc.GetId()), pick(rules.ToolPickKey(owner), herbalismKit))
 	var ce *connect.Error
-	if !errors.As(err, &ce) || ce.Code() != connect.CodeInvalidArgument || !strings.Contains(ce.Message(), "não está em nenhuma das escolhas de ferramenta") {
-		t.Errorf("error = %v, want the refusal of a tool no choice takes", err)
+	if !errors.As(err, &ce) || ce.Code() != connect.CodeInvalidArgument || !strings.Contains(ce.Message(), "Não há vaga para a ferramenta") {
+		t.Errorf("error = %v, want the refusal of a tool on a list with no room", err)
 	}
 }
 
