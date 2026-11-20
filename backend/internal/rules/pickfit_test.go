@@ -434,3 +434,39 @@ func TestToolFitIssue(t *testing.T) {
 		t.Errorf("a player's fit issues = %v", is)
 	}
 }
+
+// TestHeldToolPicksOverTheCountAreNotCounted: the background offers one tool from thieves' tools or the herbalism kit and a
+// race trait one smith's tool; the sheet holds thieves' tools and the herbalism kit and nothing for the trait. The herbalism
+// kit is over the background's count, so it is neither counted nor proficient, and the trait's pick is still owed: the
+// choice and Derive ask the same one.
+func TestHeldToolPicksOverTheCountAreNotCounted(t *testing.T) {
+	t.Parallel()
+	const thieves, herbs, smith = "proficiency:thieves-tools", "proficiency:herbalism-kit", "proficiency:smiths-tools"
+	o := filterBackgroundWith(Effect{Type: "choice", Choice: "tool", Count: 1, From: []string{thieves, herbs}})
+	o.Races = []TableRace{{
+		Key: "race:perito@mesa", NamePT: "Perito", Revision: 1, Size: "Medium", SpeedFt: 30,
+		Traits: []TableFeature{{Key: "trait:faro@mesa", NamePT: "Faro", Effects: []Effect{{Type: "choice", Choice: "tool", Count: 1, From: []string{smith}}}}},
+	}}
+	c := withOverlay(t, o)
+	b := filterBuild()
+	b.Race = "race:perito@mesa"
+	b.FeatureChoices = []string{ScopedChoice(filterPickKey(), thieves), ScopedChoice(filterPickKey(), herbs)}
+	for name, view := range map[string]*Content{"master": c, "player": c.ForPlayer()} {
+		d := Derive(b, view)
+		missing := 0
+		for _, g := range view.Choices(b).Groups {
+			for _, ch := range g.Choices {
+				if strings.HasSuffix(ch.Key, toolPickSuffix) {
+					missing += ch.Missing()
+				}
+			}
+		}
+		if got := missingTools(d); got != 1 || missing != 1 {
+			t.Errorf("%s: Derive misses %d tools, the choices %d, want 1 and 1", name, got, missing)
+		}
+		has := func(k string) bool { return slices.ContainsFunc(d.Proficiencies, func(p Proficiency) bool { return p.Key == k }) }
+		if !has(thieves) || has(herbs) {
+			t.Errorf("%s: thieves proficient %v, herbs proficient %v", name, has(thieves), has(herbs))
+		}
+	}
+}

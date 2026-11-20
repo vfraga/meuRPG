@@ -57,8 +57,11 @@ func (c *content) isToolKey(key string) bool {
 // proficiencyPick is a language or a tool picked through a choice, and the owner that granted it.
 type proficiencyPick struct{ Value, Owner string }
 
-// pickedProficiencies are the languages and the tools the picks of Build.FeatureChoices give: the ones whose owner
-// is on the sheet (owned), that the owner offers, none picked before. In the order of the picks. The tools of an owner are placed in its tool choices; the ones no placement takes are the third result.
+// pickedProficiencies are the languages and the tools the picks of Build.FeatureChoices give.
+// A pick counts when its owner is on the sheet, the owner offers it, and none before it was the same.
+// A language pick also needs room left under languageGrant.
+// The tools of an owner are placed in its tool choices, and the picks of the third result are the ones no placement takes.
+// Those count, up to the slots the placed picks leave the owner; the rest are over the count and count for nothing.
 func (c *content) pickedProficiencies(b Build, owned func(string) bool) (languages, tools, unplaced []proficiencyPick) {
 	taken := map[string]int{}
 	var offered []proficiencyPick
@@ -78,8 +81,36 @@ func (c *content) pickedProficiencies(b Build, owned func(string) bool) (languag
 			}
 		}
 	}
-	tools, unplaced = c.placeToolPicks(offered)
-	return languages, tools, unplaced
+	tools, left := c.placeToolPicks(offered)
+	return languages, tools, c.unplacedWithinCount(tools, left)
+}
+
+// toolSlots is how many tool picks the owner's choices take in all.
+func (c *content) toolSlots(owner string) int {
+	n := 0
+	for _, s := range c.toolSources(owner) {
+		n += s.Count
+	}
+	return n
+}
+
+// unplacedWithinCount keeps, of the picks the placement left out, as many of each owner as the owner has slots left.
+func (c *content) unplacedWithinCount(placed, left []proficiencyPick) []proficiencyPick {
+	room := map[string]int{}
+	for _, p := range left {
+		room[p.Owner] = c.toolSlots(p.Owner)
+	}
+	for _, p := range placed {
+		room[p.Owner]--
+	}
+	var out []proficiencyPick
+	for _, p := range left {
+		if room[p.Owner] > 0 {
+			room[p.Owner]--
+			out = append(out, p)
+		}
+	}
+	return out
 }
 
 func hasPick(picks []proficiencyPick, value string) bool {
