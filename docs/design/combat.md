@@ -53,8 +53,9 @@ The browser draws what the server sends (reach from `GetMoveOptions`, totals, ve
   - **Ending the turn:** "Encerrar turno" ends the rider's own part first and then the mount's, one call each.
     What the rider still owes (a damage to roll, the rage question, a death save) refuses the first call, so nothing is sent for the mount and it keeps its move.
     A part that no longer acts is skipped: if the rider's part ended elsewhere (the master, another tab) the card and the button stay, and the button ends the mount's part without asking about an unused action.
-    The end of the rider's part may open a save of its own (an effect that asks at the end of the turn), which holds the mount's call with `REACTION_PENDING`.
-    That refusal is expected and shows no error: the save's sheet is what the player reads, the card and "Encerrar turno" stay, and the next tap ends the mount's part alone.
+    The end of the rider's part may open the rider's save to stay on the mount, or its dismount window, which holds the mount's call with `REACTION_PENDING`.
+    That refusal is expected and shows no error: the sheet of that question is what the player reads, the card and "Encerrar turno" stay, and the next tap ends the mount's part alone.
+    Any other pending reaction (an opportunity offer, a readied window, an effect save, the master's reaction) is not the pair's: "Encerrar turno" says "Uma reação ainda espera resposta. Espere a resposta ou responda no lugar de quem reage."
   - **A rider at 0 hit points:** the three are dashed with "Caído: o mestre conduz o Cavalo de guerra." under them, beside the death saves, and "Encerrar turno" ends only the rider's part: the mount's part is the master's.
   - **A pair tied with others:** the larger group is the joint turn ("Encerrar a minha parte", who else is missing), and the pair card is still there; the button ends the rider's part and the mount's, and the mount is not listed among those the player waits for.
   - **A player's own steed** has no creature tab while the card stands in for it, so its three actions are not on the screen twice.

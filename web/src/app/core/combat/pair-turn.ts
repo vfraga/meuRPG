@@ -1,9 +1,11 @@
 import type { Combatant, Encounter } from '../../../gen/meurpg/play/v1/combat_pb';
 import { isDown } from './combat-view';
 import { acts, partToEnd } from './joint-turn';
+import { isDismountWindow } from './reaction-dismount';
+import { openWindows } from './reactions';
 
 /**
- * "Encerrar turno" of a rider that directs its mount (#588, 588-04): one button for the two parts, one call each. Pure
+ * "Encerrar turno" of a rider that directs its mount (a rider and the mount it directs): one button for the two parts, one call each. Pure
  * functions over the combat as it is now.
  */
 
@@ -31,4 +33,16 @@ export function turnEnds(e: Encounter, own: Combatant | null, ride: Combatant | 
   }
   const mount = rideToEnd(e, ride, own);
   return [...(own && acts(e, own) ? [own.id] : []), ...(mount ? [mount.id] : [])];
+}
+
+/**
+ * Whether the window that holds the mount's part is this rider's own question: the save to stay on the mount or the dismount
+ * window. Any other pending reaction (an opportunity offer, a readied window, an effect save, the master's reaction) is not the
+ * pair's to swallow: "Encerrar turno" says it.
+ */
+export function ownPairWindowOpen(e: Encounter, rider: Combatant): boolean {
+  return (
+    e.mountSave?.riderId === rider.id ||
+    openWindows(e).some((w) => isDismountWindow(w) && w.reactorId === rider.id)
+  );
 }

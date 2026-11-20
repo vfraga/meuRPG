@@ -1,3 +1,4 @@
+import { create } from '@bufbuild/protobuf';
 import { Code, ConnectError } from '@connectrpc/connect';
 
 import {
@@ -6,9 +7,11 @@ import {
   CombatantState,
   EncounterBlockedReason,
   EncounterBlockedSchema,
+  MountSavePromptSchema,
+  ReactionKind,
 } from '../../../../gen/meurpg/play/v1/combat_pb';
 import { DisabledReasonCode } from '../../../../gen/meurpg/rules/v1/rules_pb';
-import { combatant, encounter } from '../../../core/combat/combat-testing';
+import { combatant, encounter, reactionWindow } from '../../../core/combat/combat-testing';
 import { PHONE_QUERY } from '../../../shared/map-view/media-query';
 import { mountCombatView } from './combat-view-testing';
 
@@ -183,10 +186,16 @@ describe('CombatView: the rider and the mount it directs (588-04)', () => {
     expect(m.callsOf('endTurn').map((c) => c.args[2])).toEqual(['tor']);
   });
 
-  it("says no error when the rider's end opened a save that holds the mount's call, keeps the card, and the next tap ends the mount's part", async () => {
-    // The rider's part ends and an end-of-turn effect save opens for it (Imobilizar Pessoa): the server refuses the mount's call.
+  const pendingReaction = () =>
+    new ConnectError('a reaction is pending', Code.FailedPrecondition, undefined, [
+      { desc: EncounterBlockedSchema, value: { reason: EncounterBlockedReason.REACTION_PENDING } },
+    ]);
+
+  /** The rider's part ends and the server holds the mount's call on the window `held` puts in the combat. */
+  async function endWithHeldMount(hold: (after: ReturnType<typeof enc>) => void) {
     const after = enc();
     after.combatants[0].turnPartEnded = true;
+    hold(after);
     let held = true;
     const m = mountCombatView({
       enc: enc(),
@@ -196,12 +205,7 @@ describe('CombatView: the rider and the mount it directs (588-04)', () => {
         get: async () => after,
         endTurn: async (...args: unknown[]) => {
           if (args[2] === 'h' && held) {
-            throw new ConnectError('a reaction is pending', Code.FailedPrecondition, undefined, [
-              {
-                desc: EncounterBlockedSchema,
-                value: { reason: EncounterBlockedReason.REACTION_PENDING },
-              },
-            ]);
+            throw pendingReaction();
           }
           return after;
         },
@@ -210,13 +214,51 @@ describe('CombatView: the rider and the mount it directs (588-04)', () => {
     await settle(m.fixture);
     await m.view.endTurn(false);
     await settle(m.fixture);
+    return {
+      m,
+      error: (m.view as unknown as { error(): string }).error(),
+      release: () => (held = false),
+    };
+  }
+
+  it("says no error when the rider's own save to stay mounted holds the mount's call, keeps the card, and the next tap ends the mount's part", async () => {
+    const { m, error, release } = await endWithHeldMount((after) => {
+      after.mountSave = create(MountSavePromptSchema, { riderId: 'tor', mountId: 'h' });
+    });
     expect(m.callsOf('endTurn').map((c) => c.args[2])).toEqual(['tor', 'h']);
-    expect((m.view as unknown as { error(): string }).error()).toBe('');
+    expect(error).toBe('');
     expect(m.el.querySelector('app-pair-card')).not.toBeNull();
     // The save is rolled; the second tap ends what is left, the mount's part.
-    held = false;
+    release();
     await m.view.endTurn(false);
     expect(m.callsOf('endTurn').map((c) => c.args[2])).toEqual(['tor', 'h', 'h']);
+  });
+
+  it("says no error when the rider's own dismount window holds the mount's call", async () => {
+    const { error } = await endWithHeldMount((after) => {
+      after.reactionWindows = [
+        reactionWindow({ id: 'w1', kind: ReactionKind.DISMOUNT, reactorId: 'tor' } as never),
+      ];
+    });
+    expect(error).toBe('');
+  });
+
+  it.each([
+    ['an opportunity offer', ReactionKind.OPPORTUNITY, 'h'],
+    ['a readied window', ReactionKind.READIED, 'tor'],
+    ["the master's reaction", ReactionKind.SHIELD, 'z'],
+  ])("says the pending reaction when %s holds the mount's call", async (_name, kind, reactor) => {
+    const { error } = await endWithHeldMount((after) => {
+      after.reactionWindows = [reactionWindow({ id: 'w9', kind, reactorId: reactor } as never)];
+    });
+    expect(error).toBe(
+      'Uma reação ainda espera resposta. Espere a resposta ou responda no lugar de quem reage.',
+    );
+  });
+
+  it("says the pending reaction when no window of the pair is open and the mount's call is held", async () => {
+    const { error } = await endWithHeldMount(() => undefined);
+    expect(error).not.toBe('');
   });
 
   it("still says the refusal when the mount's part alone is held by a pending reaction: nothing ended in that tap", async () => {

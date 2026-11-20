@@ -1,12 +1,17 @@
+import { create } from '@bufbuild/protobuf';
+
 import {
   CombatantKind,
   CombatantState,
   EncounterStatus,
+  MountSavePromptSchema,
+  ReactionKind,
+  ReactionWindowStatus,
 } from '../../../gen/meurpg/play/v1/combat_pb';
-import { combatant, encounter } from './combat-testing';
+import { combatant, encounter, reactionWindow } from './combat-testing';
 import { turnBanner } from './combat-view';
 import { partToEnd } from './joint-turn';
-import { rideToEnd, turnEnds } from './pair-turn';
+import { ownPairWindowOpen, rideToEnd, turnEnds } from './pair-turn';
 import { CHARACTER_TAB, mineTabs, optionIds, tabsBesideRide } from './mine';
 
 const P = CombatantKind.PLAYER;
@@ -206,5 +211,42 @@ describe('the turn of a rider and the mount it directs (#588, 588-04)', () => {
       expect(tabs[1].acting.map((m) => m.id)).toEqual(['w']);
       expect(tabs[1].label).toBe('Lobo');
     });
+  });
+});
+
+describe("the window that holds the mount's part of the turn", () => {
+  const dismount = (over: object = {}) =>
+    reactionWindow({ id: 'w1', kind: ReactionKind.DISMOUNT, reactorId: 'tor', ...over } as never);
+  const tor = (e: ReturnType<typeof fight>) => e.combatants.find((c) => c.id === 'tor')!;
+
+  it("is the rider's mount save", () => {
+    const e = fight();
+    e.mountSave = create(MountSavePromptSchema, { riderId: 'tor', mountId: 'h' });
+    expect(ownPairWindowOpen(e, tor(e))).toBe(true);
+  });
+
+  it("is the rider's dismount window while it is open", () => {
+    const e = fight();
+    e.reactionWindows = [dismount()];
+    expect(ownPairWindowOpen(e, tor(e))).toBe(true);
+    e.reactionWindows = [dismount({ status: ReactionWindowStatus.ANSWERED })];
+    expect(ownPairWindowOpen(e, tor(e))).toBe(false);
+  });
+
+  it("is not another rider's save or window, nor any other kind of window", () => {
+    const e = fight();
+    e.mountSave = create(MountSavePromptSchema, { riderId: 'other', mountId: 'x' });
+    e.reactionWindows = [
+      dismount({ reactorId: 'other' }),
+      reactionWindow({ id: 'w2', kind: ReactionKind.OPPORTUNITY, reactorId: 'h' } as never),
+      reactionWindow({ id: 'w3', kind: ReactionKind.EFFECT_SAVE, reactorId: 'tor' } as never),
+      reactionWindow({ id: 'w4', kind: ReactionKind.READIED, reactorId: 'tor' } as never),
+    ];
+    expect(ownPairWindowOpen(e, tor(e))).toBe(false);
+  });
+
+  it('is nothing when no window is open', () => {
+    const e = fight();
+    expect(ownPairWindowOpen(e, tor(e))).toBe(false);
   });
 });

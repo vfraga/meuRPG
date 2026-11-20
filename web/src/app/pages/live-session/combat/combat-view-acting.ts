@@ -4,7 +4,7 @@ import { isDead, isDown, isPlayer, soloTitle } from '../../../core/combat/combat
 import { vitalsPool } from '../../../core/combat/form-pool';
 import { type MineTab, membersToEnd } from '../../../core/combat/mine';
 import { moveLine } from '../../../core/combat/move-line';
-import { turnEnds } from '../../../core/combat/pair-turn';
+import { ownPairWindowOpen, turnEnds } from '../../../core/combat/pair-turn';
 import { reactionPending } from '../../../core/combat/combat-errors';
 import { economyShapes } from '../../../shared/economy-shapes/economy-shapes';
 import { CombatViewDerivedDirective } from './combat-view-derived';
@@ -81,13 +81,19 @@ export abstract class CombatViewActingDirective extends CombatViewDerivedDirecti
   /**
    * One call for each part the button ends (`turnEnds`): a rider's own part, then the mount's; a refusal stops there. The end of
    * the rider's part may open a save of its own (an effect that asks at the end of the turn), which holds the mount's call: that
-   * refusal is expected and says nothing, as the save's sheet is what the player reads; the button stays for the mount's part.
+   * refusal is expected and says nothing only when the window that holds it is this rider's own mount save or dismount, as that
+   * sheet is what the player reads; the button stays for the mount's part. Any other pending reaction is said as an error.
    */
   protected async endTurn(discard: boolean): Promise<boolean> {
     const e = this.encounter();
     let ended = 0;
+    const ownPairQuestion = (err: unknown): boolean => {
+      const rider = this.own();
+      const now = this.encounter();
+      return reactionPending(err) && !!rider && !!now && ownPairWindowOpen(now, rider);
+    };
     for (const id of e ? turnEnds(e, this.own(), this.riding()) : []) {
-      if (!(await this.endPart(id, discard, ended > 0 ? reactionPending : undefined))) {
+      if (!(await this.endPart(id, discard, ended > 0 ? ownPairQuestion : undefined))) {
         return false;
       }
       ended++;
