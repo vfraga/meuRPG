@@ -118,6 +118,9 @@
     font-size: var(--mr-font-20);
   }
 
+  // The app's rounded focus ring (the global outline follows the radius), never a square box.
+  border-radius: var(--mr-radius-md);
+
   &--danger {
     color: var(--mr-danger-ink);
   }
@@ -188,6 +191,25 @@
 .act--more[aria-expanded='true'] {
   border-color: var(--mr-accent);
   background: var(--mr-accent-soft);
+}
+
+.acts--steed {
+  // The row is one line with the ⋮ at its end, whatever the card's width: the actions give way before it wraps.
+  flex-wrap: nowrap;
+  gap: 0 var(--mr-space-2);
+}
+
+.acts--steed .act:not(.act--more) {
+  min-width: 0;
+  gap: 4px;
+}
+
+.acts--steed .act--off {
+  font-size: var(--mr-font-15);
+}
+
+.acts--steed .act__off {
+  font-size: var(--mr-font-14);
 }
 
 // A bonded steed's card: "Renomear" and "Corrigir PV" in ink; only "Dispensar" keeps its danger.
