@@ -33,7 +33,6 @@ What a page or a list shows is a pure function of the catalogue and the form, ea
 | `catalog-views.ts`, `spell-views.ts` | The pure functions under it: the sentences under the selects, the Constitution the preview adds up, the skills the lists give; what each caster section lists, its searches and numbers. |
 | `catalog-changes.ts` | Whether a re-read catalogue differs from the one on screen, and which form control holds a key the master switched off. |
 | `editor-picks.ts`, `skill-picks.ts` | What is picked beside the form's controls (skills, expertise, extra classes, feats, rolls, choices) and the toggles of skills and expertise. |
-| `catalog-views.ts` (`pickableSkillsOf`) | The skill step's list: the skills `PreviewChoices` says the sheet's sources allow (`skills_allowed`), plus every skill the sheet holds or is given, so a held skill no list allows stays on screen and can be taken off, with no mark. Before the first answer, or when a source takes any skill, nothing is cut. The expertise box is disabled outside `expertise_allowed` unless the skill already holds expertise. The browser works out no rule: the lists are the server's (`Content.PickLists`, the lists the save's refusal reads). A pick the sources cannot hold together comes back from the save as the server's sentence, shown on the Perícias step (`SaveFlow.pickProblem`). |
 | `spell-picks.ts` | The cantrips, known and prepared spells of the "Magias" step and their searches. |
 | `editor-draft.ts` | The draft the form and the picks add up to, and what is wrong with it (`invalidSummary`, the problems that have no control of their own). |
 | `full-draft.ts`, `full-form.ts` | The draft the request carries, the problems the blocks and the rolls still have, what the server's answer takes out of the picks; the form and its limits. |
@@ -43,6 +42,15 @@ What a page or a list shows is a pure function of the catalogue and the form, ea
 | `editor-spell-details.ts` | The "?" next to a spell: the dialog on a desktop, the bottom sheet on a phone. |
 | `character-editor-catalog-map.ts`, `character-editor-sheet-map.ts` | The wire to view-model mappers for the catalogue and for the sheet (the form and the init it sends back). |
 | `class-blocks.ts` | The arithmetic only of splitting what the catalogue gives: total level, each level's die after the first (in class order, the order of `HitPoints.rolls`), and the spell sections (one per casting class or casting third-caster subclass, with the list, which class it comes from, and the highest spell level at its level). No prerequisite, hit point or slot is computed there. |
+
+**The skill step's list.**
+The server says which skills the sheet's sources allow, and which skills expertise may go on.
+The step offers those, and every skill the sheet holds, is given, or held when the editor opened.
+A held skill that no list allows stays ticked and can be taken off; the step says nothing of it.
+Until the first answer, or when a source takes any skill, nothing is cut.
+The browser works out no rule of this.
+A save the server refuses for a pick that cannot be placed shows the server's sentence on the step, with the step marked, and a short pointer above the buttons.
+Both go when a skill, an expertise or a class changes.
 
 State several parts share lives in `EditorPicks` and `SpellPicks`, which the component builds first and hands to the other plain classes through `EditorCore`; the page itself keeps only the route, the step and choice-group view children, two effects (the subclass waiting for its level, the starting XP) and the class-block handlers.
 `EditorStepper` builds a step's content the first time it opens and keeps it; the `eager` step ("Habilidades" under table rules) comes from the start.

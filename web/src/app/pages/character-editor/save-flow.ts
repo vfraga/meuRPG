@@ -88,6 +88,15 @@ export class SaveFlow {
 
   constructor(private readonly host: SaveFlowContext) {}
 
+  /** The refusal of a pick goes, and so does the notice that points to it. */
+  clearPickProblem(): void {
+    if (this.pickProblem() === '') {
+      return;
+    }
+    this.pickProblem.set('');
+    this.state.update((s) => (s.status === 'error' ? { status: 'idle' } : s));
+  }
+
   /** A reused page starts from nothing. */
   reset(): void {
     this.classProblem.set(null);
@@ -178,7 +187,9 @@ export class SaveFlow {
     }
     this.state.set({
       status: 'error',
-      message: describeCharacterError(err, (key) => this.host.nameOfKey(key)),
+      message: pick
+        ? 'Veja o passo Perícias.'
+        : describeCharacterError(err, (key) => this.host.nameOfKey(key)),
     });
   }
 }

@@ -269,13 +269,19 @@ export class EditorCatalog {
   /** The skills the picker offers: those the server says a source of the draft allows, with the ones the draft holds. */
   readonly pickableSkills = computed(() => {
     const all = this.catalog()?.skills ?? [];
-    const held = new Set([...this.host.picks.selectedSkills(), ...this.grantedSkills().keys()]);
+    const held = new Set([
+      ...this.host.picks.selectedSkills(),
+      ...this.host.picks.heldAtOpen(),
+      ...this.grantedSkills().keys(),
+    ]);
     return pickableSkillsOf(all, this.host.choices()?.skillsAllowed, held);
   });
   /** The skills expertise may go on, or null when it is not cut (no answer yet, or a source takes any). */
   readonly expertiseAllowed = computed<ReadonlySet<string> | null>(() => {
     const allowed = this.host.choices()?.expertiseAllowed;
-    return allowed && !allowed.any ? new Set(allowed.keys) : null;
+    return allowed && !allowed.any
+      ? new Set([...allowed.keys, ...this.host.picks.expertiseHeldAtOpen()])
+      : null;
   });
   /** What the first class asks of the skills and the saving throws, from the server's entry for it. */
   readonly skillNote = computed(() => skillNoteOf(this.selectedClass()));

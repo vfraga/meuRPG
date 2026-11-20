@@ -310,6 +310,14 @@ export class CharacterEditor {
         untracked(() => control.setValue(xp));
       }
     });
+    // The refusal of a pick on the Perícias step goes when the skills, the expertise or the classes change.
+    effect(() => {
+      this.picks.selectedSkills();
+      this.picks.expertiseSkills();
+      this.picks.extraClasses();
+      this.views.selectedClass();
+      untracked(() => this.saving.clearPickProblem());
+    });
     this.destroyRef.onDestroy(() => {
       this.loader.destroy();
       this.server.stop();

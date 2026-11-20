@@ -203,7 +203,7 @@ export async function changeGuardianSkillsRPC(master: Page, campaignId: string, 
   await post(master, 'UpdateTableEntry', { campaignId, key, expectedRevision: entry.revision, tableClass: body });
 }
 
-/** A table race whose trait lets the player choose one skill from `from` (#574, part D). */
+/** A table race whose trait lets the player choose one skill from `from`, and one expertise from athletics or nature (#574, part D). */
 export function skillTraitRaceBody(from: string[]): Record<string, unknown> {
   return {
     namePt: 'Rastreador',
@@ -211,7 +211,10 @@ export function skillTraitRaceBody(from: string[]): Record<string, unknown> {
     speedFt: 30,
     abilityBonuses: { wisdom: 1 },
     languages: ['language:common'],
-    traits: [{ namePt: 'Olho de rastro', descPt: ['Você aprende a achar o que se esconde.'], effects: [{ type: 'choice', choice: 'skill', count: 1, from }] }],
+    traits: [
+      { namePt: 'Olho de rastro', descPt: ['Você aprende a achar o que se esconde.'], effects: [{ type: 'choice', choice: 'skill', count: 1, from }] },
+      { namePt: 'Estudo de campo', descPt: ['Você domina o que já sabe.'], effects: [{ type: 'choice', choice: 'expertise', count: 1, from: ['skill:athletics', 'skill:nature'] }] },
+    ],
   };
 }
 

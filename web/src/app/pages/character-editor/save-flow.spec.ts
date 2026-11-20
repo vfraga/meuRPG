@@ -200,10 +200,10 @@ describe('SaveFlow', () => {
     expect(updated[1]).toMatchObject({ name: 'Lacaio', full: null, basic: BASIC });
   });
 
-  it('keeps the server sentence of a skill no list allows for the Perícias step, opens it, and clears it on the next save', async () => {
+  it('keeps the server sentence for the Perícias step, opens it, says only where to look above the buttons, and clears together', async () => {
     const opened: string[] = [];
     const sentence =
-      'A perícia Furtividade não está em nenhuma das listas de onde o personagem escolhe perícias.';
+      'Não há vaga para a perícia Furtividade: as listas que a oferecem já estão preenchidas pelas outras perícias marcadas. Desmarque uma delas para marcar Furtividade.';
     createResult = () =>
       Promise.reject(
         new ConnectError(
@@ -222,9 +222,15 @@ describe('SaveFlow', () => {
     await save.run(ready(), false);
     expect(save.pickProblem()).toBe(sentence);
     expect(opened).toEqual(['pericias']);
-    createResult = () => Promise.resolve({ characterId: 'new' });
-    await save.run(ready(), false);
+    expect(save.state()).toEqual({ status: 'error', message: 'Veja o passo Perícias.' });
+    save.clearPickProblem();
     expect(save.pickProblem()).toBe('');
+    expect(save.state()).toEqual({ status: 'idle' });
+    // A save that is refused another way is not cleared by it.
+    createResult = () => Promise.reject(new Error('down'));
+    await save.run(ready(), false);
+    save.clearPickProblem();
+    expect(save.state().status).toBe('error');
   });
 
   it('saves nothing for an edit with no character, and is idle', async () => {

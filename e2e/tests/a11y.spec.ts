@@ -7684,13 +7684,22 @@ async function scanPickLists(browser: Browser, colorScheme: 'light' | 'dark', wi
     const edit = `/campaigns/${campaignId}/characters/${characterId}/edit`;
     await open(page, edit);
     skills = await openSkills();
+    // The expertise list is cut too: only athletics and nature take it, and the skill taken on outside them has its box off.
+    await expect(skills.getByRole('checkbox', { name: 'Especialização em Atletismo' })).toBeEnabled();
+    await expect(skills.getByRole('checkbox', { name: 'Especialização em Furtividade' })).toBeDisabled();
+    await expectScreenPasses(page, `Editor, a especialização cortada pela lista da fonte ${where}`);
     await skills.getByRole('checkbox', { name: 'Furtividade', exact: true }).uncheck();
     await skills.getByRole('checkbox', { name: 'Adestrar Animais', exact: true }).check();
     await page.getByRole('button', { name: 'Salvar ficha' }).click();
-    const refusal = page.getByRole('alert').filter({ hasText: 'A perícia Adestrar Animais não está em nenhuma das listas de onde o personagem escolhe perícias.' });
-    await expect(refusal.first()).toBeVisible();
+    // The step says it with the server's sentence, once; the notice above the buttons only points to the step.
+    const sentence = 'Não há vaga para a perícia Adestrar Animais: as listas que a oferecem já estão preenchidas pelas outras perícias marcadas. Desmarque uma delas para marcar Adestrar Animais.';
+    await expect(page.getByRole('alert').filter({ hasText: sentence })).toHaveCount(1);
+    await expect(page.getByRole('alert').filter({ hasText: 'Veja o passo Perícias.' })).toHaveCount(1);
     await expect(page.getByRole('tab', { name: 'Perícias' })).toContainText('(com erro)');
-    await expectScreenPasses(page, `Editor, a recusa de uma perícia que as fontes não seguram juntas ${where}`);
+    await expectScreenPasses(page, `Editor, a recusa de uma perícia sem vaga nas listas ${where}`);
+    // Taking the pick back clears both.
+    await skills.getByRole('checkbox', { name: 'Adestrar Animais', exact: true }).uncheck();
+    await expect(page.getByRole('alert').filter({ hasText: 'Veja o passo Perícias.' })).toHaveCount(0);
 
     // The master narrows the lists: stealth is in none, and the stored sheet still holds it.
     await changeGuardianSkillListRPC(m, campaignId, guardian, ['skill:athletics', 'skill:nature']);
@@ -7700,7 +7709,8 @@ async function scanPickLists(browser: Browser, colorScheme: 'light' | 'dark', wi
     await expect(skills.getByRole('checkbox', { name: 'Acrobacia', exact: true })).toHaveCount(0);
     await expect(skills.getByRole('checkbox', { name: 'Furtividade', exact: true })).toBeChecked();
     await expect(skills.getByRole('checkbox', { name: 'Furtividade', exact: true })).toBeEnabled();
-    await expect(page.getByText(/fora das listas/)).toHaveCount(0);
+    // The row reads as the skill's name alone: nothing says the list no longer allows it.
+    await expect(skills.locator('.skill__name').filter({ has: page.getByRole('checkbox', { name: 'Furtividade', exact: true }) })).toHaveText(/^\s*Furtividade\s*$/);
     await expectScreenPasses(page, `Editor, uma ficha guardada com uma perícia que nenhuma lista permite ${where}`);
   } finally {
     await masterContext.close();

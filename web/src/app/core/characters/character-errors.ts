@@ -157,21 +157,31 @@ export function invalidFieldPath(err: unknown): string | null {
   return connectErr.findDetails(InvalidFieldSchema)[0]?.field ?? null;
 }
 
+/** The four sentences the server gives a pick it cannot place: no list has it, or the lists that have it are full. */
+const PICK_SENTENCES = [
+  /^A perícia .+ não está em nenhuma das listas de onde o personagem escolhe perícias\.$/,
+  /^Não há vaga para a perícia (.+): as listas que a oferecem já estão preenchidas pelas outras perícias marcadas\. Desmarque uma delas para marcar \1\.$/,
+  /^A especialização em .+ não está em nenhuma das listas de onde o personagem escolhe especializações\.$/,
+  /^Não há vaga para a especialização em (.+): as listas que a oferecem já estão preenchidas pelas outras especializações marcadas\. Desmarque uma delas para marcar a especialização em \1\.$/,
+];
+
 /**
- * The server's sentence for a skill or an expertise no list of the sheet allows ("A perícia X não está em nenhuma das
- * listas ..."), without the field it leads with; `null` for any other refusal.
+ * The server's sentence for a skill or an expertise it cannot place, without the field it leads with; `null` for any
+ * other refusal or any other sentence.
  */
 export function pickRefusalOf(err: unknown): string | null {
   const field = invalidFieldPath(err);
   if (
     !field ||
-    !/^(?:sheet\.)?full\.(?:skill_proficiency_keys|expertise_skill_keys)\[\d+\]/.test(field)
+    !/^(?:sheet\.)?full\.(?:skill_proficiency_keys|expertise_skill_keys)\[\d+\]$/.test(field)
   ) {
     return null;
   }
   const message = ConnectError.from(err, Code.Unavailable).rawMessage;
-  const sentence = message.startsWith(`${field} `) ? message.slice(field.length + 1) : message;
-  return sentence.trim() || null;
+  const sentence = (
+    message.startsWith(`${field} `) ? message.slice(field.length + 1) : message
+  ).trim();
+  return PICK_SENTENCES.some((re) => re.test(sentence)) ? sentence : null;
 }
 
 const BLOCKED_FROM_GEN: Partial<Record<GenCharacterBlockedReason, CharacterBlockedReason>> = {

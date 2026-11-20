@@ -580,7 +580,7 @@
                   [granted]="views.grantedSkills()"
                   [expertise]="picks.expertiseSkills()"
                   [expertiseAllowed]="views.expertiseAllowed()"
-                  (toggleSkill)="picks.toggleSkill($event); saving.pickProblem.set('')"
+                  (toggleSkill)="picks.toggleSkill($event)"
                   (toggleExpertise)="picks.toggleExpertise($event)"
                 />
               </cdk-step>

@@ -876,6 +876,47 @@ describe('CharacterEditor', () => {
       fixture.detectChanges();
       expect(names()).toEqual(['Arcanismo']);
     });
+
+    it('keeps the row of a skill the sheet held when it was opened after it is taken off, so it can be ticked again', async () => {
+      const { cmp, names, answer, fixture, el } = await openCut();
+      cmp.picks.toggleSkill('skill:stealth');
+      cmp.picks.heldAtOpen.set(new Set(['skill:stealth']));
+      cmp.picks.toggleSkill('skill:stealth');
+      answer({ any: false, keys: ['skill:arcana'] });
+      expect(names()).toEqual(['Arcanismo', 'Furtividade']);
+      const box = () =>
+        Array.from(el.querySelectorAll<HTMLInputElement>('app-skill-picker .skill__name input'))[1];
+      expect(box().checked).toBe(false);
+      box().click();
+      fixture.detectChanges();
+      expect(box().checked).toBe(true);
+    });
+
+    it('says nothing of a held skill no list allows: its row reads as its name alone', async () => {
+      const { cmp, names, answer } = await openCut();
+      cmp.picks.toggleSkill('skill:stealth');
+      answer({ any: false, keys: ['skill:arcana'] });
+      expect(names()).toEqual(['Arcanismo', 'Furtividade']);
+    });
+
+    it('clears the refusal on the step when a skill or an expertise is toggled or the class changes', async () => {
+      const { cmp, fixture } = await openCut();
+      const refuse = () => {
+        cmp.saving.pickProblem.set('Uma frase do servidor.');
+        cmp.saving.state.set({ status: 'error', message: 'Veja o passo Perícias.' });
+      };
+      for (const act of [
+        () => cmp.picks.toggleSkill('skill:arcana'),
+        () => cmp.picks.toggleExpertise('skill:arcana'),
+        () => cmp.fullForm.patchValue({ className: 'class:rogue' }),
+      ]) {
+        refuse();
+        act();
+        fixture.detectChanges();
+        expect(cmp.saving.pickProblem()).toBe('');
+        expect(cmp.saving.state().status).toBe('idle');
+      }
+    });
   });
 
   describe('the skills the race and the background give', () => {
