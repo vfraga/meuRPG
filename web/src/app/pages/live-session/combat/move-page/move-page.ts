@@ -385,11 +385,7 @@ export class MovePage {
       this.chosen();
       untracked(() => this.trapAsk.set(false));
     });
-    effect(() => {
-      if (this.trapAsk()) {
-        queueMicrotask(() => this.safe()?.nativeElement.focus());
-      }
-    });
+    effect(() => this.trapAsk() && queueMicrotask(() => this.safe()?.nativeElement.focus()));
   }
 
   /** "Voltar" on the trap question: the focus goes back to the button that asked. */

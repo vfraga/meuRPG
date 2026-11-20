@@ -666,7 +666,7 @@ describe('CombatMapCard: the "Montado" legend line', () => {
     }
   });
 
-  it('names the pair under a player\'s compact map too, where the other marks stay off', () => {
+  it("names the pair under a player's compact map too, where the other marks stay off", () => {
     const { el } = mount({
       isMaster: false,
       legend: false,

@@ -356,7 +356,7 @@ describe('CombatView, the reaction windows', () => {
       expect(next.getAttribute('aria-disabled')).toBe('true');
       expect(plain(el.textContent)).toContain('Espera o teste de Toren');
       Array.from(card.querySelectorAll('button'))
-        .find((b) => plain(b.textContent) === 'Rolar por Toren')!
+        .find((b) => plain(b.textContent).replace(/^casino/, '') === 'Rolar por Toren')!
         .click();
       await settle(fixture);
       expect(opened.map((o) => o.component)).toEqual([MountSaveSheet]);
