@@ -188,6 +188,8 @@ type LevelUpOffer struct {
 	// college, the Rogue's Expertise).
 	SkillChoices     int
 	ExpertiseChoices int
+	// SkillSources are the lists the new skills come from (see LevelSkillSources).
+	SkillSources []LevelSkillSource
 	// LateChoices are the choices an earlier level left open (a sheet written
 	// before they were asked, or saved with one skipped): the level up asks for
 	// them first and refuses without them. NewChoices are the new level's choices
@@ -240,6 +242,8 @@ type LevelUpSubclass struct {
 	// expertise. The top-level counts of the offer leave them out until the
 	// subclass is chosen.
 	Cantrips, SkillChoices, ExpertiseChoices int
+	// SkillSources are the lists the subclass's skills come from.
+	SkillSources []LevelSkillSource
 	// Spells is how many spells a third caster's subclass adds (known ones, with
 	// SpellsKind PreparationKnown); the table's subclass that casts is the only one.
 	Spells     int
@@ -475,6 +479,7 @@ func levelUpOptionsWith(b Build, idx int, classKey string, c *content, sub *srd5
 	gains := c.levelGains(classKey, sub, newLevel)
 	o.FeatureChoices = c.namedChoices(bare, gains.choices)
 	o.SkillChoices, o.ExpertiseChoices = gains.skills, gains.expertise
+	o.SkillSources = c.levelSkillSources(classKey, gains, o.Multiclass)
 
 	// A subclass that is due: each candidate's own part. It is read before the
 	// spells below, so a third caster's part compares with counts still at zero.
@@ -565,7 +570,7 @@ func (o *LevelUpOffer) subclassPart(c *content, b Build, idx int, s, sub *srd51.
 	g := c.subclassGains(s, o.ToLevel)
 	ls := LevelUpSubclass{
 		Key: key, NamePT: c.namePT(key), Archived: c.archived[key], Off: c.off[key], FeatureChoices: c.namedChoices(bareLevelUp(b, idx, o.Class, o.ToLevel, s), g.choices),
-		Cantrips: g.cantrips, SkillChoices: g.skills, ExpertiseChoices: g.expertise,
+		Cantrips: g.cantrips, SkillChoices: g.skills, ExpertiseChoices: g.expertise, SkillSources: c.levelSkillSources("", g, nil),
 	}
 	if _, third := c.subCasting[key]; third && sub == nil {
 		// A third caster's table starts with the subclass: what it adds to
@@ -831,12 +836,15 @@ type levelGains struct {
 	skills    int
 	expertise int
 	cantrips  int
+	// skillSources are the lists the level's skills come from, one per choice effect.
+	skillSources []pickSource
 }
 
 func (g levelGains) plus(o levelGains) levelGains {
 	return levelGains{
 		choices: slices.Concat(g.choices, o.choices), skills: g.skills + o.skills,
 		expertise: g.expertise + o.expertise, cantrips: g.cantrips + o.cantrips,
+		skillSources: slices.Concat(g.skillSources, o.skillSources),
 	}
 }
 
@@ -885,6 +893,7 @@ func (g *levelGains) addChoiceEffect(fk string, e *Effect, choose int) int {
 		}
 	case "skill":
 		g.skills += e.Count
+		g.skillSources = append(g.skillSources, pickSource{Owner: fk, Count: e.Count, From: e.From, Any: len(e.From) == 0})
 	case "cantrip":
 		g.cantrips += e.Count
 	}
@@ -1249,7 +1258,7 @@ func checkLevelUp(before, after Build, sent sentSwaps, c *content) *LevelUpError
 	if lerr := checkLevelUpChoices(before, after, classKey, swaps, c); lerr != nil {
 		return lerr
 	}
-	if lerr := c.checkLevelUpSkills(before, after, mc, gains); lerr != nil {
+	if lerr := c.checkLevelUpSkills(before, after, classKey, mc, gains); lerr != nil {
 		return lerr
 	}
 	return checkNewIssues(dBefore, dAfter, offOwnList)
@@ -1340,7 +1349,7 @@ func duplicatesOf(before, after Build, newClass bool) Build {
 
 // checkLevelUpSkills checks the new skills (the multiclass pick of a new class, mc
 // not nil) and the new expertise against what the level gives.
-func (c *content) checkLevelUpSkills(before, after Build, mc *MulticlassOffer, gains levelGains) *LevelUpError {
+func (c *content) checkLevelUpSkills(before, after Build, classKey string, mc *MulticlassOffer, gains levelGains) *LevelUpError {
 	wantSkills, wantExpertise := gains.skills, gains.expertise
 	got, removedSkills := added(before.SkillProficiencies, after.SkillProficiencies)
 	switch {
@@ -1352,6 +1361,9 @@ func (c *content) checkLevelUpSkills(before, after Build, mc *MulticlassOffer, g
 		}
 	case len(got) != wantSkills:
 		return refuse("full.skill_proficiency_keys", LevelUpReasonSkills, "the new level lets the player choose %d skills", wantSkills)
+	}
+	if lerr := c.checkSkillSources(got, c.levelSkillSources(classKey, gains, mc)); lerr != nil {
+		return lerr
 	}
 	if got, removed := added(before.Expertise, after.Expertise); removed || len(got) != wantExpertise {
 		return refuse("full.expertise_skill_keys", LevelUpReasonExpertise, "the new level gives %d expertise", wantExpertise)

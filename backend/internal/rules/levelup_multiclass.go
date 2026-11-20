@@ -592,3 +592,40 @@ func newClassOf(before, after Build) (string, bool) {
 	}
 	return after.Classes[len(after.Classes)-1].Class, true
 }
+
+// LevelSkillSource is a list the new level's skills come from: the feature, trait or class that lets the player choose
+// Count skills (an empty From allows every skill).
+type LevelSkillSource struct {
+	Owner, NamePT string
+	Count         int
+	From          []string
+}
+
+// levelSkillSources lists the sources of the skills a level gives: the multiclass pick of a class the character takes
+// (classKey, when mc is not nil) and the choice effects of the level's features.
+func (c *content) levelSkillSources(classKey string, g levelGains, mc *MulticlassOffer) []LevelSkillSource {
+	var out []LevelSkillSource
+	if mc != nil && mc.Skills != nil {
+		src := LevelSkillSource{Owner: classKey, NamePT: c.namePT(classKey), Count: mc.Skills.Choose}
+		for _, o := range mc.Skills.From {
+			src.From = append(src.From, o.Key)
+		}
+		out = append(out, src)
+	}
+	for _, s := range g.skillSources {
+		out = append(out, LevelSkillSource{Owner: s.Owner, NamePT: c.namePT(s.Owner), Count: s.Count, From: s.From})
+	}
+	return out
+}
+
+// checkSkillSources refuses a new skill that the level's sources cannot place together with the others.
+func (c *content) checkSkillSources(got []string, sources []LevelSkillSource) *LevelUpError {
+	picks := make([]pickSource, len(sources))
+	for i, s := range sources {
+		picks[i] = pickSource{Owner: s.Owner, Count: s.Count, From: s.From, Any: len(s.From) == 0}
+	}
+	if left := unplacedPicks(picks, got); len(left) > 0 {
+		return refuse(skillsField, LevelUpReasonSkills, "no choice of the new level lets the player choose %s", left[0])
+	}
+	return nil
+}
