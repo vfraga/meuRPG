@@ -154,6 +154,21 @@ func (x *deriver) unplacedNewTool(held Build, xs *deriver) (string, string, bool
 	return "", "", false
 }
 
+// HiddenToolOwner says the pick at field (a feature choice of the sheet now) is a tool pick of an owner the view is a player's
+// and may not read, which the sheet does not hold: such a pick reads as one of an owner that does not exist.
+func (c *Content) HiddenToolOwner(now Build, field string) bool {
+	var i int
+	if _, err := fmt.Sscanf(field, ChoiceKeysField+"[%d]", &i); err != nil || i < 0 || i >= len(now.FeatureChoices) {
+		return false
+	}
+	choiceKey, _, ok := SplitScopedChoice(now.FeatureChoices[i])
+	if !ok {
+		return false
+	}
+	owner, isTool := strings.CutSuffix(choiceKey, toolPickSuffix)
+	return isTool && c.c.hiddenTo(now, owner)
+}
+
 // IsToolProficiency says the key is a proficiency a tool choice may offer: a tool, a vehicle, a kit or a weapon.
 func (c *Content) IsToolProficiency(key string) bool { return c.c.isToolPickKey(key) }
 

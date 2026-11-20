@@ -117,8 +117,8 @@ func refuseUnfitPickIn(view *rules.Content, before func() *charactersv1.FullShee
 	if !found {
 		return nil
 	}
-	if strings.HasPrefix(field, rules.ChoiceKeysField) && !view.IsToolProficiency(key) {
-		return errUnknownKey("sheet." + field) // a tool pick of anything but a tool is a key the content does not have
+	if strings.HasPrefix(field, rules.ChoiceKeysField) && (!view.IsToolProficiency(key) || view.HiddenToolOwner(buildOf(after), field)) {
+		return errUnknownKey("sheet." + field) // a tool pick of anything but a tool, or of an owner the reader may not read, is a key the content does not have
 	}
 	return invalidArgument(&fieldError{field: "sheet." + field, err: errors.New(unfitSentence(view, buildOf(after), field, key))})
 }

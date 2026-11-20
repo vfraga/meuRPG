@@ -508,9 +508,14 @@ func checkNewSheetOf(content *rules.Content, m authz.Membership, kind string, ra
 }
 
 // refuseNewChoices refuses a choice the sheet adds to the stored one (nil when
-// creating; characterID is empty then): a table entry the master archived is
-// not a new choice (RN-23), and neither is one the master switched off, except
-// for the master. The ones the stored sheet already has stay.
+// creating; characterID is empty then). The ones the stored sheet already has
+// stay. It runs three steps, in this order, and the first to refuse answers:
+//  1. refuseKeptOutPick: a pick of a kind the player's view keeps out;
+//  2. refuseClosedChoices: a table entry the master archived is not a new
+//     choice (RN-23), and neither is one the master switched off, except for
+//     the master;
+//  3. refuseUnfitPick: a new pick that no live source places, or whose owner
+//     the player's view does not show, answered as a key that does not exist.
 func refuseNewChoices(content *rules.Content, m authz.Membership, characterID string, stored, sheet *charactersv1.FullSheet) error {
 	if err := refuseKeptOutPick(content, m, func() *charactersv1.FullSheet { return stored }, sheet); err != nil {
 		return err

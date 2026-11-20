@@ -9,6 +9,7 @@ import (
 	charactersv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/characters/v1"
 	"github.com/PuraFome/meuRPG/backend/gen/meurpg/characters/v1/charactersv1connect"
 	rulesv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/rules/v1"
+	"github.com/PuraFome/meuRPG/backend/internal/rules"
 )
 
 // A class feature the master archived is no source for a player: every answer a player gets is the one they would get if the
@@ -124,5 +125,130 @@ func TestAnArchivedClassFeatureIsNoSourceOfAPickForAPlayer(t *testing.T) {
 	}
 	if got := lists(w.master, map[string]string{})["skills_allowed"]; !slices.Contains(strings.Split(got, ","), inside) {
 		t.Errorf("the master reads what is archived: skills_allowed is %q, want %s listed", got, inside)
+	}
+}
+
+// A tool pick of the owner an archived class feature is answers a player as a tool pick of an owner that does not exist,
+// whether the tool is on the feature's list or not, on every call that takes a pick. The master, who reads the feature,
+// is not asked here.
+func TestAToolPickOfAnArchivedClassFeatureIsAnsweredAsOneOfNoOwner(t *testing.T) {
+	p := newChoicesProbe(t)
+	w, ctx := p.w, t.Context()
+	const inside, outside, absent = "proficiency:smiths-tools", "proficiency:glaives", "feature:nenhum--dono@mesa"
+	feature := must(w.master.table.CreateTableEntry(ctx, rq(&rulesv1.CreateTableEntryRequest{
+		CampaignId: w.campaign, Body: &rulesv1.CreateTableEntryRequest_TableClassFeature{TableClassFeature: &rulesv1.TableClassFeature{
+			NamePt: "Oficio arquivado", DescPt: []string{"Texto de teste."}, ClassKey: "class:wizard", Level: 1,
+			Effects: []*rulesv1.TableEffect{{Type: "choice", Choice: "tool", Count: 1, From: []string{inside, "proficiency:thieves-tools"}}}, // two tools: one alone would be picked for the sheet
+		}},
+	}))).GetEntry()
+	// The stored sheet holds the feature's other tool, as its owner: a pick the stored sheet holds stays, so the draft keeps it and adds the new one.
+	const heldTool = "proficiency:thieves-tools"
+	heldPick := rules.ScopedChoice(rules.ToolPickKey(feature.GetKey()), heldTool)
+	held := must(w.ana.characters.CreateCharacter(ctx, rq(&charactersv1.CreateCharacterRequest{
+		CampaignId: w.campaign, Kind: charactersv1.CharacterKind_CHARACTER_KIND_PLAYER, Name: "Perita", Sheet: sheet("class:wizard", 1, heldPick),
+	}))).GetCharacter()
+	must(w.master.table.ArchiveTableEntry(ctx, rq(&rulesv1.ArchiveTableEntryRequest{CampaignId: w.campaign, Key: feature.GetKey()})))
+	draft := func(owner, tool string) *charactersv1.CharacterSheet {
+		s := sheet("class:wizard", 1)
+		s.GetFull().FeatureChoiceKeys = []string{rules.ScopedChoice(rules.ToolPickKey(owner), tool)}
+		return s
+	}
+	// The stored sheet's own pick goes with the new one on an update.
+	withHeld := func(s *charactersv1.CharacterSheet) *charactersv1.CharacterSheet {
+		s.GetFull().FeatureChoiceKeys = append([]string{heldPick}, s.GetFull().GetFeatureChoiceKeys()...)
+		return s
+	}
+	calls := map[string]func(who *person, owner, tool string) reply{
+		"create": func(who *person, owner, tool string) reply {
+			return who.call(charactersv1connect.CharacterServiceCreateCharacterProcedure, &charactersv1.CreateCharacterRequest{
+				CampaignId: w.campaign, Kind: charactersv1.CharacterKind_CHARACTER_KIND_PLAYER, Name: "Nova", Sheet: draft(owner, tool),
+			})
+		},
+		"preview": func(who *person, owner, tool string) reply {
+			return who.call(charactersv1connect.CharacterServicePreviewCharacterProcedure, &charactersv1.PreviewCharacterRequest{
+				CampaignId: w.campaign, Kind: charactersv1.CharacterKind_CHARACTER_KIND_PLAYER, Sheet: draft(owner, tool),
+			})
+		},
+		"update": func(who *person, owner, tool string) reply {
+			return who.call(charactersv1connect.CharacterServiceUpdateCharacterProcedure, &charactersv1.UpdateCharacterRequest{
+				CampaignId: w.campaign, CharacterId: held.GetId(), Revision: held.GetRevision(), Name: held.GetName(), Sheet: withHeld(draft(owner, tool)),
+			})
+		},
+	}
+	for call, send := range calls {
+		who := w.ana
+		if call == "create" {
+			who = w.caio
+		}
+		for _, tool := range []string{inside, outside} {
+			named, none := send(who, feature.GetKey(), tool), send(who, absent, tool)
+			if none.ok() {
+				t.Errorf("%s, %s: accepted (archived %d, absent %d): the row measures nothing", call, tool, named.status, none.status)
+			}
+			if !sameAnswer(named, feature.GetKey(), none, absent) {
+				t.Errorf("%s, %s: the archived owner: HTTP %d %s\nan owner that does not exist: HTTP %d %s", call, tool, named.status, shorten(named.body), none.status, shorten(none.body))
+			}
+		}
+	}
+}
+
+// A class feature the master archived is no source of expertise for a player either: the answer to a new expertise is the
+// one it gets when the feature does not exist, with a skill on its list and with one off it.
+func TestAnArchivedClassFeatureIsNoSourceOfExpertiseForAPlayer(t *testing.T) {
+	p := newChoicesProbe(t)
+	w, ctx := p.w, t.Context()
+	const inside, outside = "skill:arcana", "skill:history"
+	draft := func(expertise string) *charactersv1.CharacterSheet {
+		s := sheet("class:wizard", 1)
+		s.GetFull().SkillProficiencyKeys = []string{inside, outside}
+		s.GetFull().ExpertiseSkillKeys = []string{expertise}
+		return s
+	}
+	plain := func() *charactersv1.CharacterSheet {
+		s := draft(inside)
+		s.GetFull().ExpertiseSkillKeys = nil
+		return s
+	}
+	held := must(w.ana.characters.CreateCharacter(ctx, rq(&charactersv1.CreateCharacterRequest{
+		CampaignId: w.campaign, Kind: charactersv1.CharacterKind_CHARACTER_KIND_PLAYER, Name: "Perita", Sheet: plain(),
+	}))).GetCharacter()
+	answers := func(key string) map[string]string {
+		out := map[string]string{}
+		for _, skill := range []string{inside, outside} {
+			for name, r := range map[string]reply{
+				"create": w.caio.call(charactersv1connect.CharacterServiceCreateCharacterProcedure, &charactersv1.CreateCharacterRequest{
+					CampaignId: w.campaign, Kind: charactersv1.CharacterKind_CHARACTER_KIND_PLAYER, Name: "Nova", Sheet: draft(skill),
+				}),
+				"preview": w.ana.call(charactersv1connect.CharacterServicePreviewCharacterProcedure, &charactersv1.PreviewCharacterRequest{
+					CampaignId: w.campaign, Kind: charactersv1.CharacterKind_CHARACTER_KIND_PLAYER, Sheet: draft(skill),
+				}),
+				"update": w.ana.call(charactersv1connect.CharacterServiceUpdateCharacterProcedure, &charactersv1.UpdateCharacterRequest{
+					CampaignId: w.campaign, CharacterId: held.GetId(), Revision: held.GetRevision(), Name: held.GetName(), Sheet: draft(skill),
+				}),
+			} {
+				if key != "" {
+					r.body = []byte(strings.ReplaceAll(string(r.body), key, "K"))
+				}
+				out[name+" "+skill] = string(r.body) + " HTTP " + string(rune('0'+r.status/100))
+			}
+		}
+		return out
+	}
+	without := answers("")
+	if strings.Contains(without["create "+outside], "HTTP 2") || !strings.Contains(without["create "+outside], "HTTP 4") {
+		t.Fatalf("without the feature expertise on %s is answered %s: the row measures nothing", outside, without["create "+outside])
+	}
+	feature := must(w.master.table.CreateTableEntry(ctx, rq(&rulesv1.CreateTableEntryRequest{
+		CampaignId: w.campaign, Body: &rulesv1.CreateTableEntryRequest_TableClassFeature{TableClassFeature: &rulesv1.TableClassFeature{
+			NamePt: "Mestria arquivada", DescPt: []string{"Texto de teste."}, ClassKey: "class:wizard", Level: 1,
+			Effects: []*rulesv1.TableEffect{{Type: "choice", Choice: "expertise", Count: 1, From: []string{inside}}},
+		}},
+	}))).GetEntry()
+	must(w.master.table.ArchiveTableEntry(ctx, rq(&rulesv1.ArchiveTableEntryRequest{CampaignId: w.campaign, Key: feature.GetKey()})))
+	with := answers(feature.GetKey())
+	for name, want := range without {
+		if with[name] != want {
+			t.Errorf("Ana, %s, with the archived feature: %s\nwithout the feature: %s", name, with[name], want)
+		}
 	}
 }
