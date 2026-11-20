@@ -248,6 +248,15 @@ The request of a roll that a window held has its key on the event that stood for
 That is why `window_hold` is kept for every kind of window replay and not for the weapon attack alone.
 
 The answer given again under the same key (a retry after a lost answer) finds the hold already answered with that key and runs the path again under it, which gives the contest, its answer or the attempt that the first answer wrote and writes nothing more: one row, one event and one die spent (`held_window_replay_test.go`, which retries the answer of the four kinds: a contest's start, a contest's answer, a Hide and a spell attack).
+
+**A replay the roll refuses.** `releaseHold` replays the held request inside a savepoint (`guardReplay`: a nested transaction of the answer's own) and keeps a copy of the change's state in memory (`combatTx` and the hints gathered so far). `settleReplay` reads how the replay ended:
+
+- a replay that went through, or that asks (`ambientDoneError`, asking or not), releases the savepoint and keeps what it wrote;
+- a refusal (`clientError`: the target is gone, the slot was spent, a mode asked that the roll's sources do not allow) rolls the savepoint back and puts the copy back, then marks the hold `dropped` and writes the master's `held_dropped` line. Everything the replay wrote is gone with it: the Inspiração, a slot, a reason, a kept d20 or its question, the event, and what it had queued to tell (hints, log lines, pushed moves, vitals). The faces a roller typed for the replay (a table of physical dice) were only in the held request, never in a roll, so none is kept;
+- any other error (a serialization failure, a bug) is no refusal: it aborts the transaction and reaches the retry untouched, and the retry runs the whole answer again.
+
+What stays spent is exactly what the window's own answers wrote before the savepoint: the reactor's slot and reaction, as a reaction used against an action that then did not happen. The reactor's retry (the same answer under the same key) finds the answer stored and the hold dropped, and spends nothing a second time (`favor_replay_refusal_test.go`).
+
 `underKey` and `rerunAttack` put the answer's key in the request through its `idempotency_key` field, and a request without the field would be left under the held request's key, which brings the silent loss back. `TestEveryHeldKindKeepsARequestWithAnIdempotencyKey` keeps a request type for every kind of `heldRegistry` (and for both requests of a contest and of a group check) and fails when a kind has no row or its request has no string `idempotency_key`.
 
 **What a window can hold.** Only the weapon attack (`attackFlow.holdForWindow`), the spell attack (`holdSpellAttack`) and the checks of `gateCheck` (a contest's start and answer, a Hide) set `rollSpec.Window`, so only they keep a `window_hold` question. The actions a window holds are the cast, the attack, the damage roll, a hit rider and those checks (`replayHeld`, `replayHeldCheck`), and of the held rolls:
