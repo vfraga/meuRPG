@@ -63,7 +63,15 @@ class FakeCharacterEditorSource {
   /** `PreviewChoices`: a draft that asks nothing, unless a spec says otherwise. */
   previewChoicesCalls: PreviewCharacterInput[] = [];
   previewChoicesFn: (input: PreviewCharacterInput) => Promise<ChoicesPreviewVm> = () =>
-    Promise.resolve({ groups: [], done: 0, total: 0, notOffered: [], spellSources: [] });
+    Promise.resolve({
+      groups: [],
+      done: 0,
+      total: 0,
+      notOffered: [],
+      spellSources: [],
+      skillsAllowed: null,
+      expertiseAllowed: null,
+    });
   previewChoices(input: PreviewCharacterInput): Promise<ChoicesPreviewVm> {
     this.previewChoicesCalls.push(input);
     return this.previewChoicesFn(input);
@@ -814,6 +822,59 @@ describe('CharacterEditor', () => {
 
       expect(chosenLines(el)).toContain('Nenhum truque escolhido');
       expect(el.querySelector('.picker__warn')).toBeNull();
+    });
+  });
+
+  describe('the skills the sheet sources allow', () => {
+    async function openCut() {
+      configure({ id: 'camp-1' });
+      fake.loadCatalogFn = () => {
+        const c = catalog();
+        return Promise.resolve({
+          ...c,
+          skills: [...c.skills, { key: 'skill:stealth', namePt: 'Furtividade', ability: 'dex' }],
+        });
+      };
+      const view = await render();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const cmp = view.fixture.componentInstance as any;
+      cmp.fullForm.patchValue({ race: 'race:gnome', className: 'class:wizard' });
+      view.fixture.detectChanges();
+      await openStep(view.fixture, 'Perícias');
+      const names = () =>
+        Array.from(view.el.querySelectorAll('app-skill-picker .skill__name')).map((r) =>
+          r.textContent?.replace(/\s+/g, ' ').trim(),
+        );
+      const answer = (skills: { any: boolean; keys: string[] } | null) => {
+        cmp.server.choices.answer.set({
+          groups: [],
+          done: 0,
+          total: 0,
+          notOffered: [],
+          spellSources: [],
+          skillsAllowed: skills,
+          expertiseAllowed: null,
+        });
+        view.fixture.detectChanges();
+      };
+      return { ...view, cmp, names, answer };
+    }
+
+    it('offers every skill until the server answers, and when a source takes any', async () => {
+      const { names, answer } = await openCut();
+      expect(names()).toEqual(['Arcanismo', 'História', 'Furtividade']);
+      answer({ any: true, keys: [] });
+      expect(names()).toEqual(['Arcanismo', 'História', 'Furtividade']);
+    });
+
+    it('cuts the list to the allowed skills and keeps one the sheet holds, so it can be taken off', async () => {
+      const { cmp, names, answer, fixture } = await openCut();
+      cmp.picks.toggleSkill('skill:stealth');
+      answer({ any: false, keys: ['skill:arcana'] });
+      expect(names()).toEqual(['Arcanismo', 'Furtividade']);
+      cmp.picks.toggleSkill('skill:stealth');
+      fixture.detectChanges();
+      expect(names()).toEqual(['Arcanismo']);
     });
   });
 

@@ -13,6 +13,7 @@ import {
   describeCharacterError,
   invalidFieldPath,
   livingRefusal,
+  pickRefusalOf,
   switchedOffKey,
 } from './character-errors';
 
@@ -237,6 +238,37 @@ describe('the content the master retired (RN-23, 10.1d)', () => {
     expect(invalidFieldPath(err)).toBe('full.classes[1].class_key');
     expect(describeCharacterError(err)).toContain('Classe 2: essa classe se repete ou não existe');
     expect(invalidFieldPath(new ConnectError('x', Code.NotFound))).toBeNull();
+  });
+});
+
+describe('pickRefusalOf', () => {
+  const refused = (field: string, message: string) =>
+    new ConnectError(message, Code.InvalidArgument, undefined, [
+      { desc: InvalidFieldSchema, value: { field } },
+    ]);
+  const sentence =
+    'A perícia Furtividade não está em nenhuma das listas de onde o personagem escolhe perícias.';
+
+  it('gives the server sentence of a skill or an expertise no list allows, without the field', () => {
+    const skill = refused(
+      'sheet.full.skill_proficiency_keys[2]',
+      `sheet.full.skill_proficiency_keys[2] ${sentence}`,
+    );
+    expect(pickRefusalOf(skill)).toBe(sentence);
+    expect(describeCharacterError(skill)).toBe(sentence);
+    const expertise = refused(
+      'sheet.full.expertise_skill_keys[0]',
+      'sheet.full.expertise_skill_keys[0] A especialização em Furtividade não está em nenhuma das listas de onde o personagem escolhe especializações.',
+    );
+    expect(pickRefusalOf(expertise)).toBe(
+      'A especialização em Furtividade não está em nenhuma das listas de onde o personagem escolhe especializações.',
+    );
+  });
+
+  it('is null for any other refusal', () => {
+    expect(pickRefusalOf(refused('sheet.full.classes[0]', 'x y'))).toBeNull();
+    expect(pickRefusalOf(new ConnectError('x', Code.InvalidArgument))).toBeNull();
+    expect(pickRefusalOf(new Error('x'))).toBeNull();
   });
 });
 

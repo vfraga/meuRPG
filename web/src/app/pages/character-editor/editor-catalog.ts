@@ -10,6 +10,7 @@ import {
   choicesSubtitleOf,
   finalConstitutionOf,
   grantedSkillsOf,
+  pickableSkillsOf,
   sectionHeadingOf,
   skillNoteOf,
   subclassHintOf,
@@ -265,6 +266,17 @@ export class EditorCatalog {
   readonly chosenSkills = computed(() =>
     chosenSkillsOf(this.host.picks.selectedSkills(), this.grantedSkills()),
   );
+  /** The skills the picker offers: those the server says a source of the draft allows, with the ones the draft holds. */
+  readonly pickableSkills = computed(() => {
+    const all = this.catalog()?.skills ?? [];
+    const held = new Set([...this.host.picks.selectedSkills(), ...this.grantedSkills().keys()]);
+    return pickableSkillsOf(all, this.host.choices()?.skillsAllowed, held);
+  });
+  /** The skills expertise may go on, or null when it is not cut (no answer yet, or a source takes any). */
+  readonly expertiseAllowed = computed<ReadonlySet<string> | null>(() => {
+    const allowed = this.host.choices()?.expertiseAllowed;
+    return allowed && !allowed.any ? new Set(allowed.keys) : null;
+  });
   /** What the first class asks of the skills and the saving throws, from the server's entry for it. */
   readonly skillNote = computed(() => skillNoteOf(this.selectedClass()));
   /** "Ver em Magias", for a spell the lists leave out. */

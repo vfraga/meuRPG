@@ -222,6 +222,7 @@ export class CharacterEditor {
     stillHere: () => this.loader.stillHere(),
     nameOfKey: (key) => this.views.nameOfKey(key),
     markSwitchedOff: (key) => this.submitting.markSwitchedOff(key),
+    openStep: (step) => this.submitting.openStep(step),
     refreshCatalog: () => this.refreshCatalog(),
   });
   /** The class block a refusal points at (`full.classes[i]`), so the block says so. */

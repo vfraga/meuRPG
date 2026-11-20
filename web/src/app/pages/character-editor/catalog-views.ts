@@ -172,6 +172,21 @@ export function chosenSkillsOf(
   return new Set(Array.from(selected).filter((k) => !granted.has(k)));
 }
 
+/** The list the skill picker shows: the skills the server says the sheet's sources allow, and every one the sheet holds
+ * or is given, so a held skill no list allows stays on screen and can be taken off. Before the server's first answer, or
+ * when a source takes any skill, nothing is cut. */
+export function pickableSkillsOf<T extends { readonly key: string }>(
+  all: readonly T[],
+  allowed: { readonly any: boolean; readonly keys: readonly string[] } | null | undefined,
+  held: ReadonlySet<string>,
+): readonly T[] {
+  if (!allowed || allowed.any) {
+    return all;
+  }
+  const keys = new Set(allowed.keys);
+  return all.filter((s) => keys.has(s.key) || held.has(s.key));
+}
+
 /** The heading of a section when there is more than one: "Clérigo · 1º nível". */
 export function sectionHeadingOf(section: CasterSection): string {
   const name = section.subclassNamePt

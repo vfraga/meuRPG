@@ -157,6 +157,23 @@ export function invalidFieldPath(err: unknown): string | null {
   return connectErr.findDetails(InvalidFieldSchema)[0]?.field ?? null;
 }
 
+/**
+ * The server's sentence for a skill or an expertise no list of the sheet allows ("A perícia X não está em nenhuma das
+ * listas ..."), without the field it leads with; `null` for any other refusal.
+ */
+export function pickRefusalOf(err: unknown): string | null {
+  const field = invalidFieldPath(err);
+  if (
+    !field ||
+    !/^(?:sheet\.)?full\.(?:skill_proficiency_keys|expertise_skill_keys)\[\d+\]/.test(field)
+  ) {
+    return null;
+  }
+  const message = ConnectError.from(err, Code.Unavailable).rawMessage;
+  const sentence = message.startsWith(`${field} `) ? message.slice(field.length + 1) : message;
+  return sentence.trim() || null;
+}
+
 const BLOCKED_FROM_GEN: Partial<Record<GenCharacterBlockedReason, CharacterBlockedReason>> = {
   [GenCharacterBlockedReason.SHEET_LOCKED]: 'sheet_locked',
   [GenCharacterBlockedReason.CHARACTER_DEAD]: 'character_dead',
@@ -321,6 +338,10 @@ function invalidArgumentMessage(err: ConnectError): string {
   const field = err.findDetails(InvalidFieldSchema)[0]?.field ?? '';
   if (field === 'reason') {
     return 'O motivo precisa ter de 1 a 500 caracteres.';
+  }
+  const pick = pickRefusalOf(err);
+  if (pick) {
+    return pick;
   }
   const block = /^full\.classes\[(\d+)\]/.exec(field);
   if (block) {

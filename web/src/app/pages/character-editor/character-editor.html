@@ -557,7 +557,7 @@
                 </cdk-step>
               }
 
-              <cdk-step [label]="stepLabels.pericias">
+              <cdk-step [label]="stepLabels.pericias" [hasError]="saving.pickProblem() !== ''">
                 <p class="step-lead">
                   Marque as perícias em que o personagem é proficiente. Especialização dobra o bônus
                   de proficiência e só vale numa perícia marcada.
@@ -568,12 +568,19 @@
                 @if (views.skillNote()) {
                   <p class="step-lead skill-note">{{ views.skillNote() }}</p>
                 }
+                @if (saving.pickProblem(); as problem) {
+                  <div class="mr-notice mr-notice--danger" role="alert">
+                    <mat-icon aria-hidden="true">error</mat-icon>
+                    <p>{{ problem }}</p>
+                  </div>
+                }
                 <app-skill-picker
-                  [skills]="s.catalog.skills"
+                  [skills]="views.pickableSkills()"
                   [proficient]="views.chosenSkills()"
                   [granted]="views.grantedSkills()"
                   [expertise]="picks.expertiseSkills()"
-                  (toggleSkill)="picks.toggleSkill($event)"
+                  [expertiseAllowed]="views.expertiseAllowed()"
+                  (toggleSkill)="picks.toggleSkill($event); saving.pickProblem.set('')"
                   (toggleExpertise)="picks.toggleExpertise($event)"
                 />
               </cdk-step>

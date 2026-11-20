@@ -200,6 +200,33 @@ describe('SaveFlow', () => {
     expect(updated[1]).toMatchObject({ name: 'Lacaio', full: null, basic: BASIC });
   });
 
+  it('keeps the server sentence of a skill no list allows for the Perícias step, opens it, and clears it on the next save', async () => {
+    const opened: string[] = [];
+    const sentence =
+      'A perícia Furtividade não está em nenhuma das listas de onde o personagem escolhe perícias.';
+    createResult = () =>
+      Promise.reject(
+        new ConnectError(
+          `sheet.full.skill_proficiency_keys[2] ${sentence}`,
+          Code.InvalidArgument,
+          undefined,
+          [
+            {
+              desc: InvalidFieldSchema,
+              value: create(InvalidFieldSchema, { field: 'sheet.full.skill_proficiency_keys[2]' }),
+            },
+          ],
+        ),
+      );
+    const save = flow({ openStep: (step) => opened.push(step) });
+    await save.run(ready(), false);
+    expect(save.pickProblem()).toBe(sentence);
+    expect(opened).toEqual(['pericias']);
+    createResult = () => Promise.resolve({ characterId: 'new' });
+    await save.run(ready(), false);
+    expect(save.pickProblem()).toBe('');
+  });
+
   it('saves nothing for an edit with no character, and is idle', async () => {
     const save = flow();
     await save.run(ready({ mode: 'edit', characterId: null }), false);
