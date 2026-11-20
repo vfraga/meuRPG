@@ -285,9 +285,13 @@ describe('combat view helpers', () => {
         expect(banner.after?.name).toBe('Zumbi 1');
       });
 
-      it('stays a joint turn for anyone else, and for a mount that is not controlled', () => {
-        expect(turnBanner(pair('controlled', false)).joint).not.toBeNull();
+      it('is one turn for anyone else too, with the mount beside the rider, and a joint one for a mount that is not controlled', () => {
+        const other = turnBanner(pair('controlled', false));
+        expect(other.joint).toBeNull();
+        expect(other.riding).toBeUndefined();
+        expect(other.pair?.label).toBe('Cavalo de guerra');
         expect(turnBanner(pair('independent')).riding).toBeUndefined();
+        expect(turnBanner(pair('independent', false)).joint).not.toBeNull();
       });
     });
 

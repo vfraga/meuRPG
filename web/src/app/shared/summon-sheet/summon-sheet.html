@@ -100,7 +100,7 @@
           } @else {
             <app-creature-choice-list
               [rows]="rows()"
-              [flow]="inSheet"
+              [flow]="inSheet || rows().length <= 6"
               [attacksAlways]="bring() || (!familiar() && (opt()?.forms?.length ?? 0) === 0)"
               [chosen]="single()"
               [multi]="several()"
@@ -116,7 +116,7 @@
         </div>
       }
       @if (steed.on) {
-        <app-steed-choice [spell]="s" [type]="steed.type()" [phone]="inSheet" (pickType)="pickSteedType($event)" />
+        <app-steed-choice [spell]="s" [type]="steed.type()" (pickType)="pickSteedType($event)" />
       }
       @if (combat && die.canApp && die.canType && !die.typing()) {
         <!-- One d20 rolls the initiative of the whole group: the app's, unless the player has a physical die. -->

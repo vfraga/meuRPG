@@ -219,3 +219,30 @@ describe('PairCard', () => {
     }
   });
 });
+
+describe('PairCard for the master', () => {
+  function master(over: object = {}) {
+    TestBed.resetTestingModule();
+    const fixture = TestBed.createComponent(PairCard);
+    fixture.componentRef.setInput('rider', tor);
+    fixture.componentRef.setInput('mount', horse(over));
+    fixture.componentRef.setInput('master', true);
+    fixture.detectChanges();
+    return fixture.nativeElement as HTMLElement;
+  }
+
+  it('is one card with the rider and the mount, the numbers from the combat, and no joint-turn words', () => {
+    const el = master();
+    expect(flat(el.querySelector('.pair__head'))).toBe('linkTor e Cavalo de guerra');
+    expect(flat(el)).not.toContain('turno conjunto');
+    expect(el.querySelectorAll('.pair__line')).toHaveLength(2);
+    expect(flat(el.querySelector('.pair__mount'))).toContain('Ação');
+    expect(flat(el.querySelector('.pair__mount'))).not.toContain('Carregando');
+  });
+
+  it('has no action buttons: the rider’s player directs the mount', () => {
+    const el = master();
+    expect(el.querySelectorAll('button')).toHaveLength(0);
+    expect(flat(el.querySelector('.pair__note'))).toContain('O jogador encerra a vez dos dois.');
+  });
+});

@@ -26,7 +26,9 @@ export interface MoveLine {
 export function moveLine(own: Combatant, grappled: boolean, mount?: Combatant): MoveLine {
   if (mount && !grappled) {
     const line = moveLine(mount, false);
-    return line.canMove ? { ...line, lead: tight(`${line.lead} ${withArticle(mount.label, 'a')}`) } : line;
+    return line.canMove
+      ? { ...line, lead: tight(`${line.lead} ${withArticle(mount.label, 'a')}`) }
+      : line;
   }
   const left = metersFixed(own.movementLeftDft / 10);
   if (grappled) {

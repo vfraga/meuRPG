@@ -143,7 +143,7 @@ export class CreatureChoiceList {
   readonly label = input('Criatura');
   /** Every row says what its creature attacks with, so the creatures can be compared; otherwise only the chosen one does. */
   readonly attacksAlways = input(false);
-  /** The list shows all its rows and the sheet around it scrolls (a phone's bottom sheet), instead of scrolling inside itself. */
+  /** The list shows all its rows and the sheet around it scrolls (a phone's bottom sheet, or a short list), instead of scrolling inside itself. */
   readonly flow = input(false);
   readonly searchable = input(false);
   readonly searchLabel = input('Buscar');

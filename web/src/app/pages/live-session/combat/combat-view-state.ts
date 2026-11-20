@@ -45,7 +45,7 @@ import {
   ownCombatant,
   turnBanner,
 } from '../../../core/combat/combat-view';
-import { acts, jointTurn, masterActor } from '../../../core/combat/joint-turn';
+import { acts, masterActor } from '../../../core/combat/joint-turn';
 import { MasterAutoPass } from '../../../core/combat/auto-pass';
 import { mountSaveWait } from '../../../core/combat/mount-save';
 import { CombatCalls } from '../../../core/combat/combat-calls';
@@ -237,8 +237,8 @@ export abstract class CombatViewStateDirective {
     if (!e) {
       return null;
     }
-    // The pair alone is one turn; tied with others, the larger group is the joint turn (the banner says which).
-    return this.riding() ? turnBanner(e).joint : jointTurn(e);
+    // The pair alone is one turn, for its player and for everyone else; tied with others, the larger group is the joint turn (the banner says which).
+    return turnBanner(e).joint;
   });
   /** The pair's turn is the player's to end: their own part, or the part of the mount they direct once theirs ended. */
   protected readonly pairLive = computed(() => {

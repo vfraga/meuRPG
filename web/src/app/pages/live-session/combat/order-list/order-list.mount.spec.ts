@@ -85,6 +85,23 @@ describe('OrderList with a rider and its mount', () => {
     );
   });
 
+  it('on the pair’s turn shows the "Montado" box with "Vez" and no part chips on its rows', () => {
+    const fixture = TestBed.createComponent(OrderList);
+    fixture.componentRef.setInput(
+      'encounter',
+      encounter({
+        currentCombatantId: 'tor',
+        turnGroupIds: ['tor', 'h'],
+        combatants: [tor, horse('controlled'), zombie],
+      } as never),
+    );
+    fixture.detectChanges();
+    const box = (fixture.nativeElement as HTMLElement).querySelector('app-order-group')!;
+    expect(text(box.querySelector('.head'))).toBe('linkMontado· iniciativa 17Vez');
+    expect(box.querySelectorAll('app-part-state')).toHaveLength(0);
+    expect(box.querySelectorAll('.row__turn')).toHaveLength(0);
+  });
+
   it('keeps the pair inside a tie under "Turno conjunto", the mount indented under its rider', () => {
     const brisa = combatant({
       id: 'b',

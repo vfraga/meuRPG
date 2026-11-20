@@ -8,7 +8,7 @@
   display: flex;
   flex: 1 1 auto;
   flex-direction: column;
-  gap: 14px;
+  gap: 8px;
   // No `min-height: 0`: the stack never gets smaller than its parts' own minimums (the list keeps its
   // 164 px), so a short sheet scrolls its body, as a last resort.
   // The outlined field's floating label would be cut by the body's top edge.
@@ -87,7 +87,7 @@
 [foot] {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 
 // A dialog (from a tablet up): the two buttons side by side, so the list keeps the room; the filled one is the wider, so its label stays on one line.
@@ -131,7 +131,7 @@
 }
 
 .no {
-  --mat-button-outlined-container-height: 48px;
+  --mat-button-outlined-container-height: 44px;
   --mat-button-outlined-label-text-color: var(--mr-accent-text);
   --mat-button-outlined-outline-color: var(--mr-control-line);
   font-weight: 700;
@@ -268,7 +268,7 @@
   justify-content: space-between;
   gap: 12px;
   margin: 0;
-  padding: 4px 0 4px 12px;
+  padding: 0 0 0 12px;
   border: 1px solid var(--mr-control-line);
   border-radius: var(--mr-radius-md);
   background: var(--mr-surface);
@@ -281,7 +281,7 @@
 
 .setup__edit {
   min-width: 64px;
-  min-height: 44px;
+  min-height: 40px;
   padding: 0 12px;
   border: 0;
   background: none;

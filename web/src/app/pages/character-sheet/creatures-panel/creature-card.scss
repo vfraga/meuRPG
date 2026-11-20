@@ -196,16 +196,17 @@
 .acts--steed {
   // The row is one line with the ⋮ at its end, whatever the card's width: the actions give way before it wraps.
   flex-wrap: nowrap;
-  gap: 0 var(--mr-space-2);
+  gap: 0 4px;
 }
 
 .acts--steed .act:not(.act--more) {
   min-width: 0;
   gap: 4px;
+  white-space: nowrap;
 }
 
 .acts--steed .act--off {
-  font-size: var(--mr-font-15);
+  font-size: var(--mr-font-14);
 }
 
 .acts--steed .act__off {

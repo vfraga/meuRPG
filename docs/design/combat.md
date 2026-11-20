@@ -45,6 +45,9 @@ The browser draws what the server sends (reach from `GetMoveOptions`, totals, ve
   The link has its own full-width line under the name, and the hit points sit beside the name, so they never cut it.
   An independent mount keeps its own row, with the link line on both ("Cavalgando o Esqueleto", "Leva o Wight · independente").
   A pair that ties with others stays together inside the "Turno conjunto" box.
+  The pair on turn is one turn, for the master and for every viewer: the box has "Vez" in its head and its rows carry no "Ainda age" chips.
+  The master reads one pair card in the turn panel (the rider and the mount with their numbers, no buttons, "O jogador encerra a vez dos dois.") instead of the joint-turn card.
+  The combat bar shows the pair token, "Vez de Isolda" and "Cavalgando o Cavalo de guerra · em seguida: …", and "Próximo turno" is not dashed.
   Every viewer who sees both rows reads the mount's kind while it is ridden.
   The order boxes the pair only when the kind says it is trained.
   A mount with no kind is never boxed.

@@ -29,14 +29,14 @@ import { EconomyShapes, economyShapes } from '../../../../shared/economy-shapes/
   template: `
     <section
       class="pair"
-      [attr.aria-labelledby]="phone() ? null : 'pair-title'"
-      [attr.aria-label]="phone() ? rider().label + ' e ' + mount().label + ', turno conjunto' : null"
+      [attr.aria-labelledby]="phone() && !master() ? null : 'pair-title'"
+      [attr.aria-label]="phone() && !master() ? rider().label + ' e ' + mount().label + ', turno conjunto' : null"
     >
-      @if (!phone()) {
+      @if (!phone() || master()) {
         <!-- On a phone the card comes under the rider's own shapes and "Mover": the mount's line comes alone. -->
         <p class="pair__head" id="pair-title">
           <mat-icon aria-hidden="true">link</mat-icon><b>{{ rider().label }} e {{ mount().label }}</b
-          ><span class="pair__joint"> · turno conjunto</span>
+          >@if (!master()) {<span class="pair__joint"> · turno conjunto</span>}
         </p>
         <div class="pair__line pair__rider">
           <app-combatant-token [initial]="riderInitial()" [mine]="true" [size]="28" />
@@ -53,6 +53,7 @@ import { EconomyShapes, economyShapes } from '../../../../shared/economy-shapes/
         <!-- The region is in the card from the start, with or without words, so "Carregando…" is announced when it comes. -->
         <span class="pair__loading mr-muted" role="status">{{ shapes() ? '' : 'Carregando…' }}</span>
       </div>
+      @if (!master()) {
       <div class="pair__actions">
         @for (a of actions(); track a.key) {
           <button
@@ -71,13 +72,16 @@ import { EconomyShapes, economyShapes } from '../../../../shared/economy-shapes/
           </button>
         }
       </div>
+      }
       <!-- The reason arrives after the card is drawn: the region is there from the start, so it is announced. -->
       <div class="mr-live" role="status">
         @if (why(); as text) {
           <p class="pair__why" id="pair-why"><mat-icon aria-hidden="true">block</mat-icon>{{ text }}</p>
         }
       </div>
-      @if (!why()) {
+      @if (master()) {
+        <p class="pair__note">Montaria adestrada: só a ação e o movimento dela. O jogador encerra a vez dos dois.</p>
+      } @else if (!why()) {
         @if (phone()) {
           <p class="pair__note"><mat-icon aria-hidden="true">link</mat-icon>Adestrada: só estas três. "Mover" leva os dois.</p>
         } @else {
@@ -96,6 +100,8 @@ export class PairCard {
   /** The mount's own `GetTurnOptions`, read for the rider's player (the three actions and the mount's economy only). */
   readonly options = input<GetTurnOptionsResponse | null>(null);
   readonly busy = input(false);
+  /** The master's read of the pair on turn: the same card with no action buttons, the numbers from the combat. */
+  readonly master = input(false);
   /** The phone's card comes under the rider's own shapes and "Mover": its last line is the short one. */
   protected readonly phone = mediaQuery(PHONE_QUERY);
   /** The key of the action pressed ("standard:dash"). */
@@ -117,10 +123,10 @@ export class PairCard {
   /** The mount's action and the metres it has left; `null` until its options are read (nothing is made up meanwhile). */
   protected readonly shapes = computed(() => {
     const res = this.options();
-    if (!res) {
+    if (!res && !this.master()) {
       return null;
     }
-    const economy = res.options?.economy;
+    const economy = res?.options?.economy;
     const used = economy?.action?.used ?? this.mount().actionUsed;
     const left = metersFixed(economy?.movement?.leftFt ?? this.mount().movementLeftFt);
     return [

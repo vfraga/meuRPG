@@ -79,13 +79,17 @@
     <ng-container *ngTemplateOutlet="endConfirm" />
   } @else {
     <div class="bar__turn" role="status" aria-live="polite">
-      @if (banner().who; as who) {
+      @if (banner().pair; as m) {
+        <app-pair-token [mount]="mountInitial(m)" [rider]="initial()" [npc]="mountNpc(m)" [current]="true" [size]="48" />
+      } @else if (banner().who; as who) {
         <app-combatant-token [initial]="initial()" [npc]="npc()" [creature]="creature()" [current]="true" [size]="48" />
       }
       <div class="bar__who">
         <span class="bar__title">{{ banner().title }}</span>
         <span class="bar__sub">
-          @if (nextLine()) {
+          @if (banner().pair; as m) {
+            <span class="bar__next">{{ mountedOn(m) }}@if (nextLine()) { · {{ nextLine() }} }</span>
+          } @else if (nextLine()) {
             <span class="bar__next">{{ nextLine() }}</span>
           }
           @if (banner().who?.wildShapeBeastKey) {

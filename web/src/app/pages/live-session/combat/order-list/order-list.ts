@@ -58,6 +58,7 @@ import {
 import {
   type OrderItem,
   jointTurn,
+  pairTurn,
   orderItems,
   groupAriaLabel,
   orderItemKey,
@@ -210,6 +211,8 @@ export class OrderList {
   /** The order with the boxes of the joint turns (the master has every total). */
   protected readonly items = computed(() => orderItems(this.encounter(), true));
   private readonly joint = computed(() => jointTurn(this.encounter()));
+  /** A rider and the mount it directs on turn: one turn, the box says "Montado" and its rows carry no part chips. */
+  private readonly pair = computed(() => pairTurn(this.encounter()));
   /** Every combatant in the order of the list, the joint turns' members in their place. */
   protected readonly flat = computed(() =>
     this.items().flatMap((i) => (i.kind === 'group' ? [...i.members] : [i.combatant])),
@@ -418,12 +421,12 @@ export class OrderList {
 
   /** The row of the one on turn; in a joint turn the box is on turn instead. */
   protected current(c: Combatant): boolean {
-    return !this.joint() && c.id === this.encounter().currentCombatantId;
+    return !this.joint() && !this.pair() && c.id === this.encounter().currentCombatantId;
   }
 
   /** The combatant is a member of the joint turn that is running. */
   protected inTurn(c: Combatant): boolean {
-    return !!this.joint()?.members.some((m) => m.id === c.id);
+    return !this.pair() && !!this.joint()?.members.some((m) => m.id === c.id);
   }
 
   protected readonly key = orderItemKey;

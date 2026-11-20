@@ -42,20 +42,15 @@ describe('SteedChoice: the steed part of the summon sheet', () => {
     expect(types()?.querySelector<HTMLInputElement>('input:checked')?.value).toBe('fey');
   });
 
-  it('folds "Como funciona": closed on a phone, open on a desktop, with the notes and the least Intelligence', () => {
-    const phone = setup({ phone: true });
-    expect(phone.fold()?.getAttribute('aria-expanded')).toBe('false');
-    expect(phone.el.textContent).not.toContain('telepatia');
-    phone.fold()?.click();
-    phone.fixture.detectChanges();
-    expect(phone.fold()?.getAttribute('aria-expanded')).toBe('true');
-    expect(phone.el.textContent).toContain('Vocês se falam por telepatia a até 1,5 km.');
-    expect(phone.el.textContent).toContain('A Inteligência mínima do corcel é 6.');
-
-    TestBed.resetTestingModule();
-    const desktop = setup({ phone: false });
-    expect(desktop.fold()?.getAttribute('aria-expanded')).toBe('true');
-    expect(desktop.el.textContent).toContain('A Inteligência mínima do corcel é 6.');
+  it('folds "Como funciona" closed, with the notes and the least Intelligence once opened', () => {
+    const view = setup();
+    expect(view.fold()?.getAttribute('aria-expanded')).toBe('false');
+    expect(view.el.textContent).not.toContain('telepatia');
+    view.fold()?.click();
+    view.fixture.detectChanges();
+    expect(view.fold()?.getAttribute('aria-expanded')).toBe('true');
+    expect(view.el.textContent).toContain('Vocês se falam por telepatia a até 1,5 km.');
+    expect(view.el.textContent).toContain('A Inteligência mínima do corcel é 6.');
   });
 
   it('leaves "Como funciona" out when the spell says nothing', () => {

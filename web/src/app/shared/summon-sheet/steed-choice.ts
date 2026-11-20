@@ -3,7 +3,7 @@ import {
   Component,
   computed,
   input,
-  linkedSignal,
+  signal,
   output,
 } from '@angular/core';
 
@@ -26,7 +26,7 @@ import { Segmented } from '../segmented/segmented';
  * the list of forms (part `rest`): "Tipo do corcel", three segments with the app's words, none chosen until the player
  * picks. With a bonded steed, above the slot (part `same`): one fixed row with the silhouette, tagged "Mesmo corcel", and
  * the line that says what the cast does and where to change the steed. Under either, "Como funciona" folds the spell's
- * notes: closed on a phone, open from the tablet up.
+ * notes: closed until it is opened.
  */
 @Component({
   selector: 'app-steed-choice',
@@ -55,7 +55,7 @@ import { Segmented } from '../segmented/segmented';
         </div>
       }
       @if (how().length > 0) {
-        <app-fold title="Como funciona" appearance="row" [level]="3" [(open)]="open">
+        <app-fold title="Como funciona" appearance="flush" [level]="3" [(open)]="open">
           <ul class="how">
             @for (line of how(); track line) {
               <li>{{ line }}</li>
@@ -75,13 +75,12 @@ export class SteedChoice {
   readonly block = input<Creature | null>(null);
   /** The type picked (`SummonChoice.creature_type`); `''` until the player picks. */
   readonly type = input('');
-  /** A phone's bottom sheet: "Como funciona" starts closed. */
-  readonly phone = input(false);
   readonly pickType = output<string>();
 
   protected readonly types = computed(() => steedTypes(this.spell()));
   protected readonly how = computed(() => steedHowLines(this.spell()));
-  protected readonly open = linkedSignal(() => !this.phone());
+  /** "Como funciona" starts closed, on every screen. */
+  protected readonly open = signal(false);
   protected readonly fixedLine = computed(() => {
     const b = this.spell().bondedSteed;
     return b ? steedFixedLine(b, this.block()) : '';

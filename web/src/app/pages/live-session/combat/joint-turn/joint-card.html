@@ -1,5 +1,8 @@
 <!-- The live line stays when the card goes: it says who has the turn next. -->
 <p class="mr-visually-hidden" role="status" aria-live="polite">{{ live() }}</p>
+@if (pair(); as p) {
+  <app-pair-card [rider]="p.rider" [mount]="p.mount" [master]="true" />
+}
 @if (joint(); as j) {
   <section class="mr-panel card" aria-labelledby="joint-title">
     <h2 class="mr-panel__title" id="joint-title">{{ title() }}</h2>

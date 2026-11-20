@@ -10,12 +10,14 @@ import {
   type JointTurn,
   jointTurn,
   listNames,
+  pairTurn,
   missingLine,
   partEconomy,
   turnMembers,
 } from '../../../../core/combat/joint-turn';
 import { CombatantToken } from '../../../../shared/combatant-token/combatant-token';
 import type { CombatantInfo } from '../combat-info';
+import { PairCard } from '../pair-card/pair-card';
 import { PartState } from './part-state';
 
 /**
@@ -30,7 +32,7 @@ import { PartState } from './part-state';
  */
 @Component({
   selector: 'app-joint-card',
-  imports: [CombatantToken, MatButtonModule, MatIconModule, PartState],
+  imports: [CombatantToken, MatButtonModule, MatIconModule, PairCard, PartState],
   templateUrl: './joint-card.html',
   styleUrl: './joint-card.scss',
 })
@@ -41,7 +43,11 @@ export class JointCard {
   /** "Encerrar a parte da Brisa": the member's combatant ID. */
   readonly endPart = output<string>();
 
-  protected readonly joint = computed<JointTurn | null>(() => jointTurn(this.encounter()));
+  /** A rider and the mount it directs, alone on turn: one pair card, no joint turn. */
+  protected readonly pair = computed(() => pairTurn(this.encounter()));
+  protected readonly joint = computed<JointTurn | null>(() =>
+    this.pair() ? null : jointTurn(this.encounter()),
+  );
   protected readonly title = computed(
     () => `Turno conjunto: ${listNames((this.joint()?.members ?? []).map((m) => m.label))}`,
   );

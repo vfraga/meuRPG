@@ -15,6 +15,7 @@ import {
   npcPlural,
   orderItemKey,
   orderItems,
+  pairTurn,
   passNote,
   playsBefore,
 } from './joint-turn';
@@ -270,6 +271,41 @@ describe('joint turns (MR-013)', () => {
         combatant({ id: 'x', label: 'X', movementLeftFt: 30, speedFt: 30, reactionUsed: true }),
       ),
     ).toBe('Ação, Ação bônus e 9 m · 6 quadrados');
+  });
+
+  describe('a rider and the mount it directs on turn', () => {
+    const rider = combatant({
+      id: 'r',
+      label: 'Isolda',
+      kind: P,
+      initiative: 20,
+      mountedOnId: 'h',
+    });
+    const horse = combatant({ id: 'h', label: 'Cavalo de guerra', mountKind: 'controlled' });
+    const goblin = combatant({ id: 'g', label: 'Goblin 1', initiative: 12 });
+    const on = (over = {}) =>
+      encounter({
+        combatants: [rider, horse, goblin],
+        turnGroupIds: ['r', 'h'],
+        currentCombatantId: 'r',
+        ...over,
+      });
+
+    it('is one turn for the two, never a joint one, in the banner of the master', () => {
+      expect(pairTurn(on())?.mount.label).toBe('Cavalo de guerra');
+      const banner = turnBanner(on());
+      expect(banner.title).toBe('Vez de Isolda');
+      expect(banner.pair?.label).toBe('Cavalo de guerra');
+      expect(banner.joint).toBeNull();
+      expect(banner.riding).toBeUndefined();
+    });
+
+    it('is not one turn when the mount keeps its own, or when the pair is tied with others', () => {
+      const independent = { ...horse, mountKind: 'independent' } as typeof horse;
+      expect(pairTurn(on({ combatants: [rider, independent, goblin] }))).toBeNull();
+      expect(pairTurn(on({ turnGroupIds: ['r', 'h', 'g'] }))).toBeNull();
+      expect(turnBanner(on({ turnGroupIds: ['r', 'h', 'g'] })).pair).toBeUndefined();
+    });
   });
 
   describe('masterActor, the NPC the master acts for in a mixed joint turn', () => {

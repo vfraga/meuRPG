@@ -89,6 +89,23 @@ export function jointTurn(e: Encounter): JointTurn | null {
   };
 }
 
+/**
+ * The turn that is running is a rider and the mount it directs, and nobody else: one turn for the two, not a joint one. The
+ * order box says "Montado" and the banner names the rider with the mount in its line. `null` for any other turn, and for a
+ * pair tied with others (the larger group is the joint turn).
+ */
+export function pairTurn(e: Encounter): { rider: Combatant; mount: Combatant } | null {
+  const members = turnMembers(e);
+  if (members.length !== 2) {
+    return null;
+  }
+  const [a, b] = members;
+  if (!boxedPair(a, b)) {
+    return null;
+  }
+  return a.mountedOnId === b.id ? { rider: a, mount: b } : { rider: b, mount: a };
+}
+
 /** A name with its article: "a Brisa", "o Toren". */
 export function withArticle(label: string): string {
   return `${article(label)} ${label}`;

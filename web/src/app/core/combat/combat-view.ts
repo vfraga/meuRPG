@@ -9,7 +9,7 @@ import { article } from './combat-log';
 import { treatedSourceName } from './combat-dice';
 import { creatureTurnTitle, isCreature } from './creature-names';
 import { boxedPair } from './mount-view';
-import { afterTurn, jointTurn, listNames, type JointTurn, npcPlural } from './joint-turn';
+import { afterTurn, jointTurn, listNames, type JointTurn, npcPlural, pairTurn } from './joint-turn';
 
 /**
  * What the combat screens say about an encounter, kept as small pure
@@ -234,6 +234,9 @@ export interface TurnBanner {
   /** The mount the caller's character rides and directs on this turn: the two play as one, so the banner is the rider's
    * alone, with "Montado no Cavalo de guerra". Absent otherwise. */
   readonly riding?: Combatant;
+  /** A rider and the mount it directs, on turn together, as the master or another player reads them: one turn, the rider's,
+   * with the mount in its line and in the token. Absent for the rider's own player (`riding`) and for any other turn. */
+  readonly pair?: Combatant;
 }
 
 export function turnBanner(e: Encounter): TurnBanner {
@@ -242,6 +245,10 @@ export function turnBanner(e: Encounter): TurnBanner {
   const ridden = joint ? riddenPair(joint) : null;
   if (joint && ridden) {
     return pairBanner(e, joint, ridden, after);
+  }
+  const watched = pairTurn(e);
+  if (joint && watched) {
+    return watchedPairBanner(e, watched, after);
   }
   if (joint) {
     return jointBanner(e, joint, after);
@@ -299,6 +306,26 @@ function pairBanner(
     joint: joint.members.length > 2 ? joint : null,
     ownEnded: !live,
     riding: mount,
+  };
+}
+
+/** The pair on turn as everyone but the rider's player reads it: "Vez de Tor", the mount beside it, nothing joint. */
+function watchedPairBanner(
+  e: Encounter,
+  pair: { rider: Combatant; mount: Combatant },
+  after: TurnBanner['after'],
+): TurnBanner {
+  return {
+    title: isPlayer(pair.rider) ? `Vez de ${pair.rider.label}` : soloTitle(e, pair.rider),
+    who: pair.rider,
+    mine: false,
+    masterTurn: e.masterTurn,
+    next: null,
+    nextIsMine: after?.mine ?? false,
+    after,
+    joint: null,
+    ownEnded: false,
+    pair: pair.mount,
   };
 }
 

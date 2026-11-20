@@ -88,6 +88,13 @@ describe('SummonSheet: Convocar Montaria', () => {
       bonded: true,
     });
 
+  it('shows every form of a short list at once, with no scroller of its own, in a dialog too', async () => {
+    const { el } = await setup();
+    const list = el.querySelector('app-creature-choice-list')!;
+    expect(list.classList).toContain('flow');
+    expect(list.querySelector('.rows')?.classList).toContain('rows--flow');
+  });
+
   it('the first cast lists the forms, warns of the one too small to ride, and asks the type before it casts', async () => {
     const { el, go, pick, foot } = await setup();
     const rows = Array.from(el.querySelectorAll('app-creature-choice-list .row'));
@@ -214,8 +221,12 @@ describe('SummonSheet: Convocar Montaria', () => {
     );
   });
 
-  it('opens "Como funciona" in a dialog (tablet and up)', async () => {
+  it('keeps "Como funciona" closed in a dialog (tablet and up) too', async () => {
     const { el } = await setup();
-    expect(el.textContent).toContain('A Inteligência mínima do corcel é 6.');
+    expect(el.textContent).not.toContain('A Inteligência mínima do corcel é 6.');
+    const fold = Array.from(el.querySelectorAll<HTMLButtonElement>('button')).find((b) =>
+      b.textContent?.includes('Como funciona'),
+    );
+    expect(fold?.getAttribute('aria-expanded')).toBe('false');
   });
 });

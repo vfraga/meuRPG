@@ -15,7 +15,12 @@ import {
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 
-import { type Encounter, EncounterStatus } from '../../../../../gen/meurpg/play/v1/combat_pb';
+import {
+  type Combatant,
+  CombatantKind,
+  type Encounter,
+  EncounterStatus,
+} from '../../../../../gen/meurpg/play/v1/combat_pb';
 import {
   combatantInitial,
   missingInitiative,
@@ -24,6 +29,7 @@ import {
   turnBanner,
 } from '../../../../core/combat/combat-view';
 import { isCreature } from '../../../../core/combat/creature-names';
+import { mountedOn } from '../../../../core/combat/mount-view';
 import { pendingCountText } from '../../../../core/held-rolls/held-text';
 import { unactedPlayerOnTurn } from '../../../../core/combat/combat-derived';
 import { NextTurn } from './next-turn';
@@ -31,6 +37,7 @@ import { SunSwitch } from './sun-switch';
 import { PHONE_QUERY, mediaQuery } from '../../../../shared/map-view/media-query';
 import { TheatrePill } from '../theatre/theatre-pill';
 import { CombatantToken } from '../../../../shared/combatant-token/combatant-token';
+import { PairToken } from '../../../../shared/combatant-token/pair-token';
 
 /**
  * The master's combat bar (E6-04, E6-11, E6-12, E6-16): which combat, whose
@@ -45,6 +52,7 @@ import { CombatantToken } from '../../../../shared/combatant-token/combatant-tok
   imports: [
     FormChip,
     CombatantToken,
+    PairToken,
     MatButtonModule,
     MatIconModule,
     NextTurn,
@@ -125,8 +133,20 @@ export class CombatBar {
   });
   protected readonly nextLine = computed(() => {
     const after = this.banner().after;
-    return after ? `Em seguida: ${after.name}` : '';
+    if (!after) {
+      return '';
+    }
+    // Under a pair the line is one sentence: "Cavalgando o Cavalo de guerra · em seguida: Goblin 1".
+    return this.banner().pair ? `em seguida: ${after.name}` : `Em seguida: ${after.name}`;
   });
+  protected readonly mountedOn = mountedOn;
+  protected mountInitial(mount: Combatant): string {
+    return combatantInitial(mount.label);
+  }
+  /** An NPC mount is drawn as an NPC; a player's own steed is a creature. */
+  protected mountNpc(mount: Combatant): boolean {
+    return mount.kind === CombatantKind.NPC;
+  }
 
   private readonly injector = inject(Injector);
 
