@@ -7,12 +7,12 @@ import { combatRPC, endTurnOf, getEncounterRPC, passTurnsToAndWait, type Encount
 import { openOrderRow, openTurn } from './combat-layout';
 import { closeSheet, contestRPC, idOf } from './contests-support';
 import { openSessionPage } from './live-session-support';
-import { beginMountedCombat, castSteedRPC, mountedTable, STEED, type MountedTable } from './mounted-support';
+import { beginMountedCombat, castSteedRPC, isoldaHalfling, mountedTable, STEED, type MountedTable } from './mounted-support';
 import { tapSquare } from './move-support';
 import { waitForEncounterRevision } from './revision-support';
 import { openActionTab, openCombatLog } from './support';
 
-// The screens of #588 (mounted combat and Convocar Montaria) for a11y.spec.ts: each state is judged by `scan` at one width and
+// The screens of mounted combat and Convocar Montaria for a11y.spec.ts: each state is judged by `scan` at one width and
 // theme, and photographed when `E2E_SHOTS_DIR` names a folder (a normal run writes nothing).
 
 const shotsDir = process.env.E2E_SHOTS_DIR;
@@ -79,7 +79,7 @@ async function expectInside(box: Locator, items: Locator, what: string): Promise
 /** The summon sheet, whichever container it is in (a dialog from a tablet up, a bottom sheet on a phone). */
 const summonSheet = (p: Page): Locator => p.locator('app-summon-sheet');
 
-/** Convocar Montaria out of combat (boards 588-21 and 588-22), the steed's card, its questions and the row of a dismissed steed (588-23 to 588-25). */
+/** Convocar Montaria out of combat, the steed's card, its questions and the row of a dismissed steed. */
 async function steedScreens(t: MountedTable, l: Look): Promise<void> {
   const { p, campaignId, table } = t;
   await openSessionPage(p, campaignId);
@@ -120,6 +120,14 @@ async function steedScreens(t: MountedTable, l: Look): Promise<void> {
   await card.getByRole('button', { name: /Dispensar/ }).click();
   await expect(ask.getByText(`Dispensar ${STEED}?`)).toBeVisible();
   await see(p, 'dispensar', l, ask);
+  // The server does not answer: the error stays in the question, in its live region, with both buttons back.
+  const dismissCall = '**/meurpg.characters.v1.CharacterService/DismissCreature';
+  await p.route(dismissCall, (r) => r.fulfill({ status: 503, contentType: 'application/json', body:'{"code":"unavailable","message":"x"}' }));
+  await ask.getByRole('button', { name: new RegExp(`Dispensar\\s+${STEED}`) }).click();
+  await expect(ask.locator('.mr-live[role=alert] .err')).toBeVisible();
+  await expect(ask.getByRole('button', { name: 'Voltar' })).toBeEnabled();
+  await see(p, 'dispensar-erro', l, ask);
+  await p.unroute(dismissCall);
   await ask.getByRole('button', { name: new RegExp(`Dispensar\\s+${STEED}`) }).click();
 
   // Dismissed, the bond stays: the row "fora da mesa" and the same steed in the sheet of the next cast.
@@ -157,7 +165,7 @@ async function shoveSteedRPC(t: MountedTable, enc: Encounter, outcome: 'SHOVE_OU
 }
 
 /**
- * The combat (boards 588-04 to 588-10): the master's "Montaria" select, the "Montaria" panel of "Mover", the pair's card, token
+ * The combat: the master's "Montaria" select, the "Montaria" panel of "Mover", the pair's card, token
  * and row, riding and picking where to get off, and the save to stay on with the master's wait, its result and the log.
  */
 async function rideScreens(t: MountedTable, l: Look): Promise<void> {
@@ -291,8 +299,8 @@ async function rideScreens(t: MountedTable, l: Look): Promise<void> {
 }
 
 /**
- * A second table, mounted from the start: "também" on a spell of the rider's own (588-26 card 6) and the reaction that gets her
- * off on her feet when the horse is knocked prone (588-07).
+ * A second table, mounted from the start, with a halfling rider: the save's held-roll question and its "no longer owed" state,
+ * "também" on a spell of the rider's own and the reaction that gets her off on her feet when the horse is knocked prone.
  */
 async function riderScreens(t: MountedTable, l: Look): Promise<void> {
   const { m, p, campaignId, table } = t;
@@ -303,6 +311,36 @@ async function riderScreens(t: MountedTable, l: Look): Promise<void> {
   await openSessionPage(p, campaignId);
   await waitForEncounterRevision([m, p], enc);
   await expect(p.getByRole('heading', { name: 'Sua vez, Isolda' })).toBeVisible();
+
+  // Goblin 1 pushes the horse, and Isolda (a halfling) types a 1: Lucky's question comes before the result, in the save's sheet.
+  await endTurnOf(p, m, campaignId, 'Isolda');
+  enc = await passTurnsToAndWait(m, campaignId, 'Goblin 1', [m, p]);
+  await shoveSteedRPC(t, enc, 'SHOVE_OUTCOME_PUSH', l.width >= 768);
+  const held = p.getByRole('alertdialog', { name: /Você cai da montaria\?/ });
+  await held.getByRole('button', { name: 'Digitar o resultado' }).click();
+  await held.getByLabel('Face do d20 (1 a 20)').fill('1');
+  await held.getByRole('button', { name: /^Confirmar/ }).click();
+  await expect(held.getByRole('heading', { name: 'Tirou 1: rolar de novo?' })).toBeVisible();
+  await see(p, 'teste-pergunta', l);
+  // The master answers for her: a new d20 of 15 keeps her on the horse, and her sheet says the save is no longer hers to roll.
+  const wait = m.getByTestId('mount-save-wait');
+  await expect(wait).toBeVisible();
+  await wait.getByRole('button', { name: 'Rolar por Isolda' }).click();
+  const answer = m.locator('app-mount-save-sheet');
+  await answer.getByRole('button', { name: 'Digitar o resultado' }).click();
+  await answer.getByLabel(/Role 1d20 de novo/).fill('15');
+  await answer.getByRole('button', { name: 'Confirmar 15' }).click();
+  await expect(held.getByText('Este teste não espera mais a sua rolagem: o mestre rolou, ou ele deixou de ser preciso.')).toBeVisible();
+  await see(p, 'teste-encerrado', l);
+  await closeSheet(held);
+  await closeSheet(answer);
+  if (l.width >= 768) {
+    // The shove's own sheet is under it from a tablet up.
+    await closeSheet(p.getByRole('dialog', { name: /Goblin 1 tenta empurrar/ }));
+  }
+  await passTurnsToAndWait(m, campaignId, 'Isolda', [m, p]);
+  await expect(p.getByRole('heading', { name: 'Sua vez, Isolda' })).toBeVisible();
+
   await openActionTab(p, 'Magias');
   await p.getByRole('button', { name: 'Conjurar Auxílio Divino' }).click();
   const sheet = p.getByRole('dialog');
@@ -348,7 +386,7 @@ export async function mountedScreens(browser: Browser, scheme: 'light' | 'dark',
   } finally {
     await t.done().catch(() => undefined);
   }
-  const again = await mountedTable(browser, 'Montaria telas 2', { colorScheme: scheme, masterWidth: width, playerWidth: width, ...mountedShotScale });
+  const again = await mountedTable(browser, 'Montaria telas 2', { colorScheme: scheme, masterWidth: width, playerWidth: width, build: isoldaHalfling, ...mountedShotScale });
   try {
     await again.m.setViewportSize({ width, height: MOUNTED_VIEWPORTS[width] ?? 800 });
     await again.p.setViewportSize({ width, height: MOUNTED_VIEWPORTS[width] ?? 800 });

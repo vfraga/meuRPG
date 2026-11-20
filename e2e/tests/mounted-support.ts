@@ -6,7 +6,7 @@ import { endOpenSessionRPC } from './live-session-support';
 import { sq20 } from './trap-support';
 import { callRPC, newSignedInContext, type CharacterBuild } from './support';
 
-// Setup of the mounted-combat specs (#588), through the API: a paladin who has Convocar Montaria at a table with a map,
+// Setup of the mounted-combat specs, through the API: a paladin who has Convocar Montaria at a table with a map,
 // the goblins and an open session. What is under test is what the player and the master read and press.
 
 /** Isolda, a human Paladin 5: 2nd-level slots for Convocar Montaria and Dexterity 10, so her save to stay on is the bare d20. */
@@ -26,6 +26,14 @@ export const isolda: CharacterBuild = {
   extraSkills: [],
   scores: { for: 16, des: 10, con: 14, int: 8, sab: 10, car: 15 },
 };
+/** Isolda as a Lightfoot Halfling: Lucky asks a question when her d20 shows a 1 (SRD 5.1), which the save to stay on holds for. */
+export const isoldaHalfling: CharacterBuild = {
+  ...isolda,
+  raceKey: 'race:halfling',
+  race: 'Halfling',
+  subraceKey: 'subrace:lightfoot-halfling',
+  subrace: 'Halfling Pés-Leves',
+};
 export const isoldaSheet = { weaponKeys: ['equipment:longsword'], armorKey: 'equipment:chain-mail', preparedSpellKeys: ['spell:find-steed', 'spell:bless', 'spell:divine-favor'] };
 
 /** The name the app gives the steed of these specs: the form's. */
@@ -43,7 +51,7 @@ export interface MountedTable {
 export async function mountedTable(
   browser: Browser,
   name: string,
-  look: { colorScheme?: 'light' | 'dark'; masterWidth?: number; playerWidth?: number; deviceScaleFactor?: number } = {},
+  look: { colorScheme?: 'light' | 'dark'; masterWidth?: number; playerWidth?: number; deviceScaleFactor?: number; build?: CharacterBuild } = {},
 ): Promise<MountedTable> {
   const master = await newSignedInContext(browser, 'Mestre Teste', { viewport: { width: look.masterWidth ?? 1280, height: 900 }, colorScheme: look.colorScheme, deviceScaleFactor: look.deviceScaleFactor });
   const player = await newSignedInContext(browser, 'Jogador Teste', { viewport: { width: look.playerWidth ?? 1280, height: 900 }, colorScheme: look.colorScheme, deviceScaleFactor: look.deviceScaleFactor });
@@ -51,7 +59,7 @@ export async function mountedTable(
   const p = await player.newPage();
   await m.goto('/');
   await p.goto('/');
-  const table = await tableForCombat(m, p, `${name} ${Date.now()}`, true, true, { build: isolda, sheet: isoldaSheet });
+  const table = await tableForCombat(m, p, `${name} ${Date.now()}`, true, true, { build: look.build ?? isolda, sheet: isoldaSheet });
   return {
     m,
     p,
