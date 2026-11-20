@@ -23,6 +23,9 @@ import {
 import { nextTurn } from '../../../../test-settle';
 import { CreatureCard } from './creature-card';
 
+/** The confirm of the steed's question: it says only its verb, the title names the steed. */
+const confirmAsk = () => document.querySelector<HTMLButtonElement>('app-steed-ask [data-confirm]')!;
+
 describe('CreatureCard, a bonded steed', () => {
   let api: FakeCreaturesClient;
   let getEncounter: ReturnType<typeof vi.fn>;
@@ -209,7 +212,7 @@ describe('CreatureCard, a bonded steed', () => {
     expect(el.querySelector('.acts')).toBeNull();
     expect(flat(el.querySelector('app-steed-ask .ask__t'))).toBe('Dispensar Estrela?');
     expect(el.querySelector('.ask__chip')).toBeNull();
-    button('Dispensar Estrela').click();
+    confirmAsk().click();
     await settle();
     expect(api.dismiss).toHaveBeenCalledWith('camp-1', 'steed-1', 'dismiss');
     expect(changed).toEqual(['dismiss']);
@@ -219,7 +222,7 @@ describe('CreatureCard, a bonded steed', () => {
     const { el, button, release, settle, changed } = await setup();
     await release();
     expect(flat(el.querySelector('app-steed-ask .ask__t'))).toBe('Libertar Estrela?');
-    button('Libertar Estrela').click();
+    confirmAsk().click();
     await settle();
     expect(api.dismiss).toHaveBeenCalledWith('camp-1', 'steed-1', 'release');
     expect(changed).toEqual(['dismiss']);
@@ -313,7 +316,7 @@ describe('CreatureCard, a bonded steed', () => {
     acts()[1].click();
     await settle();
     api.failWith = blocked(EncounterBlockedReason.NOT_YOUR_TURN);
-    button('Dispensar Estrela').click();
+    confirmAsk().click();
     await settle();
     expect(el.querySelector('app-steed-ask')).toBeNull();
     expect(changed).toEqual([]);
@@ -360,7 +363,7 @@ describe('CreatureCard, a bonded steed', () => {
     acts()[1].click();
     await settle();
     api.failWith = blocked(EncounterBlockedReason.ACTION_USED);
-    button('Dispensar Estrela').click();
+    confirmAsk().click();
     await settle();
     expect(flat(el.querySelector('.acts__why'))).toBe('Você já usou a ação desta vez.');
     fixture.componentRef.setInput('tick', 1);

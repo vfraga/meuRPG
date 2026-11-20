@@ -80,7 +80,7 @@
   }
 }
 
-// Two equal buttons, side by side at every width; a long name wraps inside its button, which grows.
+// Two equal buttons, side by side at every width; the confirm says only its verb, since the title names the steed.
 .pair {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
@@ -95,7 +95,6 @@
   padding-block: 6px;
   line-height: 1.25;
   white-space: normal;
-  overflow-wrap: anywhere;
   background: var(--mr-surface);
 }
 

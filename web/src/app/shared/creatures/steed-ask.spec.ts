@@ -75,7 +75,9 @@ describe('SteedAsk: "Dispensar Estrela?" and "Libertar Estrela?", asked in place
     expect(flat(el.querySelector(`#${ask.getAttribute('aria-describedby')}`))).toContain(
       'O vínculo fica',
     );
-    expect(buttons().map((b) => flat(b))).toEqual(['Voltar', 'Dispensar Estrela']);
+    expect(buttons().map((b) => flat(b))).toEqual(['Voltar', 'Dispensar']);
+    // The title names the steed; the button's name keeps it for a screen reader.
+    expect(buttons()[1].getAttribute('aria-label')).toBe('Dispensar Estrela');
     // the confirm carries the "✕" of the card's action.
     expect(buttons()[1].querySelector('mat-icon')?.textContent?.trim()).toBe('close');
     expect(flat(el.querySelector('.ask__d'))).toBe(
@@ -115,7 +117,7 @@ describe('SteedAsk: "Dispensar Estrela?" and "Libertar Estrela?", asked in place
     const r = await setup('release');
     expect(flat(r.el.querySelector('.ask__t'))).toBe('Libertar Estrela?');
     expect(flat(r.el.querySelector('.ask__d'))).toContain('O vínculo acaba');
-    expect(r.buttons().map((b) => flat(b))).toEqual(['Voltar', 'Libertar Estrela']);
+    expect(r.buttons().map((b) => flat(b))).toEqual(['Voltar', 'Libertar']);
     r.buttons()[1].click();
     await r.settle();
     expect(api.dismiss).toHaveBeenCalledWith('camp-1', 'steed-1', 'release');
@@ -154,7 +156,7 @@ describe('SteedAsk: "Dispensar Estrela?" and "Libertar Estrela?", asked in place
       'O vínculo acaba: Estrela some da ficha e do mapa, e a próxima Convocar Montaria escolhe de novo a forma e o tipo. Fora de combate, não gasta nada.',
     );
     expect(buttons()[1].querySelector('mat-icon')?.textContent?.trim()).toBe('link_off');
-    expect(flat(buttons()[1])).toBe('Libertar Estrela');
+    expect(flat(buttons()[1])).toBe('Libertar');
   });
 
   it('in a combat still being set up there is no chip: nothing is charged', async () => {
