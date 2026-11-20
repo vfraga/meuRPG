@@ -131,8 +131,10 @@ func refusePickIn(view *rules.Content, master bool, before func() *charactersv1.
 	if found && unknownToolPick(view, after, field, key) {
 		return errUnknownKey("sheet." + field) // a tool pick of anything but a tool, or of an owner the reader may not read, is a key the content does not have
 	}
-	if master {
-		return refuseUnknownNewTools(view, stored, after)
+	// A tool pick no one may take is answered before the fit of any other pick, as a key the content does not have: UnplacedNewPick
+	// names only the first unplaced pick, which may be a skill.
+	if err := refuseUnknownNewTools(view, stored, after); err != nil || master {
+		return err
 	}
 	if !found || !fit {
 		return nil
