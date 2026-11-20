@@ -468,6 +468,16 @@ func checkCreatorKind(m authz.Membership, kind string) error {
 // PreviewCharacter share it, so a preview never shows a sheet the save
 // refuses.
 func checkNewSheet(content *rules.Content, m authz.Membership, kind string, raw *charactersv1.CharacterSheet) (*charactersv1.CharacterSheet, error) {
+	return checkNewSheetOf(content, m, kind, raw, false)
+}
+
+// checkImportedSheet is checkNewSheet for a sheet a package brings: its picks are not made now, so they count as held
+// when the fit of the picks to their lists is checked.
+func checkImportedSheet(content *rules.Content, m authz.Membership, kind string, raw *charactersv1.CharacterSheet) (*charactersv1.CharacterSheet, error) {
+	return checkNewSheetOf(content, m, kind, raw, true)
+}
+
+func checkNewSheetOf(content *rules.Content, m authz.Membership, kind string, raw *charactersv1.CharacterSheet, imported bool) (*charactersv1.CharacterSheet, error) {
 	sheet, err := checkSheet(content, raw)
 	if err != nil {
 		return nil, invalidArgument(err)
@@ -476,7 +486,11 @@ func checkNewSheet(content *rules.Content, m authz.Membership, kind string, raw 
 	if err := refuseKeptOutPick(content, m, noSheet, sheet.GetFull()); err != nil {
 		return nil, err
 	}
-	if err := refuseUnfitPick(content, m, noSheet, sheet.GetFull()); err != nil {
+	held := noSheet
+	if imported {
+		held = func() *charactersv1.FullSheet { return sheet.GetFull() }
+	}
+	if err := refuseUnfitPick(content, m, held, sheet.GetFull()); err != nil {
 		return nil, err
 	}
 	if err := checkSheetKind(kind, sheet); err != nil {
@@ -486,7 +500,7 @@ func checkNewSheet(content *rules.Content, m authz.Membership, kind string, raw 
 		sheet.GetFull().AbilityOrigin = nil // the server's record, set later for a player
 		sheet.GetFull().Infusions = nil     // the server's records: a new character, or one a package brings, has none
 	}
-	if err := refuseNewChoices(content, m, "", nil, sheet.GetFull()); err != nil {
+	if err := refuseNewKeys(content, m, "", nil, sheet.GetFull()); err != nil { // the fit of the picks is checked above
 		return nil, err
 	}
 	return sheet, nil
@@ -503,6 +517,19 @@ func refuseNewChoices(content *rules.Content, m authz.Membership, characterID st
 	if err := refuseUnfitPick(content, m, func() *charactersv1.FullSheet { return stored }, sheet); err != nil {
 		return err
 	}
+	return refuseClosedChoices(content, m, characterID, stored, sheet)
+}
+
+// refuseNewKeys is refuseNewChoices without the fit of the picks to their lists.
+func refuseNewKeys(content *rules.Content, m authz.Membership, characterID string, stored, sheet *charactersv1.FullSheet) error {
+	if err := refuseKeptOutPick(content, m, func() *charactersv1.FullSheet { return stored }, sheet); err != nil {
+		return err
+	}
+	return refuseClosedChoices(content, m, characterID, stored, sheet)
+}
+
+// refuseClosedChoices refuses a new choice of an archived entry, and of one switched off for a player.
+func refuseClosedChoices(content *rules.Content, m authz.Membership, characterID string, stored, sheet *charactersv1.FullSheet) error {
 	if key, _, found := newArchivedChoice(content, stored, sheet); found {
 		return errArchivedChoice(characterID, key)
 	}
