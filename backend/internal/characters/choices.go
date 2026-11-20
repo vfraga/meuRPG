@@ -141,6 +141,9 @@ func choicesToProto(content *rules.Content, b rules.Build) *charactersv1.Preview
 	set := content.Choices(b)
 	done, total := set.Counts()
 	res := &charactersv1.PreviewChoicesResponse{Done: i32(done), Total: i32(total), NotOffered: set.NotOffered}
+	skills, expertise := content.PickLists(b)
+	res.SkillsAllowed = pickAllowedToProto(&skills)
+	res.ExpertiseAllowed = pickAllowedToProto(expertise)
 	for _, g := range set.Groups {
 		res.Groups = append(res.Groups, choiceGroupToProto(g))
 	}
@@ -155,6 +158,13 @@ func choicesToProto(content *rules.Content, b rules.Build) *charactersv1.Preview
 		res.SpellSources = append(res.SpellSources, out)
 	}
 	return res
+}
+
+func pickAllowedToProto(p *rules.PickAllowed) *charactersv1.PickAllowed {
+	if p == nil {
+		return nil
+	}
+	return &charactersv1.PickAllowed{Any: p.Any, Keys: p.Keys}
 }
 
 var (

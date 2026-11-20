@@ -3972,6 +3972,21 @@ message PreviewChoicesResponse {
   repeated string not_offered = 4;
   // For each casting class, the spells outside its list.
   repeated ChoiceSpellSource spell_sources = 5;
+  // The skills the sheet's skill sources allow: the starting class, a multiclass pick,
+  // the traits and the effects that let the player choose skills.
+  // The editor offers only these, and the ones the sheet already holds.
+  PickAllowed skills_allowed = 6;
+  // The skills expertise may go on, when every expertise source of the sheet names a list.
+  // Unset when a source takes any skill or the sheet has none: the editor does not cut.
+  PickAllowed expertise_allowed = 7;
+}
+
+// PickAllowed is the keys the sources of a kind of pick allow.
+message PickAllowed {
+  // A source takes any key: nothing is cut and `keys` is empty.
+  bool any = 1;
+  // The keys some source lists, each once.
+  repeated string keys = 2;
 }
 
 // ChoicePick is the player's answer to one choice.
