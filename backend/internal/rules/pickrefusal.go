@@ -3,6 +3,7 @@ package rules
 import (
 	"fmt"
 	"slices"
+	"strconv"
 	"strings"
 )
 
@@ -177,8 +178,8 @@ func allowedBy(sources []pickSource) PickAllowed {
 	return out
 }
 
-// OnAList says whether some source of the sheet b lists key for the pick field ("full.skill_proficiency_keys" or
-// "full.expertise_skill_keys"). A source that names no list lists every key. A field of another kind is never on a list.
+// OnAList says whether some source of the sheet b lists key for the pick field (the skill, the expertise or a tool pick
+// of the sheet's choice keys). A source that names no list lists every key. A field of another kind is never on a list.
 func (c *Content) OnAList(b Build, field, key string) bool {
 	x := c.deriverFor(b)
 	var sources []pickSource
@@ -187,6 +188,27 @@ func (c *Content) OnAList(b Build, field, key string) bool {
 		sources = x.skillSources()
 	case strings.HasPrefix(field, "full.expertise_skill_keys"):
 		sources = x.expertiseSources()
+	case strings.HasPrefix(field, choiceKeysField):
+		sources = x.toolSourcesAt(field)
 	}
 	return slices.ContainsFunc(sources, func(s pickSource) bool { return s.allows(key) })
+}
+
+// toolSourcesAt are the sources of the tool pick the sheet's choice keys hold at the field's place: the lists of the tool
+// choices of its owner. A place that holds no tool pick has none.
+func (x *deriver) toolSourcesAt(field string) []pickSource {
+	place, ok := strings.CutPrefix(field, choiceKeysField+"[")
+	if !ok {
+		return nil
+	}
+	i, err := strconv.Atoi(strings.TrimSuffix(place, "]"))
+	if err != nil || i < 0 || i >= len(x.b.FeatureChoices) {
+		return nil
+	}
+	choiceKey, _, ok := SplitScopedChoice(x.b.FeatureChoices[i])
+	owner, isTool := strings.CutSuffix(choiceKey, toolPickSuffix)
+	if !ok || !isTool {
+		return nil
+	}
+	return x.c.toolSources(owner)
 }

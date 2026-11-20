@@ -119,7 +119,7 @@ func refuseUnfitPick(content *rules.Content, m authz.Membership, before func() *
 }
 
 // unfitSentence is the sentence of a pick that cannot be placed, by the kind of pick the field holds: a skill or an
-// expertise that some list allows has no room left in the lists that offer it; any other pick is on no list.
+// expertise or a tool that some list allows has no room left in the lists that offer it; any other pick is on no list.
 func unfitSentence(view *rules.Content, b rules.Build, field, key string) string {
 	listed := view.OnAList(b, field, key)
 	switch {
@@ -129,6 +129,9 @@ func unfitSentence(view *rules.Content, b rules.Build, field, key string) string
 	case strings.HasPrefix(field, "full.expertise_skill_keys") && listed:
 		name := view.NamePT(key)
 		return fmt.Sprintf("Não há vaga para a especialização em %s: as listas que a oferecem já estão preenchidas pelas outras especializações marcadas. Desmarque uma delas para marcar a especialização em %s.", name, name)
+	case strings.HasPrefix(field, "full.feature_choice_keys") && listed:
+		name := view.ProficiencyNamePT(key)
+		return fmt.Sprintf("Não há vaga para a ferramenta %s: as listas que a oferecem já estão preenchidas pelas outras ferramentas marcadas. Desmarque uma delas para marcar %s.", name, name)
 	case strings.HasPrefix(field, "full.skill_proficiency_keys"):
 		return fmt.Sprintf("A perícia %s não está em nenhuma das listas de onde o personagem escolhe perícias.", view.NamePT(key))
 	case strings.HasPrefix(field, "full.expertise_skill_keys"):
