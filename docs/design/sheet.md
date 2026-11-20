@@ -108,6 +108,7 @@ The browser draws what the server sends and computes no rule: multiclass prerequ
   During a session the card reads the combat when a question opens (`steedWhere`): the chip "● Gasta a sua ação" shows to the owner's player when the combat holds the steed, and the master never spends an action.
   The dismissal reads "Estrela some do mapa e da sua ficha, e você desce de pé no quadrado onde Estrela estava. O vínculo fica: Convocar Montaria traz Estrela de volta."; the landing is said only with the owner on the steed.
   The release reads "O vínculo acaba: Estrela some da ficha e do mapa, e a próxima Convocar Montaria escolhe de novo a forma e o tipo."; with no combat holding the steed the owner also reads "Fora de combate, não gasta nada.".
+  The question is a surface with a danger border and a 16 px bold sans title, and "Voltar" and the confirm are an equal pair side by side at every width.
   The confirm buttons carry the "✕" and the `link_off` icon.
   The chip shows only while the combat runs: a combat still being set up charges nothing.
   Under the actions the card says "Dispensar mantém o vínculo: Convocar Montaria traz Estrela de volta.", and to the owner "Fora de combate, não gasta nada."; "Renomear" and "Corrigir PV" are in ink on this card.

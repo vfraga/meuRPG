@@ -49,6 +49,21 @@ describe('SteedAsk: "Dispensar Estrela?" and "Libertar Estrela?", asked in place
       { desc: EncounterBlockedSchema, value: create(EncounterBlockedSchema, { reason }) },
     ]);
 
+  it('is a surface with a danger border, a 16 px bold sans title and "Voltar | action" as an equal pair', async () => {
+    const { el, buttons } = await setup('dismiss');
+    const ask = getComputedStyle(el.querySelector('.ask')!);
+    // The colours are tokens the test page does not define; the e2e shots judge them.
+    expect(ask.borderTopStyle).toBe('solid');
+    expect(ask.borderTopWidth).toBe('1px');
+    const title = getComputedStyle(el.querySelector('.ask__t')!);
+    expect(title.fontFamily).toBe('var(--mr-font-sans)');
+    expect(title.fontSize).toBe('var(--mr-font-16)');
+    expect(title.fontWeight).toBe('700');
+    const pair = el.querySelector('.pair')!;
+    expect(Array.from(pair.children)).toEqual(buttons());
+    expect(getComputedStyle(pair).gridTemplateColumns).toBe('minmax(0, 1fr) minmax(0, 1fr)');
+  });
+
   it('asks the dismissal as an alertdialog: the title, what it does, "Voltar" first with the focus, the confirm marked', async () => {
     const { el, buttons } = await setup('dismiss');
     const ask = el.querySelector('[role=alertdialog]')!;
