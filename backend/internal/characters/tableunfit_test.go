@@ -204,7 +204,7 @@ func wantUnfitSentence(t *testing.T, err error, field, sentence string) {
 }
 
 // A pick made when completing the choices is refused as it is on a save: the choice offers the tool, but no source takes it
-// together with the picks the sheet holds.
+// together with the picks the sheet holds (the first list lists it and its one slot is taken).
 func TestCompletingChoicesRefusesAToolNoSourceTakesWithTheHeldPicks(t *testing.T) {
 	t.Parallel()
 	u := newUnfitTable(t, "skill:nature")
@@ -218,8 +218,8 @@ func TestCompletingChoicesRefusesAToolNoSourceTakesWithTheHeldPicks(t *testing.T
 	owner := u.traitOf(t, bg)
 	_, err := (&choiceTable{h: u.h, campaign: u.campaign}).complete(u.player, u.player.get(t, u.campaign, pc.GetId()), pick(rules.ToolPickKey(owner), herbalismKit))
 	var ce *connect.Error
-	if !errors.As(err, &ce) || ce.Code() != connect.CodeInvalidArgument || !strings.Contains(ce.Message(), "não está em nenhuma das escolhas de ferramenta") {
-		t.Errorf("error = %v, want the refusal of a tool no choice takes", err)
+	if !errors.As(err, &ce) || ce.Code() != connect.CodeInvalidArgument || !strings.Contains(ce.Message(), "Não há vaga para a ferramenta") {
+		t.Errorf("error = %v, want the refusal of a tool on a list with no room", err)
 	}
 }
 
