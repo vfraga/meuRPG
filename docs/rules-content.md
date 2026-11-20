@@ -102,6 +102,12 @@ A spell or trap outside the SRD never enters.
 Loading refuses a spell that is not from the SRD, an unknown kind, a field the kind does not use, a condition that does not exist, a creature that does not exist, a CR that is not from the SRD and a creature type that is not one.
 The casting time, ritual and concentration come from the spell, not from this file.
 
+An `hp_pool` spell (Sleep, Color Spray) leaves its condition as an effect row of `effects/combat_effects.json` with `applies: pool`, which holds only the creatures the pool reached.
+`per_target: true` gives each creature an effect of its own, so the master ends one without the others.
+`ends_on_damage: true` ends the effect on a creature that takes damage, and only on that one.
+A `duration` with `anchor: caster` counts the clock on the caster's turn (Color Spray: until the end of the caster's next turn) and is the one duration a spell that is not instantaneous may give itself.
+Why the pool goes past a creature (undead, charm immunity, Fey Ancestry, no sight) is `PoolSkip` in `rules/combat/hpspells.go`.
+
 ### Spells that keep an area on the map
 
 The spells that keep a zone on the map are rows of code, not of `effects/spells.json` ([Spell zones](architecture/play/spell-zones.md)); their table rulings are in [RN-37](product/rules.md#rn-37-areas-that-spells-keep-on-the-map).

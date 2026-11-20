@@ -134,6 +134,7 @@ func (s *Service) mustRollPool(ctx context.Context, tx pgx.Tx, m authz.Membershi
 // hpCast is what one hit point spell works on: its effect, the targets with the hit
 // points they have now, the hit each one gets in the cast event, and the caster's roll.
 type hpCast struct {
+	spell   string
 	fx      *link.HPEffect
 	targets []fxTarget
 	hits    []castHit
@@ -167,7 +168,7 @@ func (s *Service) castHPSpell(ctx context.Context, c *combatTx, sp link.Spell, t
 	if !ok {
 		return nil, nil, fmt.Errorf("spell %s: unknown hit point effect %q", sp.Key, fx.Kind)
 	}
-	vitals, err := apply(s, ctx, c, &hpCast{fx: fx, targets: targets, hits: hits, in: in, made: made})
+	vitals, err := apply(s, ctx, c, &hpCast{spell: sp.Key, fx: fx, targets: targets, hits: hits, in: in, made: made})
 	if err != nil {
 		return nil, nil, err
 	}
@@ -199,20 +200,20 @@ func (s *Service) hpPool(ctx context.Context, c *combatTx, k *hpCast) ([]*playv1
 	}
 	made.DiceCount, made.DiceSides, made.Faces = clamp32(fx.Pool.Count, 0, 100), clamp32(fx.Pool.Sides, 0, 100), faces32(roll.Faces)
 	made.Total, made.Physical = clamp32(roll.Total, 0, math.MaxInt32), roll.Physical
-	creatures := make([]combat.HPCreature, len(k.targets))
-	for i, t := range k.targets {
-		creatures[i] = combat.HPCreature{HP: t.hp, Unconscious: slices.Contains(t.c.Conditions, unconscious)}
+	creatures, whys, err := s.poolCreatures(ctx, c, k)
+	if err != nil {
+		return nil, err
 	}
 	for place, step := range combat.ResolvePool(roll.Total, creatures) {
 		h := &k.hits[step.Index]
 		h.Order, h.Left = clamp32(place+1, 0, 100), clamp32(step.Left, 0, math.MaxInt32)
-		if !step.Affected {
+		switch {
+		case step.Affected:
+			h.Fx = fxAffected // the effect is put on it with the others, once the pool is through (putPoolEffects)
+		case whys[step.Index].why != "" && step.Reason == creatures[step.Index].Skip:
+			h.FxReason, h.NoEffectWhy, h.WhyToOwner = combat.PoolSkipped, whys[step.Index].why, whys[step.Index].owner
+		default:
 			h.FxReason = step.Reason
-			continue
-		}
-		h.Fx = fxAffected
-		if err := s.giveCondition(ctx, c, k.targets[step.Index].c, fx.Condition, h); err != nil {
-			return nil, err
 		}
 	}
 	return nil, nil

@@ -38,6 +38,10 @@ Acid Arrow's effect (`applies: hit`) is made only on a target the spell attack h
 
 ## A rider spent by a roll
 
+A pool spell (Sleep, Color Spray) is put on the creatures its pool reached by `putPoolEffects`, through the same rows (`applies: pool`).
+Sleep has `per_target` (one group for each sleeper) and `ends_on_damage` (`endEffectsOnDamage`, called from `afterDamage`, ends the damaged creature's row with the reason `damaged`).
+Color Spray's clock is `duration: {until_end_of_turn_of, anchor: caster}`.
+
 The rider of an instantaneous spell has a clock of its own on its target's next turn: `EffectDef.Duration`, which the loader accepts on a spell's entry only when the spell is instantaneous and only as `until_start_of_turn_of` or `until_end_of_turn_of` (`lasting_effects_once.go`).
 `applyLastingSpell` gives it no anchor, so `endsOf` anchors it on each target and `nextTurnRound` picks the target's turn this round when it has not acted yet, the next round's when it has.
 Vicious Mockery's rider is the modifier `attack_disadvantage` with `once`: `creatureFacts` fills `combat.Creature.AttackDisadvantage` with the key of the first such effect not spent (`effectAttackDisadvantage`), and `combat.AttackMode` lists it as `SourceEffectAttack` ("Zombaria Viciosa: desvantagem neste ataque"; "Outra fonte" when the master hides an effect).

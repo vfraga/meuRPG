@@ -16,6 +16,9 @@ type HPCreature struct {
 	// Unconscious says it already carries the Unconscious condition: Sono and
 	// Leque Cromático skip it.
 	Unconscious bool
+	// Skip is why the spell goes past it with nothing spent (PoolSkipUndead and the others), "" when
+	// nothing in it stops the spell. PoolSkip works it out from what the creature is.
+	Skip string
 }
 
 // The Pool* constants say why a creature of a pool was not affected.
@@ -29,6 +32,52 @@ const (
 	PoolTooHigh = "above_pool"
 )
 
+// Why a spell of the pool goes past a creature that is neither unconscious nor at 0 hit points (SRD 5.1): Sleep says "Undead and
+// creatures immune to being charmed aren't affected" and Fey Ancestry says "magic can't put you to sleep"; Color Spray ignores
+// "creatures that can't see". HPCreature.Skip carries one of them.
+const (
+	PoolSkipUndead      = "undead"
+	PoolSkipCharmImmune = "charm_immune"
+	PoolSkipFeyAncestry = "fey_ancestry"
+	PoolSkipCannotSee   = "cannot_see"
+)
+
+// The two spells of the pool.
+const (
+	SpellSleep      = "spell:sleep"
+	SpellColorSpray = "spell:color-spray"
+)
+
+// PoolFacts is what a pool spell asks of a creature it may touch.
+type PoolFacts struct {
+	// CreatureType is the stat block's type ("undead"), empty for a creature with none.
+	CreatureType string
+	// CharmImmune says it cannot be charmed; FeyAncestry that its trait stops magic from putting it to sleep; CannotSee that it is
+	// blinded or has no sight.
+	CharmImmune, FeyAncestry, CannotSee bool
+}
+
+// PoolSkip says why the spell goes past a creature with the facts, "" when it does not: Sleep skips undead, the immune to being
+// charmed and an elf (Fey Ancestry); Color Spray skips whoever cannot see.
+func PoolSkip(spellKey string, f PoolFacts) string {
+	switch spellKey {
+	case SpellSleep:
+		switch {
+		case f.CreatureType == "undead":
+			return PoolSkipUndead
+		case f.CharmImmune:
+			return PoolSkipCharmImmune
+		case f.FeyAncestry:
+			return PoolSkipFeyAncestry
+		}
+	case SpellColorSpray:
+		if f.CannotSee {
+			return PoolSkipCannotSee
+		}
+	}
+	return ""
+}
+
 // PoolStep is what the pool did to one creature.
 type PoolStep struct {
 	// Index is the creature's position in the list given to ResolvePool.
@@ -37,7 +86,7 @@ type PoolStep struct {
 	HP int
 	// Affected says the spell reached it.
 	Affected bool
-	// Reason is PoolSkipped or PoolTooHigh for a creature that was not affected.
+	// Reason is PoolSkipped, one of the PoolSkip reasons or PoolTooHigh for a creature that was not affected.
 	Reason string
 	// Left is what is left of the pool after this creature.
 	Left int
@@ -46,7 +95,7 @@ type PoolStep struct {
 // ResolvePool goes through the creatures in ascending order of current hit
 // points (a tie keeps the order given) and affects each one whose hit points
 // fit in what is left of the total, which then goes down by them (Sono, Borrifo
-// de Cores). A creature that is unconscious or at 0 hit points is skipped. The
+// de Cores). A creature that is unconscious, at 0 hit points or with a Skip reason is skipped. The
 // result has one step per creature, in the order the pool went through them.
 func ResolvePool(total int, creatures []HPCreature) []PoolStep {
 	order := make([]int, len(creatures))
@@ -60,6 +109,8 @@ func ResolvePool(total int, creatures []HPCreature) []PoolStep {
 		c := creatures[i]
 		step := PoolStep{Index: i, HP: c.HP}
 		switch {
+		case c.Skip != "":
+			step.Reason = c.Skip
 		case c.Unconscious || c.HP <= 0:
 			step.Reason = PoolSkipped
 		case c.HP > left:

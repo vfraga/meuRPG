@@ -242,8 +242,8 @@ func targetResultProto(ev actionEvent, h castHit, v combatViewer, caster, target
 	if h.BonusFace != 0 && r.AttackRoll != nil { // only who reads the roll reads the die added to it
 		r.BonusDice = []*playv1.BonusDie{{SourceKey: bardicInspirationFt, Sides: h.BonusSides, Face: h.BonusFace, Used: true}}
 	}
-	if h.Lasting == "" && v.master {
-		r.NoEffectReasonMaster = h.NoEffectWhy // a condition the stat block or the sheet refused (giveCondition)
+	if h.Lasting == "" && (v.master || (h.WhyToOwner && v.owns(target))) {
+		r.NoEffectReasonMaster = h.NoEffectWhy // a condition the stat block or the sheet refused (giveCondition), or a pool spell's skip (hpPool)
 	}
 	switch h.Lasting {
 	case lastingApplied:

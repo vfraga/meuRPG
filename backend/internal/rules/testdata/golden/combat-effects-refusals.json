@@ -6,7 +6,7 @@
   "bad: a missing condition": "effects/combat_effects.json: the condition condition:prone is missing",
   "bad: a name with no effect": "effects/names_pt.json names \"effect:x\", which is not in combat_effects.json",
   "bad: a rider that counts rounds": "effects/combat_effects.json: spell:vicious-mockery: the rider of an instantaneous spell lasts until_start_of_turn_of or until_end_of_turn_of, not \"rounds\"",
-  "bad: a spell checked before effects": "effects/combat_effects.json: spell:bless: applies must be all, failed_save or hit",
+  "bad: a spell checked before effects": "effects/combat_effects.json: spell:bless: applies must be all, failed_save, hit or pool",
   "bad: a spell that fails its check": "effects/combat_effects.json: spell:bless: the only target type limit is humanoid",
   "bad: a spell that is not SRD": "effects/combat_effects.json: \"spell:made-up\" is not an SRD spell",
   "bad: a spell's own duration": "effects/combat_effects.json: spell:bless: a spell's duration comes from the spell, leave duration out (only the rider of an instantaneous spell has its own)",

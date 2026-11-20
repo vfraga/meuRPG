@@ -120,3 +120,52 @@ func TestResolveFlatHeal(t *testing.T) {
 		t.Errorf("heal from 0 with no conditions = %+v", got)
 	}
 }
+
+// A creature with a Skip reason is passed with nothing spent (Sleep: undead, charm-immune, Fey Ancestry; Color Spray: cannot see), and
+// the reason comes back on its step.
+func TestResolvePoolSkipsWhatTheSpellCannotTouchAndSpendsNothingOnIt(t *testing.T) {
+	t.Parallel()
+	creatures := []HPCreature{{HP: 5}, {HP: 9, Skip: PoolSkipUndead}, {HP: 12, Skip: PoolSkipFeyAncestry}, {HP: 14}}
+	steps := ResolvePool(20, creatures)
+	want := []struct {
+		index    int
+		affected bool
+		reason   string
+		left     int
+	}{{0, true, PoolAffected, 15}, {1, false, PoolSkipUndead, 15}, {2, false, PoolSkipFeyAncestry, 15}, {3, true, PoolAffected, 1}}
+	if len(steps) != len(want) {
+		t.Fatalf("steps = %v, want %d", steps, len(want))
+	}
+	for i, w := range want {
+		if s := steps[i]; s.Index != w.index || s.Affected != w.affected || s.Reason != w.reason || s.Left != w.left {
+			t.Errorf("step %d = %+v, want index %d affected %v reason %q left %d", i, s, w.index, w.affected, w.reason, w.left)
+		}
+	}
+}
+
+func TestPoolSkip(t *testing.T) {
+	t.Parallel()
+	for _, tc := range []struct {
+		name  string
+		spell string
+		facts PoolFacts
+		want  string
+	}{
+		{"sleep on an undead", SpellSleep, PoolFacts{CreatureType: "undead"}, PoolSkipUndead},
+		{"sleep on a creature immune to being charmed", SpellSleep, PoolFacts{CharmImmune: true}, PoolSkipCharmImmune},
+		{"sleep on an elf", SpellSleep, PoolFacts{FeyAncestry: true}, PoolSkipFeyAncestry},
+		{"sleep on an undead that is also immune to being charmed says undead", SpellSleep, PoolFacts{CreatureType: "undead", CharmImmune: true}, PoolSkipUndead},
+		{"sleep on a construct that cannot see", SpellSleep, PoolFacts{CreatureType: "construct", CannotSee: true}, ""},
+		{"sleep on a creature with no type", SpellSleep, PoolFacts{}, ""},
+		{"color spray on a creature that cannot see", SpellColorSpray, PoolFacts{CannotSee: true}, PoolSkipCannotSee},
+		{"color spray on an undead", SpellColorSpray, PoolFacts{CreatureType: "undead", CharmImmune: true, FeyAncestry: true}, ""},
+		{"another spell", "spell:fireball", PoolFacts{CreatureType: "undead", CannotSee: true}, ""},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			if got := PoolSkip(tc.spell, tc.facts); got != tc.want {
+				t.Errorf("PoolSkip(%s, %+v) = %q, want %q", tc.spell, tc.facts, got, tc.want)
+			}
+		})
+	}
+}

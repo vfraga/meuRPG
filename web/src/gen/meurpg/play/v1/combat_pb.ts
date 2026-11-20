@@ -9039,7 +9039,9 @@ export type SpellTargetResult = Message<"meurpg.play.v1.SpellTargetResult"> & {
 
   /**
    * Only the master: why a spell had no effect ("alvo não é humanoide"). A player
-   * reads only "A magia não teve efeito." (RN-20).
+   * reads only "A magia não teve efeito." (RN-20). The one exception is a trait of
+   * the target's own character (Fey Ancestry: Sleep does not put an elf to sleep):
+   * the words are the trait's own, and its player reads them too.
    *
    * @generated from field: string no_effect_reason_master = 101;
    */

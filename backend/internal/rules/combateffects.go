@@ -229,7 +229,13 @@ type EffectModifier struct {
 type EffectDuration struct {
 	Kind   string `json:"kind"`
 	Rounds int    `json:"rounds,omitempty"`
+	// Anchor is whose turn an until_start_of_turn_of or until_end_of_turn_of clock counts: EffectAnchorCaster (Color Spray: until the
+	// end of the caster's next turn), or empty for the target's (Vicious Mockery).
+	Anchor string `json:"anchor,omitempty"`
 }
+
+// EffectAnchorCaster is the Anchor of a clock on the caster's turn.
+const EffectAnchorCaster = "caster"
 
 // EffectSave is the saving throw an effect asks again: at the end of the
 // target's turn (Hold Person) or at the start of it (Web). The DC is the
@@ -291,8 +297,14 @@ type EffectDef struct {
 	Trigger   *EffectTrigger `json:"turn_trigger,omitempty"`
 	// Applies says which targets get the effect when a spell is cast: "all" (Bless,
 	// Haste), "failed_save" (Bane, Hold Person: the ones that failed the save the
-	// spell asks) or "hit" (Acid Arrow: the ones the spell attack hit).
+	// spell asks), "hit" (Acid Arrow: the ones the spell attack hit) or "pool" (Sleep,
+	// Color Spray: the ones the pool of hit points reached).
 	Applies string `json:"applies,omitempty"`
+	// PerTarget says each target has an effect of its own, which the master ends without the others (Sleep: shaking one sleeper awake).
+	PerTarget bool `json:"per_target,omitempty"`
+	// EndsOnDamage says the effect ends on a target that takes damage, and only on it (Sleep: "until
+	// ... the creature takes damage").
+	EndsOnDamage bool `json:"ends_on_damage,omitempty"`
 	// TargetType limits the targets to a creature type ("humanoid": Hold Person).
 	TargetType string `json:"target_type,omitempty"`
 	// OnEnd is the effect that follows when this one ends (Haste's lethargy).
@@ -341,7 +353,7 @@ type combatEffects struct {
 
 var (
 	effectKinds     = []string{"spell", "feature", "master"}
-	effectApplies   = []string{"all", "failed_save", "hit"}
+	effectApplies   = []string{"all", "failed_save", "hit", "pool"}
 	effectDurations = []string{
 		EffectDurationRounds, EffectDurationUntilStartOfTurnOf, EffectDurationUntilEndOfTurnOf,
 		EffectDurationConcentration, EffectDurationUntilDismissed, EffectDurationLongRest,
@@ -472,6 +484,12 @@ func (c *content) checkEffectDefs(_ *combatEffectsFile, out *combatEffects) erro
 // checkRiderDuration refuses a duration on a spell's entry, but for the rider of an instantaneous
 // spell, whose clock is its target's next turn (riderDurations).
 func checkRiderDuration(sp *srd51.Spell, d *EffectDuration) error {
+	if d.Anchor == EffectAnchorCaster { // a clock on the caster's turn outlasts a spell that is not instantaneous too (Color Spray)
+		if !slices.Contains(riderDurations, d.Kind) {
+			return fmt.Errorf("a clock on the caster's turn is until_start_of_turn_of or until_end_of_turn_of, not %q", d.Kind)
+		}
+		return nil
+	}
 	if parseDuration(sp.Duration, sp.Concentration).Kind != DurationInstantaneous {
 		return errors.New("a spell's duration comes from the spell, leave duration out (only the rider of an instantaneous spell has its own)")
 	}
@@ -546,7 +564,7 @@ func checkEffectHeader(_ *content, d *EffectDef, _ *combatEffects, bad effectFai
 		return err
 	}
 	if d.Applies != "" && !slices.Contains(effectApplies, d.Applies) {
-		return bad("applies must be all, failed_save or hit")
+		return bad("applies must be all, failed_save, hit or pool")
 	}
 	if d.Visibility != "" && d.Visibility != EffectVisibilityPublic && d.Visibility != EffectVisibilityOwner {
 		return bad("unknown visibility %q", d.Visibility)
@@ -568,6 +586,9 @@ func checkEffectDuration(dur *EffectDuration, bad effectFail) error {
 	}
 	if (dur.Kind == EffectDurationRounds) != (dur.Rounds > 0) {
 		return bad("rounds go with the rounds duration, and only with it")
+	}
+	if dur.Anchor != "" && (dur.Anchor != EffectAnchorCaster || !slices.Contains(riderDurations, dur.Kind)) {
+		return bad("the only duration anchor is %q, on until_start_of_turn_of or until_end_of_turn_of", EffectAnchorCaster)
 	}
 	return nil
 }

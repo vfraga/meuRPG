@@ -41,6 +41,11 @@ const (
 	// whyNoLifeMagic is the master's reason for a healing, Spare the Dying or Blight that does nothing to an undead or a construct
 	// (SRD 5.1): a player reads only that nothing happened (RN-10).
 	whyNoLifeMagic = "Sem efeito em construtos e mortos-vivos"
+	// The master's reasons for a pool spell that goes past a creature (Sleep, Color Spray; SRD 5.1): a player reads only "not
+	// affected", as for a creature the pool did not reach. Fey Ancestry says it in the trait's own words (Traits.FeyAncestry).
+	whySleepUndead      = "Sem efeito em mortos-vivos"
+	whySleepCharmImmune = "Sem efeito em quem é imune a ser enfeitiçado"
+	whyCannotSee        = "Sem efeito em quem não enxerga"
 )
 
 // applyLastingSpell puts the effect of a spell on the targets it took hold of. targs and
@@ -98,8 +103,12 @@ func (s *Service) putLastingOnTargets(
 	}
 	var rows []playdb.CombatantState
 	for i, g := range groups {
+		group := made.CastID
+		if def.PerTarget {
+			group = "" // each target has a group of its own: ending one is not ending the others
+		}
 		made1, err := s.addEffects(ctx, c, cs, effectSpec{
-			key: sp.Key, sourceKind: "spell", def: def, caster: &caster, group: made.CastID, targets: g, dur: dur,
+			key: sp.Key, sourceKind: "spell", def: def, caster: &caster, group: group, targets: g, dur: dur,
 			concentration: def.Concentration, dc: dc, modifiers: mods[i],
 		})
 		if err != nil {
@@ -281,18 +290,11 @@ func (s *Service) markSpellHits(content *rules.Content, def *rules.EffectDef, st
 	var taken []playdb.Combatant
 	for i, t := range targs {
 		hit := &made.Hits[i]
-		key := conv.OrZero(t.MonsterKey)
-		if key == "" {
-			key = kinds[t.CharacterID]
-		}
-		if why := s.noEffectWhy(content, def, key, sheets[t.ID].Intelligence); why != "" {
-			hit.Lasting, hit.NoEffectWhy = lastingNoEffect, why
+		if def.Applies == "pool" && hit.Fx != fxAffected { // a pool spell holds the ones its pool reached, and says nothing of the others
 			continue
 		}
-		if slices.ContainsFunc(def.Conditions, func(k string) bool {
-			return combat.ImmuneTo(effectModsOf(states, t.ID), k) || sheetImmuneTo(sheets[t.ID], k)
-		}) {
-			hit.Lasting, hit.NoEffectWhy = lastingNoEffect, whyImmune
+		if why := s.refusedWhy(content, def, states, kinds, sheets, t); why != "" {
+			hit.Lasting, hit.NoEffectWhy = lastingNoEffect, why
 			continue
 		}
 		// The spell asks a saving throw and holds the ones that failed it.
@@ -307,6 +309,24 @@ func (s *Service) markSpellHits(content *rules.Content, def *rules.EffectDef, st
 		taken = append(taken, t)
 	}
 	return taken
+}
+
+// refusedWhy says why an effect takes no hold of a target, "" when it may: the kind of creature it is (noEffectWhy) or a condition it
+// is immune to.
+func (s *Service) refusedWhy(content *rules.Content, def *rules.EffectDef, states map[string][]playdb.CombatantState, kinds map[string]string, sheets map[string]link.Traits, t playdb.Combatant) string {
+	key := conv.OrZero(t.MonsterKey)
+	if key == "" {
+		key = kinds[t.CharacterID]
+	}
+	if why := s.noEffectWhy(content, def, key, sheets[t.ID].Intelligence); why != "" {
+		return why
+	}
+	if slices.ContainsFunc(def.Conditions, func(k string) bool {
+		return combat.ImmuneTo(effectModsOf(states, t.ID), k) || sheetImmuneTo(sheets[t.ID], k)
+	}) {
+		return whyImmune
+	}
+	return ""
 }
 
 // dropWithoutHold takes out of the targets an effect that sets a base armor class cannot take hold
@@ -342,8 +362,13 @@ func spellEffectDuration(content *rules.Content, def *rules.EffectDef, spellKey 
 	case def.Duration != nil:
 		// The rider of an instantaneous spell keeps its own clock (Zombaria Viciosa: until the end
 		// of the target's next turn). With no anchor, endsOf anchors it on each target, at the
-		// target's next turn: this round when it has not acted yet, the next when it has.
-		return durationSpec{Kind: def.Duration.Kind}
+		// target's next turn: this round when it has not acted yet, the next when it has. A clock on the
+		// caster's turn (Color Spray: until the end of the caster's next turn) is anchored on the caster.
+		spec := durationSpec{Kind: def.Duration.Kind}
+		if def.Duration.Anchor == rules.EffectAnchorCaster {
+			spec.Anchor = caster.ID
+		}
+		return spec
 	case rounds > 0:
 		return durationSpec{Kind: rules.EffectDurationRounds, Rounds: int32(rounds), Anchor: caster.ID} //nolint:gosec // 10 rounds a minute
 	case def.Concentration:
@@ -359,7 +384,7 @@ func (s *Service) spellEffectGroups(ctx context.Context, c *combatTx, def *rules
 	if err != nil {
 		return nil, nil, err
 	}
-	if !hasBaseAC(def) {
+	if !hasBaseAC(def) && !def.PerTarget {
 		return [][]playdb.Combatant{taken}, [][]rules.EffectModifier{common}, nil
 	}
 	var groups [][]playdb.Combatant

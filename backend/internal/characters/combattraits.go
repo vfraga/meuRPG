@@ -56,6 +56,19 @@ func withCreatureType(content *rules.Content, monsterKey string, features []rule
 	return append(slices.Clone(features), rules.Feature{Key: creatureTypePrefix + strings.ToLower(c.Type), Name: c.Type, Source: monsterKey})
 }
 
+// feyAncestryTrait is the key of the elf's trait whose words say that magic cannot put the creature to sleep.
+const feyAncestryTrait = "trait:fey-ancestry"
+
+// feyAncestryOf is the trait's own words (the hint's text), empty when the sheet has no Fey Ancestry.
+func feyAncestryOf(hints []rules.Hint) string {
+	for _, h := range hints {
+		if h.Source == feyAncestryTrait && h.TextPT != "" {
+			return h.TextPT
+		}
+	}
+	return ""
+}
+
 // taggedSavesOf are the advantages on saving throws the sheet's hints give against one kind of source
 // ("against:frightened"): the racial ones, which a combat applies when it knows what the save is against.
 func taggedSavesOf(hints []rules.Hint) []link.TaggedSave {
@@ -137,6 +150,7 @@ func traitsOf(content *rules.Content, d rules.Derived) link.Traits {
 	})
 	t.ArmorUntrained = d.ArmorUntrained.Any()
 	t.TaggedSaves = taggedSavesOf(d.Hints)
+	t.FeyAncestry = feyAncestryOf(d.Hints)
 	t.ImprovedDivineSmite = rules.HasFeature(d, "feature:improved-divine-smite")
 	t.OpenHand = rules.HasFeature(d, "feature:open-hand-technique")
 	t.StunningStrike = rules.HasFeature(d, "feature:stunning-strike")

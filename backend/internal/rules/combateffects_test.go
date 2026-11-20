@@ -41,6 +41,14 @@ func TestTheSpellsThatLastHaveTheirEffects(t *testing.T) {
 	if len(laugh.Conditions) != 2 || laugh.EndSave == nil || !laugh.EndSave.OnDamage || laugh.EndSave.Ability != "wis" {
 		t.Errorf("Hideous Laughter = %+v", laugh)
 	}
+	sleep, _ := c.CombatSpellEffect("spell:sleep")
+	if sleep.Applies != "pool" || !sleep.PerTarget || !sleep.EndsOnDamage || sleep.Duration != nil || sleep.Concentration || !slices.Equal(sleep.Conditions, []string{"condition:unconscious"}) {
+		t.Errorf("Sleep holds the creatures its pool reached, each on its own, until a minute passes or the creature takes damage: %+v", sleep)
+	}
+	spray, _ := c.CombatSpellEffect("spell:color-spray")
+	if spray.Applies != "pool" || spray.Duration == nil || spray.Duration.Kind != EffectDurationUntilEndOfTurnOf || spray.Duration.Anchor != EffectAnchorCaster || !slices.Equal(spray.Conditions, []string{"condition:blinded"}) {
+		t.Errorf("Color Spray blinds until the end of the caster's next turn: %+v", spray)
+	}
 	web, _ := c.CombatSpellEffect("spell:web")
 	if web.StartSave == nil || web.StartSave.Ability != "dex" || web.StartSave.OnFail != "effect:web-restrained" {
 		t.Errorf("Web = %+v", web)

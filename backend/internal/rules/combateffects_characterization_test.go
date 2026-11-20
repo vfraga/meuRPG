@@ -81,18 +81,28 @@ func TestCheckModifierCharacterization(t *testing.T) {
 func combatDefCases() map[string]func(d *EffectDef) {
 	save := func(s EffectSave) *EffectSave { return &s }
 	return map[string]func(d *EffectDef){
-		"ok: a good definition":           func(_ *EffectDef) {},
-		"ok: nothing but a kind":          func(d *EffectDef) { *d = EffectDef{Key: d.Key, Kind: "master"} },
-		"ok: a rounds duration":           func(d *EffectDef) { d.Duration = &EffectDuration{Kind: EffectDurationRounds, Rounds: 1} },
-		"ok: owner visibility":            func(d *EffectDef) { d.Visibility = EffectVisibilityOwner },
-		"ok: on_end names a spell":        func(d *EffectDef) { d.OnEnd = "spell:bless" },
-		"ok: a label of 30 characters":    func(d *EffectDef) { d.PlayerLabelPT = strings.Repeat("é", maxPlayerLabel) },
-		"bad: empty kind":                 func(d *EffectDef) { d.Kind = "" },
-		"bad: unknown kind":               func(d *EffectDef) { d.Kind = "item" },
-		"bad: unknown duration":           func(d *EffectDef) { d.Duration = &EffectDuration{Kind: "forever"} },
-		"bad: rounds without a count":     func(d *EffectDef) { d.Duration = &EffectDuration{Kind: EffectDurationRounds} },
-		"bad: a count without rounds":     func(d *EffectDef) { d.Duration = &EffectDuration{Kind: EffectDurationLongRest, Rounds: 2} },
-		"bad: applies":                    func(d *EffectDef) { d.Applies = "some" },
+		"ok: a good definition":        func(_ *EffectDef) {},
+		"ok: nothing but a kind":       func(d *EffectDef) { *d = EffectDef{Key: d.Key, Kind: "master"} },
+		"ok: a rounds duration":        func(d *EffectDef) { d.Duration = &EffectDuration{Kind: EffectDurationRounds, Rounds: 1} },
+		"ok: owner visibility":         func(d *EffectDef) { d.Visibility = EffectVisibilityOwner },
+		"ok: on_end names a spell":     func(d *EffectDef) { d.OnEnd = "spell:bless" },
+		"ok: a label of 30 characters": func(d *EffectDef) { d.PlayerLabelPT = strings.Repeat("é", maxPlayerLabel) },
+		"bad: empty kind":              func(d *EffectDef) { d.Kind = "" },
+		"bad: unknown kind":            func(d *EffectDef) { d.Kind = "item" },
+		"bad: unknown duration":        func(d *EffectDef) { d.Duration = &EffectDuration{Kind: "forever"} },
+		"bad: rounds without a count":  func(d *EffectDef) { d.Duration = &EffectDuration{Kind: EffectDurationRounds} },
+		"bad: a count without rounds":  func(d *EffectDef) { d.Duration = &EffectDuration{Kind: EffectDurationLongRest, Rounds: 2} },
+		"bad: applies":                 func(d *EffectDef) { d.Applies = "some" },
+		"ok: applies to the pool":      func(d *EffectDef) { d.Applies = "pool" },
+		"ok: a clock on the caster": func(d *EffectDef) {
+			d.Duration = &EffectDuration{Kind: EffectDurationUntilEndOfTurnOf, Anchor: EffectAnchorCaster}
+		},
+		"bad: an anchor that is no one": func(d *EffectDef) {
+			d.Duration = &EffectDuration{Kind: EffectDurationUntilEndOfTurnOf, Anchor: "target"}
+		},
+		"bad: an anchor on a long clock": func(d *EffectDef) {
+			d.Duration = &EffectDuration{Kind: EffectDurationLongRest, Anchor: EffectAnchorCaster}
+		},
 		"bad: visibility":                 func(d *EffectDef) { d.Visibility = "everyone" },
 		"bad: target type":                func(d *EffectDef) { d.TargetType = "beast" },
 		"bad: condition":                  func(d *EffectDef) { d.Conditions = []string{"condition:prone", "condition:bored"} },

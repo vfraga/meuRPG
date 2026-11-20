@@ -137,6 +137,19 @@
       ],
       "tags_pt": ["Imune a Amedrontado", "PV temporários a cada turno seu"]
     },
+    "spell:sleep": {
+      "applies": "pool",
+      "visibility": "public",
+      "conditions": ["condition:unconscious"],
+      "per_target": true,
+      "ends_on_damage": true
+    },
+    "spell:color-spray": {
+      "applies": "pool",
+      "visibility": "public",
+      "conditions": ["condition:blinded"],
+      "duration": {"kind": "until_end_of_turn_of", "anchor": "caster"}
+    },
     "spell:hold-person": {
       "applies": "failed_save",
       "target_type": "humanoid",

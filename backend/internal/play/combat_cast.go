@@ -974,6 +974,9 @@ func (f *castFlow) affectHitPoints(ctx context.Context) error {
 	for _, t := range f.targs {
 		f.hidden = f.hidden || t.Hidden
 	}
+	if f.sp.HP.Kind == rules.SpellKindHPPool { // what Sleep and Color Spray leave on the creatures the pool reached
+		return f.putPoolEffects(ctx)
+	}
 	return nil
 }
 

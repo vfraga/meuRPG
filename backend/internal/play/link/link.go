@@ -323,6 +323,9 @@ type Traits struct {
 	// TaggedSaves are the racial advantages on saving throws that hold against one kind of source (Brave, Fey
 	// Ancestry, Gnome Cunning, Dwarven Resilience).
 	TaggedSaves []TaggedSave
+	// FeyAncestry is the words of the elf's and half-elf's trait (races.json, trait:fey-ancestry): "magic can't put you to sleep".
+	// Empty for a sheet without it.
+	FeyAncestry string `json:",omitempty"`
 	// HeavyArmor says the armor worn is heavy: Rage gives none of its benefits then.
 	HeavyArmor bool
 	// StealthDisadvantage says the armor worn gives disadvantage on Dexterity (Stealth).

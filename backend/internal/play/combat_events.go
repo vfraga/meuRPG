@@ -197,6 +197,9 @@ type castHit struct {
 	// only the master reads.
 	Lasting     string `json:"lasting,omitempty"`
 	NoEffectWhy string `json:"no_effect_why,omitempty"`
+	// WhyToOwner says the target's own player reads NoEffectWhy too: a trait of the target's own (Fey Ancestry) is nothing the
+	// table does not already know of its character (RN-20).
+	WhyToOwner bool `json:"why_to_owner,omitempty"`
 
 	// A spell that reads hit points (combat_spells_hp.go): whether it reached the
 	// target (the fx* values below), why not, the target's hit points when it did,

@@ -43,7 +43,13 @@ type damageLanded struct {
 // concentration at 0 hit points, or its saving throw. It runs in the transaction that
 // applied the damage, once for each source of damage (a cast is one source).
 func (s *Service) afterDamage(ctx context.Context, c *combatTx, target playdb.Combatant, d damageLanded) error {
-	if d.pending.Healing || !d.hit.Applied || isCreature(target) {
+	if d.pending.Healing || !d.hit.Applied {
+		return nil
+	}
+	if err := s.endEffectsOnDamage(ctx, c, target, d); err != nil { // Sleep ends on the creature that took damage
+		return err
+	}
+	if isCreature(target) {
 		return nil
 	}
 	if err := s.offerCreatureRider(ctx, c, target, d); err != nil { // the rider of an NPC's attack that hit (combat_creature_rider.go)

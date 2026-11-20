@@ -146,7 +146,7 @@ var masterOnly = []masterOnlyField{
 	{"meurpg.play.v1.CombatLogEntry", "recharge", "the d6 the server rolls for a creature's Recharge action is the master's and the player's who controls the creature (RN-20, RN-29)", actorIsOwnCreature},
 	{"meurpg.play.v1.CombatLogEffect", "resisted", "a save the master made a success reads as a save that passed to a player (RN-20, RN-29)", nil},
 	{"meurpg.play.v1.CombatLogEffect", "resisted_left", "the uses of a creature's trait left are the master's (RN-20, RN-29)", nil},
-	{"meurpg.play.v1.SpellTargetResult", "no_effect_reason_master", "why a spell did nothing to a target (a creature's type, an immunity) is the master's: a player reads only that nothing happened (RN-10, RN-20)", nil},
+	{"meurpg.play.v1.SpellTargetResult", "no_effect_reason_master", "why a spell did nothing to a target (a creature's type, an immunity) is the master's: a player reads only that nothing happened (RN-10, RN-20); the trait of a character's own (Fey Ancestry) is its own player's too", targetIsOwn},
 	{"meurpg.play.v1.SpellEffectResult", "reason", "why a spell that reads hit points did not reach a target is the master's (RN-10, RN-20)", nil},
 	{"meurpg.play.v1.SaveResult", "resisted", "only the master makes a save a success, and reads that he did", nil},
 	{"meurpg.play.v1.SaveResult", "resisted_left", "the uses of a creature's trait left are the master's", nil},

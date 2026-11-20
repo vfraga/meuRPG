@@ -487,7 +487,7 @@ func newBeastFormCasters(t *testing.T) (a *armed, e *playv1.Encounter) {
 		spells := []string{sleepSpell, wordKill}
 		a.pens = a.ana.caster(t, a.campaignID, "Pensantus", "class:wizard", "race:gnome", 17,
 			&rulesv1.AbilityScores{Strength: 10, Dexterity: 14, Constitution: 12, Intelligence: 20, Wisdom: 10, Charisma: 8}, nil, nil, spells, spells)
-		a.bri = a.bia.caster(t, a.campaignID, "Sálvia", "class:druid", "race:half-elf", 5,
+		a.bri = a.bia.caster(t, a.campaignID, "Sálvia", "class:druid", "race:human", 5,
 			&rulesv1.AbilityScores{Strength: 10, Dexterity: 12, Constitution: 14, Intelligence: 10, Wisdom: 16, Charisma: 8}, nil, nil, nil,
 			[]string{conjureAnimals})
 	})

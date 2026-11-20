@@ -5639,7 +5639,9 @@ message SpellTargetResult {
   // Unspecified for the other spells.
   LastingEffectOutcome lasting_effect = 100;
   // Only the master: why a spell had no effect ("alvo não é humanoide"). A player
-  // reads only "A magia não teve efeito." (RN-20).
+  // reads only "A magia não teve efeito." (RN-20). The one exception is a trait of
+  // the target's own character (Fey Ancestry: Sleep does not put an elf to sleep):
+  // the words are the trait's own, and its player reads them too.
   string no_effect_reason_master = 101;
   // A spell attack: the Bardic Inspiration die the player added after the d20, already in
   // the total of `attack_roll`.

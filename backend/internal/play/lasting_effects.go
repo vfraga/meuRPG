@@ -57,6 +57,7 @@ const (
 	endCasterLeft    = "caster_left"     // internal: the caster left or died; the log keeps it as endLeft
 	endIncapacitated = "incapacitated"   // the caster was incapacitated: no concentration
 	endUsed          = "used"            // a roll spent it (Guidance, Resistance)
+	endDamaged       = "damaged"         // its target took damage (Sleep)
 )
 
 // lastingEvent is the payload of an effect's event: keys, ids and numbers, never a name
