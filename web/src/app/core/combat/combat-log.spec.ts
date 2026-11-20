@@ -1082,6 +1082,33 @@ describe('the log of spells, reactions, the fallen and conditions', () => {
     expect(autoFail).toMatchObject({ text: ' caiu da montaria (falha automática)' });
   });
 
+  it('writes the line of a bonded creature that was dismissed or released, with no article and no participle', () => {
+    const dismissed = logLine(
+      entry({
+        kind: CombatLogKind.CREATURE_DISMISSED,
+        actorLabel: 'Lia',
+        targetLabel: 'Estrela',
+      } as never),
+    );
+    expect(dismissed).toMatchObject({
+      actor: 'Lia',
+      text: ' dispensou Estrela: o vínculo continua',
+      icon: 'pets',
+    });
+    const released = logLine(
+      entry({
+        kind: CombatLogKind.CREATURE_RELEASED,
+        actorLabel: 'Lia',
+        targetLabel: 'Estrela',
+      } as never),
+    );
+    expect(released).toMatchObject({ actor: 'Lia', text: ' libertou Estrela', icon: 'link_off' });
+    const noActor = logLine(
+      entry({ kind: CombatLogKind.CREATURE_RELEASED, targetLabel: 'Estrela' } as never),
+    );
+    expect(noActor).toMatchObject({ actor: '', text: 'Libertação de Estrela' });
+  });
+
   it('writes "Toren caiu da montaria" for a dismount fall, with no save text for the master either', () => {
     const fall = logLine(
       entry({

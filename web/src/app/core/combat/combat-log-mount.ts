@@ -50,6 +50,15 @@ function onMount(label: string, preposition: 'em' | 'de'): string {
 
 const line = (args: MountArgs, text: string): LogLine => ({ ...args.base, icon: 'pets', text });
 
+/** "Lia dispensou Estrela: o vínculo continua" and "Lia libertou Estrela": a bonded creature sent away in a combat. The creature is named
+ * with no article and the verb has no participle, so nothing agrees with a gender guessed from a name. With no actor in the line the
+ * noun carries the sentence ("Dispensa de Estrela"). */
+function sentAway(args: MountArgs, verb: string, noun: string, tail: string): LogLine {
+  const name = args.e.targetLabel || 'a criatura';
+  const text = args.base.actor ? ` ${verb} ${name}${tail}` : `${noun} de ${name}${tail}`;
+  return { ...args.base, icon: noun === 'Dispensa' ? 'pets' : 'link_off', text };
+}
+
 /** The lines of a mount (SRD 5.1, "Mounting and Dismounting", "Mounted Combat"). The server sends a line only to who sees both
  * combatants, and the master's alone when either is hidden. A save's numbers are the master's and the rider's player's (RN-10). */
 export const MOUNT_LINES: readonly (readonly [CombatLogKind, (args: MountArgs) => LogLine])[] = [
@@ -60,4 +69,9 @@ export const MOUNT_LINES: readonly (readonly [CombatLogKind, (args: MountArgs) =
     CombatLogKind.RIDER_THROWN,
     (a) => line(a, ` caiu da montaria${mountSaveRoll(a.e)}${landing(a.e)}`),
   ],
+  [
+    CombatLogKind.CREATURE_DISMISSED,
+    (a) => sentAway(a, 'dispensou', 'Dispensa', ': o vínculo continua'),
+  ],
+  [CombatLogKind.CREATURE_RELEASED, (a) => sentAway(a, 'libertou', 'Libertação', '')],
 ];
