@@ -531,7 +531,7 @@ func TestASwapCannotGiveUpTheOptionAnotherPickAsksFor(t *testing.T) {
 }
 
 // A feature that offers the options of another feature (from_feature) cannot allow swaps: the refusal says so at the swap levels,
-// whatever else is wrong with them, and not that the feature has no options.
+// and not that the feature has no options. A bad or repeated level, or a list together with every level, is refused first.
 func TestAFeatureThatOffersAnotherFeaturesOptionsCannotAllowSwaps(t *testing.T) {
 	t.Parallel()
 	o := fromFeatureOverlay(askPostures(2))

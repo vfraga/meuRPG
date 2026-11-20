@@ -208,3 +208,31 @@ func TestAStoredToolListThatNamesAKeyOfAnotherKindLoads(t *testing.T) {
 		})
 	}
 }
+
+// A choice of tools asks for no more than the sheet can make, in the choice and in the sheet's open choices alike: two
+// picks of a list of two, one of which the sheet has already, are complete at one.
+func TestAToolChoiceWithOneProficiencyLeftIsCompleteAtOnePick(t *testing.T) {
+	t.Parallel()
+	const had, left = "proficiency:martial-weapons", "proficiency:thieves-tools" // the fighter has the first
+	c := withOverlayOn(t, loadForTest(t), filterBackgroundWith(Effect{Type: "choice", Choice: "tool", Count: 2, From: []string{had, left}}))
+	b := filterBuild()
+	if ch := choiceOf(t, c.Choices(b), filterPickKey()); ch.Picks != 1 {
+		t.Fatalf("the choice asks %d picks, want 1: the sheet has %s", ch.Picks, had)
+	}
+	if d := Derive(b, c); openOf(d, OpenChoiceTools) != 1 {
+		t.Errorf("open tool picks = %d with none made, want 1", openOf(d, OpenChoiceTools))
+	}
+	b.FeatureChoices = []string{ScopedChoice(filterPickKey(), left)}
+	d := Derive(b, c)
+	if n := openOf(d, OpenChoiceTools); n != 0 {
+		t.Errorf("open tool picks = %d with the one pick made, want 0", n)
+	}
+	for _, is := range d.Issues {
+		if strings.Contains(is.Message, "ferramenta") {
+			t.Errorf("issue %q about tools, want none", is.Message)
+		}
+	}
+	if n := picksPending(c.Choices(b)); n != 0 {
+		t.Errorf("pending tool picks = %d, want none", n)
+	}
+}

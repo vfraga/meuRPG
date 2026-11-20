@@ -169,22 +169,29 @@ func requiredPicks(count int, pickable, held []string) int {
 	return min(count, n)
 }
 
-// requiredOptionPicks is requiredPicks for the choice that owner makes, whose pool lists options: the options a player's
-// view of the table keeps out are no pick to make, whoever reads the choice. A pool the table keeps nothing out of asks
-// for its count.
-func (c *content) requiredOptionPicks(b Build, owner string, count int, options []string) int {
+// optionShares splits the pool that the choice owner makes lists (options) by what a player may do with it: the options
+// the table keeps out of a player's view are no pick to make, so they are in neither list; pickable are the ones a player
+// may pick now and held the ones the sheet already holds. filtered says the table keeps something out of this choice's
+// pool; a pool the table keeps nothing out of asks for its count.
+func (c *content) optionShares(b Build, owner string, options []string) (pickable, held []string, filtered bool) {
 	out := c.asPlayer().optionFilter(b, owner)
-	if out == nil {
-		return count
-	}
-	var pickable, held []string
 	for _, o := range options {
 		switch {
 		case slices.Contains(b.FeatureChoices, o):
 			held = append(held, o)
-		case !out(o):
+		case out == nil || !out(o):
 			pickable = append(pickable, o)
 		}
+	}
+	return pickable, held, out != nil
+}
+
+// requiredOptionPicks is requiredPicks for the choice that owner makes alone, whose pool lists options. Choices that
+// share a pool ask for the picks of the pool in all, dealt in the order of the picks (pool.dealRequired).
+func (c *content) requiredOptionPicks(b Build, owner string, count int, options []string) int {
+	pickable, held, filtered := c.optionShares(b, owner, options)
+	if !filtered {
+		return count
 	}
 	return requiredPicks(count, pickable, held)
 }

@@ -215,6 +215,10 @@ flowchart LR
   A modifier target that left the menu has no client name, so the select says "Um alvo que saiu do menu".
   The campaign page's content summary counts `leftOut` for the master; a player's list never has any.
   The phone reads and removes, and the fix is on the notebook.
+- **Entries that load with a part left out** come in `loadedWithIssues` (`ListTableEntriesResponse.loaded_with_issues`, the master's only).
+  The entry page shows them in the warning look of the left-out note, under the lead "Esta entrada tem um aviso.", with the sentence of `content-violation-texts-loaded.ts`.
+  The entry still loads whole, so the page shows no "Fora da campanha" tag, no `Remover` and no mark on the list.
+  After every save the page reads the entries again, so the warning is always the server's.
 - **Shared pieces.** `shared/segmented`, `shared/sheet` (`sheet-host.ts` and `sheet-frame/`: the bottom sheet on the phone, the dialog elsewhere; a sheet that sends a create or a write calls `lock(true)` while the request runs, so Esc and the backdrop do not close it and the answer is not lost to a second try under a new idempotency key), `shared/form-fields`, `shared/effect-picker`, `shared/feature-editor` and `shared/level-grid`.
 - **The "Disponível para os jogadores" switch** of each editor and the "Opções para os jogadores" screen use `ListOptionSwitches` and `SetOptionSwitches`; the switch belongs to the entry (`TableEntry.off`), never to the class body.
 

@@ -368,9 +368,10 @@ export class ContentEntry {
     this.affected.set(res.affected);
     const saved = savedSentence(res.entry.kind, res.entry.namePt);
     this.savedLine.set(saved);
+    // The server says again which entries are out and which load with a warning (the save's answer carries only the entry), and
+    // a fix says the entry came back.
+    await this.refresh();
     if (before.count > 0) {
-      // The server says again which entries are out, and a fix says the entry came back.
-      await this.refresh();
       this.savedLine.set(backInSentence(before, this.leftOut().model, res.entry, entries) || saved);
     }
     if (!this.key()) {

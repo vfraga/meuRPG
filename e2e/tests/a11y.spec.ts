@@ -7572,6 +7572,65 @@ for (const [scheme, theme] of [['light', 'claro'], ['dark', 'escuro']] as const)
 }
 
 /**
+ * The notice of a stored entry that loads with a part left out (#574, MR-025, RN-33): the master opens a background whose tool list
+ * cites a key that is not a tool, and the page says so as a warning, not as an entry that is out. The response is the real server's with
+ * one issue set on the entry and the key put in its list: the Go tests (`internal/leaktest/loadedissues_test.go` and
+ * `internal/characters/tablecontent_stored_test.go`) cover what the server sends, and this row covers what the page draws. The editor is
+ * on the wider screens only: the phone reads.
+ */
+async function scanLoadedNotice(browser: Browser, colorScheme: 'light' | 'dark', width: number): Promise<void> {
+  test.setTimeout(240_000);
+  const mContext = await browser.newContext({ storageState: authStatePath('Mestre Teste'), colorScheme, viewport: { width, height: 900 } });
+  try {
+    const m = await mContext.newPage();
+    await m.goto('/');
+    const campaignId = await masterCampaign(m, `Acessibilidade aviso da entrada ${Date.now()}`);
+    const where = `(${colorScheme}, ${width}px)`;
+    const key = await createEntryRPC(m, campaignId, 'tableBackground', {
+      namePt: 'Cais do Farol',
+      skills: ['skill:investigation', 'skill:survival'],
+      tools: ['proficiency:thieves-tools'],
+      equipmentPt: 'Uma lanterna, uma corda e 10 PO',
+      feature: {
+        namePt: 'Rede do cais',
+        descPt: ['Você escolhe uma ferramenta que os pescadores do cais usam.'],
+        effects: [{ type: 'choice', choice: 'tool', count: 1, from: ['proficiency:smiths-tools', 'proficiency:thieves-tools'] }],
+      },
+    });
+    await m.route('**/meurpg.rules.v1.TableContentService/ListTableEntries', async (route) => {
+      const res = await route.fetch();
+      const body = await res.json();
+      for (const e of body.entries ?? []) {
+        if (e.key === key) {
+          e.tableBackground.feature.effects[0].from[1] = 'skill:athletics';
+        }
+      }
+      body.loadedWithIssues = [{ key, field: 'table_background.feature.effects[0].from[1]', reason: 'bad_value', message: 'not a tool' }];
+      await route.fulfill({ response: res, json: body });
+    });
+    await open(m, entryRoute(campaignId, key));
+    const notice = m.locator('.mr-notice--warning');
+    await expect(notice).toContainText('Esta entrada tem um aviso.');
+    await expect(notice).toContainText('A lista de ferramentas cita «');
+    await expect(m.locator('.mr-notice--danger')).toHaveCount(0);
+    if (width >= 768) {
+      await expect(m.getByLabel('Nome', { exact: true })).toHaveValue('Cais do Farol');
+    }
+    await expectScreenPasses(m, `Entrada com aviso de parte deixada de fora, lida pelo mestre ${where}`);
+  } finally {
+    await mContext.close();
+  }
+}
+
+for (const [scheme, theme] of [['light', 'claro'], ['dark', 'escuro']] as const) {
+  for (const width of [390, 768, 1280]) {
+    test(`o aviso de uma entrada que carrega com uma parte de fora passa no axe e nas conferências de layout no tema ${theme}, em ${width}px`, { tag: ['@a11y', '@574', '@MR-025', '@RN-33'] }, async ({ browser }) => {
+      await scanLoadedNotice(browser, scheme, width);
+    });
+  }
+}
+
+/**
  * The power attack on the player's screens (#586, MR-025): the weapon rows with the trade's line, the roll step with the trade off
  * and on (the before and after box), the bow's trade off for lack of uses, a miss (the +10 does not come in) and a hit (the +10 is
  * an automatic part of the damage). Toren has the feats "Golpe Pesado" and "Disparo Firme" through the content helpers.

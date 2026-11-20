@@ -164,11 +164,7 @@ func (x *deriver) checkProficiencyPicks() {
 	if bg, ok := x.c.backgrounds[x.b.Background]; ok {
 		languages += bg.LanguageChoices
 	}
-	for _, a := range x.active {
-		if a.effect.Type == "choice" && a.effect.Choice == "tool" && !a.effect.DailyChoice {
-			tools += max(a.effect.Count, 1)
-		}
-	}
+	tools = x.toolPicksAsked()
 	if n := tools - len(x.pickedTools) - len(x.b.ToolProficiencies); n > 0 {
 		x.openProficiencyPick(OpenChoiceTools, n, "ferramenta", "ferramentas")
 	}
@@ -176,6 +172,50 @@ func (x *deriver) checkProficiencyPicks() {
 	if n := languages - len(x.pickedLanguages) - len(x.b.Languages); n > 0 {
 		x.openProficiencyPick(OpenChoiceLanguages, n, "idioma", "idiomas")
 	}
+}
+
+// toolPicksAsked is how many tool picks the sheet's choices of tools ask in all, each choice asking what
+// requiredToolPicks says, as the choice does.
+func (x *deriver) toolPicksAsked() int {
+	had := map[string]bool{}
+	for _, k := range x.grantedProficiencies() {
+		had[k] = true
+	}
+	total := 0
+	var seen []string
+	for _, a := range x.active {
+		if a.effect.Type != "choice" || a.effect.Choice != "tool" || a.effect.DailyChoice || slices.Contains(seen, a.owner) {
+			continue
+		}
+		seen = append(seen, a.owner)
+		picks, from, open, ok := x.c.toolSpec(a.owner)
+		if !ok {
+			continue
+		}
+		var held []string
+		for _, p := range x.pickedTools {
+			if p.Owner == a.owner {
+				held = append(held, p.Value)
+			}
+		}
+		total += requiredToolPicks(picks, x.c.toolsOffered(from, open), had, held)
+	}
+	return total
+}
+
+// requiredToolPicks is requiredPicks for a choice of tools: the proficiencies it offers that the sheet does not have
+// are the picks to make, and the picks it holds are made.
+func requiredToolPicks(picks int, offered []string, had map[string]bool, held []string) int {
+	var pickable, made []string
+	for _, k := range offered {
+		switch {
+		case slices.Contains(held, k):
+			made = append(made, k)
+		case !had[k]:
+			pickable = append(pickable, k)
+		}
+	}
+	return requiredPicks(picks, pickable, made)
 }
 
 // openProficiencyPick records a language or tool pick the sheet has not made: an open choice, and an issue that sends the
@@ -249,21 +289,15 @@ func (cb *choiceBuilder) toolChoice(g *groupBuild, owner string) {
 	})
 	had := cb.toolsHad()
 	var options []ChoiceOption
-	var pickable, held []string
 	for _, k := range from {
 		o := ChoiceOption{Key: k, Stored: ScopedChoice(key, k), NamePT: c.proficiencyNamePT(k)}
 		if had[k] {
 			blockOption(&o, "Você já tem esta proficiência.")
-		} else {
-			pickable = append(pickable, k)
-		}
-		if slices.Contains(cb.scoped[key], k) {
-			held = append(held, k)
 		}
 		options = append(options, o)
 	}
 	// The choice asks for no more than the sheet can make: the proficiencies it does not have, and the picks it holds.
-	ch := cb.addChoice(g, &Choice{Key: key, FeatureKey: owner, Kind: ChoiceKindOptions, TitlePT: title, HintPT: hint + " As que o personagem já tem não entram.", Picks: requiredPicks(picks, pickable, held), family: familyToolPick, Advisory: true, Options: options})
+	ch := cb.addChoice(g, &Choice{Key: key, FeatureKey: owner, Kind: ChoiceKindOptions, TitlePT: title, HintPT: hint + " As que o personagem já tem não entram.", Picks: requiredToolPicks(picks, from, had, cb.scoped[key]), family: familyToolPick, Advisory: true, Options: options})
 	cb.takeScoped(ch)
 	unmeetBlockedPicks(ch)
 	cb.answerWithTyped(ch, len(cb.b.ToolProficiencies), &cb.typedTools)

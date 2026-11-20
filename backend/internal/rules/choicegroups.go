@@ -221,6 +221,18 @@ type ChoiceSet struct {
 	KeptOut []string `json:"-"`
 }
 
+// choiceOfFeature is the choice that the feature makes, when the set has one.
+func (s ChoiceSet) choiceOfFeature(feature string) (Choice, bool) {
+	for _, g := range s.Groups {
+		for _, ch := range g.Choices {
+			if ch.FeatureKey == feature && ch.Kind == ChoiceKindOptions {
+				return ch, true
+			}
+		}
+	}
+	return Choice{}, false
+}
+
 // Counts is how many selections are made and how many the sheet asks: the
 // "Escolhas feitas: N de M" of every screen.
 func (s ChoiceSet) Counts() (done, total int) {
@@ -360,6 +372,10 @@ type optionEntry struct {
 	options []string
 	level   int
 	order   int
+	// pickable and held split the options a player may pick now and the ones the sheet holds; filtered says the table
+	// keeps options out of the choice's pool. The pool asks for its picks in all from them (pool.dealRequired).
+	pickable, held []string
+	filtered       bool
 }
 
 type choiceBuilder struct {
@@ -463,11 +479,12 @@ func (cb *choiceBuilder) optionChoice(g *groupBuild, featureKey string, choose i
 	title := choiceTitle(cb.c, featureKey)
 	// The pool lists what the reader may pick, and asks for no more than a player may pick today: the answer says nothing
 	// of the rest. A pool with no option left asks nothing of the sheet, as no pick could answer it.
+	pickable, held, filtered := cb.c.optionShares(cb.b, featureKey, options)
 	choose, options = cb.c.requiredOptionPicks(cb.b, featureKey, choose, options), cb.c.visibleOptions(cb.b, featureKey, options)
 	cb.keptOut = append(cb.keptOut, cb.c.keptOutPicks(cb.b, featureKey, options)...)
 	ch := cb.addChoice(g, &Choice{Key: featureKey, FeatureKey: featureKey, Kind: ChoiceKindOptions, TitlePT: title, Picks: choose, plain: true, Advisory: len(options) == 0 && cb.c.fromFeature[featureKey] != ""})
 	cb.order++
-	e := &optionEntry{choice: ch, choose: choose, options: options, level: g.Level, order: cb.order}
+	e := &optionEntry{choice: ch, choose: choose, options: options, level: g.Level, order: cb.order, pickable: pickable, held: held, filtered: filtered}
 	cb.entries = append(cb.entries, e)
 	return e
 }

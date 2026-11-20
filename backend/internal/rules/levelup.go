@@ -473,7 +473,7 @@ func levelUpOptionsWith(b Build, idx int, classKey string, c *content, sub *srd5
 
 	// What the class gives, and the subclass when it is already chosen.
 	gains := c.levelGains(classKey, sub, newLevel)
-	o.FeatureChoices = c.namedChoices(b, gains.choices)
+	o.FeatureChoices = c.namedChoices(bare, gains.choices)
 	o.SkillChoices, o.ExpertiseChoices = gains.skills, gains.expertise
 
 	// A subclass that is due: each candidate's own part. It is read before the
@@ -564,7 +564,7 @@ func (o *LevelUpOffer) subclassPart(c *content, b Build, idx int, s, sub *srd51.
 	key := s.Key
 	g := c.subclassGains(s, o.ToLevel)
 	ls := LevelUpSubclass{
-		Key: key, NamePT: c.namePT(key), Archived: c.archived[key], Off: c.off[key], FeatureChoices: c.namedChoices(b, g.choices),
+		Key: key, NamePT: c.namePT(key), Archived: c.archived[key], Off: c.off[key], FeatureChoices: c.namedChoices(bareLevelUp(b, idx, o.Class, o.ToLevel, s), g.choices),
 		Cantrips: g.cantrips, SkillChoices: g.skills, ExpertiseChoices: g.expertise,
 	}
 	if _, third := c.subCasting[key]; third && sub == nil {
@@ -935,12 +935,14 @@ func invocationsKnown(row *srd51.Level) int {
 }
 
 // namedChoices is the due choices with names, leaving out the options the
-// character already has.
+// character already has. b is the sheet at the new level, with nothing chosen yet: a choice that offers another feature's
+// options asks for the picks the sheet's own choices ask of it (the share of its pool, as choiceSet deals it).
 func (c *content) namedChoices(b Build, due []dueChoice) []LevelUpFeatureChoice {
 	var out []LevelUpFeatureChoice
 	// An option is taken once, whichever feature offered it: the Defense style of
 	// the Paladin is the Fighter's Defense (SRD 5.1, Fighter, "Fighting Style").
 	taken := map[string]bool{}
+	var sheet *ChoiceSet
 	for _, k := range b.FeatureChoices {
 		if f := c.features[k]; f != nil {
 			taken[f.Name] = true
@@ -948,7 +950,7 @@ func (c *content) namedChoices(b Build, due []dueChoice) []LevelUpFeatureChoice 
 	}
 	for _, d := range due {
 		fc := LevelUpFeatureChoice{Feature: NamedKey{Key: d.feature, NamePT: c.namePT(d.feature)}, Subclass: d.subclass, Choose: d.choose}
-		fc.Choose = c.requiredOptionPicks(b, d.feature, d.choose, d.options) // the offer asks for no more than a player may pick
+		fc.Choose = c.dueChoose(b, d, &sheet) // the offer asks for no more than a player may pick
 		for _, o := range c.visibleOptions(b, d.feature, d.options) {
 			if f := c.features[o]; f != nil && taken[f.Name] {
 				continue
@@ -960,6 +962,22 @@ func (c *content) namedChoices(b Build, due []dueChoice) []LevelUpFeatureChoice 
 		out = append(out, fc)
 	}
 	return out
+}
+
+// dueChoose is how many picks the offer asks for the due choice d. A choice that offers another feature's options asks
+// what the sheet's own choice of the feature asks (sheet is the choices of b, read once for the offer).
+func (c *content) dueChoose(b Build, d dueChoice, sheet **ChoiceSet) int {
+	if c.fromFeature[d.feature] == "" {
+		return c.requiredOptionPicks(b, d.feature, d.choose, d.options)
+	}
+	if *sheet == nil {
+		set := c.choiceSet(b)
+		*sheet = &set
+	}
+	if ch, ok := (*sheet).choiceOfFeature(d.feature); ok {
+		return ch.Missing()
+	}
+	return c.requiredOptionPicks(b, d.feature, d.choose, d.options)
 }
 
 // rollDice lists the hit die of each entry of HitPoints.Rolls (character

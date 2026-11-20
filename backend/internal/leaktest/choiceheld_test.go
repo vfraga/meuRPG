@@ -51,10 +51,10 @@ func TestAHeldPickOfAnOptionTheTableClosedAfterwardsIsReadByItsHolderAndTheMaste
 			r := read(who)
 			body := string(r.body)
 			holds := who.person == w.ana && what != "the characters list" || who.person == w.master
-			if has := strings.Contains(body, held); has && !holds && r.ok() {
+			if has := strings.Contains(body, held); has && !holds {
 				t.Errorf("%s reads %s: it names the option %s that is not hers", who.name, what, held)
 			}
-			if strings.Contains(body, heldName) && !holds && r.ok() {
+			if strings.Contains(body, heldName) && !holds {
 				t.Errorf("%s reads %s: it names the option %q that is not hers", who.name, what, heldName)
 			}
 			if who.person == w.master {
