@@ -49,8 +49,9 @@ The step offers those, and every skill the sheet holds, is given, or held when t
 A held skill that no list allows stays ticked and can be taken off; the step says nothing of it.
 Until the first answer, or when a source takes any skill, nothing is cut.
 The browser works out no rule of this.
-A save the server refuses for a pick that cannot be placed shows the server's sentence on the step, with the step marked, and a short pointer above the buttons.
-Both go when a skill, an expertise or a class changes.
+A save the server refuses for a pick that cannot be placed shows the server's sentence as the error of that pick's own field, for a skill, an expertise or a tool.
+The step is marked, and a short pointer sits above the buttons.
+They go when a pick or a class changes.
 
 State several parts share lives in `EditorPicks` and `SpellPicks`, which the component builds first and hands to the other plain classes through `EditorCore`; the page itself keeps only the route, the step and choice-group view children, two effects (the subclass waiting for its level, the starting XP) and the class-block handlers.
 `EditorStepper` builds a step's content the first time it opens and keeps it; the `eager` step ("Habilidades" under table rules) comes from the start.

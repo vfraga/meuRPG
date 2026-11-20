@@ -467,4 +467,21 @@ describe('ChoiceGroups', () => {
       expect(head(el).origin).toBe('Raça · Corujeiro · 1 escolha');
     });
   });
+
+  it('shows the server sentence of a refused pick as an error under the options of its choice', () => {
+    const { fixture, el } = setup(group(1, ['b']));
+    fixture.componentRef.setInput(
+      'problems',
+      new Map([
+        ['b', 'A ferramenta B não está em nenhuma das escolhas de ferramenta do personagem.'],
+        ['a', 'Sentença de uma opção que não está marcada.'],
+      ]),
+    );
+    fixture.detectChanges();
+
+    const errors = Array.from(el.querySelectorAll('mat-error'));
+    expect(errors.map((e) => e.textContent?.trim())).toEqual([
+      'A ferramenta B não está em nenhuma das escolhas de ferramenta do personagem.',
+    ]);
+  });
 });

@@ -1,5 +1,6 @@
 import { Component, computed, input, output } from '@angular/core';
 import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatFormFieldModule } from '@angular/material/form-field';
 
 import { SkillOptionVm } from '../character-editor.types';
 import { abilityAbbreviation, countLabel } from '../editor-labels';
@@ -18,7 +19,7 @@ import { abilityAbbreviation, countLabel } from '../editor-labels';
  */
 @Component({
   selector: 'app-skill-picker',
-  imports: [MatCheckboxModule],
+  imports: [MatCheckboxModule, MatFormFieldModule],
   templateUrl: './skill-picker.html',
   styleUrl: './skill-picker.scss',
 })
@@ -30,6 +31,9 @@ export class SkillPicker {
   readonly expertise = input.required<ReadonlySet<string>>();
   /** The skills expertise may go on; `null` when it is not cut. A skill that already holds expertise stays enabled. */
   readonly expertiseAllowed = input<ReadonlySet<string> | null>(null);
+
+  /** The server's sentence for a pick it refused, by `skill:<key>` or `expertise:<key>`; each shows under its row. */
+  readonly problems = input<ReadonlyMap<string, string>>(new Map());
 
   readonly toggleSkill = output<string>();
   readonly toggleExpertise = output<string>();

@@ -83,6 +83,9 @@ export class ChoiceGroups {
   /** Whether "Escolher X agora" is offered on an option that asks for a spell the sheet lacks (a locked sheet cannot add one). */
   readonly offerCantrips = input(true);
 
+  /** The server's sentence for a pick it refused, by the key of the option; it shows under the options of its choice. */
+  readonly problems = input<ReadonlyMap<string, string>>(new Map());
+
   readonly selected = output<ChoiceSelection>();
   readonly textEdited = output<ChoiceTextEdit>();
   /** "Escolher Rajada Mística agora": the spell the user wants added to the sheet's cantrips. */

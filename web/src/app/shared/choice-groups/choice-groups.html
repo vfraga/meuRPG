@@ -114,6 +114,11 @@
             }
           }
         </div>
+        @for (option of choice.options; track option.key) {
+          @if (isPicked(choice, option) && problems().get(option.key); as problem) {
+            <mat-error class="choice__error" role="alert">{{ problem }}</mat-error>
+          }
+        }
         @for (line of repeatLines(choice); track line) {
           <p class="choice__problem" role="alert">{{ line }}</p>
         }

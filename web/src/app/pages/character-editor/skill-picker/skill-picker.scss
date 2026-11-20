@@ -99,3 +99,9 @@
   line-height: 16px;
   color: var(--mr-ink-muted);
 }
+
+.skill__error {
+  display: block;
+  padding-bottom: var(--mr-space-1);
+  font: var(--mat-sys-body-small);
+}

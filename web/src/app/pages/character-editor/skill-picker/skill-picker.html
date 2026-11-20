@@ -29,6 +29,11 @@
             (change)="toggleExpertise.emit(skill.key)"
           />
         </div>
+        @for (id of ['skill:', 'expertise:']; track id) {
+          @if (problems().get(id + skill.key); as problem) {
+            <mat-error class="skill__error" role="alert">{{ problem }}</mat-error>
+          }
+        }
       }
     </div>
   }

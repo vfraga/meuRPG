@@ -902,7 +902,7 @@ describe('CharacterEditor', () => {
     it('clears the refusal on the step when a skill or an expertise is toggled or the class changes', async () => {
       const { cmp, fixture } = await openCut();
       const refuse = () => {
-        cmp.saving.pickProblem.set('Uma frase do servidor.');
+        cmp.saving.pickProblems.set(new Map([['skill:stealth', 'Uma frase do servidor.']]));
         cmp.saving.state.set({ status: 'error', message: 'Veja o passo Perícias.' });
       };
       for (const act of [
@@ -913,7 +913,7 @@ describe('CharacterEditor', () => {
         refuse();
         act();
         fixture.detectChanges();
-        expect(cmp.saving.pickProblem()).toBe('');
+        expect(cmp.saving.pickProblems().size).toBe(0);
         expect(cmp.saving.state().status).toBe('idle');
       }
     });

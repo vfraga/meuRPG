@@ -104,4 +104,23 @@ describe('SkillPicker', () => {
     const expertise = Array.from(el.querySelectorAll<HTMLInputElement>('.skill__expertise input'));
     expect(expertise.map((i) => i.disabled)).toEqual([true, true, false]);
   });
+
+  it('shows the server sentence of a refused skill or expertise under its row, as an error', () => {
+    const { fixture, el } = render(['skill:arcana'], ['skill:arcana']);
+    fixture.componentRef.setInput(
+      'problems',
+      new Map([
+        ['skill:skill:arcana', 'Não há vaga para a perícia Arcanismo.'],
+        ['expertise:skill:arcana', 'A especialização em Arcanismo não está em lista.'],
+      ]),
+    );
+    fixture.detectChanges();
+
+    const errors = Array.from(el.querySelectorAll('mat-error'));
+    expect(errors.map((e) => e.textContent?.trim())).toEqual([
+      'Não há vaga para a perícia Arcanismo.',
+      'A especialização em Arcanismo não está em lista.',
+    ]);
+    expect(el.querySelectorAll('.skill ~ mat-error').length).toBe(2);
+  });
 });

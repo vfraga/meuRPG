@@ -538,7 +538,7 @@
               </cdk-step>
 
               @if (server.choicesStep()) {
-                <cdk-step [label]="stepLabels.escolhas">
+                <cdk-step [label]="stepLabels.escolhas" [hasError]="saving.toolProblems().size > 0">
                   <p class="step-lead">
                     O que a raça e a classe deixam você escolher.
                     <span class="mr-wide-only">
@@ -550,6 +550,7 @@
                     [done]="server.choicesAnswer()?.done ?? null"
                     [total]="server.choicesAnswer()?.total ?? null"
                     [subtitle]="views.choicesSubtitle()"
+                    [problems]="saving.toolProblems()"
                     (selected)="picks.pickChoice($event)"
                     (textEdited)="picks.editChoiceText($event)"
                     (addCantrip)="spellPicks.addCantrip($event)"
@@ -557,7 +558,7 @@
                 </cdk-step>
               }
 
-              <cdk-step [label]="stepLabels.pericias" [hasError]="saving.pickProblem() !== ''">
+              <cdk-step [label]="stepLabels.pericias" [hasError]="saving.skillProblem()">
                 <p class="step-lead">
                   Marque as perícias em que o personagem é proficiente. Especialização dobra o bônus
                   de proficiência e só vale numa perícia marcada.
@@ -568,18 +569,13 @@
                 @if (views.skillNote()) {
                   <p class="step-lead skill-note">{{ views.skillNote() }}</p>
                 }
-                @if (saving.pickProblem(); as problem) {
-                  <div class="mr-notice mr-notice--danger" role="alert">
-                    <mat-icon aria-hidden="true">error</mat-icon>
-                    <p>{{ problem }}</p>
-                  </div>
-                }
                 <app-skill-picker
                   [skills]="views.pickableSkills()"
                   [proficient]="views.chosenSkills()"
                   [granted]="views.grantedSkills()"
                   [expertise]="picks.expertiseSkills()"
                   [expertiseAllowed]="views.expertiseAllowed()"
+                  [problems]="saving.pickProblems()"
                   (toggleSkill)="picks.toggleSkill($event)"
                   (toggleExpertise)="picks.toggleExpertise($event)"
                 />
