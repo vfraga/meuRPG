@@ -367,8 +367,10 @@ func TestARepeatedAlternativePickIsRefusedOnPreviewAndLevelUpAndKeptOnImport(t *
 	}
 
 	up := func(pick string) error {
-		ch := &charactersv1.LevelUpChoices{ClassKey: f.class.GetKey(), HitPoints: &charactersv1.LevelUpHitPoints{Method: charactersv1.LevelUpHitPointsMethod_LEVEL_UP_HIT_POINTS_METHOD_AVERAGE},
-			FeatureChoiceKeys: []string{rules.ScopedChoice(f.key, pick)}}
+		ch := &charactersv1.LevelUpChoices{
+			ClassKey: f.class.GetKey(), HitPoints: &charactersv1.LevelUpHitPoints{Method: charactersv1.LevelUpHitPointsMethod_LEVEL_UP_HIT_POINTS_METHOD_AVERAGE},
+			FeatureChoiceKeys: []string{rules.ScopedChoice(f.key, pick)},
+		}
 		_, err := f.davi.api.PreviewLevelUp(t.Context(), connect.NewRequest(&charactersv1.PreviewLevelUpRequest{CampaignId: f.campaign, CharacterId: c.GetId(), Choices: ch}))
 		return err
 	}
