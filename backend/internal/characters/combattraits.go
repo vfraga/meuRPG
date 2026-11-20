@@ -204,7 +204,7 @@ func tableTraitsOf(d rules.Derived) (maneuvers []link.Maneuver, extras []link.Ex
 		extras = append(extras, link.ExtraDamage{
 			Key: x.Key, NamePT: x.NamePT, Applies: x.Applies, Resource: x.Resource, TextPT: x.TextPT, Amount: x.Amount,
 			DiceCount: x.Dice.Count, DiceSides: x.Dice.Sides, NoCritDoubling: x.NoCritDoubling, DamageType: x.DamageType,
-			Weapon: x.Weapon, Frequency: x.Frequency,
+			Weapon: x.Weapon, Frequency: x.Frequency, Line: x.Line,
 		})
 	}
 	for _, m := range d.SpellModifiers {

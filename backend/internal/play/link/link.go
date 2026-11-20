@@ -235,10 +235,12 @@ type RollMinimum struct {
 // spends ("" for none), Amount the fixed damage (never doubled by a critical hit) and DiceCount d
 // DiceSides the dice (0 for none; a critical hit doubles them unless NoCritDoubling). DamageType is
 // the damage's own type, empty for the weapon's. Weapon ("any", "melee" or "ranged") says which weapon
-// attacks it goes with and Frequency ("once_per_turn" or "each_hit") how often.
+// attacks it goes with and Frequency ("once_per_turn" or "each_hit") how often. Line, when set, narrows it to
+// one attack line: rules.LinePact or the key of the line (rules.LineMatches reads it).
 type ExtraDamage struct {
 	Key, NamePT, Applies, Resource, TextPT string
 	DamageType, Weapon, Frequency          string
+	Line                                   string `json:",omitempty"`
 	Amount, DiceCount, DiceSides           int
 	NoCritDoubling                         bool
 }
@@ -479,6 +481,9 @@ type Attack struct {
 	// for a weapon of a character, from the sheet's weapon_marks or a weapon_rule.
 	Silvered   bool `json:",omitempty"`
 	Adamantine bool `json:",omitempty"`
+	// Pact says the sheet marks the weapon as the pact weapon: the line an extra_damage with the line
+	// rules.LinePact goes with.
+	Pact bool `json:",omitempty"`
 	// Ammunition is the key of the ammunition a character's ranged weapon fires; empty for every other line (a thrown
 	// weapon, a melee one, the improvised melee line of a bow, a spell, a creature's attack). Each attack roll made with
 	// a line that has it takes one piece.

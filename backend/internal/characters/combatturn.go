@@ -319,7 +319,7 @@ func combatAttack(a rules.Attack) link.Attack {
 		Beams: a.Beams, Light: a.Light, Unarmed: a.Key == rules.UnarmedStrikeKey, MartialArts: a.MartialArts, AbilityMod: a.AbilityMod,
 		Ability: string(a.Ability), Finesse: a.Finesse, TwoHanded: a.InBothHands(), Weapon: a.Kind == "weapon",
 		Magical: a.Magical, Silvered: a.Silvered, Adamantine: a.Adamantine, Properties: slices.Clone(a.Properties), Proficient: a.Proficient,
-		Ammunition: a.AmmunitionKey,
+		Ammunition: a.AmmunitionKey, Pact: a.Pact,
 	}
 }
 

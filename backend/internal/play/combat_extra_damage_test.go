@@ -533,3 +533,27 @@ func partRollOf(rolls []*playv1.DamagePartRoll, key string) *playv1.DamagePartRo
 	}
 	return nil
 }
+
+func TestExtraDamageWithALineIsOfferedOnThatLinesHitOnly(t *testing.T) {
+	t.Parallel()
+	const launcher = "pseudo:" + giantFeature
+	for _, tc := range []struct {
+		name, line string
+		attack     link.Attack
+		holds      bool
+	}{
+		{"the named line", launcher, link.Attack{Key: launcher, Weapon: true}, true},
+		{"another line", launcher, link.Attack{Key: "equipment:rapier", Weapon: true, Melee: true}, false},
+		{"the pact weapon", rules.LinePact, link.Attack{Key: "equipment:rapier", Weapon: true, Melee: true, Pact: true}, true},
+		{"a weapon that is not the pact weapon", rules.LinePact, link.Attack{Key: "equipment:dagger", Weapon: true, Melee: true}, false},
+		{"a weapon by key", "equipment:rapier", link.Attack{Key: "equipment:rapier", Weapon: true, Melee: true}, true},
+		{"no line goes with every line", "", link.Attack{Key: "equipment:dagger", Weapon: true, Melee: true}, true},
+	} {
+		h := giantFacts("medium", "medium", emberTrait(func(x *link.ExtraDamage) { x.Weapon, x.Line = rules.ExtraDamageAnyWeapon, tc.line }))
+		h.attack = tc.attack
+		p, ok := partByKey(h.extraDamageParts(), giantFeature)
+		if !ok || p.Available != tc.holds || (!tc.holds && p.Reason == "") {
+			t.Errorf("%s: part = %+v, want available %v (and a reason when not)", tc.name, p, tc.holds)
+		}
+	}
+}

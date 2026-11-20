@@ -60,7 +60,7 @@ O jogador edita a própria ficha até o início da primeira sessão da campanha.
 Depois disso, só o mestre e o sistema a alteram.
 Um personagem criado depois (o substituto de um morto, ou o de quem entrou tarde) continua editável até o início da próxima sessão.
 Os números que o sistema calcula nunca são editáveis.
-As marcas de uma arma (mágica, prateada, adamantina) e os bônus mágicos (+1 a +3) da armadura, do escudo e das armas seguem a mesma regra do equipamento que a ficha leva: o dono as define enquanto a ficha é editável, o mestre sempre, e o dono não pode depois da trava.
+As marcas de uma arma (mágica, prateada, adamantina, arma do pacto) e os bônus mágicos (+1 a +3) da armadura, do escudo e das armas seguem a mesma regra do equipamento que a ficha leva: o dono as define enquanto a ficha é editável, o mestre sempre, e o dono não pode depois da trava.
 
 - **A história.** A história do personagem (personalidade, aparência, passado, aliados) tem a própria trava: depois que a ficha trava, o jogador só a edita quando o mestre a libera, personagem por personagem, até o início da próxima sessão ou até o mestre travá-la de novo.
 - **O que o mestre vê primeiro.** Antes de iniciar uma sessão, o mestre é avisado de quais fichas ainda têm perícias ou magias a escolher, e confirma. A trava não espera por elas.
@@ -111,6 +111,10 @@ O mestre também pode corrigir à mão, a qualquer momento da sessão, PV, PV te
     A magia dos Golpes de Chi vale para essas resistências e imunidades e para mais nada: sem bônus de acerto ou de dano, e não vale para uma arma de monge.
     As marcas são escritas pela API da ficha e pelo efeito de regra de arma de uma característica da mesa, que marca as armas que o filtro escolhe e o golpe desarmado.
     As marcas são definidas pela API da ficha e pelas regras de arma; o formulário da ficha não as edita.
+    A ficha também pode marcar uma arma como a arma do pacto, nunca mais de uma, e a marca segue a mesma trava.
+    Uma característica da mesa que escreve "pact" como linha de ataque vale só para essa arma: uma regra de arma muda só ela, e um dano extra é oferecido só nos acertos dela.
+    A mesma linha pode nomear um ataque da entrada da característica (a arma de uma característica ou um ataque natural, pelo nome) ou uma arma pela chave, de modo que uma regra ou um dano extra não vale mais para toda arma de um tipo.
+    Uma linha que não nomeia nada que a entrada tenha é recusada no campo.
     O registro do mestre diz o motivo ("Resistência a perfurante de ataque não mágico nem prateado"). O jogador vê só o dano.
   - Num personagem de jogador, o dano rolado **espera o mestre**, que o aplica ("Aplicar 5 de dano") ou o descarta ("Não aplicar"). O mestre pode aplicar um valor diferente (uma resistência que o app não aplica). O registro guarda os dois números para o mestre, e o jogador vê só o que sofreu.
   - O que a própria ficha do personagem protege é aplicado ao dano rolado como passos que o mestre lê, antes de o mestre aplicá-lo: uma raça, um talento ou uma característica da mesa com resistência, imunidade ou vulnerabilidade a tipos de dano (ou, "de ataques não mágicos", a contundente, perfurante e cortante), e a fúria do bárbaro. A imunidade leva a 0, depois a resistência divide por dois (arredondando para baixo), depois a vulnerabilidade dobra; a mesma proteção de duas fontes conta uma vez só. Um ataque de uma ficha ou de um bloco de estatísticas que não é marcado como mágico conta como não mágico.

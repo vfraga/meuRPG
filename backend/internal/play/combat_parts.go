@@ -400,6 +400,8 @@ func (h hitFacts) extraDamageHolds(x link.ExtraDamage, sp partRecord, used featu
 		return false, "Só vale com arma corpo a corpo"
 	case x.Weapon == rules.ExtraDamageRangedWeapon && !ranged:
 		return false, "Só vale com arma à distância"
+	case !rules.LineMatches(x.Line, h.attack.Key, h.attack.Pact):
+		return false, "Só vale com a arma indicada"
 	case x.Applies == rules.ExtraDamageLargerTarget && combat.SizeRank(h.target.Size) <= combat.SizeRank(h.attacker.Size):
 		return false, "O alvo não é maior que você"
 	}

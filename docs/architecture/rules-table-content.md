@@ -64,7 +64,7 @@ A table feature has effects of these types only; anything else is `forbidden_eff
 | `ranged_attack` | Checked at its fields: `applies` is `spell` or `weapon`; `range_multiplier` is 2 or 3 and only on `spell`; `no_long_range_disadvantage` only on `weapon`; an effect that sets none of the three switches is refused at `.type`; `tags` at `.tags`; the switches on any other type are stray fields. |
 | `resistance` | Resistance, immunity or vulnerability (`kind`: `resist`, the default, `immune` or `vulnerable`) to the `damage_types` it lists: `damage-type:` keys of the content, `all` (alone) or `nonmagical_bps` (bludgeoning, piercing and slashing from attacks that are not magical); or to every type but `except`. `except` and `damage_types` exclude each other and one is required. `while` is empty (always), `rage` or the `state_name` of a `state` effect of the same entry (`.while`: `bad_reference` for a state nothing defines). Refusals name the field: `.damage_types` (unknown type, empty, a type twice, `all` mixed with others, both `except` and `damage_types`), `.except` (`bad_reference`), `.kind`, `.while`, and `.when` or `.tags` (`bad_value`): `while` is the condition. See [Effects](rules.md#effects). |
 | `state` | A temporary state the character turns on and off: a stance, a form. `state_name` (1 to 40 of `a-z`, `0-9`, `_`; the name the entry's other effects read it by; unique in the entry), `duration_rounds` (an Int formula in rounds, 0 to 14,400; empty or 0 lasts until it ends), `ends_on` (any of `dismiss`, `incapacitated`, `short_rest`, `long_rest`), `economy` (`action`, `bonus_action` or `free`, what turning it on costs) and optionally `resource` (as in `grant_action`). At most 8 states for an entry (`limit`). See [States](#states). |
-| `weapon_rule` | Changes the weapon lines its filter picks. `weapon` is `any`, `melee`, `ranged`, `finesse`, `magic` or `named` (then `weapon_name` is the Portuguese name of the weapon); `attack_ability` and `damage_ability` name another ability (the better of it and the weapon's counts); `attack_bonus` and `damage_bonus` are -5 to 10; `reach_ft` (5 to 60, in steps of 5) is a longer melee reach. `magical`, `silvered` and `adamantine` mark the lines the filter picks for the resistances to nonmagical attacks (weapon_rule only; the `magic` filter reads only the sheet's own marks, `full.weapon_marks`, never a rule's nor the magic bonus of `full.item_bonuses`; the carried weapons and the unarmed strike are marked, a `pseudo_weapon` line is never marked by a rule). At least one ability, bonus, reach or mark must be set (refused at `.type`); `weapon_name` is required with `named` and refused otherwise; a reach is refused on `ranged`; no `tags`. Gated by `while` and `when`. |
+| `weapon_rule` | Changes the weapon lines its filter picks. `weapon` is `any`, `melee`, `ranged`, `finesse`, `magic` or `named` (then `weapon_name` is the Portuguese name of the weapon); `attack_ability` and `damage_ability` name another ability (the better of it and the weapon's counts); `attack_bonus` and `damage_bonus` are -5 to 10; `reach_ft` (5 to 60, in steps of 5) is a longer melee reach. `magical`, `silvered` and `adamantine` mark the lines the filter picks for the resistances to nonmagical attacks (weapon_rule only; the `magic` filter reads only the sheet's own marks, `full.weapon_marks`, never a rule's nor the magic bonus of `full.item_bonuses`; the carried weapons and the unarmed strike are marked, a `pseudo_weapon` line is never marked by a rule). `line` (optional) narrows the rule to one attack line, besides the filter (see [The line filter](#the-line-filter)). At least one ability, bonus, reach or mark must be set (refused at `.type`); `weapon_name` is required with `named` and refused otherwise; a reach is refused on `ranged`; no `tags`. Gated by `while` and `when`. |
 | `pseudo_weapon` | An attack line of its own on the sheet: `attack_name`, `weapon` (`melee` or `ranged`), `damage_dice` (`NdS`, N up to 10, S a weapon die), `damage_type`, `ability`, `reach_ft` (melee, 5 to 60, optional) or `range_ft` (ranged, 5 to 300, required; each kind refuses the other's field). It is never an item, counts as a weapon the character is proficient with, and the weapon rules change it too. Gated by `while` and `when`. |
 | `natural_attack` | An attack line of its own that is the creature's unarmed strike by another name (a bite, claws, horns): `attack_name` (1 to the pseudo-weapon's name limit), `damage_dice` (as a `pseudo_weapon`'s), `damage_type`, `ability` (`str`, `dex` or `best`, the better of the two modifiers) and `reach_ft` (5 to 60 in steps of 5, optional, 5 when empty). Melee only, always proficient, no `tags`. The line has the key `natural:<feature key>` (`natural:<feature key>#2`, `#3` for a feature's further ones; the count takes every natural attack of the feature, gated off or not, so a line keeps its key while another switches). It is not the Unarmed Strike line, so what names that line (Martial Arts, Flurry of Blows, Ki-Empowered Strikes) does not read it. `weapon_rule` filters and `reach.melee` change it like any melee weapon line, and Savage Attacks and Brutal Critical apply to it. Gated by `when`. Refusals name the field (`.attack_name`, `.damage_dice`, `.damage_type`, `.ability`, `.tags`, `.reach_ft`). `rules/naturalattack.go`. |
 | `flag` | Switches on one rule of the game for the owner, named by `flag` from a closed list (`effectFlags`, `rules/effectflags.go`; the menu list `effect_flags`): `never_surprised` (the master cannot mark the character surprised, and a mark made earlier counts for nothing), `ignore_hostile_nearby` (a ranged weapon attack with a hostile creature within 5 ft gets no disadvantage for it; a spell attack still does) and `ignore_difficult_terrain` (the difficult terrain painted on the map costs no extra movement; the difficult terrain a spell zone makes still costs). Only `when` and `text_pt` are allowed besides `flag`; a bad flag is refused at `.flag` and a `flag` field on another type is a stray field. `Derived.Flags` lists the flags of the effects that hold, sorted and without repeats; play reads them only through `link.Traits.HasFlag`. |
@@ -249,7 +249,7 @@ How combat spends the die (damage, grapple, reduction) is in the [play module](p
 
 ### Extra damage
 
-`extra_damage` (menu name "Dano extra"; fields `applies`, `value`, `dice`, `dice_sides`, `damage_type`, `weapon`, `frequency`, `no_crit_doubling`, `resource`, `while`, `when`, `text_pt`; `rules/extradamage.go`) is damage a feature adds to a weapon hit when the target is what `applies` asks: a fixed number, dice, or both.
+`extra_damage` (menu name "Dano extra"; fields `applies`, `value`, `dice`, `dice_sides`, `damage_type`, `weapon`, `frequency`, `line`, `no_crit_doubling`, `resource`, `while`, `when`, `text_pt`; `rules/extradamage.go`) is damage a feature adds to a weapon hit when the target is what `applies` asks: a fixed number, dice, or both.
 Checked at its fields:
 
 - `applies` is `any_target` or `larger_target` (`.applies`, `bad_value`);
@@ -257,6 +257,7 @@ Checked at its fields:
 - `dice` and `dice_sides` (4, 6, 8, 10 or 12) go together (`.dice`, `.dice_sides`, `bad_value`);
 - `damage_type` is a `damage-type:` key of the content; empty is the weapon's own type (`.damage_type`, `bad_reference`);
 - `weapon` is `any` (empty), `melee` or `ranged`; `frequency` is `once_per_turn` (empty) or `each_hit` (`.weapon`, `.frequency`, `bad_value`);
+- `line`, when set, is checked as [the line filter](#the-line-filter) says (`.line`);
 - `no_crit_doubling` keeps a critical hit from doubling the dice, and needs dice (`.no_crit_doubling`, `bad_value`);
 - `resource`, when set, is one the entry or its class defines (`.resource`, `bad_reference`);
 - any field the type does not read is refused for the entry being written (`economy`, `ability`, or these fields on another type), and a feature has at most one (`.type`, `forbidden_effect`).
@@ -524,6 +525,24 @@ To gate another type: add it to `gatedEffectTypes` and `while` to its fields in 
 
 **Weapons.** `weapon_rule` and `pseudo_weapon` are read where the sheet builds a weapon line (`attacks.go`), so the attack list, the attack roll and the damage roll agree.
 A pseudo-weapon's line has the key `pseudo:<feature key>` (`#2`, `#3` for a feature's further ones) and is proficient; a weapon rule that names no ability keeps the weapon's.
+
+### The line filter
+
+`line` (`TableEffect.line`, on `weapon_rule` and `extra_damage`; `rules/line.go`) narrows an effect to one attack line.
+It holds together with `weapon`: the effect goes with a line only when both choose it.
+Its value is one of:
+
+- `pact`, the weapon line the sheet marks as the pact weapon;
+- the key of a weapon of the content (an SRD or table weapon) or the unarmed strike (`attack:unarmed-strike`);
+- the `attack_name` of a `pseudo_weapon` or `natural_attack` of the same entry, ignoring case and accents, or that line's key (`pseudo:<feature key>`, `natural:<feature key>`, with the `#n` suffix of a feature's further lines).
+
+A value that names none of these is refused at `.line` (`bad_reference`); a name that two lines of the entry share is refused at `.line` (`bad_value`); `line` on any other effect type is refused.
+The table's content replaces the value with the line's key on the effect it compiles, and `rules.LineMatches(line, key, pact)` is the one comparison: the sheet reads it for `weapon_rule` (through `weaponFacts`), and play reads it for `extra_damage` through `link.ExtraDamage.Line` and `link.Attack.Key` and `link.Attack.Pact`.
+An `extra_damage` whose line is not the hit's is listed on the hit card as off, with the reason.
+
+The sheet marks the pact weapon with `FullSheet.weapon_marks[].pact_weapon` (`WeaponMark.PactWeapon`).
+At most one mark has it (`full.weapon_marks[n].pact_weapon` is refused for a second), a mark that sets only `pact_weapon` is valid, and it follows the lock of the other marks (`full.weapon_marks`).
+It marks no material: the line is neither magical nor silvered because of it.
 
 ## The class
 

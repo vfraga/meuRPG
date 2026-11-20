@@ -60,7 +60,7 @@ The player edits their own sheet until the first session of the campaign starts.
 After that, only the master and the system change it.
 A character created later (the replacement for a dead one, or one for someone who joined late) stays editable until the next session starts.
 The numbers the system calculates are never editable.
-The marks of a weapon (magical, silvered, adamantine) and the magic bonuses (+1 to +3) of the armor, the shield and the weapons follow the same rule as the gear the sheet carries: the owner sets them while the sheet is editable, the master always, and the owner cannot after the lock.
+The marks of a weapon (magical, silvered, adamantine, pact weapon) and the magic bonuses (+1 to +3) of the armor, the shield and the weapons follow the same rule as the gear the sheet carries: the owner sets them while the sheet is editable, the master always, and the owner cannot after the lock.
 
 - **The story.** The character story (personality, appearance, backstory, allies) has its own lock: after the sheet locks, the player edits it only when the master releases it, character by character, until the next session starts or the master locks it again.
 - **What the master sees first.** Before starting a session, the master is told which sheets still have skills or spells to choose, and confirms. The lock does not wait for them.
@@ -111,6 +111,10 @@ The master can also correct hit points, temporary hit points, spell slots (and p
     The magic of the Ki-Empowered strike counts for these resistances and immunities and for nothing else: no bonus to hit or damage, and not for a monk weapon.
     The marks are written through the sheet API and by the weapon rule effect of a table feature, which marks the weapons its filter picks and the unarmed strike.
     The marks are set through the sheet API and weapon rules; the sheet form does not edit them.
+    The sheet can also mark one weapon as the pact weapon, never more than one, and the mark follows the same lock.
+    A table feature that names "pact" as its line of attack goes with that weapon alone: a weapon rule changes only it, and an extra damage is offered only on its hits.
+    The same line can name one attack line of the feature's entry (a feature's weapon or a natural attack, by its name) or a weapon by key, so a rule or an extra damage no longer goes with every weapon of a kind.
+    A line that names nothing the entry has is refused at its field.
     The master's log names the reason ("Resistência a perfurante de ataque não mágico nem prateado"). The player sees only the damage.
   - On a player character the rolled damage **waits for the master**, who applies it ("Aplicar 5 de dano") or discards it ("Não aplicar"). The master may apply a different amount (a resistance the app does not apply). The log keeps both numbers for the master, and the player sees only what they took.
   - What the character's own sheet protects is applied to the rolled damage as steps the master reads, before the master applies it: a race, feat or feature of the table with resistance, immunity or vulnerability to damage types (or, "from nonmagical attacks", to bludgeoning, piercing and slashing), and the barbarian's rage. Immunity makes it 0, then resistance halves it (rounded down), then vulnerability doubles it; the same protection from two sources counts once. An attack of a sheet or a stat block that is not marked magical counts as nonmagical.
