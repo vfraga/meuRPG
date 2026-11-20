@@ -1,4 +1,4 @@
-# #857 ready-map screens (branch feat/ready-spells-857-web, head 5e924e571)
+# #857 ready-map screens (branch feat/ready-spells-857-web, head ee42f9bff)
 
 Each screen is a PNG at 390, 768 and 1280 px, light (`claro`) and dark (`escuro`), deviceScaleFactor 2. Name: `857-ready-map-<screen>-<width>-<theme>.png`.
 
@@ -18,3 +18,8 @@ Each screen is a PNG at 390, 768 and 1280 px, light (`claro`) and dark (`escuro`
 | `janela-outro-aparelho` | window read on the player's second device | 857-09 |
 | `mover-desfeito` | the master undid the trigger with the map open | 857-09 |
 | `mover-bloqueado` | zero-length "Algo bloqueia o caminho" notice | 857-09 |
+
+`mover-bloqueado` is from head 5e924e571: the notice is unchanged since, and no spec takes this shot.
+Every other screen was retaken on ee42f9bff by the a11y scan with `E2E_SHOTS_DIR`.
+
+`janela-foco/` holds the readied windows of the earlier slices, retaken on ee42f9bff: each window now opens with the focus on its title, not on "Deixar passar".
