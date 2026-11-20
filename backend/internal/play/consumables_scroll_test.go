@@ -38,6 +38,7 @@ const (
 var (
 	blockedScrollNotOnList = playv1.EncounterBlockedReason_ENCOUNTER_BLOCKED_REASON_SCROLL_SPELL_NOT_ON_LIST
 	blockedScrollOff       = playv1.EncounterBlockedReason_ENCOUNTER_BLOCKED_REASON_SCROLL_SPELL_OFF
+	blockedBonusLimit      = playv1.EncounterBlockedReason_ENCOUNTER_BLOCKED_REASON_BONUS_ACTION_SPELL_LIMIT
 	blockedScrollNoSpell   = playv1.EncounterBlockedReason_ENCOUNTER_BLOCKED_REASON_SCROLL_NO_SPELL
 	blockedItemGone        = playv1.EncounterBlockedReason_ENCOUNTER_BLOCKED_REASON_ITEM_GONE
 )
@@ -250,7 +251,6 @@ func TestAReadIsRefusedWithNothingSpent(t *testing.T) {
 	})); err != nil {
 		t.Fatalf("SetOptionSwitches() error = %v", err)
 	}
-	const key = "idempotency_key"
 	tests := []struct {
 		name   string
 		by     *user
@@ -290,7 +290,6 @@ func TestAReadIsRefusedWithNothingSpent(t *testing.T) {
 	wantCode(t, "another player's scroll", err, connect.CodePermissionDenied)
 	_, err = s.read(t, s.ana, s.pens, scrollFirst, func(r *playv1.ReadScrollRequest) { r.IdempotencyKey = "" })
 	wantCode(t, "no key", err, connect.CodeInvalidArgument)
-	_ = key
 	s.nothingSpent(t, "the refused reads", scrollFirst, scrollFourth, scrollFifth, scrollSixth, potionCommon)
 }
 
@@ -400,6 +399,61 @@ func TestAPassLapsesAtTheEndOfTheReadersTurnAndOnAnotherRead(t *testing.T) {
 	}
 }
 
+// The combat ending lapses the pass of the turn it was read in.
+func TestAPassLapsesWhenTheCombatEnds(t *testing.T) {
+	t.Parallel()
+	f := newPotionFight(t)
+	f.scrolls(t)
+	f.mustEndTurn(t, f.caio, f.e) // Pensantus's turn
+	f.mustRead(t, f.ana, f.pens, scrollFirst)
+	if _, ok := f.passOf(t, f.pens); !ok {
+		t.Fatal("no pass in the turn of the read")
+	}
+	if _, err := f.master.combat.EndEncounter(t.Context(), connect.NewRequest(&playv1.EndEncounterRequest{CampaignId: f.campaignID, EncounterId: f.e.GetId(), IdempotencyKey: newKey()})); err != nil {
+		t.Fatalf("EndEncounter() error = %v", err)
+	}
+	if pass, ok := f.passOf(t, f.pens); ok {
+		t.Errorf("the pass = %+v after the combat ended, want none", pass)
+	}
+}
+
+// A spell cast with a bonus action leaves no other spell of the turn but a cantrip of 1 action: the read of a scroll of one is refused
+// with nothing spent, and the cantrip's is not.
+func TestAReadAfterABonusActionSpellKeepsTheSpellLimit(t *testing.T) {
+	t.Parallel()
+	f := newPotionFight(t)
+	f.scrolls(t)
+	f.mustEndTurn(t, f.caio, f.e) // Pensantus's turn
+	f.execSQL(t, `UPDATE combatants SET spell_cast = false, bonus_spell_cast = true WHERE id = $1`, f.id(t, "Pensantus"))
+	_, err := f.read(t, f.ana, f.pens, scrollFirst)
+	wantBlockedBy(t, "a leveled spell after a bonus action spell", err, blockedBonusLimit)
+	f.nothingSpent(t, "the refused read", scrollFirst)
+	if got := f.mustRead(t, f.ana, f.pens, scrollCantrip); got.GetOutcome() != playv1.ScrollReadOutcome_SCROLL_READ_OUTCOME_NO_CHECK_NEEDED {
+		t.Errorf("the cantrip's read reads %v after a bonus action spell, want it read", got)
+	}
+}
+
+// The master has the last word on the economy and none on whose turn it is: his read for an NPC combatant off its turn is refused.
+func TestTheMastersReadForAnNPCOffItsTurnIsRefused(t *testing.T) {
+	t.Parallel()
+	s := newStocked(t)
+	mage := s.castCharEnemy(t, "Mago Sombrio")
+	mage = s.withItems(t, mage, scrollFifth)
+	s.putSpell(t, mage, scrollFifth, spellConeOfCold)
+	s.start(t, plan{
+		npcs:     []*playv1.Participant{{CharacterId: s.goblin.GetId()}, {CharacterId: mage.GetId()}},
+		npcRolls: []int{3, 2},
+		players:  map[string]int32{"Toren": 18, "Pensantus": 10, "Brisa": 1},
+		reveal:   []string{"Goblin", "Mago Sombrio"},
+		at:       map[string][2]int32{"Toren": {3, 3}, "Pensantus": {4, 4}, "Brisa": {9, 8}, "Goblin": {12, 8}, "Mago Sombrio": {13, 9}},
+	})
+	_, err := s.read(t, s.master, mage, scrollFifth, scrollD20(2))
+	wantBlockedBy(t, "the master's read for an NPC off its turn", err, blockedNotYourTurn)
+	if !s.holds(t, mage, scrollFifth) {
+		t.Error("the refused read spent the mage's scroll")
+	}
+}
+
 func TestAPassOfTheTurnLapsesWhenTheTurnEnds(t *testing.T) {
 	t.Parallel()
 	f := newPotionFight(t)
@@ -449,6 +503,38 @@ func TestTheRetryOfAReadAnswersTheFirstOneAndSpendsNothingAgain(t *testing.T) {
 	wantCode(t, "a key reused for another entry", err, connect.CodeInvalidArgument)
 	_, err = s.use(t, s.ana, s.pens, scrollCantrip, func(r *playv1.UseConsumableRequest) { r.IdempotencyKey = key })
 	wantCode(t, "a key reused for a use of a unit", err, connect.CodeInvalidArgument)
+}
+
+// RN-23: the retry of a failed read answers the spell to no player once the master has switched it off, and the master still reads it.
+func TestTheRetryOfAFailedReadNamesNoSwitchedOffSpellToTheOwner(t *testing.T) {
+	t.Parallel()
+	s := newStocked(t)
+	s.scrolls(t)
+	key, entry := newKey(), s.entryOf(t, s.pens, scrollThird)
+	same := func(r *playv1.ReadScrollRequest) {
+		r.IdempotencyKey, r.EntryId, r.Roll = key, entry, &playv1.ReadScrollRequest_D20Face{D20Face: 3}
+	}
+	failed := s.mustRead(t, s.ana, s.pens, scrollThird, same)
+	if failed.GetSpellKey() != spellFireball || failed.GetSpellNamePt() == "" {
+		t.Fatalf("the failed read answers %v, want the spell", failed)
+	}
+	if _, err := s.master.table.SetOptionSwitches(t.Context(), connect.NewRequest(&rulesv1.SetOptionSwitchesRequest{
+		CampaignId: s.campaignID, Switches: []*rulesv1.OptionSwitch{{Key: spellFireball, Off: true}},
+	})); err != nil {
+		t.Fatalf("SetOptionSwitches() error = %v", err)
+	}
+	events := s.countEvents(t, eventConsumableUsed)
+	owner, err := s.read(t, s.ana, s.pens, scrollThird, same)
+	if err != nil || owner.GetSpellKey() != "" || owner.GetSpellNamePt() != "" || owner.GetCheckDc() != failed.GetCheckDc() || owner.GetTotal() != failed.GetTotal() {
+		t.Errorf("the owner's retry answers %v, %v; want the check and no spell", owner, err)
+	}
+	master, err := s.read(t, s.master, s.pens, scrollThird, same)
+	if err != nil || master.GetSpellKey() != spellFireball || master.GetSpellNamePt() == "" {
+		t.Errorf("the master's retry answers %v, %v; want the spell still", master, err)
+	}
+	if got := s.countEvents(t, eventConsumableUsed); got != events {
+		t.Errorf("the retries wrote %d events", got-events)
+	}
 }
 
 // The failure closes the undo chain as every use of a consumable does (consumable_used is no undoable kind), and so does the pass
@@ -528,8 +614,8 @@ func TestTheLogLineOfAFailedReadTellsTheOwnersTheSpellAndTheCheck(t *testing.T) 
 		if err != nil {
 			t.Fatalf("marshal the line: %v", err)
 		}
-		for _, leak := range []string{"fireball", "Bola", "scroll", "checkDc", "d20", "modifier", "total", "rollTotal"} {
-			if strings.Contains(strings.ToLower(string(text)), strings.ToLower(leak)) && leak != "scroll" {
+		for _, leak := range []string{"fireball", "Bola", "checkDc", "d20", "modifier", "total", "rollTotal"} {
+			if strings.Contains(strings.ToLower(string(text)), strings.ToLower(leak)) {
 				t.Errorf("%s reads %s in %s", who, leak, text)
 			}
 		}

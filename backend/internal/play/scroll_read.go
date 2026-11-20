@@ -62,14 +62,15 @@ func (s *Service) readScrollTx(ctx context.Context, tx pgx.Tx, h *hints, session
 	if err != nil {
 		return err
 	}
-	d20 := 0
+	d20, typed := 0, false
 	if e.CheckNeeded {
+		typed = r.GetD20Face() != 0 // only a check has a roll to store
 		if d20, err = s.scrollD20(ctx, tx, call.m, r); err != nil {
 			return err
 		}
 	}
 	run.ev, run.name = consumableUsedEvent{Entry: e.EntryID, Item: e.ItemKey, Name: e.ItemNamePT}, e.SpellNamePT
-	run.ev.Reading(call.charText, e, consumable.CheckOf(e, d20), r.GetD20Face() != 0)
+	run.ev.Reading(call.charText, e, consumable.CheckOf(e, d20), typed)
 	ev := keyedEvent{sessionID: session.ID, kind: consumable.KindScrollRead, userID: call.m.UserID, characterID: &call.charText, key: call.keyText, hash: call.hash}
 	if fight != nil {
 		fight.name(&run.ev)

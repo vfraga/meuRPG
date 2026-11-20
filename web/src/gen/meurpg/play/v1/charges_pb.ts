@@ -630,8 +630,8 @@ export type ReadScrollRequest = Message<"meurpg.play.v1.ReadScrollRequest"> & {
   idempotencyKey: string;
 
   /**
-   * How the check's d20 comes (RN-18), for a read that needs a check only: the app rolls it, or the player typed the face of a
-   * real die.
+   * How the check's d20 comes (RN-18): the app rolls it, or the player typed the face of a real die. A read that needs no check
+   * ignores a valid roll; a face outside 1 to 20, or roll_in_app false, is refused even then.
    *
    * @generated from oneof meurpg.play.v1.ReadScrollRequest.roll
    */
@@ -1154,7 +1154,7 @@ export const ChargesService: GenService<{
    * spell must be on the scroll, of the scroll's level, on at the table, and on the list of a class the reader casts from. When its
    * level is above the highest the reader casts (pact slots included) the reader first makes an ability check with their
    * spellcasting ability against DC 10 plus the spell's level: d20 plus the modifier, rolled by the app (roll_in_app) or a physical
-   * d20's face typed (d20_face), by the table's rule (RN-18); a read that needs no check takes no roll and ignores one.
+   * d20's face typed (d20_face), by the table's rule (RN-18); a read that needs no check ignores a valid roll.
    *
    * A read that needs no check, or whose check passed, spends nothing: it is written as the session event `scroll_read`, the pass
    * the cast of the scroll's spell uses. The pass lapses when the reader reads again (a scroll, whatever the result) and when the

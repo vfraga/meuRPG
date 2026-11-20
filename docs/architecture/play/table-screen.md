@@ -30,15 +30,15 @@ A pin stays stored when its item ends; the stage then falls to the idle screen w
 
 ## The three decision points
 
-What the TV shows is decided in three places, each one function in `tablescreen_resolve.go`.
+What the TV shows is decided in three places, each one function in `internal/play/screen/resolve.go`.
 
 | Decision | Function | Rule |
 | --- | --- | --- |
-| Which screen | `resolveStage` | Following the table, the first that exists: the image shown to the whole table, the combat, the scene open to the whole table, the map the TV may show, the idle screen. A pin shows its item when it can be shown, and otherwise the idle screen with the notice that says why. The master's own tabs do not count |
-| Whether a map goes to the TV | `mapOnTV` | Not when the fog is on and "Visão do grupo" is off: the TV would show what no player sees together |
-| Whether the conversation goes to the TV | `tvShowsConversation` | Never. It is a constant, `false`, not a function. The Conversa (RN-36), narration to the whole table included, is not on the TV |
+| Which screen | `screen.ResolveStage` | Following the table, the first that exists: the image shown to the whole table, the combat, the scene open to the whole table, the map the TV may show, the idle screen. A pin shows its item when it can be shown, and otherwise the idle screen with the notice that says why. The master's own tabs do not count |
+| Whether a map goes to the TV | `screen.MapOnTV` | Not when the fog is on and "Visão do grupo" is off: the TV would show what no player sees together |
+| Whether the conversation goes to the TV | `screen.ShowsConversation` | Never. It is a constant, `false`, not a function. The Conversa (RN-36), narration to the whole table included, is not on the TV |
 
-`tvOptions` uses the same facts to say which items the panel can pick and why the others cannot.
+`screen.Options` uses the same facts to say which items the panel can pick and why the others cannot.
 
 ## The TV's viewer and the projector
 
@@ -86,7 +86,7 @@ The TV never receives:
 
 `maps.TableScreenMap` reads a map for the TV's viewer: the map, its points and tokens from the code of the player's `GetMap`, and the squares from the code of `GetMapVision`.
 The viewer is the maps the players see now, with no trap known and nothing owned.
-With the fog on, "Visão do grupo" on gives the union of the characters' sight and "Visão do grupo" off gives nothing, so `mapOnTV` has already stopped the map.
+With the fog on, "Visão do grupo" on gives the union of the characters' sight and "Visão do grupo" off gives nothing, so `screen.MapOnTV` has already stopped the map.
 The map's own revision is left out: the TV carries a hash of what it reads, which does not move for a change only the master sees.
 The map's image does not go to the TV when the fog is on.
 

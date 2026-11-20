@@ -305,7 +305,7 @@ var tvFieldRows = map[protoreflect.FullName]string{
 	"meurpg.play.v1.TvScene.stage":                                  "TvStageNpc",
 	"meurpg.play.v1.TvStageNpc.name":                                "the NPCs the table sees on the stage, not a hidden one (hidden-stage-name); control: merchant-name (tvMustCarry)",
 	"meurpg.play.v1.TvStageNpc.speaking":                            "a bool",
-	"meurpg.play.v1.TvMap.name":                                     "the current map's name, only when the map is the TV's (mapOnTV); control: fog-map-name (TestRN10_TheTVOfAFogMapReadsOnlyWhatTheGroupSees)",
+	"meurpg.play.v1.TvMap.name":                                     "the current map's name, only when the map is the TV's (screen.MapOnTV); control: fog-map-name (TestRN10_TheTVOfAFogMapReadsOnlyWhatTheGroupSees)",
 	"meurpg.play.v1.TvMap.hidden_by_fog":                            "true when the fog is on and \"Visão do grupo\" off, and then nothing else is set (checkTableScreen, the combat's map)",
 	"meurpg.play.v1.TvMap.map":                                      "the player form of the map from the maps module: the masterOnly rules of maps (hidden point, trap, treasure, light, hidden token) and the canaries of the fog map; control: the master's GetMap",
 	"meurpg.play.v1.TvMap.vision":                                   "the squares the group sees or remembers; a fogged cell has no tile (images_test.go and TestRN10_TheTVOfAFogMapReadsOnlyWhatTheGroupSees); control: the same test, with group vision on, reads the map and fetches a tile",

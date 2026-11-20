@@ -1339,8 +1339,8 @@ type ReadScrollRequest struct {
 	// The id of the scroll's entry on the sheet (SheetMagicItem.id).
 	EntryId        string `protobuf:"bytes,3,opt,name=entry_id,json=entryId,proto3" json:"entry_id,omitempty"`
 	IdempotencyKey string `protobuf:"bytes,4,opt,name=idempotency_key,json=idempotencyKey,proto3" json:"idempotency_key,omitempty"`
-	// How the check's d20 comes (RN-18), for a read that needs a check only: the app rolls it, or the player typed the face of a
-	// real die.
+	// How the check's d20 comes (RN-18): the app rolls it, or the player typed the face of a real die. A read that needs no check
+	// ignores a valid roll; a face outside 1 to 20, or roll_in_app false, is refused even then.
 	//
 	// Types that are valid to be assigned to Roll:
 	//

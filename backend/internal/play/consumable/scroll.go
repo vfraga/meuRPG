@@ -99,10 +99,15 @@ func (u *Used) Reading(reader string, e link.ScrollEntry, check rules.ScrollChec
 	}
 }
 
-// ScrollReading is what the reading answers, from the payload the call wrote or found; spellName is the spell's name in Portuguese.
+// ScrollReading is what the reading answers, from the payload the call wrote or found; spellName is the spell's name in Portuguese as
+// the reader may read it ("" when it may not, and then the key is left out too: RN-23).
 func ScrollReading(u Used, spellName string) *playv1.ScrollReading {
+	key := u.Spell
+	if spellName == "" {
+		key = ""
+	}
 	out := &playv1.ScrollReading{
-		EntryId: u.Entry, Outcome: playv1.ScrollReadOutcome_SCROLL_READ_OUTCOME_NO_CHECK_NEEDED, SpellKey: u.Spell, SpellNamePt: spellName,
+		EntryId: u.Entry, Outcome: playv1.ScrollReadOutcome_SCROLL_READ_OUTCOME_NO_CHECK_NEEDED, SpellKey: key, SpellNamePt: spellName,
 		ScrollLevel: u.Level, CastLevel: u.Level, CheckDc: u.CheckDC, D20: u.D20, Modifier: u.Modifier,
 	}
 	if u.Checked {
