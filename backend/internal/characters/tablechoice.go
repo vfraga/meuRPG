@@ -143,15 +143,56 @@ func unfitSentence(view *rules.Content, b rules.Build, field, key string) string
 // noSheet is the stored sheet of a character that does not exist yet.
 func noSheet() *charactersv1.FullSheet { return nil }
 
-// storedSheetOf reads the stored sheet of a character the caller sees, nil for any other: a pick is new to a sheet the
-// caller cannot read.
-func (s *Service) storedSheetOf(ctx context.Context, m authz.Membership, characterID string) func() *charactersv1.FullSheet {
+// storedRead reads a character's row once, and its sheet once, when first asked: the checks of a save or a preview that
+// need the stored sheet before the character's permissions are known share one read.
+type storedRead struct {
+	s         *Service
+	ctx       context.Context
+	m         authz.Membership
+	id        string
+	row       charactersdb.Character
+	rowErr    error
+	rowRead   bool
+	sheet     *charactersv1.CharacterSheet
+	sheetErr  error
+	sheetRead bool
+}
+
+func (s *Service) storedReadOf(ctx context.Context, m authz.Membership, characterID string) *storedRead {
+	return &storedRead{s: s, ctx: ctx, m: m, id: characterID}
+}
+
+// Row is the character's row, or the error of reading it.
+func (r *storedRead) Row() (charactersdb.Character, error) {
+	if !r.rowRead {
+		r.row, r.rowErr = r.s.queries.GetCharacter(r.ctx, charactersdb.GetCharacterParams{CampaignID: r.m.CampaignID, ID: r.id})
+		r.rowRead = true
+	}
+	return r.row, r.rowErr
+}
+
+// Sheet is the row's stored sheet, or the error of reading the row or decoding the sheet.
+func (r *storedRead) Sheet() (*charactersv1.CharacterSheet, error) {
+	if !r.sheetRead {
+		row, err := r.Row()
+		if err != nil {
+			return nil, err
+		}
+		r.sheet, r.sheetErr = loadSheet(row.ID, row.Sheet)
+		r.sheetRead = true
+	}
+	return r.sheet, r.sheetErr
+}
+
+// Visible is the stored sheet of a character the caller sees, nil for any other: a pick is new to a sheet the caller
+// cannot read.
+func (r *storedRead) Visible() func() *charactersv1.FullSheet {
 	return func() *charactersv1.FullSheet {
-		row, err := s.queries.GetCharacter(ctx, charactersdb.GetCharacterParams{CampaignID: m.CampaignID, ID: characterID})
-		if err != nil || !canSee(m, row.Kind, row.Status, row.PlayerUserID) {
+		row, err := r.Row()
+		if err != nil || !canSee(r.m, row.Kind, row.Status, row.PlayerUserID) {
 			return nil
 		}
-		stored, err := loadSheet(row.ID, row.Sheet)
+		stored, err := r.Sheet()
 		if err != nil {
 			return nil
 		}

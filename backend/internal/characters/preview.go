@@ -7,7 +7,6 @@ import (
 
 	charactersv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/characters/v1"
 	"github.com/PuraFome/meuRPG/backend/internal/authz"
-	"github.com/PuraFome/meuRPG/backend/internal/characters/charactersdb"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/uid"
 	"github.com/PuraFome/meuRPG/backend/internal/rules"
 )
@@ -87,13 +86,13 @@ func (s *Service) checkEditedSheet(ctx context.Context, m authz.Membership, cont
 	if err != nil {
 		return nil, "", invalidArgument(err)
 	}
-	if err := refuseKeptOutPick(content, m, s.storedSheetOf(ctx, m, id), sheet.GetFull()); err != nil {
+	// The stored row is read once, whenever a check first needs it; the fit of the picks to their lists is
+	// refuseNewChoices's, after the permission answers and the answers that name a closed entry.
+	stored := s.storedReadOf(ctx, m, id)
+	if err := refuseKeptOutPick(content, m, stored.Visible(), sheet.GetFull()); err != nil {
 		return nil, "", err
 	}
-	if err := refuseUnfitPick(content, m, s.storedSheetOf(ctx, m, id), sheet.GetFull()); err != nil {
-		return nil, "", err
-	}
-	row, err := s.queries.GetCharacter(ctx, charactersdb.GetCharacterParams{CampaignID: m.CampaignID, ID: id})
+	row, err := stored.Row()
 	if err != nil {
 		return nil, "", s.dbError(ctx, "read a character to preview its sheet", err)
 	}
@@ -106,11 +105,11 @@ func (s *Service) checkEditedSheet(ctx context.Context, m authz.Membership, cont
 	if err := checkSheetKind(row.Kind, sheet); err != nil {
 		return nil, "", invalidArgument(err)
 	}
-	stored, err := loadSheet(row.ID, row.Sheet)
+	storedSheet, err := stored.Sheet()
 	if err != nil {
 		return nil, "", s.dbError(ctx, "read a character to preview its sheet", err)
 	}
-	if err := refuseNewChoices(content, m, row.ID, stored.GetFull(), sheet.GetFull()); err != nil {
+	if err := refuseNewChoices(content, m, row.ID, storedSheet.GetFull(), sheet.GetFull()); err != nil {
 		return nil, "", err
 	}
 	return sheet, row.Name, nil
