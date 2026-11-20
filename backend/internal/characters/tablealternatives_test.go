@@ -396,3 +396,25 @@ func TestARepeatedAlternativePickIsRefusedOnPreviewAndLevelUpAndKeptOnImport(t *
 		t.Errorf("the imported sheet is refused: %v", err)
 	}
 }
+
+// The picks page of a locked sheet reads the draft's picks against the stored sheet: a new pick that repeats another source is
+// refused there as in the save, and a pick the stored sheet holds is fine.
+func TestTheChoicesOfALockedSheetRefuseANewRepeatedPickAsTheSaveDoes(t *testing.T) {
+	t.Parallel()
+	f := newAlternativesFlow(t)
+	stored := f.repeating(2, "language:giant") // the background gives stealth; the held pick is another key
+	c := f.davi.create(t, f.campaign, charactersv1.CharacterKind_CHARACTER_KIND_PLAYER, "Ícaro", stored)
+	f.h.lockSheets(f.campaign)
+	read := func(pick string) error {
+		_, err := f.davi.api.PreviewChoices(t.Context(), connect.NewRequest(&charactersv1.PreviewChoicesRequest{
+			CampaignId: f.campaign, CharacterId: c.GetId(), Kind: charactersv1.CharacterKind_CHARACTER_KIND_PLAYER, Sheet: f.sheet(2, pick),
+		}))
+		return err
+	}
+	if repeatedField(read("skill:stealth")) == "" {
+		t.Error("the page of a locked sheet takes a new repeated pick")
+	}
+	if err := read("language:giant"); err != nil {
+		t.Errorf("the held pick: %v", err)
+	}
+}
