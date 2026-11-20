@@ -19,7 +19,7 @@ Each screen is a PNG at 390, 768 and 1280 px, light (`claro`) and dark (`escuro`
 | `mover-desfeito` | the master undid the trigger with the map open | 857-09 |
 | `mover-bloqueado` | zero-length "Algo bloqueia o caminho" notice | 857-09 |
 
-`mover-bloqueado` is from head 5e924e571: the notice is unchanged since, and no spec takes this shot.
+`mover-bloqueado` is from head 5e924e571, before the Mover page layout changes from 1024 px: its notice text is unchanged, and no spec takes this shot.
 Every other screen was retaken on ee42f9bff by the a11y scan with `E2E_SHOTS_DIR`.
 
 `janela-foco/` holds the readied windows of the earlier slices, retaken on ee42f9bff: each window now opens with the focus on its title, not on "Deixar passar".
