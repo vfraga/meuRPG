@@ -555,3 +555,13 @@ func TestTheChoicesAreReadAgainstTheStoredSheetAsTheSaveIs(t *testing.T) {
 		})
 	}
 }
+
+// The message of an option an alternative does not offer is in the language of the other messages of the overlay's checks.
+func TestTheMessageOfAnAlternativeOptionOutsideTheSRDIsInEnglish(t *testing.T) {
+	t.Parallel()
+	a := ChoiceAlternative{Kind: altSkill, From: []string{"skill:nenhuma"}}
+	attr, _, msg := loadForTest(t).c.alternativeFault(nil, a)
+	if want := `"skill:nenhuma" is not a skill of the SRD that an alternative offers`; msg != want || attr != altFromAttr {
+		t.Errorf("attr %q message %q, want %q %q", attr, msg, altFromAttr, want)
+	}
+}
