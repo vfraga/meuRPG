@@ -177,7 +177,8 @@ func TestTheTrapsOtherSkillsAreTheMastersAlone(t *testing.T) {
 
 // ---- Reliable Talent ----
 
-// rogue is a human rogue of the given level proficient in four skills, with expertise in all.
+// rogue is a human rogue of the given level proficient in four skills, with expertise in the
+// first two (the first four from level 6, as the SRD 5.1 rogue gets).
 func (u *user) rogue(t *testing.T, campaignID, name string, level int32) *charactersv1.Character {
 	t.Helper()
 	return u.rogueOf(t, campaignID, name, "race:human", level)
@@ -187,10 +188,15 @@ func (u *user) rogue(t *testing.T, campaignID, name string, level int32) *charac
 func (u *user) rogueOf(t *testing.T, campaignID, name, race string, level int32) *charactersv1.Character {
 	t.Helper()
 	skills := []string{"skill:acrobatics", "skill:investigation", "skill:perception", "skill:stealth"}
+	// SRD 5.1, Rogue, Expertise: two picks at level 1 and two more at level 6.
+	expertise := 2
+	if level >= 6 {
+		expertise = 4
+	}
 	sheet := &charactersv1.CharacterSheet{Content: &charactersv1.CharacterSheet_Full{Full: &charactersv1.FullSheet{
 		BaseScores: &rulesv1.AbilityScores{Strength: 10, Dexterity: 16, Constitution: 14, Intelligence: 14, Wisdom: 12, Charisma: 8},
 		RaceKey:    race, Classes: []*charactersv1.ClassLevel{{ClassKey: "class:rogue", Level: level}},
-		SkillProficiencyKeys: skills, ExpertiseSkillKeys: skills,
+		SkillProficiencyKeys: skills, ExpertiseSkillKeys: skills[:expertise],
 	}}}
 	res, err := u.characters.CreateCharacter(t.Context(), connect.NewRequest(&charactersv1.CreateCharacterRequest{
 		CampaignId: campaignID, Kind: charactersv1.CharacterKind_CHARACTER_KIND_PLAYER, Name: name, Sheet: sheet,
