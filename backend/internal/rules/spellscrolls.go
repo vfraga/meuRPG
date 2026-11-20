@@ -3,7 +3,6 @@ package rules
 import (
 	"fmt"
 	"io/fs"
-	"strconv"
 	"strings"
 )
 
@@ -15,7 +14,6 @@ const spellScrollFamily = "item:spell-scroll"
 
 // Bounds of the numbers of a scroll: the saving throw DC runs from 10 up to 30, and the attack bonus is the DC less 8.
 const (
-	spellScrollMaxLevel    = 9
 	spellScrollMinDC       = 10
 	spellScrollMaxDC       = 30
 	spellScrollDCOverBonus = 8
@@ -78,8 +76,11 @@ func (c *content) spellScrollOf(key string, e spellScrollFile) (SpellScrollNumbe
 	case e.AttackBonus != e.SaveDC-spellScrollDCOverBonus:
 		return SpellScrollNumbers{}, fmt.Errorf("attack_bonus is save_dc less %d", spellScrollDCOverBonus)
 	}
-	return SpellScrollNumbers{Level: e.Level, SaveDC: e.SaveDC, AttackBonus: e.AttackBonus}, nil
+	return SpellScrollNumbers(e), nil
 }
+
+// spellScrollSuffixes are the suffixes of the variants' keys, at the index of the spell level each names (a cantrip is 0).
+var spellScrollSuffixes = [...]string{"cantrip", "1st", "2nd", "3rd", "4th", "5th", "6th", "7th", "8th", "9th"}
 
 // spellScrollLevelOf is the spell level a variant's key names ("item:spell-scroll-cantrip" is 0, "item:spell-scroll-3rd" is 3).
 func spellScrollLevelOf(key string) (int, bool) {
@@ -87,28 +88,12 @@ func spellScrollLevelOf(key string) (int, bool) {
 	if !ok {
 		return 0, false
 	}
-	if suffix == "cantrip" {
-		return 0, true
-	}
-	for n := 1; n <= spellScrollMaxLevel; n++ {
-		if suffix == strconv.Itoa(n)+ordinalSuffix(n) {
-			return n, true
+	for level, s := range spellScrollSuffixes {
+		if suffix == s {
+			return level, true
 		}
 	}
 	return 0, false
-}
-
-// ordinalSuffix is the English suffix of the ordinal of a spell level from 1 to 9 ("st" for 1, "nd", "rd", "th").
-func ordinalSuffix(n int) string {
-	switch n {
-	case 1:
-		return "st"
-	case 2:
-		return "nd"
-	case 3:
-		return "rd"
-	}
-	return "th"
 }
 
 // SpellScrollNumbers is the spell level, saving throw DC and spell attack bonus of the scroll with that item key, and
