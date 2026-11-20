@@ -2,6 +2,7 @@ package leaktest
 
 import (
 	"slices"
+	"strings"
 	"testing"
 
 	"github.com/PuraFome/meuRPG/backend/gen/meurpg/characters/v1/charactersv1connect"
@@ -26,29 +27,35 @@ func TestASwitchedOffTableClassAddsNoSkillKeyToAPlayersListForADraft(t *testing.
 		CampaignId: w.campaign, Kind: charactersv1.CharacterKind_CHARACTER_KIND_PLAYER, Name: "Menestrel", Sheet: sheet("class:wizard", 1),
 	}))).GetCharacter()
 	// listed reads the lists of the draft as who sees them: whether the answer came, and whether it lists the key.
-	listed := func(t *testing.T, who reader) (listed, answered bool) {
+	listed := func(t *testing.T, who reader, draft *charactersv1.CharacterSheet) (listed, answered bool, body string) {
 		t.Helper()
 		r := who.person.call(charactersv1connect.CharacterServicePreviewChoicesProcedure, &charactersv1.PreviewChoicesRequest{
-			CampaignId: w.campaign, CharacterId: held.GetId(), Kind: charactersv1.CharacterKind_CHARACTER_KIND_PLAYER, Sheet: sheet(class.GetKey(), 1),
+			CampaignId: w.campaign, CharacterId: held.GetId(), Kind: charactersv1.CharacterKind_CHARACTER_KIND_PLAYER, Sheet: draft,
 		})
 		if !r.ok() {
-			return false, false
+			return false, false, string(r.body)
 		}
-		return slices.Contains(choicesOf(t, r).GetSkillsAllowed().GetKeys(), extra), true
+		return slices.Contains(choicesOf(t, r).GetSkillsAllowed().GetKeys(), extra), true, string(r.body)
 	}
 	master, ana := reader{"the master", w.master, charactersv1.CharacterKind_CHARACTER_KIND_PLAYER, true}, reader{"Ana, the owner", w.ana, charactersv1.CharacterKind_CHARACTER_KIND_PLAYER, true}
+	tableDraft, ownDraft := sheet(class.GetKey(), 1), sheet("class:wizard", 1)
 	for _, who := range []reader{master, ana} { // the positive control: before the switch each reads the key
-		if l, ok := listed(t, who); !ok || !l {
+		if l, ok, _ := listed(t, who, tableDraft); !ok || !l {
 			t.Fatalf("%s: before the switch the list holds %s = %v (answered %v), the positive control", who.name, extra, l, ok)
 		}
 	}
 	must(w.master.table.SetOptionSwitches(t.Context(), rq(&rulesv1.SetOptionSwitchesRequest{
 		CampaignId: w.campaign, Switches: []*rulesv1.OptionSwitch{{Key: class.GetKey(), Off: true}},
 	})))
-	if l, ok := listed(t, master); !ok || !l {
+	if l, ok, _ := listed(t, master, tableDraft); !ok || !l {
 		t.Errorf("the master reads what the table switched off, answered %v with %s listed %v", ok, extra, l)
 	}
-	if l, _ := listed(t, ana); l {
-		t.Errorf("Ana's list holds %s of a class the table switched off", extra)
+	// Ana's draft of the class is refused with the closed choice's answer, which holds nothing of its lists; her own draft is
+	// answered with the lists of its own sources alone.
+	if l, ok, body := listed(t, ana, tableDraft); l || ok || strings.Contains(body, extra) || strings.Contains(body, "Menestrel da Mesa") {
+		t.Errorf("Ana's draft of a class the table switched off: answered %v, lists %s %v: %s", ok, extra, l, body)
+	}
+	if l, ok, _ := listed(t, ana, ownDraft); l || !ok {
+		t.Errorf("Ana's draft of her own class: answered %v with %s listed %v, want the lists without it", ok, extra, l)
 	}
 }

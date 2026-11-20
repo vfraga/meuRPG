@@ -184,8 +184,10 @@ func TestTheSkillSourcesOfALevelNameNothingTheTableKeepsOut(t *testing.T) {
 	}
 }
 
-// A skill, an expertise or a tool pick whose value is the key of an entry the table keeps out (or no key at all) is answered
-// alike for the player, on create, update and preview: the answer names neither the entry nor its key.
+// A skill or an expertise whose value is the key of an entry the table keeps out (or no key at all) is answered alike for the
+// player, on create, update and preview: the answer names neither the entry nor its key. A tool pick whose value is the key of
+// such an entry is answered as the closed entry it is, as it is without the check of the picks; and a tool pick of a language,
+// which the sheet takes as a proficiency but no tool choice offers, is answered as a key that does not exist.
 func TestAPickOfAnEntryKeyIsAnsweredAsAKeyThatDoesNotExist(t *testing.T) {
 	p := newChoicesProbe(t)
 	w, ctx := p.w, t.Context()
@@ -206,12 +208,13 @@ func TestAPickOfAnEntryKeyIsAnsweredAsAKeyThatDoesNotExist(t *testing.T) {
 		s.GetFull().RaceKey, s.GetFull().SubraceKey = "race:dwarf", "subrace:hill-dwarf"
 		return s
 	}
+	toolPick := func(key string) *charactersv1.CharacterSheet {
+		s := base()
+		s.GetFull().FeatureChoiceKeys = []string{rules.ScopedChoice(rules.ToolPickKey("trait:tool-proficiency"), key)}
+		return s
+	}
 	shapes := map[string]func(key string) *charactersv1.CharacterSheet{
-		"a tool pick": func(key string) *charactersv1.CharacterSheet {
-			s := base()
-			s.GetFull().FeatureChoiceKeys = []string{rules.ScopedChoice(rules.ToolPickKey("trait:tool-proficiency"), key)}
-			return s
-		},
+		"a tool pick": toolPick,
 		"a skill": func(key string) *charactersv1.CharacterSheet {
 			s := base()
 			s.GetFull().SkillProficiencyKeys = []string{key}
@@ -226,8 +229,8 @@ func TestAPickOfAnEntryKeyIsAnsweredAsAKeyThatDoesNotExist(t *testing.T) {
 	held := must(w.ana.characters.CreateCharacter(ctx, rq(&charactersv1.CreateCharacterRequest{
 		CampaignId: w.campaign, Kind: charactersv1.CharacterKind_CHARACTER_KIND_PLAYER, Name: "Anã", Sheet: base(),
 	}))).GetCharacter()
-	for what, build := range shapes {
-		calls := map[string]func(who *person, key string) reply{
+	callsOf := func(build func(key string) *charactersv1.CharacterSheet) map[string]func(who *person, key string) reply {
+		return map[string]func(who *person, key string) reply{
 			"create": func(who *person, key string) reply {
 				return who.call(charactersv1connect.CharacterServiceCreateCharacterProcedure, &charactersv1.CreateCharacterRequest{
 					CampaignId: w.campaign, Kind: charactersv1.CharacterKind_CHARACTER_KIND_PLAYER, Name: "Nova", Sheet: build(key),
@@ -244,20 +247,39 @@ func TestAPickOfAnEntryKeyIsAnsweredAsAKeyThatDoesNotExist(t *testing.T) {
 				})
 			},
 		}
-		for call, send := range calls {
-			for _, closed := range []*rulesv1.TableEntry{off, archived} {
-				who := w.ana
-				if call == "create" {
-					who = w.caio
-				}
-				named, none := send(who, closed.GetKey()), send(who, absent)
-				if !sameAnswer(named, closed.GetKey(), none, absent) {
-					t.Errorf("%s, %s: the entry's key: HTTP %d %s\na key that does not exist: HTTP %d %s", what, call, named.status, shorten(named.body), none.status, shorten(none.body))
-				}
+	}
+	asker := func(call string) *person {
+		if call == "create" {
+			return w.caio // Ana has her character already
+		}
+		return w.ana
+	}
+	for what, build := range shapes {
+		for call, send := range callsOf(build) {
+			for closing, entry := range map[string]*rulesv1.TableEntry{"CHARACTER_BLOCKED_REASON_SWITCHED_OFF_CONTENT": off, "CHARACTER_BLOCKED_REASON_ARCHIVED_CONTENT": archived} {
+				named, none := send(asker(call), entry.GetKey()), send(asker(call), absent)
 				if strings.Contains(string(named.body), canary) {
 					t.Errorf("%s, %s: the answer names the entry: %s", what, call, shorten(named.body))
 				}
+				if what == "a tool pick" {
+					// The key is a pick of the sheet that the table keeps out: the answer is the closed choice's, whatever the picks.
+					if named.status != 400 || !strings.Contains(string(named.body), closing) || !strings.Contains(string(named.body), entry.GetKey()) {
+						t.Errorf("%s, %s: the entry's key: HTTP %d %s, want the refusal of a closed choice %s", what, call, named.status, shorten(named.body), closing)
+					}
+					continue
+				}
+				if !sameAnswer(named, entry.GetKey(), none, absent) {
+					t.Errorf("%s, %s: the entry's key: HTTP %d %s\na key that does not exist: HTTP %d %s", what, call, named.status, shorten(named.body), none.status, shorten(none.body))
+				}
 			}
+		}
+	}
+	// A language is a proficiency the sheet takes, but no tool choice offers it: it is answered as a key that does not exist.
+	const language = "language:elvish"
+	for call, send := range callsOf(toolPick) {
+		named, none := send(asker(call), language), send(asker(call), absent)
+		if none.ok() || !sameAnswer(named, language, none, absent) {
+			t.Errorf("a tool pick of a language, %s: HTTP %d %s\na key that does not exist: HTTP %d %s", call, named.status, shorten(named.body), none.status, shorten(none.body))
 		}
 	}
 }
