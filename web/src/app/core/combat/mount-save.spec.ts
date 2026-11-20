@@ -3,12 +3,19 @@ import { create } from '@bufbuild/protobuf';
 import {
   CombatantKind,
   MountSaveCause,
+  ReactionKind,
   MountSavePromptSchema,
   MountSaveResultSchema,
 } from '../../../gen/meurpg/play/v1/combat_pb';
 import { RollMode } from '../../../gen/meurpg/play/v1/combat_rolls_pb';
-import { combatant, encounter } from './combat-testing';
-import { mountSaveResultView, mountSaveView, mountSaveWait, ownMountSave } from './mount-save';
+import { combatant, encounter, reactionWindow } from './combat-testing';
+import {
+  mountSaveResultView,
+  mountSaveView,
+  mountSaveWait,
+  ownMountSave,
+  owesMountQuestion,
+} from './mount-save';
 
 const plain = (t: string) => t.replace(/ /g, ' ');
 
@@ -52,6 +59,22 @@ const result = (over: object = {}) =>
     held: true,
     ...over,
   } as never);
+
+describe('the mount question the combat puts to a player', () => {
+  it('is owed with the rider’s save, and with the dismount window of its rider', () => {
+    expect(owesMountQuestion(fight())).toBe(true);
+    expect(owesMountQuestion(fight(undefined, { mountSave: undefined }))).toBe(false);
+    const dismount = reactionWindow({
+      id: 'w1',
+      kind: ReactionKind.DISMOUNT,
+      reactorId: 'tor',
+      forYou: true,
+    } as never);
+    expect(
+      owesMountQuestion(fight(undefined, { mountSave: undefined, reactionWindows: [dismount] })),
+    ).toBe(true);
+  });
+});
 
 describe("the rider's save to stay on the mount", () => {
   it("is the player's own when the rider is theirs, and nobody's when the server sent none", () => {

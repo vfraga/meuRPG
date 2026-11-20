@@ -17,6 +17,7 @@ import {
 } from '../../../../gen/meurpg/play/v1/combat_pb';
 import { actingTab, dyingIds, optionIds, ownCreatures, validTab } from '../../../core/combat/mine';
 import { offersToAnswer, reactorIsMasters } from '../../../core/combat/opportunity';
+import { owesMountQuestion } from '../../../core/combat/mount-save';
 import { questions } from '../../../core/combat/hidden-reveal';
 import { heldOfferOf } from '../../../core/held-rolls/held-roll-offer';
 import { COMBAT_VIEW_IMPORTS } from './combat-view-imports';
@@ -195,6 +196,11 @@ export class CombatView extends CombatViewPartsDirective {
         e.status !== EncounterStatus.ACTIVE ||
         this.reactionOpen()
       ) {
+        return;
+      }
+      // One dialog at a time: the contest's answer or result goes before the mount question takes its place.
+      if (this.contest.sheetOpen() && owesMountQuestion(e)) {
+        untracked(() => this.contest.dismissSheet());
         return;
       }
       untracked(() => this.sheets.reactions.auto(e));

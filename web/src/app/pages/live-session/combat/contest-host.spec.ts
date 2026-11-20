@@ -68,11 +68,18 @@ function setup(
   const api = new FakeContestClient();
   const opened: Opened[] = [];
   const closes: Subject<unknown>[] = [];
+  const refs: { componentInstance: object; close: () => void }[] = [];
   const open = (component: unknown, config: { data: Record<string, unknown> }) => {
     opened.push({ component, data: config.data });
     const closed = new Subject<unknown>();
     closes.push(closed);
-    return { afterClosed: () => closed.asObservable() };
+    const ref = {
+      componentInstance: Object.create((component as { prototype: object }).prototype) as object,
+      close: () => closed.complete(),
+      afterClosed: () => closed.asObservable(),
+    };
+    refs.push(ref);
+    return ref;
   };
   TestBed.resetTestingModule();
   const enc = signal<Encounter | null>(
@@ -86,8 +93,8 @@ function setup(
   const state = new CombatState();
   const host = runInInjectionContext(TestBed.inject(Injector), () => {
     return new ContestHost({
-      dialog: { open } as unknown as MatDialog,
-      bottomSheet: {} as MatBottomSheet,
+      dialog: { open, openDialogs: refs } as unknown as MatDialog,
+      bottomSheet: { dismiss: () => undefined } as unknown as MatBottomSheet,
       api: api.as() as ContestClient,
       campaignId: () => 'c',
       isMaster: () => master(),
@@ -276,6 +283,22 @@ describe('ContestHost', () => {
     expect((s.opened[0].data['allies'] as { label: string }[]).map((a) => a.label)).toEqual([
       'Orla',
     ]);
+  });
+
+  it('closes the answer sheet when the mount question has to open, so one dialog is on screen', async () => {
+    const s = setup();
+    await s.read(
+      contestState({
+        contests: [
+          contestView({ id: 'ct1', defenderId: 't', initiatorId: 'h', youAnswer: true }),
+        ],
+      }),
+      2,
+    );
+    expect(s.host.sheetOpen()).toBe(true);
+    s.host.dismissSheet();
+    await s.settle();
+    expect(s.host.sheetOpen()).toBe(false);
   });
 
   it('opens nothing for the master', async () => {

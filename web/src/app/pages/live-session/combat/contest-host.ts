@@ -23,8 +23,8 @@ import type { ContestClient } from '../../../core/combat/contest-client';
 import { ContestState } from '../../../core/combat/contest-state';
 import { isSettled } from '../../../core/combat/contest-view';
 import { helpAllies, helpTargets } from '../../../core/combat/help-view';
-import { openContestAnswerSheet } from './contest-answer-sheet/contest-answer-sheet';
-import { openContestSheet } from './contest-sheet/contest-sheet';
+import { ContestAnswerSheet, openContestAnswerSheet } from './contest-answer-sheet/contest-answer-sheet';
+import { ContestSheet, openContestSheet } from './contest-sheet/contest-sheet';
 import { openHelpSheet } from './help-sheet/help-sheet';
 import { openHideSheet } from './hide-sheet/hide-sheet';
 import type { TargetFlow } from './target-mode/target-flow';
@@ -149,6 +149,20 @@ export class ContestHost {
         return;
       }
     }
+  }
+
+  /** Closes the contest's answer or result sheet: the combat has a question of its own to put in its place (the mount save). */
+  dismissSheet(): void {
+    if (!this.sheetOpen()) {
+      return;
+    }
+    for (const ref of this.deps.dialog.openDialogs) {
+      const sheet = ref.componentInstance;
+      if (sheet instanceof ContestAnswerSheet || sheet instanceof ContestSheet) {
+        ref.close();
+      }
+    }
+    this.deps.bottomSheet.dismiss();
   }
 
   /** Runs a sheet: no other opens meanwhile, and what it answers is told to `onResult`. */

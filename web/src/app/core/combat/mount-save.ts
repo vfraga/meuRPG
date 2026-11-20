@@ -11,6 +11,8 @@ import { dcLabel } from '../format/save-dc';
 import { joinDots, upFirst } from '../format/text';
 import { modifierText } from './combat-dice';
 import { isPlayer, signed } from './combat-view';
+import { isDismountWindow } from './reaction-dismount';
+import { sheetWindow } from './reactions';
 import { whoseTurn } from './whose-turn';
 
 /**
@@ -35,6 +37,12 @@ const SAVE = 'Teste de resistência de Destreza';
 export function ownMountSave(e: Encounter): MountSavePrompt | undefined {
   const p = e.mountSave;
   return p && e.combatants.some((c) => c.id === p.riderId && c.mine) ? p : undefined;
+}
+
+/** Whether the combat asks this player a question about the mount: the rider's save to stay on it, or the dismount after its fall. */
+export function owesMountQuestion(e: Encounter): boolean {
+  const window = sheetWindow(e);
+  return ownMountSave(e) !== undefined || (window !== undefined && isDismountWindow(window));
 }
 
 /** "de Tor" for a character, "do Wight" for a creature. */
