@@ -47,6 +47,8 @@
 
 .seg__item--on {
   border-color: var(--mr-accent);
+  // A heavier edge, so the choice is not the tint alone.
+  box-shadow: inset 0 0 0 1px var(--mr-accent);
   background: var(--mr-accent-soft);
   color: var(--mr-accent-strong);
 }

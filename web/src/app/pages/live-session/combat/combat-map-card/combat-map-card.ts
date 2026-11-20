@@ -1,3 +1,4 @@
+import { NgTemplateOutlet } from '@angular/common';
 import { Component, computed, effect, input, model, output, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -63,6 +64,7 @@ const CROP_MAX_SHARE = 0.6;
 @Component({
   selector: 'app-combat-map-card',
   imports: [
+    NgTemplateOutlet,
     RiderMark,
     AreaOverlay,
     CombatMap,

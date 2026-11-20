@@ -344,8 +344,41 @@ describe('MovePage, mounted', () => {
     expect(input.getAttribute('aria-disabled')).toBe('true');
     const why = el.querySelector('#' + input.getAttribute('aria-describedby'));
     expect(plain(why)).toBe('Nenhum quadrado livre ao lado do Cavalo de guerra.');
+    // The reason sits in the segments' own column, right under the dashed segment, not under the notice row.
+    expect(why?.closest('.move__ridecol')?.querySelector('app-segmented')).not.toBeNull();
     input.click();
     expect(input.checked).toBe(false);
+  });
+
+  it('keeps the icon of the chosen segment: Cavalgar shows the saddle, Desmontar its arrow', () => {
+    const { el } = setup({
+      combatants: ridden,
+      mounts: create(MountOptionsSchema, { mountedOnId: 'cav' }),
+    });
+    const items = Array.from(el.querySelectorAll('.seg__item'));
+    expect(items[0].classList).toContain('seg__item--on');
+    expect(items[0].querySelector('app-saddle-icon')).not.toBeNull();
+    expect(items[0].querySelector('mat-icon')).toBeNull();
+    expect(plain(items[1].querySelector('mat-icon'))).not.toBe('');
+  });
+
+  it('draws the mounted notice as one neutral card and names the pair in the legend', () => {
+    const { el } = setup({
+      combatants: ridden,
+      mounts: create(MountOptionsSchema, { mountedOnId: 'cav' }),
+    });
+    const notice = el.querySelector('[data-testid="mounted-notice"]')!;
+    expect(notice.classList).toContain('mr-notice--neutral');
+    // The lead and the sentence run on, in one paragraph.
+    expect(notice.querySelectorAll('p').length).toBe(1);
+    const mark = el.querySelector('.mr-legend .legend__pair')!;
+    expect(plain(mark.parentElement)).toBe('Montado: o cavaleiro pequeno, na sela');
+    expect(mark.querySelector('app-rider-mark')).not.toBeNull();
+  });
+
+  it('has no "Montado" legend line on foot', () => {
+    const { el } = setup({ combatants: [tor(), mastiff] });
+    expect(el.querySelector('.mr-legend .legend__pair')).toBeNull();
   });
 
   it('leaves only Desmontar on a mount with a turn of its own', () => {

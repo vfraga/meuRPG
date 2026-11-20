@@ -1,3 +1,5 @@
+import { CombatantToken } from '../../../../shared/combatant-token/combatant-token';
+import { RiderMark } from '../../../../shared/combatant-token/rider-mark';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -94,6 +96,7 @@ export type { JumpRequest } from './move-page-view';
   selector: 'app-move-page',
   imports: [
     CombatMap,
+    CombatantToken,
     JumpPanel,
     LivePill,
     MapLayersLegend,
@@ -102,6 +105,7 @@ export type { JumpRequest } from './move-page-view';
     MountPanel,
     MoveAdjust,
     MoveStatus,
+    RiderMark,
     Segmented,
   ],
   templateUrl: './move-page.html',

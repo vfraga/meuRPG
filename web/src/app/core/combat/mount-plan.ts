@@ -41,13 +41,12 @@ function riderOf(mountId: string, combatants: readonly Combatant[]): string {
 /** Why a mount cannot be mounted, in a sentence. The server says nothing of what the viewer does not see (RN-10): a rider
  * that is hidden leaves "Já leva alguém." */
 export function mountRefusalText(choice: MountChoice, combatants: readonly Combatant[]): string {
-  const name = combatants.find((c) => c.id === choice.combatantId)?.label ?? '';
   switch (choice.refusal) {
     case MountRefusal.TOO_SMALL:
       return 'Tamanho menor que o seu: precisa ser maior.';
     case MountRefusal.TOO_FAR:
       // The server's own distance: the measure that refuses (whole squares in feet). A rider that is not placed has none.
-      return `${choice.distanceFt > 0 ? `A ${metersFixed(choice.distanceFt)}` : 'Longe demais'}: chegue ao lado ${ofThe([name])} primeiro.`;
+      return `${choice.distanceFt > 0 ? `A ${metersFixed(choice.distanceFt)}` : 'Longe demais'}: chegue ao lado primeiro.`;
     case MountRefusal.NO_MOVEMENT:
       return choice.costDft === 0
         ? 'Sem deslocamento: não dá para montar.'

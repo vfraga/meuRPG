@@ -666,6 +666,19 @@ describe('CombatMapCard: the "Montado" legend line', () => {
     }
   });
 
+  it('names the pair under a player\'s compact map too, where the other marks stay off', () => {
+    const { el } = mount({
+      isMaster: false,
+      legend: false,
+      compact: true,
+      encounter: encounter({ currentCombatantId: 'p', combatants: [tor, horse] }),
+    });
+    expect(legend(el)).toBe('Montado: o cavaleiro pequeno, na sela');
+    expect(el.querySelectorAll('.legend li').length).toBe(1);
+    const none = mount({ legend: false, compact: true });
+    expect(none.el.querySelector('.legend')).toBeNull();
+  });
+
   it('says nothing when no one rides, or when the mount is not placed', () => {
     expect(legend(mount().el)).not.toContain('Montado');
     const off = { ...horse, placed: false } as typeof horse;

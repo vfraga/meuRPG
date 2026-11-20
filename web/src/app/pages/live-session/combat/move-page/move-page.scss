@@ -226,21 +226,19 @@
     background: var(--mr-ground);
   }
 
-  // Where the screen is short the two buttons share a row, so the dock leaves the map room.
-  @media (max-height: 700px) {
-    .move__buttons {
-      flex-direction: row;
-    }
+  // On a phone or a tablet the two buttons share a row, so the dock leaves the map its height.
+  .move__buttons {
+    flex-direction: row;
+  }
 
-    .move__buttons > .move__go {
-      flex: 1 1 auto;
-      width: auto;
-    }
+  .move__buttons > .move__go {
+    flex: 1 1 auto;
+    width: auto;
+  }
 
-    .move__buttons > .move__cancel {
-      flex: none;
-      width: auto;
-    }
+  .move__buttons > .move__cancel {
+    flex: none;
+    width: auto;
   }
 }
 
@@ -253,19 +251,15 @@
   display: flex;
   flex-direction: column;
   gap: var(--mr-space-3);
-
-  @media (min-width: 1024px) {
-    flex-direction: row;
-  }
 }
 
+// From 1024 px the side column stacks them, both its full width.
 .move__go {
   --mat-button-filled-container-height: 48px;
   width: 100%;
 
   @media (min-width: 1024px) {
     --mat-button-filled-container-height: 44px;
-    width: auto;
   }
 }
 
@@ -280,16 +274,14 @@
 
 .move__cancel {
   --mat-button-outlined-container-height: 48px;
-  --mat-button-outlined-label-text-color: var(--mr-accent-text);
   width: 100%;
 
   @media (min-width: 1024px) {
     --mat-button-outlined-container-height: 44px;
-    width: auto;
   }
 }
 
-// The bold line of the locked-door notice, then its sentence under it (E10-05 9).
+// The bold line of the locked-door notice, then its sentence under it.
 .move__strong {
   display: block;
 }
@@ -340,11 +332,24 @@
     align-items: flex-start;
     gap: var(--mr-space-3);
 
-    .move__seg {
+    .move__ridecol {
       flex: none;
       width: 20rem;
     }
   }
+}
+
+.move__ridecol .move__why {
+  margin: 0 0 var(--mr-space-2);
+}
+
+// The mounted notice is one card, its lead and its sentence running on; it wraps only where the words do not fit.
+.move__mounted {
+  align-items: center;
+  margin-bottom: var(--mr-space-3);
+  padding: var(--mr-space-2) var(--mr-space-3);
+  font-size: var(--mr-font-15);
+  line-height: 20px;
 }
 
 .move__ride-live {
@@ -364,4 +369,20 @@
   mat-icon {
     flex: none;
   }
+}
+
+// The legend's "Montado": a small token with the rider's disc on the saddle, as the map draws the pair.
+.legend__pair {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+}
+
+.move__ridecol .move__seg {
+  margin-bottom: var(--mr-space-2);
+}
+
+// The rule line under the mount panel keeps its distance from the card.
+app-mount-panel + .move__rule {
+  margin-top: var(--mr-space-3);
 }

@@ -101,7 +101,7 @@ The browser draws what the server sends and computes no rule: multiclass prerequ
   Hit dice are written by size everywhere ("5d10 e 1d6").
 - **Creatures** (`creatures-panel`, `creature-card`, `creature-page`): a "Criaturas" panel after "Combate" and "Magias", only for whoever can have a creature; HP numbers reach the owner and the master only (RN-20), and for others the panel does not exist.
   Renaming, dismissing and fixing HP are questions in place (`creature-edit`), never dialogs; a dismissal is a warning `alertdialog` with focus on "Voltar" that states what it costs.
-- **The bonded steed** (`creature-card`, `shared/creatures/steed-ask`, `creatures-panel/steed-away`, `core/creatures/steed-card.ts`): its card has the tag "Montaria vinculada" (link icon) and the subtitle "Cavalo de guerra · Grande · celestial".
+- **The bonded steed** (`creature-card`, `shared/creatures/steed-ask`, `creatures-panel/steed-away`, `core/creatures/steed-card.ts`): its card has the tag "Montaria vinculada" (link icon, accent outline and text) and the subtitle "Cavalo de guerra · Grande · celestial".
   The tag sits under the subtitle on a phone and beside the name from 768 px.
   Its text actions are 44 px targets: "Renomear", the master's "Corrigir PV", "Dispensar" in danger, and "⋮" (a bordered square at the far right) › "Libertar Estrela" in danger (the `link_off` icon) with "Acaba o vínculo: a próxima é outra montaria." under it at 13 px.
   Both questions are asked in place as an `alertdialog`, "Voltar" first and with the focus, the confirm marked `data-confirm`; both call `DismissCreature`, with DISMISS or RELEASE.
@@ -115,20 +115,21 @@ The browser draws what the server sends and computes no rule: multiclass prerequ
   A refusal for the turn or the action closes the question and turns "Dispensar" off (muted) with "Só na vez de Lia: dispensar gasta a ação." or "Você já usou a ação desta vez." linked under the actions with the block icon, until the page says the combat changed.
   The row shows no icons while "Dispensar" is off.
   "· desligado" is for a screen reader only.
-  The visible cue is the muted button and the reason line under it.
+  The visible cue is the muted button, which keeps a dashed border without focus, and the reason line under it.
   The actions stay one row with the ⋮ at its end, and a focused action has the app's rounded focus ring.
-  A bonded steed that is not among the creatures is a dashed row from `GetSummonOptionsResponse.bonded_steed` (the bond outlives an unprepared spell): the muted silhouette, the name, "Cavalo de guerra · celestial · fora da mesa", the dashed tag "Fora", and its own "⋮" › "Libertar Estrela".
+  A bonded steed that is not among the creatures is a dashed row from `GetSummonOptionsResponse.bonded_steed` (the bond outlives an unprepared spell): the muted silhouette, the name (15 px bold sans), the one-line "Cavalo de guerra · celestial", the dashed tag "Fora" (a screen reader hears "Fora da mesa"; the line does not say it twice), and its own "⋮" › "Libertar Estrela".
   Under the cast button of Convocar Montaria (`creatures-panel/steed-cast`): "Traz Estrela de volta, com a mesma forma, o mesmo tipo e os PV cheios." for a steed that is away, and the cost line plus "Com Estrela aqui, os PV voltam cheios." for one that is here.
-  In a combat that holds the character the button is dashed with "Leva 10 minutos: não dá durante um combate."; the panel reads the combat for that only when the character can cast the steed during a session.
+  In a combat that holds the character the button is dashed with the block mark and "Leva 10 minutos: não dá durante um combate." right under it in regular weight; the panel reads the combat for that only when the character can cast the steed during a session.
   The master reads the summon options too, for that row only.
 - **Convocar Montaria** (`shared/summon-sheet`, `steed-choice`, `steed-pick`, `core/creatures/steed.ts`): the summon sheet with three things of its own.
   Its subtitle ends in "um corcel vinculado" ("o seu corcel vinculado" with a bond), the slot is folded from the start ("Espaço de 2º nível · 2 livres", "Mudar"), the list is named "Forma", and each row has the silhouette and "Grande · 18 m · CA 11 · PV 19".
   On the first cast a form the caster cannot ride carries the warning line "Tamanho menor que o necessário para você montar" (`creature-choice-list`'s `warning`, with an icon); the form stays pickable.
   Under the list, "Tipo do corcel" is three segments with the app's words (Celestial, Fada, Ínfero), none picked at first; the footer reads "Escolha a forma e o tipo do corcel." until both are picked, and the button is "Convocar Cavalo de guerra".
-  With a bonded steed there is no list and no type: one fixed row in the chosen row's frame, above the slot (the silhouette, the name, the tag "Mesmo corcel" with the link icon, "Cavalo de guerra · celestial · Grande · 18 m · CA 11 · PV 19"), the line "Estrela volta como era: a mesma forma, o mesmo tipo e os PV cheios. Para outra forma ou outro tipo, liberte Estrela antes, no bloco Criaturas.", and the button "Convocar Estrela".
+  With a bonded steed there is no list and no type: one fixed row in the chosen row's frame, above the slot (the silhouette, the name, the tag "Mesmo corcel" with the link icon (accent outline and text), "Cavalo de guerra · celestial · Grande · 18 m · CA 11 · PV 19"), the line "Estrela volta como era: a mesma forma, o mesmo tipo e os PV cheios. Para outra forma ou outro tipo, liberte Estrela antes, no bloco Criaturas.", and the button "Convocar Estrela".
   "Como funciona" (`app-fold`) holds the spell's notes and the least Intelligence, closed on every screen until the player opens it.
   A list of six rows or fewer shows all of them with no scroller of its own, in a phone's bottom sheet and in a dialog; a longer list scrolls inside itself.
   "Tipo do corcel" sits whole above the pinned footer at 390 by 844 without scrolling.
+  The footer buttons are "Cancelar | Convocar" side by side from 768 px, in that order, and the filled one is on top on a phone.
   The footer says "Gasta um espaço de 2º nível ou maior. Só durante uma sessão, fora de combate.", with only the first sentence in bold; the two refusals read "Agora não há sessão aberta." and "Leva 10 minutos: não dá durante um combate.".
   A choice the server refuses for a bonded steed reads "Estrela já tem forma e tipo. Para escolher outros, liberte Estrela antes."; a call that did not arrive reads "Não deu para convocar agora. Nada foi gasto. Tente de novo.".
 - **XP and level up:** `xp-block` shows XP; `level-up-banner` shows "Pode subir de nível"; the steps page is `pages/level-up`. "A classe mudou" (`changed-content`) lists what a master's change did to this character.

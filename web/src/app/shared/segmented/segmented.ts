@@ -22,8 +22,8 @@ let nextId = 0;
  * "Andar | Saltar" and "Distância | Altura" (E9-06): a radio group drawn as
  * segments, 48 px tall on a phone and 44 px from the tablet up, the same width
  * each. Real radio buttons under the labels, so the arrow keys move the choice
- * and a screen reader hears "Andar, selecionado, 1 de 2"; the chosen one has a
- * check as well as the filled look (never colour alone). `appearance="track"` is the
+ * and a screen reader hears "Andar, selecionado, 1 de 2"; the chosen one has the
+ * filled look and a heavier border, and a check when the segment has no icon of its own (an icon keeps its place). `appearance="track"` is the
  * compact switch of the conversation's composer: the options sit in one rounded,
  * ground-tinted track, 36 px (40 on a phone) high, and the chosen one is a raised
  * bold chip (bold and a border, so never colour alone).
@@ -54,12 +54,12 @@ let nextId = 0;
             (change)="!s.disabled && choose.emit(s.value)"
           />
           @if (appearance() === 'buttons') {
-            @if (s.value === value()) {
-              <mat-icon aria-hidden="true">check</mat-icon>
-            } @else if (s.custom === 'saddle') {
+            @if (s.custom === 'saddle') {
               <app-saddle-icon />
             } @else if (s.icon) {
               <mat-icon aria-hidden="true">{{ s.icon }}</mat-icon>
+            } @else if (s.value === value()) {
+              <mat-icon aria-hidden="true">check</mat-icon>
             }
           }
           {{ s.label }}

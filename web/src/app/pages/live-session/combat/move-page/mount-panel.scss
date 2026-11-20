@@ -13,7 +13,8 @@
 .mp__head {
   display: flex;
   flex-wrap: wrap;
-  align-items: baseline;
+  // The title (an icon and a word) and the rule beside it share the middle of the line.
+  align-items: center;
   justify-content: space-between;
   gap: 0 var(--mr-space-3);
 }
@@ -62,7 +63,8 @@
 
 .mp__line {
   display: flex;
-  align-items: center;
+  // The block mark sits on the reason's first line, not between two.
+  align-items: flex-start;
   gap: var(--mr-space-2);
   font-size: var(--mr-font-14);
   line-height: 18px;
@@ -72,6 +74,7 @@
     flex: none;
     width: 16px;
     height: 16px;
+    margin-top: 1px;
     font-size: 16px;
   }
 }

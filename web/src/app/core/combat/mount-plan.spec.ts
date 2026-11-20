@@ -56,7 +56,7 @@ describe('mount rows', () => {
       'Tamanho menor que o seu: precisa ser maior.',
     );
     expect(why({ combatantId: 'm', refusal: MountRefusal.TOO_FAR, distanceFt: 15 })).toBe(
-      'A 4,5 m: chegue ao lado do Mastim primeiro.',
+      'A 4,5 m: chegue ao lado primeiro.',
     );
     expect(why({ refusal: MountRefusal.NO_MOVEMENT, costDft: 125, missingDft: 50 })).toBe(
       'Falta movimento: custa 3,8 m, restam 2,3 m.',
@@ -76,13 +76,13 @@ describe('mount rows', () => {
       'Tamanho menor que o seu: precisa ser maior.',
     );
     expect(why({ combatantId: 'a', refusal: MountRefusal.TOO_FAR, distanceFt: 10 }, spider)).toBe(
-      'A 3,0 m: chegue ao lado da Aranha gigante primeiro.',
+      'A 3,0 m: chegue ao lado primeiro.',
     );
   });
 
   it('says no distance when the server has none (a rider that is not placed)', () => {
     expect(why({ combatantId: 'm', refusal: MountRefusal.TOO_FAR, distanceFt: 0 })).toBe(
-      'Longe demais: chegue ao lado do Mastim primeiro.',
+      'Longe demais: chegue ao lado primeiro.',
     );
   });
 
