@@ -40,7 +40,7 @@ stateDiagram-v2
   For the players the word stays "Caído", with the counts (public, unless the table hides them from everyone but the owner and the master: see [Table rules in combat](table-rules.md#hidden-death-saves)).
   The app never says someone died before the master confirms.
   `ConfirmDeath` cannot be undone: the character is already dead in `characters`.
-- **Kept counts.** The counts stay on the combatant's row: the ended combat keeps them for the summary ("Caída: 1 sucesso, 1 falha"), and a new combat starts at 0 and 0.
+- **Kept counts.** The counts stay on the combatant's row: the ended combat keeps them for the summary ("Caído: 1 sucesso, 1 falha"), and a new combat starts at 0 and 0.
   A creature never falls: at 0 HP it is defeated and has no death saves (see [Creatures](creatures.md)).
 - **Exhaustion** level 6 goes through the same confirmation (see [Lasting effects](lasting-effects.md)).
 
