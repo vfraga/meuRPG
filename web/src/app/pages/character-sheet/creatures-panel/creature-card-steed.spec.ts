@@ -315,6 +315,7 @@ describe('CreatureCard, a bonded steed', () => {
     const row = getComputedStyle(el.querySelector('.acts')!);
     expect(row.flexWrap).toBe('nowrap');
     expect(row.gap).toBe('0 var(--mr-space-2)');
+    expect(getComputedStyle(off).paddingInline).toBe('var(--mr-space-2)');
     expect(getComputedStyle(off).whiteSpace).not.toBe('nowrap');
     expect(getComputedStyle(off).minWidth).not.toBe('0px');
     expect(getComputedStyle(off).borderRadius).toBe('var(--mr-radius-md)');

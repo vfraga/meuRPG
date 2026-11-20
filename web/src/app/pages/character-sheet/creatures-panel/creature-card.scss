@@ -201,9 +201,32 @@
   gap: 0 var(--mr-space-2);
 }
 
+// Each word has room inside its button, so the focus ring wraps it and clears its neighbours; the first one keeps its text on the card's edge.
+.acts--steed .act:not(.act--more) {
+  position: relative;
+  padding-inline: var(--mr-space-2);
+}
+
+.acts--steed .act:first-child {
+  margin-left: calc(var(--mr-space-2) * -1);
+}
+
 @container (max-width: 420px) {
   .acts--steed:has(.act--off) .act:not(.act--more) .mat-icon {
     display: none;
+  }
+}
+
+// A card narrower than 360 px (a phone, the sheet column at 768 px, the sheet at 1280 px): "· desligado" stays for a screen reader only (the button is muted and
+// aria-disabled, and the reason is under the row), so the three buttons keep one line each.
+@container (max-width: 360px) {
+  .acts--steed .act__off {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
   }
 }
 
@@ -228,6 +251,7 @@
 
 .act__off {
   font-weight: 400;
+  white-space: nowrap;
 }
 
 .acts__why .mat-icon {
