@@ -252,6 +252,9 @@ func (f *reactionFacts) cuttingWordsMaster(kindText, actorText string) string {
 	if re.Waiting { // the roll is not written yet: nothing of it is known
 		return fmt.Sprintf("%s usou Palavras de Interrupção: d%d (%d) subtraído %s%s (aguardando a rolagem).%s", f.who, re.DieSides, re.Die, kindText, actorText, f.by)
 	}
+	if re.Roll == cutRays { // no one roll to read: the rays are not added up
+		return fmt.Sprintf("%s usou Palavras de Interrupção: d%d (%d) subtraído %s%s.%s", f.who, re.DieSides, re.Die, kindText, actorText, f.by)
+	}
 	tail := ""
 	if re.Roll == "attack" || re.Roll == "" {
 		tail = fmt.Sprintf(" contra CA %d: %s", re.AC, outcomeWord(re.Outcome))

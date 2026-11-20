@@ -1,6 +1,7 @@
 package play
 
 import (
+	"encoding/json"
 	"fmt"
 	"slices"
 	"strings"
@@ -666,4 +667,86 @@ func TestAnAnswerWhoseHoldingEventIsGoneStillGoesThrough(t *testing.T) {
 		t.Fatalf("AnswerHeldRoll() = %v, %v; want Pipo's attack settled on the 15", res, err)
 	}
 	a.wantLines(t, e, a.bardTableReaders(), cutPendingMaster, cutPendingPlayers)
+}
+
+// A Scorching Ray of two rays at one lore bard, cut by him: the cast is held in his window, and the answer writes the roll in its own
+// change. No ray's question can be asked (a replay asks only when its attack has one ray) and no one roll says what the cut did, so the
+// line names the die and what it came off and no number or outcome: it never waits for a roll that cannot complete it, and never says
+// "errou" of rays that may have hit.
+func TestACutLineOfASpellAttackOfSeveralRaysDoesNotWaitForever(t *testing.T) {
+	t.Parallel()
+	var bard *charactersv1.Character
+	a := newArmedWith(t, func(a *armed) {
+		a.toren = a.caio.hero(t, a.campaignID, "Toren", "class:fighter", "race:human", 2, scores16(), []string{battleaxe}, nil)
+		a.pens = a.ana.caster(t, a.campaignID, "Pensantus", "class:wizard", "race:human", 3,
+			&rulesv1.AbilityScores{Strength: 10, Dexterity: 14, Constitution: 12, Intelligence: 16, Wisdom: 10, Charisma: 8}, nil, []string{fireBolt},
+			[]string{scorchingRay}, []string{scorchingRay})
+		a.bri = a.bia.hero(t, a.campaignID, "Brisa", "class:fighter", "race:human", 2, scores16(), []string{rapier}, nil)
+		bard = loreBardEnemy(t, a)
+	})
+	e := a.start(t, plan{
+		npcs: []*playv1.Participant{{CharacterId: bard.GetId()}}, npcRolls: []int{3},
+		players: map[string]int32{"Toren": 18, "Pensantus": 10, "Brisa": 1}, reveal: []string{"Bardo"},
+		at: map[string][2]int32{"Toren": {3, 3}, "Bardo": {4, 3}, "Pensantus": {10, 3}, "Brisa": {4, 9}},
+	})
+	e = a.passTo(t, e, "Pensantus")
+	held, err := a.castKey(t, a.ana, e, "Pensantus", scorchingRay, slotOfLevel(2), rayTargets(t, a, map[string]int32{"Bardo": 2}, "Bardo"),
+		withRays(rays([]int32{15}, []int32{15})...), newKey())
+	if err != nil || held.GetCast() != nil || held.GetHeldRollOffer() != nil {
+		t.Fatalf("CastSpell() = %v, %v; want it held in the bard's window", held, err)
+	}
+	w := a.windowOf(t, a.master, playv1.ReactionKind_REACTION_KIND_CUTTING_WORDS)
+	if w == nil {
+		t.Fatalf("the master's windows = %v, want the bard's Cutting Words", a.windows(t, a.master))
+	}
+	a.mustAnswer(t, a.master, e, w.GetId(), cutWith(5))
+	a.wantLines(t, e, a.spellReaders(),
+		"Bardo usou Palavras de Interrupção: d6 (5) subtraído do ataque de Pensantus.",
+		"Bardo usou Palavras de Interrupção: o ataque de Pensantus diminuiu.")
+}
+
+// An event that #949 stored marks its line with "asked" where #1061 reads "waiting": it is read as waiting, pending until the roll of
+// its group is written and completed by it after, for the master and for a player who hears the roll. Its reduction is the whole group's
+// (one bard answered), which is what the line takes off.
+func TestACutLineStoredAsAskedByTheFirstVersionIsStillWaiting(t *testing.T) {
+	t.Parallel()
+	stored := fmt.Sprintf(`{"round":1,"combatant_id":"c-bard","target_id":"c-roller","reaction":{"kind":%q,"used":true,"roll":"attack","die":5,"die_sides":6,"asked":true,"group":"g","reduction":5}}`, reaction.CuttingWords)
+	cut := func(t *testing.T, withRoll bool) *logEntry {
+		t.Helper()
+		events := []playdb.ListEncounterEventsRow{{ID: "cut", Seq: 1, Kind: eventReactionAnswered, Payload: []byte(stored)}}
+		if withRoll {
+			events = append(events, playdb.ListEncounterEventsRow{ID: "roll", Seq: 2, Kind: eventAttackRolled,
+				Payload: []byte(`{"round":1,"combatant_id":"c-roller","target_id":"c-target","cut_group":"g","outcome":"miss","total":7,"target_ac":12}`)})
+		}
+		for _, en := range buildLog(events) {
+			if en.kind == playv1.CombatLogKind_COMBAT_LOG_KIND_REACTION_WINDOW {
+				return en
+			}
+		}
+		t.Fatal("the log has no reaction line")
+		return nil
+	}
+	byID := map[string]playdb.Combatant{"c-bard": {ID: "c-bard", Label: "Bardo"}, "c-roller": {ID: "c-roller", Label: "Goblin"}}
+	line := func(en *logEntry, v combatViewer) string {
+		s, _ := en.reactionLine(t.Context(), v, byID, nil)
+		return s
+	}
+	master, player := combatViewer{userID: "m", master: true}, combatViewer{userID: "p"}
+	pending := cut(t, false)
+	if got, want := line(pending, master), "Bardo usou Palavras de Interrupção: d6 (5) subtraído do ataque de Goblin (aguardando a rolagem)."; got != want {
+		t.Errorf("the master reads %q while the roll is not written, want %q", got, want)
+	}
+	if got, want := line(pending, player), "Bardo usou Palavras de Interrupção: o ataque de Goblin diminuiu."; got != want {
+		t.Errorf("a player reads %q while the roll is not written, want %q", got, want)
+	}
+	done := cut(t, true)
+	if got, want := line(done, master), "Bardo usou Palavras de Interrupção: d6 (5) subtraído do ataque de Goblin: 12 → 7 contra CA 12: errou."; got != want {
+		t.Errorf("the master reads %q once the roll is written, want %q", got, want)
+	}
+	if got, want := line(done, player), "Bardo usou Palavras de Interrupção: o ataque de Goblin errou."; got != want {
+		t.Errorf("a player reads %q once the roll is written, want %q", got, want)
+	}
+	if out, err := json.Marshal(done.ev.Reaction); err != nil || strings.Contains(string(out), `"asked"`) {
+		t.Errorf("the event is written as %s (%v), want no \"asked\" key: only #949's events carry it", out, err)
+	}
 }

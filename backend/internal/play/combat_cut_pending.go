@@ -2,12 +2,15 @@ package play
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"slices"
 
 	"github.com/jackc/pgx/v5"
+	"google.golang.org/protobuf/proto"
 
+	playv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/play/v1"
 	"github.com/PuraFome/meuRPG/backend/internal/play/playdb"
 	"github.com/PuraFome/meuRPG/backend/internal/rules/reaction"
 )
@@ -23,6 +26,21 @@ import (
 // released the replay. An answer written in an earlier change of the same group is not in it; markWaiting marks each one when it
 // is written, so the log completes it from the group (#1061).
 
+// UnmarshalJSON reads the events that #949 stored: its mark of a line that waits for the roll was "asked" (the one answer of the group,
+// with the whole group's reduction), and it means what Waiting does. The key is read, never written: no new event carries it.
+func (r *reactionEvent) UnmarshalJSON(b []byte) error {
+	type plain reactionEvent
+	stored := struct {
+		*plain
+		Asked bool `json:"asked"`
+	}{plain: (*plain)(r)}
+	if err := json.Unmarshal(b, &stored); err != nil {
+		return fmt.Errorf("read a reaction event: %w", err)
+	}
+	r.Waiting = r.Waiting || stored.Asked
+	return nil
+}
+
 // markWaiting marks the answer of a Cutting Words that took something off a roll a window holds, when the held action is an attack or a
 // spell attack. A held check or a damage roll is not marked: its line is not completed this way. An answer that did nothing says so
 // whatever the roll becomes, and is not marked either.
@@ -34,10 +52,38 @@ func (s *Service) markWaiting(ctx context.Context, c *combatTx, w playdb.Reactio
 	if err != nil {
 		return fmt.Errorf("find the hold of a Cutting Words window: %w", err)
 	}
-	if h.Kind == "attack" || h.Kind == "cast" {
+	switch h.Kind {
+	case "attack":
 		re.Waiting, re.Group, re.Reduction = true, w.GroupID, reduction
+	case "cast":
+		var req playv1.CastSpellRequest
+		if err := proto.Unmarshal(h.Request, &req); err != nil {
+			return fmt.Errorf("read the held cast of a Cutting Words window: %w", err)
+		}
+		if severalRays(&req) {
+			re.Roll = cutRays
+		} else {
+			re.Waiting, re.Group, re.Reduction = true, w.GroupID, reduction
+		}
 	}
 	return nil
+}
+
+// cutRays is the Roll of the answer of a Cutting Words that cut a cast of several rays.
+const cutRays = "rays"
+
+// severalRays says a held cast makes more than one attack roll: the rays of a Scorching Ray at one target. Its answer is not marked: no
+// one roll says what the cut did, and the line must not say it hit or missed. The answer reads cutRays, so that its line names the die
+// and what it came off and no numbers or outcome, for the master and the players alike, with or without a question to the roller.
+func severalRays(req *playv1.CastSpellRequest) bool {
+	if req.GetSpellKey() != scorchingRay {
+		return false
+	}
+	rays := 0
+	for _, t := range req.GetTargets() {
+		rays += max(int(t.GetDarts()), 1)
+	}
+	return rays > 1
 }
 
 // answersOf are the answers of this change that belong to the windows of a held action.
@@ -147,8 +193,9 @@ func (b *logBuilder) completeCuts(g *cutGroup) {
 func (r reactionEvent) completedBy(final actionEvent, taken int32) (reactionEvent, bool) {
 	outcome, ac, total := final.Outcome, final.TargetAC, final.Total
 	if len(final.Hits) > 0 {
-		// More than one hit (the rays of a Scorching Ray) cannot reach here: a replay asks only when its attack has one ray, because
-		// holdSpellAttack puts rayCombatants (one per ray) through spellMayAsk, which wants exactly one, so no such roll asks.
+		// More than one hit (the rays of a Scorching Ray) cannot reach here, with a question to the roller or without one: markWaiting
+		// does not mark the answer that cut a cast of several rays (severalRays), so no such line waits for a roll. The guard keeps a
+		// line that did from reading the numbers of one ray.
 		if len(final.Hits) != 1 {
 			return r, false
 		}
