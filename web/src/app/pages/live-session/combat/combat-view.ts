@@ -189,18 +189,16 @@ export class CombatView extends CombatViewPartsDirective {
     effect(() => {
       const e = this.encounter();
       const own = this.own();
-      if (
-        this.isMaster() ||
-        !e ||
-        !own ||
-        e.status !== EncounterStatus.ACTIVE ||
-        this.reactionOpen()
-      ) {
+      if (this.isMaster() || !e || !own || e.status !== EncounterStatus.ACTIVE) {
         return;
       }
-      // One dialog at a time: the contest's answer or result goes before the mount question takes its place.
+      // One dialog at a time: the contest's answer or result goes before the mount question takes its place, whatever else
+      // the combat holds open.
       if (this.contest.sheetOpen() && owesMountQuestion(e)) {
         untracked(() => this.contest.dismissSheet());
+        return;
+      }
+      if (this.reactionOpen()) {
         return;
       }
       untracked(() => this.sheets.reactions.auto(e));

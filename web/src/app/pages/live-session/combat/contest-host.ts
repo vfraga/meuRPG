@@ -22,6 +22,7 @@ import type { CombatState } from '../../../core/combat/combat-state';
 import type { ContestClient } from '../../../core/combat/contest-client';
 import { ContestState } from '../../../core/combat/contest-state';
 import { isSettled } from '../../../core/combat/contest-view';
+import { owesMountQuestion } from '../../../core/combat/mount-save';
 import { helpAllies, helpTargets } from '../../../core/combat/help-view';
 import {
   ContestAnswerSheet,
@@ -68,6 +69,8 @@ export class ContestHost {
   readonly contests = new ContestState();
   /** A contest sheet is on screen: no second one opens over it. */
   readonly sheetOpen = signal(false);
+  /** The sheet that is on screen is a contest's own (the answer or the contest sheet), the one `dismissSheet` may close. */
+  private contestSheetOpen = false;
   /** The questions the player already got a sheet for (this page's life): each opens by itself once. */
   private readonly handled = new Set<string>();
   /** The sheets that were closed while their contest still waited: they come back with the result. */
@@ -105,7 +108,10 @@ export class ContestHost {
     effect(() => {
       const list = this.contests.contests();
       void this.contests.attempts();
-      if (this.sheetOpen() || deps.isMaster()) {
+      const e = deps.encounter();
+      // The combat's own question about the mount comes first: no contest sheet opens while it is owed (the question stays in
+      // `pending`, with the way back, and opens when the mount question is answered).
+      if (this.sheetOpen() || deps.isMaster() || (e && owesMountQuestion(e))) {
         return;
       }
       untracked(() => this.openNext(list));
@@ -156,7 +162,7 @@ export class ContestHost {
 
   /** Closes the contest's answer or result sheet: the combat has a question of its own to put in its place (the mount save). */
   dismissSheet(): void {
-    if (!this.sheetOpen()) {
+    if (!this.sheetOpen() || !this.contestSheetOpen) {
       return;
     }
     for (const ref of this.deps.dialog.openDialogs) {
@@ -169,12 +175,23 @@ export class ContestHost {
   }
 
   /** Runs a sheet: no other opens meanwhile, and what it answers is told to `onResult`. */
-  private track<R>(sheet: Observable<R | undefined>, onResult: (r: R) => void): void {
+  private track<R>(
+    sheet: Observable<R | undefined>,
+    onResult: (r: R) => void,
+    contestOwn = false,
+  ): void {
+    this.contestSheetOpen = contestOwn;
     trackOpen(this.sheetOpen, sheet, {
       next: (r) => {
         if (r !== undefined) {
           onResult(r);
         }
+      },
+      complete: () => {
+        this.contestSheetOpen = false;
+      },
+      error: () => {
+        this.contestSheetOpen = false;
       },
     });
   }
@@ -225,6 +242,7 @@ export class ContestHost {
         contests: this.contests,
       }),
       (r) => this.waitFor('contest', r.contestId),
+      true,
     );
   }
 
@@ -250,6 +268,7 @@ export class ContestHost {
         contests: this.contests,
       }),
       (r) => this.waitFor('contest', r.contestId),
+      true,
     );
   }
 
@@ -272,6 +291,7 @@ export class ContestHost {
         contestId,
       }),
       (r) => this.waitFor('contest', r.contestId),
+      true,
     );
   }
 
@@ -299,6 +319,7 @@ export class ContestHost {
         `${initiator} tenta ${contest?.purpose === ContestPurpose.SHOVE ? 'empurrar' : 'agarrar'} você`,
       ),
       (r) => this.waitFor('answer', r.contestId),
+      true,
     );
   }
 
@@ -385,7 +406,8 @@ export class ContestHost {
   /** "Responder": the question a contest still asks of the player (the sheet was closed without answering). */
   answerPending(): void {
     const c = this.pending()[0];
-    if (!c || this.sheetOpen()) {
+    const e = this.deps.encounter();
+    if (!c || this.sheetOpen() || (e && owesMountQuestion(e))) {
       return;
     }
     if (c.status === ContestStatus.AWAITING_DEFENDER) {

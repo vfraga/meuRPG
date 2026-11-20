@@ -197,12 +197,20 @@ function setup(opts: {
       reactionWindows: opts.windows ?? [],
     } as never),
   );
+  const refs: { componentInstance: object; close: () => void }[] = [];
   const dialog = {
+    openDialogs: refs,
     open: (component: unknown, config: Opened['config']) => {
       opened.push({ component, config });
       const closed = new Subject<unknown>();
       closes.push(closed);
-      return { afterClosed: () => closed.asObservable() };
+      const ref = {
+        componentInstance: Object.create((component as { prototype: object }).prototype) as object,
+        close: () => closed.complete(),
+        afterClosed: () => closed.asObservable(),
+      };
+      refs.push(ref);
+      return ref;
     },
   };
   TestBed.configureTestingModule({
@@ -225,7 +233,10 @@ function setup(opts: {
       { provide: MatDialog, useValue: dialog },
       {
         provide: MatBottomSheet,
-        useValue: { open: () => ({ afterDismissed: () => of(undefined) }) },
+        useValue: {
+          open: () => ({ afterDismissed: () => of(undefined) }),
+          dismiss: () => undefined,
+        },
       },
     ],
   });
@@ -347,6 +358,35 @@ describe('CombatView, the contests of the player (W7-X)', () => {
     el.querySelector<HTMLButtonElement>('[data-testid="contest-pending"] button')!.click();
     await settle(fixture);
     expect(opened.filter((o) => o.component === ContestAnswerSheet)).toHaveLength(2);
+  });
+
+  it('closes the defender’s sheet when the mount question is owed, keeps the question and its way back', async () => {
+    const { fixture, el, opened, state } = setup({
+      current: 'h',
+      windows: [contestWindow()],
+      contests: contestState({ contests: [defending()] }),
+    });
+    await settle(fixture);
+    expect(opened.map((o) => o.component)).toEqual([ContestAnswerSheet]);
+    state.apply(
+      encounter({
+        revision: 9,
+        mode: EncounterMode.THEATRE,
+        mapId: '',
+        gridColumns: 0,
+        gridRows: 0,
+        currentCombatantId: 'h',
+        combatants: [toren, hobgoblin, orla],
+        reactionWindows: [contestWindow()],
+        mountSave: { riderId: 't', mountId: '', cause: 1, saveBonus: 2, bonusKnown: true },
+      } as never),
+    );
+    await settle(fixture);
+    expect(textOf(el.querySelector('[data-testid="contest-pending"]')!)).toBe(
+      'Uma disputa espera a sua resposta. Responder',
+    );
+    // The answer is still owed, and its sheet did not open again over the mount question.
+    expect(opened.filter((o) => o.component === ContestAnswerSheet)).toHaveLength(1);
   });
 
   it('opens the shove’s choice for the one that won it', async () => {

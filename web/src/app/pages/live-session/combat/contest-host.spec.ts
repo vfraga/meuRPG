@@ -13,6 +13,7 @@ import {
   type Encounter,
   type GetTurnOptionsResponse,
   GetTurnOptionsResponseSchema,
+  MountSavePromptSchema,
 } from '../../../../gen/meurpg/play/v1/combat_pb';
 import {
   CheckOptionSchema,
@@ -69,6 +70,7 @@ function setup(
   const opened: Opened[] = [];
   const closes: Subject<unknown>[] = [];
   const refs: { componentInstance: object; close: () => void }[] = [];
+  const dismissed: string[] = [];
   const open = (component: unknown, config: { data: Record<string, unknown> }) => {
     opened.push({ component, data: config.data });
     const closed = new Subject<unknown>();
@@ -94,7 +96,7 @@ function setup(
   const host = runInInjectionContext(TestBed.inject(Injector), () => {
     return new ContestHost({
       dialog: { open, openDialogs: refs } as unknown as MatDialog,
-      bottomSheet: { dismiss: () => undefined } as unknown as MatBottomSheet,
+      bottomSheet: { dismiss: () => dismissed.push('bottom') } as unknown as MatBottomSheet,
       api: api.as() as ContestClient,
       campaignId: () => 'c',
       isMaster: () => master(),
@@ -117,7 +119,7 @@ function setup(
     enc.set(encounter({ combatants: [toren, orla, hob], revision }));
     await settle();
   };
-  return { api, host, opened, closes, options, settle, read, master, enc };
+  return { api, host, opened, closes, options, settle, read, master, enc, dismissed, refs };
 }
 
 describe('ContestHost', () => {
@@ -285,7 +287,7 @@ describe('ContestHost', () => {
     ]);
   });
 
-  it('closes the answer sheet when the mount question has to open, so one dialog is on screen', async () => {
+  it("dismissSheet closes the defender's sheet and brings the contest's own sheet flag down", async () => {
     const s = setup();
     await s.read(
       contestState({
@@ -297,6 +299,46 @@ describe('ContestHost', () => {
     s.host.dismissSheet();
     await s.settle();
     expect(s.host.sheetOpen()).toBe(false);
+  });
+
+  it("closes only a contest's own sheet when the mount question has to open", async () => {
+    const s = setup();
+    s.host.openHide('standard:hide');
+    expect(s.host.sheetOpen()).toBe(true);
+    s.host.dismissSheet();
+    await s.settle();
+    expect(s.host.sheetOpen()).toBe(true);
+    expect(s.dismissed).toEqual([]);
+  });
+
+  it('opens no contest sheet while the mount question is owed, and opens it when it is answered', async () => {
+    const s = setup();
+    s.enc.set(
+      encounter({
+        combatants: [toren, orla, hob],
+        revision: 2,
+        mountSave: create(MountSavePromptSchema, { riderId: 't', mountId: 'h' }),
+      }),
+    );
+    s.api.stateResponse = contestState({
+      contests: [contestView({ id: 'ct1', defenderId: 't', initiatorId: 'h', youAnswer: true })],
+    });
+    await s.settle();
+    s.enc.set(
+      encounter({
+        combatants: [toren, orla, hob],
+        revision: 3,
+        mountSave: create(MountSavePromptSchema, { riderId: 't', mountId: 'h' }),
+      }),
+    );
+    await s.settle();
+    expect(s.opened).toEqual([]);
+    expect(s.host.pending()).toHaveLength(1);
+    s.host.answerPending();
+    expect(s.opened).toEqual([]);
+    s.enc.set(encounter({ combatants: [toren, orla, hob], revision: 4 }));
+    await s.settle();
+    expect(s.opened.map((o) => o.component)).toEqual([ContestAnswerSheet]);
   });
 
   it('opens nothing for the master', async () => {
