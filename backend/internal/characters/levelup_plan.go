@@ -176,6 +176,12 @@ func (s *Service) planLevelUp(ctx context.Context, tx pgx.Tx, q *charactersdb.Qu
 	if err := checkPlannedLevel(t, &plan); err != nil {
 		return levelUpPlan{}, err
 	}
+	// The level's own refusal of a skill comes first, so a pick is never refused twice with two sentences.
+	if plan.refusal == nil {
+		if err := refuseUnfitPick(t.content, m, func() *charactersv1.FullSheet { return t.full }, plan.sheet); err != nil {
+			return levelUpPlan{}, err
+		}
+	}
 	return plan, nil
 }
 

@@ -3,7 +3,9 @@ package characters
 import (
 	"context"
 	"errors"
+	"fmt"
 	"slices"
+	"strings"
 	"time"
 	"unicode"
 	"unicode/utf8"
@@ -91,6 +93,37 @@ func refuseKeptOutPick(content *rules.Content, m authz.Membership, before func()
 		return errUnknownKey("sheet." + field)
 	}
 	return nil
+}
+
+// refuseUnfitPick refuses a new skill, expertise or tool pick that no list the character chooses from allows, with the
+// field of the pick and a sentence that names only the key's own name. A pick the stored sheet holds stays, whether it
+// fits or not; before is nil for a sheet that does not exist yet.
+func refuseUnfitPick(content *rules.Content, m authz.Membership, before func() *charactersv1.FullSheet, after *charactersv1.FullSheet) error {
+	if after == nil {
+		return nil
+	}
+	view := viewContent(content, m)
+	var stored *rules.Build
+	if was := before(); was != nil {
+		b := buildOf(was)
+		stored = &b
+	}
+	field, key, found := view.UnplacedNewPick(stored, buildOf(after))
+	if !found {
+		return nil
+	}
+	return invalidArgument(&fieldError{field: "sheet." + field, err: errors.New(unfitSentence(view, field, key))})
+}
+
+// unfitSentence is the sentence of a pick no list allows, by the kind of pick the field holds.
+func unfitSentence(view *rules.Content, field, key string) string {
+	switch {
+	case strings.HasPrefix(field, "full.skill_proficiency_keys"):
+		return fmt.Sprintf("A perícia %s não está em nenhuma das listas de onde o personagem escolhe perícias.", view.NamePT(key))
+	case strings.HasPrefix(field, "full.expertise_skill_keys"):
+		return fmt.Sprintf("A especialização em %s não está em nenhuma das listas de onde o personagem escolhe especializações.", view.NamePT(key))
+	}
+	return fmt.Sprintf("A ferramenta %s não está em nenhuma das escolhas de ferramenta do personagem.", view.ProficiencyNamePT(key))
 }
 
 // noSheet is the stored sheet of a character that does not exist yet.

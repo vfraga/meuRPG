@@ -476,6 +476,9 @@ func checkNewSheet(content *rules.Content, m authz.Membership, kind string, raw 
 	if err := refuseKeptOutPick(content, m, noSheet, sheet.GetFull()); err != nil {
 		return nil, err
 	}
+	if err := refuseUnfitPick(content, m, noSheet, sheet.GetFull()); err != nil {
+		return nil, err
+	}
 	if err := checkSheetKind(kind, sheet); err != nil {
 		return nil, invalidArgument(err)
 	}
@@ -495,6 +498,9 @@ func checkNewSheet(content *rules.Content, m authz.Membership, kind string, raw 
 // for the master. The ones the stored sheet already has stay.
 func refuseNewChoices(content *rules.Content, m authz.Membership, characterID string, stored, sheet *charactersv1.FullSheet) error {
 	if err := refuseKeptOutPick(content, m, func() *charactersv1.FullSheet { return stored }, sheet); err != nil {
+		return err
+	}
+	if err := refuseUnfitPick(content, m, func() *charactersv1.FullSheet { return stored }, sheet); err != nil {
 		return err
 	}
 	if key, _, found := newArchivedChoice(content, stored, sheet); found {
