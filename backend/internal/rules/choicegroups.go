@@ -564,9 +564,25 @@ func (cb *choiceBuilder) finish() ChoiceSet {
 	}
 	slices.Sort(set.NotOffered)
 	set.NotOffered = slices.Compact(set.NotOffered)
+	cb.keepOutOwners()
 	set.KeptOut = slices.Compact(slices.Sorted(slices.Values(cb.keptOut)))
 	cb.results(&set)
 	return set
+}
+
+// keepOutOwners keeps out the picks stored under the key of an entry the reader's view keeps out (switched off, hidden or
+// retired) that the sheet does not hold: for that reader the entry does not exist, so a new pick under it is kept out and the
+// save answers it as a key that does not exist.
+func (cb *choiceBuilder) keepOutOwners() {
+	for _, k := range cb.b.FeatureChoices {
+		choiceKey, _, ok := SplitScopedChoice(k)
+		if !ok {
+			continue
+		}
+		if base, _, _ := strings.Cut(choiceKey, textSeparator); cb.c.hiddenTo(cb.b, base) {
+			cb.keptOut = append(cb.keptOut, k)
+		}
+	}
 }
 
 // markFamilies blocks, in each choice of a family, the values an earlier choice of the

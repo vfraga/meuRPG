@@ -1303,6 +1303,7 @@ As escolhas cobrem as seções do SRD 5.1 Fighting Style, Draconic Ancestry e Br
   Só o mestre lê um aviso sobre isso.
   Uma escolha nova que nenhuma lista permite é recusada, e a frase nomeia só essa escolha.
   A subida de nível lista as fontes das perícias novas e recusa uma perícia nova que nenhuma delas permita.
+- **Uma escolha sob uma entrada que o mestre fechou.** A escolha nova de um jogador guardada sob a chave de uma entrada que o mestre desligou, ocultou ou arquivou, e que a ficha não tem, é recusada como uma chave que não existe. Uma escolha que a ficha já tem continua.
 - **Criação.** A ficha de um jogador com uma escolha em aberto é recusada ("Criar personagem" explica o que falta), e o editor tem uma etapa "Escolhas". Os NPCs do mestre e as fichas da mesa não são obrigados a isso.
 - **Opções que ainda não podem ser tomadas** (uma invocação que pede nível 5, ou uma magia que a ficha não tem) são listadas, pontilhadas, com o motivo. Duas opções que dão a mesma coisa (a mesma resistência duas vezes) são recusadas.
 - **Uma ficha travada** cuja classe ganhou uma escolha continua jogável. O dono e o mestre leem "N escolhas pendentes", e o jogador completa só as escolhas que faltam, sem mudar mais nada na ficha (RN-01). O mestre também lê "N escolhas em aberto" na página da campanha; um jogador nunca vê as de outro.

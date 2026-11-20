@@ -98,6 +98,7 @@ The choice engine deals one pool of picks to choices that share options, in leve
 A race or subrace trait may carry options too, but there they are a one-time choice of one, not a choice of features.
 Each option is a trait with a server-made key (`trait:<stem>--<option name>@mesa`) that no race lists: it is gained only when picked.
 The pick is stored with the sheet's choices and checked against the options; one outside them is reported as not offered.
+A player's new pick stored under the key of an entry the master switched off, hid or archived, which the sheet does not hold, is refused as a key that does not exist; a pick the sheet holds stays.
 A trait with options takes no `choice` of kind `feature` (refused at `.effects[i].choice`, `bad_value`).
 The character picks one option, never more.
 A feature may offer another feature's options with `from_feature` instead: it carries no options of its own, the option keys stay the source feature's, and the content records which features ask for each option (`askedBy`, apart from `offeredBy`: an asker is no owner, so the option stays hidden with the entry it belongs to), and read time leaves out of the asking choice's pool, and of no other pool, the options of an entry the table keeps out. A pick the sheet already holds stays; a new pick of such an option is refused by the server, where the stored sheet is known, with the answer of a key the content does not have. A pool left with fewer options asks for no more than it lists.
