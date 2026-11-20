@@ -420,3 +420,38 @@ func TestAToolPickOfWhatABackgroundGroupGaveIsRefused(t *testing.T) {
 		t.Errorf("the sheet counts the repeated tool pick")
 	}
 }
+
+// Only a source that gives at least full proficiency, with no condition, is a skill the sheet has apart from the choice.
+func TestASkillPickIsRefusedOnlyForAnUnconditionalFullSource(t *testing.T) {
+	t.Parallel()
+	alt := Effect{Type: "choice", Choice: choiceAlternatives, Count: 1, Alternatives: []ChoiceAlternative{
+		{Kind: altSkill, From: []string{"skill:stealth", "skill:persuasion"}},
+		{Kind: altLanguage, From: []string{"language:elvish", "language:dwarvish"}},
+	}}
+	rows := []struct {
+		name    string
+		effect  Effect
+		refused bool
+	}{
+		{"a full proficiency", Effect{Type: "proficiency", Proficiency: "skill:stealth"}, true},
+		{"an expertise that gives the proficiency", Effect{Type: "proficiency", Proficiency: "skill:stealth", Level: "expertise"}, true},
+		{"an expertise only for those who are proficient", Effect{Type: "proficiency", Proficiency: "skill:stealth", Level: "expertise", OnlyProficient: true}, false},
+		{"half a proficiency", Effect{Type: "proficiency", Proficiency: "skill:stealth", Level: "half"}, false},
+	}
+	for _, r := range rows {
+		t.Run(r.name, func(t *testing.T) {
+			t.Parallel()
+			c, b, _ := altSheet(t, alt, []Effect{r.effect}, nil, altStored(alt, "skill:stealth"))
+			ch := choiceOf(t, c.Choices(b), altKey(alt))
+			if got := optionOf(t, ch, "skill:stealth").Blocked(); got != r.refused {
+				t.Errorf("blocked = %v, want %v", got, r.refused)
+			}
+			if got := slices.Contains(ch.Unmet, "skill:stealth"); got != r.refused {
+				t.Errorf("unmet = %v, want %v", got, r.refused)
+			}
+			if got := missingIssues(Derive(b, c)) == 1; got != r.refused {
+				t.Errorf("the sheet asks the choice again = %v, want %v", got, r.refused)
+			}
+		})
+	}
+}

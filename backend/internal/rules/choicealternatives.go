@@ -285,7 +285,8 @@ func (x *deriver) skillHeldApart(skill string) bool {
 	}
 	return slices.ContainsFunc(x.active, func(a activeEffect) bool {
 		e := a.effect
-		return e.Type == "proficiency" && e.Proficiency == skill && len(e.Tags) == 0 && x.applies(a)
+		return e.Type == "proficiency" && (e.Proficiency == skill || e.Proficiency == "skill:*") && len(e.Tags) == 0 &&
+			!e.OnlyProficient && proficiencyLevelOf(e.Level) >= ProficiencyFull && x.applies(a)
 	})
 }
 
