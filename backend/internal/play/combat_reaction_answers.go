@@ -206,6 +206,9 @@ func (s *Service) answerCuttingWords(ctx context.Context, c *combatTx, w playdb.
 		Kind: w.Kind, Window: w.ID, Used: true, ByMaster: c.master, Roll: t.Roll, Die: clamp32(face, 1, 20), DieSides: clamp32(sides, 1, 20), Ineffect: !effective,
 	}
 	got.ev = actionEvent{Round: c.enc.Round, Secret: reactor.Hidden, Actor: reactor.ID, Target: t.Actor, ReactionBefore: reactor.ReactionUsed, Reaction: re}
+	if err := s.markWaiting(ctx, c, w, re, reduction); err != nil {
+		return err
+	}
 	c.answered = append(c.answered, answeredRef{window: w.ID, ev: re})
 	if _, err := s.closeWindow(ctx, c, w, windowAnswered, reaction.ReasonNone, windowOutcome{ByMaster: c.master, Used: true, Reduction: reduction, Ineffect: !effective}, ""); err != nil {
 		return err

@@ -12,25 +12,28 @@ import (
 	"github.com/PuraFome/meuRPG/backend/internal/rules/reaction"
 )
 
-// The line of a Cutting Words whose held roll asked its roller. A reaction window holds an attack or a spell attack, the windows are
-// answered, and the replay rolls the d20; when the roller is asked about it (a halfling's Lucky, a Bardic Inspiration die) the roll
-// is kept and written only when the answer comes, in a transaction of its own. The bard's answer is written first, so it cannot say
-// what the roll became. Its event is marked (Asked, with the hold's group and what the group took off), the event the answer writes
-// names the group (CutGroup), and the log joins them when it reads: until then the line says nothing of the roll, and once the roll
-// is written it says what a roll that asked nothing says (completeAnswers). No event is ever changed.
+// The line of a Cutting Words that cut a held attack or spell attack. A reaction window holds the roll, the windows are answered one
+// change each, and the d20 is replayed by the change of the last answer; when the roller is asked about it (a halfling's Lucky, a Bardic
+// Inspiration die) the roll is written later, by the answer. Every bard's answer is written before the roll is, so none can say what the
+// roll became. Each effective answer is marked (Waiting, with the hold's group and what it took off), the event of the roll names the
+// group (CutGroup), and the log joins them when it reads: until then the line says nothing of the roll, and once the roll is written it
+// says what it became. No event is ever changed.
 
-// markAsked marks the answers of the windows of a held attack or spell attack whose replay asked its roller, so the log completes them
-// when the roll is written. A held check asks the same way and is not marked: its line is not completed this way, and keeps what the answer wrote when the
-// replay asked, before the roll had a total.
-func markAsked(c *combatTx, h playdb.ReactionHold, windows []playdb.ReactionWindow, st *replayState) {
-	if h.Kind != "attack" && h.Kind != "cast" {
-		return
+// markWaiting marks the answer of a Cutting Words that took something off a roll a window holds, when the held action is an attack or a
+// spell attack. A held check or a damage roll is not marked: its line is not completed this way. An answer that did nothing says so
+// whatever the roll becomes, and is not marked either.
+func (s *Service) markWaiting(ctx context.Context, c *combatTx, w playdb.ReactionWindow, re *reactionEvent, reduction int32) error {
+	if w.HoldID == nil || re.Ineffect {
+		return nil
 	}
-	for _, ref := range answersOf(c, windows) {
-		if ref.ev.Kind == string(reaction.CuttingWords) && !ref.ev.Ineffect { // an answer that did nothing says so whatever the roll becomes
-			ref.ev.Asked, ref.ev.Group, ref.ev.Reduction = true, h.GroupID, st.reduction
-		}
+	h, err := c.q.GetReactionHold(ctx, playdb.GetReactionHoldParams{EncounterID: c.enc.ID, ID: *w.HoldID})
+	if err != nil {
+		return fmt.Errorf("find the hold of a Cutting Words window: %w", err)
 	}
+	if h.Kind == "attack" || h.Kind == "cast" {
+		re.Waiting, re.Group, re.Reduction = true, w.GroupID, reduction
+	}
+	return nil
 }
 
 // answersOf are the answers of this change that belong to the windows of a held action.
@@ -40,10 +43,14 @@ func answersOf(c *combatTx, windows []playdb.ReactionWindow) []answeredRef {
 	})
 }
 
-// cutGroupOfAnswer is the group of the reaction hold behind the roll that the answer being run settles, "" when the roll was no
-// replay of a held action. The hold of the roll is marked as a window's and keeps the key of the request the window held; the
-// event that held that request, written under the key, names the group.
+// cutGroupOfAnswer is the group of the reaction hold behind the roll being written, "" when the roll was no replay of a held action.
+// The replay that asked nothing is run by the answer that released it, which knows its hold. The roll kept for a question is settled by
+// the answer to it: its hold is marked as a window's and keeps the key of the request the window held, and the event that held that
+// request, written under the key, names the group.
 func (s *Service) cutGroupOfAnswer(ctx context.Context, c *combatTx) (string, error) {
+	if c.replay != nil {
+		return c.replay.hold.GroupID, nil
+	}
 	reply, answering := heldReplyOf(ctx)
 	if !answering {
 		return "", nil
@@ -78,28 +85,62 @@ type cutJoin struct {
 	done *reactionEvent
 }
 
+// cutGroup is what the log has read of one hold: the answers that wait for its roll, and the roll once it is written. The roll of a
+// replay that asked nothing is written before the answer of the bard who released it, so either may come first.
+type cutGroup struct {
+	cuts   []*logEntry
+	roll   *actionEvent
+	rollID string
+}
+
 // registerCut remembers an answer that waits for the roll of its group.
 func (b *logBuilder) registerCut(entry *logEntry) {
 	re := entry.ev.Reaction
-	if re.Asked && re.Group != "" && re.Kind == string(reaction.CuttingWords) {
-		b.byCut[re.Group] = append(b.byCut[re.Group], entry)
+	if re.Waiting && re.Group != "" && re.Kind == string(reaction.CuttingWords) {
+		g := b.cutGroup(re.Group)
+		g.cuts = append(g.cuts, entry)
+		b.completeCuts(g)
 	}
 }
 
-// joinCut lands the event of a roll an answer settled on the lines of the Cutting Words of its group: they host it, so that the line's
-// number moves with it, and read what the roll became. An undone roll never gets here, and its lines wait again.
+// joinCut lands the event of the roll of a held action on the lines of the Cutting Words of its group. An undone roll never gets here,
+// and its lines wait again.
 func (b *logBuilder) joinCut(id string, final actionEvent) {
-	for _, host := range b.byCut[final.CutGroup] {
-		if done, ok := host.ev.Reaction.completedBy(final); ok {
-			host.hosts = append(host.hosts, id)
-			host.cut = &cutJoin{by: final, done: &done}
+	g := b.cutGroup(final.CutGroup)
+	g.roll, g.rollID = &final, id
+	b.completeCuts(g)
+}
+
+func (b *logBuilder) cutGroup(id string) *cutGroup {
+	if b.byCut[id] == nil {
+		b.byCut[id] = &cutGroup{}
+	}
+	return b.byCut[id]
+}
+
+// completeCuts reads the roll on every line of the group: they host its event, so that the line's number moves with it, and read what
+// the roll became with the whole of what the group took off.
+func (b *logBuilder) completeCuts(g *cutGroup) {
+	if g.roll == nil {
+		return
+	}
+	var taken int32
+	for _, host := range g.cuts {
+		taken += host.ev.Reaction.Reduction
+	}
+	for _, host := range g.cuts {
+		if done, ok := host.ev.Reaction.completedBy(*g.roll, taken); ok {
+			if host.cut == nil {
+				host.hosts = append(host.hosts, g.rollID)
+			}
+			host.cut = &cutJoin{by: *g.roll, done: &done}
 		}
 	}
 }
 
 // completedBy is the answer as it reads once the roll that settled its question is known, by the rule of completeAnswers: a weapon
 // attack's outcome, armor class and total, or the one roll of a spell attack's; Before is the total with the die back on it.
-func (r reactionEvent) completedBy(final actionEvent) (reactionEvent, bool) {
+func (r reactionEvent) completedBy(final actionEvent, taken int32) (reactionEvent, bool) {
 	outcome, ac, total := final.Outcome, final.TargetAC, final.Total
 	if len(final.Hits) > 0 {
 		if len(final.Hits) != 1 {
@@ -108,8 +149,8 @@ func (r reactionEvent) completedBy(final actionEvent) (reactionEvent, bool) {
 		outcome, ac, total = final.Hits[0].Outcome, final.Hits[0].TargetAC, final.Hits[0].Total
 	}
 	r.Outcome, r.AC, r.After = outcome, ac, total
-	r.Before = total + r.Reduction
-	r.Asked = false
+	r.Before = total + taken
+	r.Waiting = false
 	return r, true
 }
 

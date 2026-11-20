@@ -246,10 +246,10 @@ func (f *reactionFacts) cuttingWords() (string, bool) {
 	return f.cuttingWordsPlayers(target, actorText), true
 }
 
-// cuttingWordsMaster is the master's line: the numbers the roll became, or, while its roller's answer is awaited, none of them.
+// cuttingWordsMaster is the master's line: the numbers the roll became, or, while the roll is not written, none of them.
 func (f *reactionFacts) cuttingWordsMaster(kindText, actorText string) string {
 	re := f.re
-	if re.Asked { // the roll waits for its roller's answer: nothing of it is known yet
+	if re.Waiting { // the roll is not written yet: nothing of it is known
 		return fmt.Sprintf("%s usou Palavras de Interrupção: d%d (%d) subtraído %s%s (aguardando a rolagem).%s", f.who, re.DieSides, re.Die, kindText, actorText, f.by)
 	}
 	tail := ""
@@ -259,11 +259,11 @@ func (f *reactionFacts) cuttingWordsMaster(kindText, actorText string) string {
 	return fmt.Sprintf("%s usou Palavras de Interrupção: d%d (%d) subtraído %s%s: %d → %d%s.%s", f.who, re.DieSides, re.Die, kindText, actorText, re.Before, re.After, tail, f.by)
 }
 
-// cuttingWordsPlayers is the players' line: the outcome in a word, or, while the roll's roller is asked, no more than "diminuiu".
+// cuttingWordsPlayers is the players' line: the outcome in a word, or, while the roll is not written, no more than "diminuiu".
 func (f *reactionFacts) cuttingWordsPlayers(target, actorText string) string {
 	re := f.re
 	verb := "diminuiu"
-	if !re.Asked && (re.Roll == "attack" || re.Roll == "") {
+	if !re.Waiting && (re.Roll == "attack" || re.Roll == "") {
 		verb = "errou"
 		if re.Outcome == outcomeHit || re.Outcome == outcomeCrit {
 			verb = "ainda acertou"

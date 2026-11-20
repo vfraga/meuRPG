@@ -274,7 +274,6 @@ func (s *Service) settleReplay(ctx context.Context, c *combatTx, h playdb.Reacti
 	var done *ambientDoneError
 	switch {
 	case errors.As(err, &done) && done.asking:
-		markAsked(c, h, windows, st)
 		return nil
 	case errors.As(err, &done):
 		c.tellActorVitals(done.event)

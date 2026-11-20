@@ -530,7 +530,7 @@ func buildLog(events []playdb.ListEncounterEventsRow) []*logEntry {
 		byFiring:  map[string]*logEntry{},
 		byMove:    map[string]*logEntry{},
 		moveOf:    map[string]string{},
-		byCut:     map[string][]*logEntry{},
+		byCut:     map[string]*cutGroup{},
 	}
 	var out []*logEntry
 	for _, e := range events {
@@ -568,8 +568,8 @@ type logBuilder struct {
 	// the move that made the offer, so that entry is the one to undo.
 	byMove map[string]*logEntry
 	moveOf map[string]string // offer id -> move id
-	// byCut are the lines of the Cutting Words that wait for the roll of their hold's group (combat_cut_pending.go).
-	byCut map[string][]*logEntry
+	// byCut are the Cutting Words lines of each hold's group and the roll they wait for (combat_cut_pending.go).
+	byCut map[string]*cutGroup
 }
 
 // logHandler fills the entry of an event of one kind and says whether the event is a line

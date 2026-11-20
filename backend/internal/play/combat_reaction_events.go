@@ -21,11 +21,10 @@ type reactionEvent struct {
 	// nothing an undo can take back. Group is the trigger.
 	Hold  bool   `json:"hold,omitempty"`
 	Group string `json:"group,omitempty"`
-	// Asked marks the answer of a Cutting Words whose held roll was replayed and asked its roller (Lucky, a Bardic Inspiration die)
-	// before it was resolved: the numbers of the roll are not known when the event is written. Group is the hold's, which the
-	// event of the roll the answer settles names in CutGroup, and Reduction is what the whole group took off the roll. The log
-	// completes the line from that event when it reads (combat_cut_pending.go); the event itself is never changed.
-	Asked bool `json:"asked,omitempty"`
+	// Waiting marks the answer of a Cutting Words that took something off a held attack or spell attack: the numbers of the roll are not
+	// known when the event is written. Group is the hold's, which the event of the roll names in CutGroup, and Reduction is what this
+	// answer took off. The log completes the line from that event when it reads (combat_cut_pending.go); the event is never changed.
+	Waiting bool `json:"waiting,omitempty"`
 	// Kind is the reaction answered (reaction.Kind), Window the window and Used
 	// false for "Deixar passar".
 	Kind   string `json:"kind,omitempty"`
@@ -86,8 +85,8 @@ type reactionEvent struct {
 	NoRoom   bool   `json:"no_room,omitempty"`
 	// Feather Fall: the creatures saved.
 	Saved2 []string `json:"saved_ids,omitempty"`
-	// Slow Fall: the points taken off the fall (Before and After are the damage around it). On an Asked Cutting Words, what the
-	// group took off the roll; the completed line reads Before = the roll's total + Reduction.
+	// Slow Fall: the points taken off the fall (Before and After are the damage around it). On a Waiting Cutting Words, what
+	// the answer took off the roll.
 	Reduction int32 `json:"reduction,omitempty"`
 	// A reaction that was not answered but closed ("A Contramágica do Mago 2 fechou")
 	// is no event: only answers are written.

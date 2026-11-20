@@ -581,8 +581,8 @@ type actionEvent struct {
 	// ProtectedBy are the shield-bearers whose Protection gave an attack roll disadvantage:
 	// the undo of the attack gives their reaction back.
 	ProtectedBy []string `json:"protected_by,omitempty"`
-	// CutGroup is the group of the reaction hold whose replay asked its roller, on the event of the attack or the cast the answer
-	// settled: the log joins the Cutting Words lines of that group to this event (combat_cut_pending.go).
+	// CutGroup is the group of the reaction hold the roll replays, on the event of the attack or the cast the replay wrote (or
+	// the answer to its roller's question did): the log joins the Cutting Words lines of that group to this event (combat_cut_pending.go).
 	CutGroup string `json:"cut_group,omitempty"`
 	// Parried is the Parry the server used on its own to turn the attack's hit into a miss (combat_parry_auto.go): its
 	// line is written before the attack's own event, and the undo of the attack gives the reaction back.
