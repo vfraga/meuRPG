@@ -5,6 +5,8 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+
+	"github.com/PuraFome/meuRPG/backend/internal/rules/srd51"
 )
 
 // effectHints turns situational effects into Hints: advantage and
@@ -158,6 +160,7 @@ func (x *deriver) checkChoices() {
 	chosen := x.chosenSkills()
 	x.checkSkillCount(allowed, len(chosen))
 	x.checkExpertiseCount(expertiseAllowed)
+	x.checkPickFit(chosen)
 	x.checkProficiencyPicks()
 	x.checkOptionCounts()
 	x.checkCustomBackground()
@@ -170,31 +173,79 @@ func (x *deriver) checkChoices() {
 // Versatility, the bard's Bonus Proficiencies). Race and background skills come
 // automatically and do not count.
 func (x *deriver) skillAllowance() (skills, expertise int) {
+	for _, s := range x.skillSources() {
+		skills += s.Count
+	}
+	for _, s := range x.effectSources("expertise") {
+		expertise += s.Count
+	}
+	return skills, expertise
+}
+
+// skillSources are the lists the player chooses skills from: the starting class's, a later class's multiclass pick, the
+// traits that offer skills and each effect that lets the player choose skills (a choice that names no list allows any).
+func (x *deriver) skillSources() []pickSource {
+	var out []pickSource
 	for i, oc := range x.classes {
 		switch {
 		case i == 0:
-			skills += oc.class.SkillChoices.Choose
+			out = append(out, choiceSource(oc.key, oc.class.SkillChoices))
 		case oc.class.Multiclass.SkillChoices != nil:
-			skills += oc.class.Multiclass.SkillChoices.Choose
+			out = append(out, choiceSource(oc.key, *oc.class.Multiclass.SkillChoices))
 		}
 	}
-	for _, t := range x.ownedTraits() {
-		if t.ProficiencyChoices > 0 && len(t.ProficiencyOptions) > 0 && strings.HasPrefix(t.ProficiencyOptions[0], "proficiency:skill-") {
-			skills += t.ProficiencyChoices
+	for _, f := range x.d.Features {
+		if t, ok := x.c.traits[f.Key]; ok && t.ProficiencyChoices > 0 && len(t.ProficiencyOptions) > 0 && strings.HasPrefix(t.ProficiencyOptions[0], "proficiency:skill-") {
+			out = append(out, traitSkillSource(f.Key, t))
 		}
 	}
+	return append(out, x.effectSources("skill")...)
+}
+
+// choiceSource is a "choose N of these" of the data as a pick source.
+func choiceSource(owner string, ch srd51.Choice) pickSource {
+	return pickSource{Owner: owner, Count: ch.Choose, From: ch.From, Any: len(ch.From) == 0}
+}
+
+// traitSkillSource is the skills a trait lets the player choose, as skill keys.
+func traitSkillSource(key string, t *srd51.Trait) pickSource {
+	s := pickSource{Owner: key, Count: t.ProficiencyChoices}
+	for _, o := range t.ProficiencyOptions {
+		if skill, ok := strings.CutPrefix(o, "proficiency:skill-"); ok {
+			s.From = append(s.From, "skill:"+skill)
+		}
+	}
+	return s
+}
+
+// effectSources are the choice effects of kind (skill or expertise) that apply, one source each. A daily choice is made
+// again each day: it never adds to the picks the player keeps.
+func (x *deriver) effectSources(kind string) []pickSource {
+	var out []pickSource
 	for _, a := range x.active {
-		if a.effect.Type != "choice" || a.effect.DailyChoice {
-			continue // a daily choice is made again each day: it never adds to the skills the player keeps
-		}
-		switch a.effect.Choice {
-		case "skill":
-			skills += a.effect.Count
-		case "expertise":
-			expertise += a.effect.Count
+		if e := a.effect; e.Type == "choice" && !e.DailyChoice && e.Choice == kind {
+			out = append(out, pickSource{Owner: a.owner, Count: e.Count, From: e.From, Any: len(e.From) == 0})
 		}
 	}
-	return skills, expertise
+	return out
+}
+
+// expertiseSources are the lists the player chooses expertise from: each effect that offers it, and the features that give
+// expertise in any skill the character is proficient in (the rogue's Expertise).
+func (x *deriver) expertiseSources() []pickSource {
+	out := x.effectSources("expertise")
+	return append(out, x.featureExpertiseSources()...)
+}
+
+// featureExpertiseSources are the features that give expertise in any skill the character is proficient in.
+func (x *deriver) featureExpertiseSources() []pickSource {
+	var out []pickSource
+	for _, f := range x.d.Features {
+		if feat, ok := x.c.features[f.Key]; ok && feat.ExpertiseChoices > 0 {
+			out = append(out, pickSource{Owner: f.Key, Count: feat.ExpertiseChoices, Any: true})
+		}
+	}
+	return out
 }
 
 // chosenSkills are the skills the player chose, without the automatic ones; an
@@ -235,10 +286,8 @@ func (x *deriver) checkSkillCount(allowed, n int) {
 // checkExpertiseCount adds the expertise of features such as the rogue's
 // Expertise to what the effects give, and compares the sheet's with it.
 func (x *deriver) checkExpertiseCount(allowed int) {
-	for _, f := range x.d.Features {
-		if feat, ok := x.c.features[f.Key]; ok {
-			allowed += feat.ExpertiseChoices
-		}
+	for _, s := range x.featureExpertiseSources() {
+		allowed += s.Count
 	}
 	switch n := len(x.b.Expertise); {
 	case n > allowed:

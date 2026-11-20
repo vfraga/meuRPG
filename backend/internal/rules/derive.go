@@ -53,6 +53,8 @@ type deriver struct {
 	// pickedLanguages and pickedTools are the picks that give a language or a tool (proficiency_picks.go).
 	owned                        map[string]bool
 	pickedLanguages, pickedTools []proficiencyPick
+	// unplacedTools are the tool picks an owner offers that none of its choices takes (pickfit.go).
+	unplacedTools []proficiencyPick
 	// groups are the picks of the background's groups (background_groups.go), read once; groupTyped are the labels of the
 	// typed gaming sets they gave.
 	groups     []groupPick
@@ -369,7 +371,7 @@ type issueGroups struct {
 // issueGroupsOf is the groups of an issue code; a code not listed has none.
 func issueGroupsOf(code string) issueGroups {
 	switch code {
-	case IssueSkillCount, IssueExpertise, IssueMulticlass, IssueSubclassLevel, IssueArmorProficiency:
+	case IssueSkillCount, IssueExpertise, IssuePickFit, IssueMulticlass, IssueSubclassLevel, IssueArmorProficiency:
 		return issueGroups{classes: true, race: true, background: true}
 	case IssueSpellCount, IssueSpellLevel, IssueSpellNotOnList, IssueHitPointRolls, IssueLevel:
 		return issueGroups{classes: true}

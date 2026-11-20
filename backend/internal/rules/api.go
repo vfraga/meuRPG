@@ -1379,6 +1379,9 @@ const (
 	// IssueOptionPrerequisite: an option the character picked whose prerequisite it no longer meets (a class
 	// level, a Pact Boon, a spell or other options); the pick stays on the sheet.
 	IssueOptionPrerequisite = "option_prerequisite"
+	// IssuePickFit: a skill, an expertise or a tool pick that no list the character chooses from takes, though the
+	// count is right. Only the master reads it, and it blocks nothing.
+	IssuePickFit = "pick_fit"
 	// IssueArmorProficiency: armor or a shield without the proficiency.
 	IssueArmorProficiency = "armor_proficiency"
 	// IssueScoreAbove20: a score above 20 without a manual bonus.
