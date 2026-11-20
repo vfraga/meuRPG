@@ -1,6 +1,7 @@
 package characters
 
 import (
+	"strings"
 	"testing"
 
 	"connectrpc.com/connect"
@@ -99,12 +100,16 @@ func TestTheMasterCompletesAToolNoSourceTakes(t *testing.T) {
 }
 
 // The master's unknown-key answers stay main's whatever other picks the sheet has: an unlisted skill beside a tool pick that is
-// no tool is refused as an unknown key as the tool pick alone is. The level up
-// reaches the check without the sheet validation before it, so the check is called as the level up calls it.
+// no tool is refused as an unknown key as the tool pick alone is, and a tool pick of an owner the sheet does not have is
+// accepted, as it was before the fit check, whatever the pick is beside. The level up reaches the check without the sheet
+// validation before it, so the check is called as the level up calls it.
 func TestTheMastersUnknownKeyAnswersHoldWhateverOtherPicksTheSheetHas(t *testing.T) {
 	t.Parallel()
 	u := newUnfitTable(t, "skill:nature")
 	bg := u.master.addEntry(t, u.campaign, toolRace(toolEffect(1, smithsTools)))
+	other := toolRace(toolEffect(1, smithsTools))
+	other.NamePt = "Remador"
+	absent := u.master.addEntry(t, u.campaign, other)
 	owner := u.traitOf(t, bg)
 	content, err := u.h.svc.contentFor(t.Context(), nil, u.campaign)
 	if err != nil {
@@ -112,30 +117,43 @@ func TestTheMastersUnknownKeyAnswersHoldWhateverOtherPicksTheSheetHas(t *testing
 	}
 	view := content.ForMasterPicks()
 	stored := u.toolSheet(t, bg, thievesTools).GetFull()
-	for name, pick := range map[string]string{
-		"no tool": rules.ScopedChoice(rules.ToolPickKey(owner), "skill:nature"),
-	} {
-		t.Run(name, func(t *testing.T) {
-			t.Parallel()
-			held := func() *charactersv1.FullSheet { return stored }
-			withPick := func(skills ...string) *charactersv1.FullSheet {
-				full := proto.Clone(stored).(*charactersv1.FullSheet)
-				full.FeatureChoiceKeys = append(full.FeatureChoiceKeys, pick)
-				if skills != nil {
-					full.SkillProficiencyKeys = skills
-				}
-				return full
-			}
-			alone := refuseUnfitPickIn(view, true, held, withPick())
-			with := refuseUnfitPickIn(view, true, held, withPick("skill:investigation", "skill:insight", "skill:stealth"))
-			if alone == nil || with == nil {
-				t.Fatalf("errors alone = %v, with an unlisted skill = %v, want both refused", alone, with)
-			}
-			if alone.Error() != with.Error() {
-				t.Errorf("with an unlisted skill = %v, want the answer of the tool pick alone: %v", with, alone)
-			}
-		})
+	held := func() *charactersv1.FullSheet { return stored }
+	withPick := func(pick string, skills ...string) *charactersv1.FullSheet {
+		full := proto.Clone(stored).(*charactersv1.FullSheet)
+		full.FeatureChoiceKeys = append(full.FeatureChoiceKeys, pick)
+		if skills != nil {
+			full.SkillProficiencyKeys = skills
+		}
+		return full
 	}
+	unlisted := []string{"skill:investigation", "skill:insight", "skill:stealth"}
+	t.Run("no tool", func(t *testing.T) {
+		t.Parallel()
+		pick := rules.ScopedChoice(rules.ToolPickKey(owner), "skill:nature")
+		alone := refuseUnfitPickIn(view, true, held, withPick(pick))
+		with := refuseUnfitPickIn(view, true, held, withPick(pick, unlisted...))
+		if alone == nil || with == nil {
+			t.Fatalf("errors alone = %v, with an unlisted skill = %v, want both refused", alone, with)
+		}
+		if alone.Error() != with.Error() {
+			t.Errorf("with an unlisted skill = %v, want the answer of the tool pick alone: %v", with, alone)
+		}
+	})
+	t.Run("owner not on the sheet", func(t *testing.T) {
+		t.Parallel()
+		absentOwner := u.traitOf(t, absent)
+		// The sheet validation takes any key the content has for an owner the content has, a tool or not.
+		for _, value := range []string{glassTools, "skill:nature"} {
+			pick := rules.ScopedChoice(rules.ToolPickKey(absentOwner), value)
+			if err := refuseUnfitPickIn(view, true, held, withPick(pick)); err != nil {
+				t.Errorf("a pick of %s for a tool pick of an owner the sheet does not have = %v, want it accepted", value, err)
+			}
+		}
+		pick := rules.ScopedChoice(rules.ToolPickKey(absentOwner), "skill:nature")
+		if err := refuseUnfitPickIn(view, true, held, withPick(pick, unlisted...)); err != nil && !strings.Contains(err.Error(), "skill_proficiency_keys") {
+			t.Errorf("with an unlisted skill beside it = %v, want no answer about the tool pick", err)
+		}
+	})
 }
 
 // The master's preview of a player's level up with a skill no list places: accepted, the issue on the sheet after the level for

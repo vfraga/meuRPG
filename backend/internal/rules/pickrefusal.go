@@ -158,7 +158,10 @@ func (x *deriver) unplacedNewTool(held Build, xs *deriver) (string, string, bool
 
 // UnknownNewToolPick is the field of the first new tool pick of the sheet that is no tool or whose owner the view may not read
 // (a key the content does not have), whatever other picks no list places: UnplacedNewPick names only the first unplaced one.
+// A pick of an owner the sheet does not have is none of these, as unplacedNewTool leaves it alone.
 func (c *Content) UnknownNewToolPick(stored *Build, now Build) (string, bool) {
+	x := c.deriverFor(now)
+	byOwner := x.toolPicksByOwner()
 	var held []string
 	if stored != nil {
 		held = stored.FeatureChoices
@@ -169,6 +172,9 @@ func (c *Content) UnknownNewToolPick(stored *Build, now Build) (string, bool) {
 			continue
 		}
 		field := fmt.Sprintf("%s[%d]", ChoiceKeysField, i)
+		if owner, _ := strings.CutSuffix(choiceKey, toolPickSuffix); byOwner[owner] == nil && !c.HiddenToolOwner(now, field) {
+			continue
+		}
 		if !c.IsToolProficiency(value) || c.HiddenToolOwner(now, field) {
 			return field, true
 		}
