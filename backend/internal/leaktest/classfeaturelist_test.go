@@ -2,6 +2,7 @@ package leaktest
 
 import (
 	"slices"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -62,7 +63,7 @@ func TestAnArchivedClassFeatureIsNoSourceOfAPickForAPlayer(t *testing.T) {
 			if key != "" {
 				r.body = []byte(strings.ReplaceAll(string(r.body), key, "K"))
 			}
-			out[name] = string(r.body) + " HTTP " + string(rune('0'+r.status/100))
+			out[name] = string(r.body) + " HTTP " + strconv.Itoa(r.status/100)
 		}
 		for _, skill := range []string{inside, outside} {
 			put("create "+skill, w.caio.call(charactersv1connect.CharacterServiceCreateCharacterProcedure, &charactersv1.CreateCharacterRequest{
@@ -229,7 +230,7 @@ func TestAnArchivedClassFeatureIsNoSourceOfExpertiseForAPlayer(t *testing.T) {
 				if key != "" {
 					r.body = []byte(strings.ReplaceAll(string(r.body), key, "K"))
 				}
-				out[name+" "+skill] = string(r.body) + " HTTP " + string(rune('0'+r.status/100))
+				out[name+" "+skill] = string(r.body) + " HTTP " + strconv.Itoa(r.status/100)
 			}
 		}
 		return out

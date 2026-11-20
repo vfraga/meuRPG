@@ -1,6 +1,7 @@
 package leaktest
 
 import (
+	"bytes"
 	"strings"
 	"testing"
 
@@ -65,7 +66,7 @@ func TestTheSkillSourcesOfAMulticlassOwnerTheTableKeepsOutReachNoPlayer(t *testi
 		for name, picks := range map[string][]string{"a pick the list holds": {extra}, "a pick the list lacks": {"skill:stealth"}} {
 			got := levelUp(key, picks...)
 			refused("the level-up with "+name, got)
-			if string(got.body) != string(none.body) {
+			if !bytes.Equal(got.body, none.body) {
 				t.Errorf("%s: the level-up with %s is answered %s, with no pick %s", how, name, shorten(got.body), shorten(none.body))
 			}
 		}

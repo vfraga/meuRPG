@@ -45,16 +45,24 @@ func TestTheClosedChoiceIsAnsweredBeforeTheFitOfANewPick(t *testing.T) {
 		put   func(s *charactersv1.FullSheet, key string)
 	}
 	kinds := []kind{
-		{"a class", create(&rulesv1.CreateTableEntryRequest{Body: &rulesv1.CreateTableEntryRequest_TableClass{TableClass: tableClass("Menestrel", feature())}}),
-			func(s *charactersv1.FullSheet, key string) { s.Classes[0].ClassKey = key }},
-		{"a race", create(&rulesv1.CreateTableEntryRequest{Body: &rulesv1.CreateTableEntryRequest_TableRace{TableRace: namedRace("Perito A", inside)}}),
-			func(s *charactersv1.FullSheet, key string) { s.RaceKey = key }},
-		{"a background", create(&rulesv1.CreateTableEntryRequest{Body: &rulesv1.CreateTableEntryRequest_TableBackground{TableBackground: &rulesv1.TableBackground{NamePt: "Artista", Skills: []string{"skill:insight", inside}, Feature: feature()}}}),
+		{
+			"a class", create(&rulesv1.CreateTableEntryRequest{Body: &rulesv1.CreateTableEntryRequest_TableClass{TableClass: tableClass("Menestrel", feature())}}),
+			func(s *charactersv1.FullSheet, key string) { s.Classes[0].ClassKey = key },
+		},
+		{
+			"a race", create(&rulesv1.CreateTableEntryRequest{Body: &rulesv1.CreateTableEntryRequest_TableRace{TableRace: namedRace("Perito A", inside)}}),
+			func(s *charactersv1.FullSheet, key string) { s.RaceKey = key },
+		},
+		{
+			"a background", create(&rulesv1.CreateTableEntryRequest{Body: &rulesv1.CreateTableEntryRequest_TableBackground{TableBackground: &rulesv1.TableBackground{NamePt: "Artista", Skills: []string{"skill:insight", inside}, Feature: feature()}}}),
 			func(s *charactersv1.FullSheet, key string) {
 				s.Background = &charactersv1.FullSheet_BackgroundKey{BackgroundKey: key}
-			}},
-		{"a feat", create(&rulesv1.CreateTableEntryRequest{Body: &rulesv1.CreateTableEntryRequest_TableFeat{TableFeat: &rulesv1.TableFeat{NamePt: "Dom", DescPt: []string{"Texto de teste."}, Effects: []*rulesv1.TableEffect{pick}}}}),
-			func(s *charactersv1.FullSheet, key string) { s.FeatKeys = []string{key} }},
+			},
+		},
+		{
+			"a feat", create(&rulesv1.CreateTableEntryRequest{Body: &rulesv1.CreateTableEntryRequest_TableFeat{TableFeat: &rulesv1.TableFeat{NamePt: "Dom", DescPt: []string{"Texto de teste."}, Effects: []*rulesv1.TableEffect{pick}}}}),
+			func(s *charactersv1.FullSheet, key string) { s.FeatKeys = []string{key} },
+		},
 	}
 	// Each kind has an entry for each way to close: the first copy is switched off, the second archived.
 	type closed struct {
