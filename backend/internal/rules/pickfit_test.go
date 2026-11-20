@@ -522,6 +522,7 @@ func TestUnplacedNewListNamesAPickTheRefusalIsTrueFor(t *testing.T) {
 	})
 	t.Run("one pick over the room: the named pick's removal makes the rest fit", func(t *testing.T) {
 		t.Parallel()
+		// Any pick named here leaves the rest placed, so this holds on a version that names the first in sheet order too.
 		sources := []pickSource{{Owner: "x", Count: 1, From: []string{"skill:a", "skill:b"}}, {Owner: "y", Count: 1, From: []string{"skill:c"}}}
 		list := []string{"skill:a", "skill:b", "skill:c"}
 		field, key, found := unplacedNewList("full.skill_proficiency_keys", sources, list, nil, nil, known)

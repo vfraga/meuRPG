@@ -791,7 +791,7 @@ type CharacterServiceClient interface {
 	//
 	// The one check it leaves to the save is the fit of the picks to their lists: a draft
 	// whose skill, expertise or tool picks no list allows (the class changed under them)
-	// is answered with the lists it has now, and PreviewCharacter and the save refuse the pick.
+	// is answered with the lists it has now, and PreviewCharacter and the save refuse the pick of a player.
 	PreviewChoices(context.Context, *connect.Request[v1.PreviewChoicesRequest]) (*connect.Response[v1.PreviewChoicesResponse], error)
 	// CompleteCharacterChoices makes the choices a sheet left open, on a sheet that is
 	// locked for the player (RN-01) as well as on a draft: it writes only the picks of
@@ -2172,7 +2172,7 @@ type CharacterServiceHandler interface {
 	//
 	// The one check it leaves to the save is the fit of the picks to their lists: a draft
 	// whose skill, expertise or tool picks no list allows (the class changed under them)
-	// is answered with the lists it has now, and PreviewCharacter and the save refuse the pick.
+	// is answered with the lists it has now, and PreviewCharacter and the save refuse the pick of a player.
 	PreviewChoices(context.Context, *connect.Request[v1.PreviewChoicesRequest]) (*connect.Response[v1.PreviewChoicesResponse], error)
 	// CompleteCharacterChoices makes the choices a sheet left open, on a sheet that is
 	// locked for the player (RN-01) as well as on a draft: it writes only the picks of

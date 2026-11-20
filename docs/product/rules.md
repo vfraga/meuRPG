@@ -1293,13 +1293,14 @@ The choices cover the SRD 5.1 sections Fighting Style, Draconic Ancestry and Bre
   A new pick that no list allows is refused for a player, and the sentence names only that pick.
   When several new picks have no room, the sentence names a pick that no list has before one that only competes for room.
   The editor offers the lists of the sheet as it stands: when the class changes, the pickers show the new class's lists and the picks that no longer fit stay ticked, so the player can take them off.
-  Each such pick shows the server's sentence on its own field, one pick at a time, and the save refuses it.
-  A tool pick, and a skill or expertise with no room left inside the lists, get their sentence from the save refusal, on the field of the pick.
+  For a player, each such pick shows the server's sentence on its own field, one pick at a time, and the save refuses it.
+  A tool pick, and a skill or expertise with no room left in the lists, show their sentence on the field of the pick once the save is refused.
   A skill the stored sheet had automatically (from a background, say) is a new pick when a save makes it one.
   A list whose skills the character already has automatically lets the player choose any other skill in its place (SRD 5.1: the same proficiency from two sources is replaced by a different one of the same kind).
-  The master is never refused for it: the pick is saved, and the master reads the issue.
+  The master is never refused for the lists: the pick is saved, and the master reads the issue.
   A level up asks for as many new skills as the sheet after the level may pick, held picks counted, and refuses a player a new skill that no list of the sheet after the level has room for.
   The master's preview of a level up is not refused for it.
+  A level up that takes a new class still refuses a skill outside that class's multiclass list, for the master too.
 - **Creation.** A player's sheet with an open choice is refused ("Criar personagem" explains what is missing), and the editor has a step "Escolhas". The master's NPCs and the table sheets are not held to it.
 - **Options that cannot be taken yet** (an invocation that asks level 5, or a spell the sheet lacks) are listed, dotted, with the reason. Two options that give the same thing (the same resistance twice) are refused.
 - **A locked sheet** whose class gained a choice stays playable. The owner and the master read "N escolhas pendentes", and the player completes only the missing picks, changing nothing else on the sheet (RN-01). The master also reads "N escolhas em aberto" on the campaign page; a player never sees another's.

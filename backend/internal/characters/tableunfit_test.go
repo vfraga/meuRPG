@@ -224,8 +224,8 @@ func TestCompletingChoicesRefusesAToolNoSourceTakesWithTheHeldPicks(t *testing.T
 	}
 }
 
-// A sheet a package brings holds its picks: it imports though no list of its table takes one of them, where the same sheet
-// made now by a player is refused, and the master reads the issue about it.
+// A sheet a package brings is checked as the master's: it imports though no list of its table takes one of its picks, where
+// the same sheet made now by a player is refused, and the master reads the issue about it.
 func TestAnImportedSheetThatDoesNotFitImportsAndTheMasterReadsTheIssue(t *testing.T) {
 	t.Parallel()
 	u := newUnfitTable(t, "skill:survival")
@@ -239,7 +239,7 @@ func TestAnImportedSheetThatDoesNotFitImportsAndTheMasterReadsTheIssue(t *testin
 	if _, err := checkNewSheet(content, player, kindPlayer, proto.CloneOf(sheet)); err == nil {
 		t.Fatal("a sheet made now by a player with a pick no list allows is accepted")
 	}
-	checked, err := checkImportedSheet(content, master, kindPlayer, proto.CloneOf(sheet))
+	checked, err := checkNewSheet(content, master, kindPlayer, proto.CloneOf(sheet))
 	if err != nil {
 		t.Fatalf("the imported sheet is refused: %v", err)
 	}

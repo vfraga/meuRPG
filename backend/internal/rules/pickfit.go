@@ -36,22 +36,21 @@ func (x *deriver) checkPickFit(chosen map[string]bool) {
 	skills, expertise := x.skillAllowance()
 	x.checkFitOf(skillsField, x.skillSources(), skills, x.b.SkillProficiencies, func(k string) bool { return chosen[k] },
 		"A perícia %s não cabe em nenhuma das listas de onde o personagem escolhe perícias.")
-	_, known := x.knownExpertise()
+	known := x.knownExpertise()
 	x.checkFitOf(expertiseField, x.expertiseSources(), expertise, x.b.Expertise, func(k string) bool { return known[k] },
 		"A especialização em %s não cabe em nenhuma das listas de onde o personagem escolhe especializações.")
 	x.checkToolFit()
 }
 
 // knownExpertise are the expertise keys of the sheet that name a skill of the content.
-func (x *deriver) knownExpertise() (list []string, known map[string]bool) {
-	known = map[string]bool{}
+func (x *deriver) knownExpertise() map[string]bool {
+	known := map[string]bool{}
 	for _, s := range x.b.Expertise {
 		if _, ok := x.c.skills[s]; ok {
 			known[s] = true
-			list = append(list, s)
 		}
 	}
-	return list, known
+	return known
 }
 
 // checkFitOf places the sheet's list (the entries counted: keys, each once) in the sources and gives an issue to each one

@@ -24,6 +24,7 @@ var infusionSites = map[string]string{
 	"Service.newLevelUpTarget":       "loads: the records of the character, kept in the target's build",
 	"levelUpTarget.buildOf":          "loads: the target's records on the planned sheet",
 	"Service.PreviewLevelUp":         "loads: the planned sheet is built with the target's records",
+	"levelUpOptionsFor":              "given: the target's build carries the records; it reads the skills, which no infusion changes",
 	"checkPlannedLevel":              "loads: the planned sheet is built with the target's records",
 	"Service.fullFighter":            "loads: the combat's armor class and attacks",
 	"Service.infusionViewOf":         "loads: the records of the character the infusion call works on",

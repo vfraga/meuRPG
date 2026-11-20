@@ -74,7 +74,7 @@ A table feature has effects of these types only; anything else is `forbidden_eff
 | `extra_damage` | See [Extra damage](#extra-damage). May carry `while`. |
 | `power_attack` | See [Power attack](#power-attack). |
 | `choice` | Picks among SRD options (a key the SRD has) or, for kind `feature`, among the option list of a table feature. Kinds: `skill`, `expertise`, `cantrip`, `spell`, `language`, `tool`, `feature`, `feat`, and, in a feat only, `ability` and `damage_type` (see [Feat options and picks](#feat-options-and-picks)). A `feature` choice never asks for more than the options it lists. A `tool` choice may carry `filter.proficiency_kinds` (`weapon`, `tool`, `other`, each once, at most 3) in place of `from`, and offers every catalog proficiency of those kinds, computed at read time; its `from` may name proficiencies of those kinds too, and a write, an import or a package that names a key of another kind there is refused (at `.from`, `bad_value`; a package reports an invalid entry), while an entry stored with one loads: the pool leaves the key out and the master reads an issue on the entry (`loaded_with_issues`). A `feature` choice may carry `from_feature`, the key of a class or subclass feature with options (never an option, itself, the invocations or a feature that offers another's options), and offers that feature's options; at read time the pool of that choice leaves out the options of an entry the table switched off (for a player; the master reads them) or archived (for everyone) unless the sheet holds the entry, and asks for no more than it lists; a sheet that already holds such a pick keeps it, and a new pick naming one is refused as an unknown key. `filter` and `from_feature` are refused together with `from`, `set` and each other. |
-| `choice` (skill, expertise or tool) `from` | A choice's `from` is enforced per effect: each effect is a source with its own count and list, and an empty list allows any key. The sheet's picks are matched to the sources, so a pick is placed in any source that allows it. A stored sheet whose picks do not fit still saves, levels up and plays: the picks count and give what they give, and the master alone reads the `pick_fit` issue. A new pick no source has room for is refused at its field for a player, and saved for the master, who reads the `pick_fit` issue; the sentence says whether no list has it or the lists that have it are full. `Content.UnplacedNewPick` names it: a pick no list has before one that only competes for room, otherwise the first in sheet order. A skill the stored sheet had automatically is a new pick when the save makes it one. A list whose skills the sheet has automatically gives a free choice of any skill for each of them (SRD 5.1: the same proficiency from two sources is replaced by another of the same kind), in the allowance, `skills_allowed` and the refusal. The editor reads the lists from `PreviewChoices`: the skills any source allows, and the expertise when every source names a list. `PreviewChoices` answers a draft whose picks no list allows (the class changed under them) with the lists the draft has now, and never refuses it for the fit; `PreviewCharacter` and the save refuse the pick at its field, and the editor shows that sentence on the pick, the first unplaced pick at a time. A tool pick, and a skill or expertise with no room left inside the lists, get their sentence from the save refusal. A level up asks for what the sheet after the level may pick (the feats and options it loses left out, as the sheet reads it) less what it held or was allowed before, one number for the offer, the subclass part and the check, and refuses a player a new skill no source of the sheet after the level has room for, and never the master's preview (`CheckLevelUpOfMaster`). The options carry the level's own skill sources (`LevelUpOptions.skill_sources`, `LevelUpSubclass.skill_sources`); no screen reads them yet. |
+| `choice` (skill, expertise or tool) `from` | See [Where picks come from](#where-picks-come-from). |
 | `ability_increase` | Feats only. `count` different abilities from `from`, `value` 1 or 2; at most one per feat. The sheet keeps the result in `ExtraAbilityBonuses`. |
 | `ambush` | See [Ambush](#ambush). |
 | `reroll` | See [Reroll](#reroll). |
@@ -180,6 +180,31 @@ Checked at its fields:
 
 `Derive` fills `Derived.Maneuvers` from the effects of what the character has (picked options included), with the die's sides worked out for the level, and only when the resource exists at that level; a `value` that gives fewer than 2 or more than 100 sides is ignored with a notice.
 A goad is a damage die with a rider: the target makes a Wisdom save against `Maneuver.SaveDC` (8 + proficiency bonus + the `ability` modifier) and, on a failure, takes the combat effect `effect:goaded` until the end of the attacker's next turn. That effect is one `attack_disadvantage` modifier with `except_source`, so the target's attacks against anyone but the goader have disadvantage.
+## Where picks come from
+
+A choice's `from` is enforced per effect: each effect is a source with its own count and list, and an empty list allows any key.
+The sheet's picks are matched to the sources, so a pick is placed in any source that allows it.
+A stored sheet whose picks do not fit still saves, levels up and plays: the picks count and give what they give.
+The master alone reads the `pick_fit` issue on such a sheet.
+A new pick no source has room for is refused at its field for a player.
+For the master it is saved, and the master reads the `pick_fit` issue.
+The sentence says whether no list has the pick or the lists that have it are full.
+`Content.UnplacedNewPick` names the pick: one no list has before one that only competes for room, otherwise the first in sheet order.
+A skill the stored sheet had automatically is a new pick when the save makes it one.
+A list whose skills the sheet has automatically gives a free choice of any skill for each of them (SRD 5.1: the same proficiency from two sources is replaced by another of the same kind).
+That holds in the allowance, in `skills_allowed` and in the refusal.
+The editor reads the lists from `PreviewChoices`: the skills any source allows, and the expertise when every source names a list.
+`PreviewChoices` answers a draft whose picks no list allows (the class changed under them) with the lists the draft has now, and never refuses it for the fit.
+`PreviewCharacter` and the save refuse the pick of a player at its field, and the editor shows that sentence on the pick, one pick at a time.
+A tool pick, and a skill or expertise with no room left inside the lists, get their sentence from the save refusal.
+A level up asks for what the sheet after the level may pick (the feats and options it loses left out, as the sheet reads it) less what it held or was allowed before.
+That is one number for the offer, the subclass part and the check.
+`LevelUpCharacter` refuses a player a new skill that no source of the sheet after the level has room for.
+`LevelUpCharacter` is player-only, and the master's preview of a level up (`CheckLevelUpOfMaster`) is not refused for it.
+The master's multiclass skill outside the new class's list stays refused.
+The options carry the level's own skill sources (`LevelUpOptions.skill_sources`, `LevelUpSubclass.skill_sources`).
+No screen reads them yet.
+
 ## Costs, healing actions and hooks
 
 A `grant_action` spends a resource, heals and gives temporary hit points; an `on_event` runs the same results on the owner's events.

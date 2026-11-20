@@ -20,10 +20,13 @@ The only differences are:
 - the new hit points entry (1 up to the die) with the earlier levels equal;
 - exactly the cantrips and spells known or in the spellbook that the table gives (two per level for the Wizard), and new prepared spells, none removed;
 - the subclass at its level;
-- exactly the options, skills and expertise the level's features give, and any choice an earlier level left open (`late_choice`).
+- the options the level's features give, the skills and expertise the sheet after the level may pick beyond what it held, and any choice an earlier level left open (`late_choice`).
+
+A player's new skill or expertise also needs room in a list of the sheet after the level.
 
 Everything else (name, race, background, base scores, armor, shield, weapons, the other classes) is `locked_field`.
 At the end the new sheet may not have an `Issue` the old one lacked (a spell outside the class list or above the level, too many prepared): that is `sheet_issue`.
+`pick_fit`, the master's advisory, is never a `sheet_issue`.
 
 **Refusals.**
 Each refusal is a `*LevelUpError` with the field (in the proto's names, e.g. `full.cantrip_keys`) and a stable reason code, which the screen translates to Portuguese; the message is never read.

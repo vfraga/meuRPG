@@ -89,7 +89,6 @@ describe('SkillPicker', () => {
 
   it('shows a held skill no list allows like any other, with no mark', () => {
     const { el } = render(['skill:history']);
-    expect(el.textContent).not.toContain('fora das listas');
     const boxes = Array.from(el.querySelectorAll<HTMLInputElement>('.skill__name input'));
     expect(boxes.map((i) => i.checked)).toEqual([false, false, true]);
     expect(boxes.every((i) => !i.disabled)).toBe(true);

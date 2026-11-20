@@ -4345,10 +4345,10 @@ export type LevelUpOptions = Message<"meurpg.characters.v1.LevelUpOptions"> & {
   swapGroups: LevelUpSwapGroup[];
 
   /**
-   * The lists the level's new skills come from: the class's multiclass pick when the
-   * level takes a new class, and each feature of the level that lets the player choose
-   * skills. skill_choices stays the total.
-   * LevelUpCharacter judges a new skill against the sources of the sheet after the level, not against these alone (SKILLS).
+   * The lists the level's new skills come from: the class's multiclass pick when the level takes a new class,
+   * and each feature of the level that lets the player choose skills.
+   * skill_choices is how many new skills the level asks for besides that multiclass pick.
+   * For a player, LevelUpCharacter refuses a new skill that no list of the sheet after the level has room for.
    *
    * @generated from field: repeated meurpg.characters.v1.LevelUpSkillSource skill_sources = 45;
    */
@@ -4727,7 +4727,7 @@ export type LevelUpSubclass = Message<"meurpg.characters.v1.LevelUpSubclass"> & 
 
   /**
    * The lists the subclass's new skills come from, as LevelUpOptions.skill_sources.
-   * skill_choices stays the total.
+   * skill_choices is how many skills the subclass adds.
    *
    * @generated from field: repeated meurpg.characters.v1.LevelUpSkillSource skill_sources = 15;
    */
@@ -10215,7 +10215,7 @@ export const CharacterService: GenService<{
    *
    * The one check it leaves to the save is the fit of the picks to their lists: a draft
    * whose skill, expertise or tool picks no list allows (the class changed under them)
-   * is answered with the lists it has now, and PreviewCharacter and the save refuse the pick.
+   * is answered with the lists it has now, and PreviewCharacter and the save refuse the pick of a player.
    *
    * @generated from rpc meurpg.characters.v1.CharacterService.PreviewChoices
    */

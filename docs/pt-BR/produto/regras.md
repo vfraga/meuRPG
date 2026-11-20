@@ -1293,13 +1293,14 @@ As escolhas cobrem as seções do SRD 5.1 Fighting Style, Draconic Ancestry e Br
   Uma escolha nova que nenhuma lista permite é recusada para um jogador, e a frase nomeia só essa escolha.
   Quando várias escolhas novas ficam sem vaga, a frase nomeia uma escolha que nenhuma lista tem antes de uma que só disputa vaga.
   O editor oferece as listas da ficha como ela está: quando a classe muda, os seletores mostram as listas da nova classe e as escolhas que deixaram de caber continuam marcadas, para o jogador poder desmarcá-las.
-  Cada uma delas mostra a frase do servidor no próprio campo, uma escolha de cada vez, e o salvamento a recusa.
-  Uma ferramenta, e uma perícia ou especialização sem vaga dentro das listas, recebem a frase da recusa do salvamento, no campo da escolha.
+  Para um jogador, cada uma delas mostra a frase do servidor no próprio campo, uma escolha de cada vez, e o salvamento a recusa.
+  Uma ferramenta, e uma perícia ou especialização sem vaga nas listas, mostram a frase no campo da escolha depois que o salvamento é recusado.
   Uma perícia que a ficha guardada tinha automaticamente (de um antecedente, por exemplo) é uma escolha nova quando um salvamento a torna escolha.
   Uma lista cujas perícias o personagem já tem automaticamente deixa o jogador escolher qualquer outra perícia no lugar (SRD 5.1: a mesma proficiência de duas fontes é trocada por outra do mesmo tipo).
-  O mestre nunca é recusado por isso: a escolha é salva, e o mestre lê o aviso.
+  O mestre nunca é recusado por causa das listas: a escolha é salva, e o mestre lê o aviso.
   A subida de nível pede tantas perícias novas quanto a ficha depois do nível pode escolher, contando as que já tem, e recusa a um jogador uma perícia nova para a qual nenhuma lista da ficha depois do nível tem vaga.
   A prévia de subida de nível do mestre não é recusada por isso.
+  Uma subida de nível que toma uma classe nova ainda recusa, também para o mestre, uma perícia fora da lista de multiclasse dessa classe.
 - **Criação.** A ficha de um jogador com uma escolha em aberto é recusada ("Criar personagem" explica o que falta), e o editor tem uma etapa "Escolhas". Os NPCs do mestre e as fichas da mesa não são obrigados a isso.
 - **Opções que ainda não podem ser tomadas** (uma invocação que pede nível 5, ou uma magia que a ficha não tem) são listadas, pontilhadas, com o motivo. Duas opções que dão a mesma coisa (a mesma resistência duas vezes) são recusadas.
 - **Uma ficha travada** cuja classe ganhou uma escolha continua jogável. O dono e o mestre leem "N escolhas pendentes", e o jogador completa só as escolhas que faltam, sem mudar mais nada na ficha (RN-01). O mestre também lê "N escolhas em aberto" na página da campanha; um jogador nunca vê as de outro.

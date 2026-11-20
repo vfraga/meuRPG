@@ -97,7 +97,7 @@ func refuseKeptOutPick(content *rules.Content, m authz.Membership, before func()
 
 // refuseUnfitPick refuses a new skill, expertise or tool pick that no list the character chooses from allows, with the
 // field of the pick and a sentence that names only the key's own name. A pick the stored sheet holds stays, whether it
-// fits or not; before is nil for a sheet that does not exist yet. The master is never refused: a pick no list allows is saved
+// fits or not; before returns nil for a sheet that does not exist yet. The master is never refused: a pick no list allows is saved
 // and shows as the fit issue on the master's reads.
 func refuseUnfitPick(content *rules.Content, m authz.Membership, before func() *charactersv1.FullSheet, after *charactersv1.FullSheet) error {
 	if after == nil || isMaster(m) {

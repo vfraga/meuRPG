@@ -55,8 +55,8 @@ export class EditorServerDraft {
       : pageNotReady();
   });
   /**
-   * The pick of the draft the server cannot place, with its sentence (`PreviewCharacter` refuses the draft with the
-   * first such pick); `null` when the draft fits, or the server refuses it for another reason. Asked only while the
+   * The pick of the draft the server cannot place, with its sentence (`PreviewCharacter` refuses the draft with one
+   * such pick); `null` when the draft fits, or the server refuses it for another reason. Asked only while the
    * draft holds a skill or an expertise that the lists `PreviewChoices` answers leave out (the class changed under the
    * pick): that answer no longer refuses such a draft, so the sentence comes from here.
    */

@@ -840,15 +840,15 @@ type levelGains struct {
 	skills    int
 	expertise int
 	cantrips  int
-	// skillSources and expertiseSources are the lists the level's skills and expertise come from, one per choice.
-	skillSources, expertiseSources []pickSource
+	// skillSources are the lists the level's skills come from, one per choice.
+	skillSources []pickSource
 }
 
 func (g levelGains) plus(o levelGains) levelGains {
 	return levelGains{
 		choices: slices.Concat(g.choices, o.choices), skills: g.skills + o.skills,
 		expertise: g.expertise + o.expertise, cantrips: g.cantrips + o.cantrips,
-		skillSources: slices.Concat(g.skillSources, o.skillSources), expertiseSources: slices.Concat(g.expertiseSources, o.expertiseSources),
+		skillSources: slices.Concat(g.skillSources, o.skillSources),
 	}
 }
 
@@ -856,10 +856,9 @@ func (g levelGains) plus(o levelGains) levelGains {
 type levelAsked struct{ skills, expertise int }
 
 // levelAsk is how many skills and how much expertise the level asks: what the sheet after the level (bare, nothing chosen
-// at the level) may pick in all, as the sheet reads it (skillAllowance, with the picks held counted and the feats and options
-// the sheet loses left out), less what the sheet
-// before had: its own allowance or, when it holds more picks than that, the picks it holds. A level never asks for less
-// than none.
+// at the level) may pick in all, as the sheet reads it (skillAllowance, with the picks held counted and the feats and
+// options the sheet loses left out), less what the sheet before had: its own allowance or, when it holds more picks
+// than that, the picks it holds. A level never asks for less than none.
 func (c *content) levelAsk(before, bare Build) (skills, expertise int) {
 	x := c.deriverFor(bare)
 	allowed, expertiseAllowed := x.skillAllowance()
@@ -908,9 +907,6 @@ func (c *content) featureGains(keys []string, subclass string) levelGains {
 // addFeatureGains adds to g what feature f (key fk) asks the player to choose.
 func (c *content) addFeatureGains(g *levelGains, fk string, f *srd51.Feature, subclass string) {
 	g.expertise += f.ExpertiseChoices
-	if f.ExpertiseChoices > 0 {
-		g.expertiseSources = append(g.expertiseSources, pickSource{Owner: fk, Count: f.ExpertiseChoices, Any: true})
-	}
 	choose := f.OptionsChoose
 	for _, e := range c.effects[fk] {
 		if e.Type == "choice" {
@@ -936,7 +932,6 @@ func (g *levelGains) addChoiceEffect(fk string, e *Effect, choose int) int {
 		// table's say it in a choice effect.
 		if isTableKey(fk) {
 			g.expertise += e.Count
-			g.expertiseSources = append(g.expertiseSources, pickSource{Owner: fk, Count: e.Count, From: e.From, Any: len(e.From) == 0})
 		}
 	case "skill":
 		g.skills += e.Count
@@ -1224,22 +1219,21 @@ func CheckLevelUp(before, after Build, c *Content) error {
 // excused only by a swap of a table feature's options that ch sent for it (or by the warlock's invocation swap), not
 // by one the offer merely allows.
 func CheckLevelUpOf(before, after Build, ch LevelUpChoices, c *Content) error {
-	if ch.SwapInvocation != "" && ch.Class != classWarlock {
-		return refuse(levelUpChoicesField, LevelUpReasonFeatureChoice, "an option was removed")
-	}
-	if err := checkLevelUp(before, after, sentSwaps{known: true, swaps: ch.FeatureSwaps}, c.c); err != nil {
-		return err
-	}
-	return nil
+	return checkLevelUpOf(before, after, ch, c, false)
 }
 
 // CheckLevelUpOfMaster is CheckLevelUpOf for the master: the count of the new skills and expertise is the level's, as for
 // a player, but a new pick no source of the sheet places is not refused (the master reads the fit issue about it).
 func CheckLevelUpOfMaster(before, after Build, ch LevelUpChoices, c *Content) error {
+	return checkLevelUpOf(before, after, ch, c, true)
+}
+
+// checkLevelUpOf is the check of both; master holds no new skill or expertise to the sheet's lists.
+func checkLevelUpOf(before, after Build, ch LevelUpChoices, c *Content, master bool) error {
 	if ch.SwapInvocation != "" && ch.Class != classWarlock {
 		return refuse(levelUpChoicesField, LevelUpReasonFeatureChoice, "an option was removed")
 	}
-	if err := checkLevelUp(before, after, sentSwaps{known: true, swaps: ch.FeatureSwaps, anyList: true}, c.c); err != nil {
+	if err := checkLevelUp(before, after, sentSwaps{known: true, swaps: ch.FeatureSwaps, anyList: master}, c.c); err != nil {
 		return err
 	}
 	return nil

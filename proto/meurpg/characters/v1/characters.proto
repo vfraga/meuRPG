@@ -727,7 +727,7 @@ service CharacterService {
   //
   // The one check it leaves to the save is the fit of the picks to their lists: a draft
   // whose skill, expertise or tool picks no list allows (the class changed under them)
-  // is answered with the lists it has now, and PreviewCharacter and the save refuse the pick.
+  // is answered with the lists it has now, and PreviewCharacter and the save refuse the pick of a player.
   rpc PreviewChoices(PreviewChoicesRequest) returns (PreviewChoicesResponse) {
     option idempotency_level = IDEMPOTENT;
   }
@@ -2893,10 +2893,10 @@ message LevelUpOptions {
   // the rule and whether the level has an Ability Score Improvement: `group` is the feature's key.
   // Their swap is LevelUpChoices.swap_feature_options.
   repeated LevelUpSwapGroup swap_groups = 44;
-  // The lists the level's new skills come from: the class's multiclass pick when the
-  // level takes a new class, and each feature of the level that lets the player choose
-  // skills. skill_choices stays the total.
-  // LevelUpCharacter judges a new skill against the sources of the sheet after the level, not against these alone (SKILLS).
+  // The lists the level's new skills come from: the class's multiclass pick when the level takes a new class,
+  // and each feature of the level that lets the player choose skills.
+  // skill_choices is how many new skills the level asks for besides that multiclass pick.
+  // For a player, LevelUpCharacter refuses a new skill that no list of the sheet after the level has room for.
   repeated LevelUpSkillSource skill_sources = 45;
 
   // Multiclassing (SRD 5.1, "Multiclassing"). is_new_class says the character
@@ -3051,7 +3051,7 @@ message LevelUpSubclass {
   bool prepares = 12;
   int32 prepared_max_after = 13;
   // The lists the subclass's new skills come from, as LevelUpOptions.skill_sources.
-  // skill_choices stays the total.
+  // skill_choices is how many skills the subclass adds.
   repeated LevelUpSkillSource skill_sources = 15;
 }
 

@@ -43,7 +43,7 @@ const (
 // PreviewChoices implements charactersv1connect.CharacterServiceHandler.
 //
 // It answers a draft whose picks no list allows (the class changed under them) with the lists the draft has now:
-// the fit of the picks is the save's refusal (and PreviewCharacter's), not this answer's. Every other check of the
+// the fit of the picks is the save's refusal of a player (and PreviewCharacter's), not this answer's. Every other check of the
 // save still holds, so a player's answer never carries anything of an entry the master switched off or archived.
 func (s *Service) PreviewChoices(
 	ctx context.Context,

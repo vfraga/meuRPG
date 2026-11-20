@@ -9302,10 +9302,10 @@ type LevelUpOptions struct {
 	// the rule and whether the level has an Ability Score Improvement: `group` is the feature's key.
 	// Their swap is LevelUpChoices.swap_feature_options.
 	SwapGroups []*LevelUpSwapGroup `protobuf:"bytes,44,rep,name=swap_groups,json=swapGroups,proto3" json:"swap_groups,omitempty"`
-	// The lists the level's new skills come from: the class's multiclass pick when the
-	// level takes a new class, and each feature of the level that lets the player choose
-	// skills. skill_choices stays the total.
-	// LevelUpCharacter judges a new skill against the sources of the sheet after the level, not against these alone (SKILLS).
+	// The lists the level's new skills come from: the class's multiclass pick when the level takes a new class,
+	// and each feature of the level that lets the player choose skills.
+	// skill_choices is how many new skills the level asks for besides that multiclass pick.
+	// For a player, LevelUpCharacter refuses a new skill that no list of the sheet after the level has room for.
 	SkillSources []*LevelUpSkillSource `protobuf:"bytes,45,rep,name=skill_sources,json=skillSources,proto3" json:"skill_sources,omitempty"`
 	// Multiclassing (SRD 5.1, "Multiclassing"). is_new_class says the character
 	// does not have class_key: the level is the class's first (from_level 0), the hit
@@ -10123,7 +10123,7 @@ type LevelUpSubclass struct {
 	Prepares         bool  `protobuf:"varint,12,opt,name=prepares,proto3" json:"prepares,omitempty"`
 	PreparedMaxAfter int32 `protobuf:"varint,13,opt,name=prepared_max_after,json=preparedMaxAfter,proto3" json:"prepared_max_after,omitempty"`
 	// The lists the subclass's new skills come from, as LevelUpOptions.skill_sources.
-	// skill_choices stays the total.
+	// skill_choices is how many skills the subclass adds.
 	SkillSources  []*LevelUpSkillSource `protobuf:"bytes,15,rep,name=skill_sources,json=skillSources,proto3" json:"skill_sources,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache

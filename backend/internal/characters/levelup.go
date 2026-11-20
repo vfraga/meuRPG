@@ -425,9 +425,10 @@ func levelUpOptionsFor(m authz.Membership, r levelUpOptionsRead) *charactersv1.L
 	out.ClassChoices = classChoicesToProto(t.content, m, rules.LevelUpClasses(t.build, t.content))
 	out.Feats = featOptionsToProto(r.offer.Feats, t.rules.FeatsAllowed, isMaster(m))
 	view := viewContent(t.content, m)
-	out.SkillSources = skillSourcesToProto(view, t.build, r.offer.SkillSources)
+	held := rules.Derive(t.build, t.content).Skills
+	out.SkillSources = skillSourcesToProto(view, held, r.offer.SkillSources)
 	for i, sub := range r.offer.Subclasses {
-		out.Subclasses[i].SkillSources = skillSourcesToProto(view, t.build, sub.SkillSources)
+		out.Subclasses[i].SkillSources = skillSourcesToProto(view, held, sub.SkillSources)
 	}
 	if !t.rules.PickSwapAllowed {
 		out.SwapGroups = nil // the table does not use the swap rule
@@ -446,17 +447,22 @@ func levelUpOptionsFor(m authz.Membership, r levelUpOptionsRead) *charactersv1.L
 }
 
 // skillSourcesToProto is the level's skill sources as the reader sees them: the names are the content's visible ones and each
-// option says whether the sheet has the skill.
-func skillSourcesToProto(view *rules.Content, b rules.Build, in []rules.LevelSkillSource) []*charactersv1.LevelUpSkillSource {
+// option says whether the sheet has the skill at full proficiency, from any source (half proficiency is not a proficiency).
+func skillSourcesToProto(view *rules.Content, held []rules.Skill, in []rules.LevelSkillSource) []*charactersv1.LevelUpSkillSource {
 	var out []*charactersv1.LevelUpSkillSource
 	for _, src := range in {
 		p := &charactersv1.LevelUpSkillSource{OwnerKey: src.Owner, NamePt: view.NamePT(src.Owner), Count: i32(src.Count)}
 		for _, k := range src.From {
-			p.From = append(p.From, &charactersv1.LevelUpProficiencyOption{Key: k, NamePt: view.NamePT(k), AlreadyHave: slices.Contains(b.SkillProficiencies, k)})
+			p.From = append(p.From, &charactersv1.LevelUpProficiencyOption{Key: k, NamePt: view.NamePT(k), AlreadyHave: hasSkillProficiency(held, k)})
 		}
 		out = append(out, p)
 	}
 	return out
+}
+
+// hasSkillProficiency says whether the derived skills hold key at full proficiency.
+func hasSkillProficiency(held []rules.Skill, key string) bool {
+	return slices.ContainsFunc(held, func(s rules.Skill) bool { return s.Key == key && s.Proficiency >= rules.ProficiencyFull })
 }
 
 // hideFromPlayer takes out of a player's options what the master retired or
