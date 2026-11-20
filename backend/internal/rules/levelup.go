@@ -836,15 +836,15 @@ type levelGains struct {
 	skills    int
 	expertise int
 	cantrips  int
-	// skillSources are the lists the level's skills come from, one per choice effect.
-	skillSources []pickSource
+	// skillSources and expertiseSources are the lists the level's skills and expertise come from, one per choice.
+	skillSources, expertiseSources []pickSource
 }
 
 func (g levelGains) plus(o levelGains) levelGains {
 	return levelGains{
 		choices: slices.Concat(g.choices, o.choices), skills: g.skills + o.skills,
 		expertise: g.expertise + o.expertise, cantrips: g.cantrips + o.cantrips,
-		skillSources: slices.Concat(g.skillSources, o.skillSources),
+		skillSources: slices.Concat(g.skillSources, o.skillSources), expertiseSources: slices.Concat(g.expertiseSources, o.expertiseSources),
 	}
 }
 
@@ -865,6 +865,9 @@ func (c *content) featureGains(keys []string, subclass string) levelGains {
 // addFeatureGains adds to g what feature f (key fk) asks the player to choose.
 func (c *content) addFeatureGains(g *levelGains, fk string, f *srd51.Feature, subclass string) {
 	g.expertise += f.ExpertiseChoices
+	if f.ExpertiseChoices > 0 {
+		g.expertiseSources = append(g.expertiseSources, pickSource{Owner: fk, Count: f.ExpertiseChoices, Any: true})
+	}
 	choose := f.OptionsChoose
 	for _, e := range c.effects[fk] {
 		if e.Type == "choice" {
@@ -890,6 +893,7 @@ func (g *levelGains) addChoiceEffect(fk string, e *Effect, choose int) int {
 		// table's say it in a choice effect.
 		if isTableKey(fk) {
 			g.expertise += e.Count
+			g.expertiseSources = append(g.expertiseSources, pickSource{Owner: fk, Count: e.Count, From: e.From, Any: len(e.From) == 0})
 		}
 	case "skill":
 		g.skills += e.Count
@@ -1365,8 +1369,12 @@ func (c *content) checkLevelUpSkills(before, after Build, classKey string, mc *M
 	if lerr := c.checkSkillSources(got, c.levelSkillSources(classKey, gains, mc)); lerr != nil {
 		return lerr
 	}
-	if got, removed := added(before.Expertise, after.Expertise); removed || len(got) != wantExpertise {
-		return refuse("full.expertise_skill_keys", LevelUpReasonExpertise, "the new level gives %d expertise", wantExpertise)
+	got, removed := added(before.Expertise, after.Expertise)
+	if removed || len(got) != wantExpertise {
+		return refuse(expertiseField, LevelUpReasonExpertise, "the new level gives %d expertise", wantExpertise)
+	}
+	if left := unplacedPicks(gains.expertiseSources, got); len(left) > 0 {
+		return refuse(expertiseField, LevelUpReasonExpertise, "no choice of the new level lets the player double %s", left[0])
 	}
 	return nil
 }

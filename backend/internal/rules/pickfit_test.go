@@ -408,6 +408,10 @@ func TestUnfitStoredSheetLevelsUp(t *testing.T) {
 	if err := CheckLevelUpOf(before, after, ch, c); err != nil {
 		t.Errorf("the level up is refused: %v", err)
 	}
+	// The held pick the stored sheet could not place does not take the slot of the level's new source from the new pick.
+	if field, key, found := c.UnplacedNewPick(&before, after); found {
+		t.Errorf("the new pick is refused: %s %s", field, key)
+	}
 	ch.SkillProficiencies = []string{"skill:history"}
 	after, err = ApplyLevelUp(before, ch, c)
 	if err != nil {
@@ -469,6 +473,35 @@ func TestHeldToolPicksOverTheCountAreNotCounted(t *testing.T) {
 		}
 		if !has(thieves) || has(herbs) {
 			t.Errorf("%s: thieves proficient %v, herbs proficient %v", name, has(thieves), has(herbs))
+		}
+	}
+}
+
+// TestLevelUpExpertiseIsMatchedToTheLevelsSources: a new expertise outside the list of the level's choice is refused by the
+// level's own check, at the expertise list.
+func TestLevelUpExpertiseIsMatchedToTheLevelsSources(t *testing.T) {
+	t.Parallel()
+	c := withOverlay(t, Overlay{Revision: 1, Subclasses: []TableSubclass{{
+		TableEntry: TableEntry{Key: sourceSub, NamePT: "Mestre do saber"}, Class: "class:fighter",
+		Levels: []TableSubclassLevel{{Level: 3, Features: []TableFeature{{
+			Key: "feature:estudo@mesa", NamePT: "Estudo", DescPT: []string{"Uma especialização à escolha."},
+			Effects: []Effect{{Type: "choice", Choice: "expertise", Count: 1, From: []string{"skill:acrobatics"}}},
+		}}}},
+	}}})
+	before := sweepUp(t, c, sweepBase(t, c, "class:fighter", ""), "class:fighter", sourceSub, 2)
+	ch := satisfy(t, c, before, "class:fighter", sourceSub)
+	for skill, ok := range map[string]bool{"skill:acrobatics": true, "skill:animal-handling": false} {
+		ch.Expertise = []string{skill}
+		after, err := ApplyLevelUp(before, ch, c)
+		if err != nil {
+			t.Fatalf("%s: ApplyLevelUp: %v", skill, err)
+		}
+		err = CheckLevelUpOf(before, after, ch, c)
+		if ok && err != nil {
+			t.Errorf("%s: refused: %v", skill, err)
+		}
+		if !ok {
+			wantRefusal(t, err, LevelUpReasonExpertise, "full.expertise_skill_keys")
 		}
 	}
 }

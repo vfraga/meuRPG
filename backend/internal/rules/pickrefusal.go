@@ -10,48 +10,75 @@ import (
 // fits or not: the fit issue of a stored sheet is the master's alone and the sheet still saves and plays.
 
 // UnplacedNewPick returns the sheet field and the key of the first skill, expertise or tool pick of the new sheet that
-// the stored sheet (nil for a new character) does not hold and that no source of the content takes: the maximum placement
-// of all the picks in the sources is no larger with the pick than without it. The held picks count in the placement, so
-// a held pick that does not fit leaves a source alone and a new pick that fits only when a held pick moves to another
-// source is not refused. c is the caller's view of the content.
+// the stored sheet (nil for a new character) does not hold and that no source of the content takes: the largest placement
+// of the picks in the sources is no larger with the pick than without it.
+// A held pick that fits takes part in the placement, so a new pick that fits only when a held pick moves to another source
+// is not refused.
+// A held pick that the stored sheet could not place leaves the sources alone.
+// c is the caller's view of the content.
 func (c *Content) UnplacedNewPick(stored *Build, now Build) (field, key string, found bool) {
-	_, lost, _ := c.c.settleLost(now)
-	x := deriverOf(now, c.c, lost)
+	x := c.deriverFor(now)
 	if len(x.classes) == 0 {
 		return "", "", false
 	}
 	var held Build
+	var xs *deriver
 	if stored != nil {
-		held = *stored
+		held, xs = *stored, c.deriverFor(*stored)
 	}
-	if f, k, ok := x.unplacedNewList("full.skill_proficiency_keys", x.skillSources(), now.SkillProficiencies, held.SkillProficiencies,
-		func(k string) bool { _, ok := c.c.skills[k]; return ok && !x.automaticSkills[k] }); ok {
+	skill := func(d *deriver) func(string) bool {
+		return func(k string) bool { _, ok := c.c.skills[k]; return ok && !d.automaticSkills[k] }
+	}
+	expertise := func(k string) bool { _, ok := c.c.skills[k]; return ok }
+	var stuckSkills, stuckExpertise []string
+	if xs != nil {
+		stuckSkills = unplacedPicks(xs.skillSources(), pickList(held.SkillProficiencies, skill(xs)))
+		stuckExpertise = unplacedPicks(xs.expertiseSources(), pickList(held.Expertise, expertise))
+	}
+	if f, k, ok := unplacedNewList("full.skill_proficiency_keys", x.skillSources(), now.SkillProficiencies, held.SkillProficiencies, stuckSkills, skill(x)); ok {
 		return f, k, true
 	}
-	if f, k, ok := x.unplacedNewList("full.expertise_skill_keys", x.expertiseSources(), now.Expertise, held.Expertise,
-		func(k string) bool { _, ok := c.c.skills[k]; return ok }); ok {
+	if f, k, ok := unplacedNewList("full.expertise_skill_keys", x.expertiseSources(), now.Expertise, held.Expertise, stuckExpertise, expertise); ok {
 		return f, k, true
 	}
-	return x.unplacedNewTool(held)
+	return x.unplacedNewTool(held, xs)
 }
 
-// unplacedNewList is UnplacedNewPick for one list of the sheet: counted says an entry is a pick of the sources.
-func (x *deriver) unplacedNewList(field string, sources []pickSource, list, held []string, counted func(string) bool) (string, string, bool) {
+// deriverFor is the deriver of the sheet b, made with the entries it loses left out.
+func (c *Content) deriverFor(b Build) *deriver {
+	_, lost, _ := c.c.settleLost(b)
+	return deriverOf(b, c.c, lost)
+}
+
+// pickList are the entries of the list that count, each once.
+func pickList(list []string, counted func(string) bool) []string {
 	var picks []string
 	for _, k := range list {
 		if counted(k) && !slices.Contains(picks, k) {
 			picks = append(picks, k)
 		}
 	}
+	return picks
+}
+
+// unplacedNewList is UnplacedNewPick for one list of the sheet: counted says an entry is a pick of the sources, and stuck are
+// the held picks the stored sheet could not place.
+func unplacedNewList(field string, sources []pickSource, list, held, stuck []string, counted func(string) bool) (string, string, bool) {
+	picks := pickList(list, counted)
 	for i, k := range list {
 		if slices.Contains(held, k) || !slices.Contains(picks, k) {
 			continue
 		}
-		if !placesAlone(sources, picks, k) {
+		if !placesAlone(sources, competing(picks, held, stuck), k) {
 			return fmt.Sprintf("%s[%d]", field, i), k, true
 		}
 	}
 	return "", "", false
+}
+
+// competing are the picks that take part in the placement of a new pick: the new ones and the held ones the stored sheet could place.
+func competing(picks, held, stuck []string) []string {
+	return slices.DeleteFunc(slices.Clone(picks), func(k string) bool { return slices.Contains(held, k) && slices.Contains(stuck, k) })
 }
 
 // placesAlone says the largest placement is bigger with the pick than without it.
@@ -65,17 +92,29 @@ func placedCount(sources []pickSource, picks []string) int {
 	return len(picks) - len(unplacedPicks(sources, picks))
 }
 
-// unplacedNewTool is UnplacedNewPick for the tool picks of the sheet, owner by owner.
-func (x *deriver) unplacedNewTool(held Build) (string, string, bool) {
+// toolPicksByOwner are the tool picks of the sheet whose owner it has, owner by owner, each value once.
+func (x *deriver) toolPicksByOwner() map[string][]string {
 	onSheet := ownedBy(x.b, *x.d)
-	byOwner := map[string][]string{}
+	out := map[string][]string{}
 	for _, stored := range x.b.FeatureChoices {
 		choiceKey, value, ok := SplitScopedChoice(stored)
 		if !ok {
 			continue
 		}
-		if owner, isTool := strings.CutSuffix(choiceKey, toolPickSuffix); isTool && (x.owned[owner] || onSheet(owner)) && !slices.Contains(byOwner[owner], value) {
-			byOwner[owner] = append(byOwner[owner], value)
+		if owner, isTool := strings.CutSuffix(choiceKey, toolPickSuffix); isTool && (x.owned[owner] || onSheet(owner)) && !slices.Contains(out[owner], value) {
+			out[owner] = append(out[owner], value)
+		}
+	}
+	return out
+}
+
+// unplacedNewTool is UnplacedNewPick for the tool picks of the sheet, owner by owner; xs is the stored sheet's deriver or nil.
+func (x *deriver) unplacedNewTool(held Build, xs *deriver) (string, string, bool) {
+	byOwner := x.toolPicksByOwner()
+	stuck := map[string][]string{}
+	if xs != nil {
+		for owner, values := range xs.toolPicksByOwner() {
+			stuck[owner] = unplacedPicks(xs.c.toolSources(owner), values)
 		}
 	}
 	for i, stored := range x.b.FeatureChoices {
@@ -84,9 +123,17 @@ func (x *deriver) unplacedNewTool(held Build) (string, string, bool) {
 			continue
 		}
 		owner, isTool := strings.CutSuffix(choiceKey, toolPickSuffix)
-		if isTool && byOwner[owner] != nil && !placesAlone(x.c.toolSources(owner), byOwner[owner], value) {
+		if !isTool || byOwner[owner] == nil {
+			continue
+		}
+		heldValues := slices.DeleteFunc(slices.Clone(byOwner[owner]), func(k string) bool { return !slices.Contains(held.FeatureChoices, ScopedChoice(choiceKey, k)) })
+		sources := x.c.toolSources(owner)
+		if !placesAlone(sources, competing(byOwner[owner], heldValues, stuck[owner]), value) {
 			return fmt.Sprintf("full.feature_choice_keys[%d]", i), value, true
 		}
 	}
 	return "", "", false
 }
+
+// IsToolProficiency says the key is a proficiency a tool choice may offer: a tool, a vehicle, a kit or a weapon.
+func (c *Content) IsToolProficiency(key string) bool { return c.c.isToolPickKey(key) }
