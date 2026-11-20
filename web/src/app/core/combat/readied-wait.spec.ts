@@ -10,6 +10,7 @@ import {
   readiedSecondsLeft,
   masterBarWait,
   masterRowWait,
+  otherDeviceRollingText,
   otherDeviceText,
   playerWaitText,
   waitBeganMs,
@@ -83,6 +84,12 @@ describe('the wait of a readied window (#857)', () => {
       'Você abriu o mapa em outro aparelho. Passa sozinho em 1 min 48 s.',
     );
     expect(OTHER_DEVICE_TEXT).toContain('outro aparelho');
+  });
+
+  it('says the dice are typed on another device, with the time the table still waits (#938)', () => {
+    expect(otherDeviceRollingText(91)).toBe(
+      'Você está rolando em outro aparelho. Passa sozinho em 1 min 31 s.',
+    );
   });
 
   it("says the master's row: waiting before the map, on the map after it (857-08)", () => {

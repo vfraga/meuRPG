@@ -60,6 +60,14 @@ export function otherDeviceText(seconds: number): string {
   return `${OTHER_DEVICE_TEXT} Passa sozinho em ${clockText(seconds)}.`;
 }
 
+/** The prefix of the line a second device reads while the player is typing the dice on another one (#938). */
+export const OTHER_DEVICE_ROLLING_TEXT = 'Você está rolando em outro aparelho.';
+
+/** What the player's other device reads in its window while the dice are typed on another: "Você está rolando em outro aparelho. Passa sozinho em 1 min 31 s.". */
+export function otherDeviceRollingText(seconds: number): string {
+  return `${OTHER_DEVICE_ROLLING_TEXT} Passa sozinho em ${clockText(seconds)}.`;
+}
+
 /** The wait line of the master's row: where the player is and the time left; `seconds` is `undefined` for a window with no clock (it waits for another). */
 export function masterRowWait(
   reactor: string,
