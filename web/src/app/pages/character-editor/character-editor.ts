@@ -222,6 +222,7 @@ export class CharacterEditor {
     stillHere: () => this.loader.stillHere(),
     nameOfKey: (key) => this.views.nameOfKey(key),
     markSwitchedOff: (key) => this.submitting.markSwitchedOff(key),
+    openStep: (step) => this.submitting.openStep(step),
     refreshCatalog: () => this.refreshCatalog(),
   });
   /** The class block a refusal points at (`full.classes[i]`), so the block says so. */
@@ -308,6 +309,14 @@ export class CharacterEditor {
       if (xp !== null && !control.dirty) {
         untracked(() => control.setValue(xp));
       }
+    });
+    // The refusal of a pick on the Perícias step goes when the skills, the expertise or the classes change.
+    effect(() => {
+      this.picks.selectedSkills();
+      this.picks.expertiseSkills();
+      this.picks.extraClasses();
+      this.views.selectedClass();
+      untracked(() => this.saving.clearPickProblem());
     });
     this.destroyRef.onDestroy(() => {
       this.loader.destroy();

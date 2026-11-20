@@ -137,3 +137,56 @@ func (x *deriver) unplacedNewTool(held Build, xs *deriver) (string, string, bool
 
 // IsToolProficiency says the key is a proficiency a tool choice may offer: a tool, a vehicle, a kit or a weapon.
 func (c *Content) IsToolProficiency(key string) bool { return c.c.isToolPickKey(key) }
+
+// PickAllowed is the keys the sources of one kind of pick allow. Any is set when a source takes any key.
+type PickAllowed struct {
+	Any  bool
+	Keys []string
+}
+
+// PickLists are the skills the sheet's skill sources allow and, when every expertise source names a list, the skills
+// expertise may go on (nil otherwise). They are the lists the save's refusal reads (unplacedNewList).
+func (c *Content) PickLists(b Build) (skills PickAllowed, expertise *PickAllowed) {
+	x := c.deriverFor(b)
+	skills = allowedBy(x.skillSources())
+	if sources := x.expertiseSources(); len(sources) > 0 {
+		if e := allowedBy(sources); !e.Any {
+			expertise = &e
+		}
+	}
+	return skills, expertise
+}
+
+// allowedBy is the union of the lists of sources, each key once in the order met.
+func allowedBy(sources []pickSource) PickAllowed {
+	var out PickAllowed
+	for _, s := range sources {
+		if s.Any {
+			out.Any = true
+			continue
+		}
+		for _, k := range s.From {
+			if !slices.Contains(out.Keys, k) {
+				out.Keys = append(out.Keys, k)
+			}
+		}
+	}
+	if out.Any {
+		out.Keys = nil
+	}
+	return out
+}
+
+// OnAList says whether some source of the sheet b lists key for the pick field ("full.skill_proficiency_keys" or
+// "full.expertise_skill_keys"). A source that names no list lists every key. A field of another kind is never on a list.
+func (c *Content) OnAList(b Build, field, key string) bool {
+	x := c.deriverFor(b)
+	var sources []pickSource
+	switch {
+	case strings.HasPrefix(field, "full.skill_proficiency_keys"):
+		sources = x.skillSources()
+	case strings.HasPrefix(field, "full.expertise_skill_keys"):
+		sources = x.expertiseSources()
+	}
+	return slices.ContainsFunc(sources, func(s pickSource) bool { return s.allows(key) })
+}

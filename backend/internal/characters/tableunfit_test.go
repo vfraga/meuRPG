@@ -238,3 +238,29 @@ func TestAnImportedSheetThatDoesNotFitImportsAndTheMasterReadsTheIssue(t *testin
 		t.Error("the master's derivation of the imported sheet has no fit issue")
 	}
 }
+
+func TestASkillOnAListWithNoRoomLeftIsRefusedWithTheSentenceOfNoRoom(t *testing.T) {
+	t.Parallel()
+	// The wizard takes two of its list, the trait takes one and lists only survival: a third wizard skill is on a list, and has no room.
+	u := newUnfitTable(t, "skill:survival")
+	_, err := u.player.api.CreateCharacter(t.Context(), connect.NewRequest(&charactersv1.CreateCharacterRequest{
+		CampaignId: u.campaign, Kind: charactersv1.CharacterKind_CHARACTER_KIND_PLAYER, Name: "Pensantus", Sheet: u.sheet("skill:investigation", "skill:insight", "skill:medicine"),
+	}))
+	wantUnfitSentence(t, err, "sheet.full.skill_proficiency_keys[0]", "Não há vaga para a perícia Investigação: as listas que a oferecem já estão preenchidas pelas outras perícias marcadas. Desmarque uma delas para marcar Investigação.")
+}
+
+func TestAnExpertiseOnAListWithNoRoomLeftIsRefusedWithItsOwnSentenceOfNoRoom(t *testing.T) {
+	t.Parallel()
+	u := newUnfitTable(t, "skill:nature")
+	race := skillTraitRace("skill:nature")
+	for _, from := range [][]string{{"skill:investigation", "skill:insight"}, {"skill:nature"}} {
+		race.Traits = append(race.Traits, &rulesv1.TableFeature{NamePt: "Estudo", Effects: []*rulesv1.TableEffect{{Type: "choice", Choice: "expertise", Count: 1, From: from}}})
+	}
+	u.race = u.master.updateEntry(t, u.campaign, u.race, race)
+	s := u.sheet("skill:investigation", "skill:insight", "skill:nature")
+	s.GetFull().ExpertiseSkillKeys = []string{"skill:investigation", "skill:insight"}
+	_, err := u.player.api.CreateCharacter(t.Context(), connect.NewRequest(&charactersv1.CreateCharacterRequest{
+		CampaignId: u.campaign, Kind: charactersv1.CharacterKind_CHARACTER_KIND_PLAYER, Name: "Pensantus", Sheet: s,
+	}))
+	wantUnfitSentence(t, err, "sheet.full.expertise_skill_keys[0]", "Não há vaga para a especialização em Investigação: as listas que a oferecem já estão preenchidas pelas outras especializações marcadas. Desmarque uma delas para marcar a especialização em Investigação.")
+}

@@ -252,7 +252,15 @@ class FakeSource {
     Promise.reject(new Error('not stubbed'));
   choicePreviews: PreviewCharacterInput[] = [];
   choicesFn: (input: PreviewCharacterInput) => Promise<ChoicesPreviewVm> = () =>
-    Promise.resolve({ groups: [], done: 0, total: 0, notOffered: [], spellSources: [] });
+    Promise.resolve({
+      groups: [],
+      done: 0,
+      total: 0,
+      notOffered: [],
+      spellSources: [],
+      skillsAllowed: null,
+      expertiseAllowed: null,
+    });
   created: CreateCharacterInput[] = [];
   createFn: (input: CreateCharacterInput) => Promise<{ characterId: string }> = () =>
     Promise.resolve({ characterId: 'new-char' });
@@ -900,6 +908,8 @@ describe('CharacterEditor, what the server says about the draft', () => {
       total: 1,
       notOffered: ['feature:gone'],
       spellSources: [],
+      skillsAllowed: null,
+      expertiseAllowed: null,
     });
 
   it('asks as the master of a reserved character for a player, and as the owner of an edit', async () => {
@@ -996,6 +1006,8 @@ describe('CharacterEditor, what the server says about the draft', () => {
         total: 2,
         notOffered: [],
         spellSources: [],
+        skillsAllowed: null,
+        expertiseAllowed: null,
       });
     vi.useFakeTimers();
     fill(cmp, { className: 'class:fighter' });

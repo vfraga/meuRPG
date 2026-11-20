@@ -468,7 +468,15 @@ describe('the calls that carry the draft', () => {
 
   it('previews the choices of the draft', async () => {
     const previewChoices = vi.fn(() =>
-      Promise.resolve({ groups: [], done: 1, total: 2, notOffered: ['a'], spellSources: [] }),
+      Promise.resolve({
+        groups: [],
+        done: 1,
+        total: 2,
+        notOffered: ['a'],
+        spellSources: [],
+        skillsAllowed: null,
+        expertiseAllowed: null,
+      }),
     );
     const vm = await sourceWith({ characterClient: { previewChoices } }).previewChoices({
       campaignId: 'camp',
@@ -476,7 +484,37 @@ describe('the calls that carry the draft', () => {
       kind: 'player',
       full: formValue(),
     });
-    expect(vm).toEqual({ groups: [], done: 1, total: 2, notOffered: ['a'], spellSources: [] });
+    expect(vm).toEqual({
+      groups: [],
+      done: 1,
+      total: 2,
+      notOffered: ['a'],
+      spellSources: [],
+      skillsAllowed: null,
+      expertiseAllowed: null,
+    });
+  });
+
+  it('carries the skills and the expertise the sources allow, and null while the server names none', async () => {
+    const previewChoices = vi.fn(() =>
+      Promise.resolve({
+        groups: [],
+        done: 0,
+        total: 0,
+        notOffered: [],
+        spellSources: [],
+        skillsAllowed: { any: false, keys: ['skill:arcana'] },
+        expertiseAllowed: { any: false, keys: ['skill:arcana'] },
+      }),
+    );
+    const vm = await sourceWith({ characterClient: { previewChoices } }).previewChoices({
+      campaignId: 'camp',
+      characterId: null,
+      kind: 'player',
+      full: formValue(),
+    });
+    expect(vm.skillsAllowed).toEqual({ any: false, keys: ['skill:arcana'] });
+    expect(vm.expertiseAllowed).toEqual({ any: false, keys: ['skill:arcana'] });
   });
 
   it('creates a full sheet or a basic one, with the way the scores were made', async () => {

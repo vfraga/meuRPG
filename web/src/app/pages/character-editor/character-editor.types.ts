@@ -7,6 +7,7 @@ import { DamageTypeKey } from '../../core/characters/character-labels';
 import type {
   ChoiceGroup,
   ChoiceSpellSource,
+  PickAllowed,
 } from '../../../gen/meurpg/characters/v1/characters_pb';
 import type { SpellDetailsVm } from '../../shared/spell-details/spell-details.types';
 
@@ -527,6 +528,10 @@ export interface ChoicesPreviewVm {
   readonly notOffered: readonly string[];
   /** For each casting class, the spells outside its list (the patron's, Magical Secrets). */
   readonly spellSources: readonly ChoiceSpellSource[];
+  /** The skills the draft's sources allow (`any` when a source takes any); null when the server names none. */
+  readonly skillsAllowed: PickAllowed | null;
+  /** The skills expertise may go on; null when it is not cut. */
+  readonly expertiseAllowed: PickAllowed | null;
 }
 
 export interface CharacterForEdit {
