@@ -13,7 +13,7 @@
             class="skill__name"
             [checked]="isProficient(skill.key)"
             [disabled]="granted().has(skill.key)"
-            [attr.aria-describedby]="problems().has('skill:' + skill.key) ? 'pick-error-skill:' + skill.key : null"
+            [aria-describedby]="problems().has('skill:' + skill.key) ? 'pick-error-skill:' + skill.key : ''"
             (change)="toggleSkill.emit(skill.key)"
           >
             {{ skill.namePt }}
@@ -27,7 +27,7 @@
             [checked]="expertise().has(skill.key)"
             [disabled]="expertiseDisabled(skill.key)"
             [aria-label]="'Especialização em ' + skill.namePt"
-            [attr.aria-describedby]="problems().has('expertise:' + skill.key) ? 'pick-error-expertise:' + skill.key : null"
+            [aria-describedby]="problems().has('expertise:' + skill.key) ? 'pick-error-expertise:' + skill.key : ''"
             (change)="toggleExpertise.emit(skill.key)"
           />
         </div>

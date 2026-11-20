@@ -122,5 +122,12 @@ describe('SkillPicker', () => {
       'A especialização em Arcanismo não está em lista.',
     ]);
     expect(el.querySelectorAll('.skill ~ mat-error').length).toBe(2);
+    // The sentence describes the focusable input inside the checkbox, not only its host.
+    const described = (selector: string) =>
+      Array.from(el.querySelectorAll<HTMLInputElement>(selector))
+        .map((i) => i.getAttribute('aria-describedby'))
+        .filter((id) => !!id);
+    expect(described('.skill__name input')).toEqual(['pick-error-skill:skill:arcana']);
+    expect(described('.skill__expertise input')).toEqual(['pick-error-expertise:skill:arcana']);
   });
 });

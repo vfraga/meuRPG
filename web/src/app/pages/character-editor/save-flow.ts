@@ -126,6 +126,8 @@ export class SaveFlow {
     this.pickProblems.set(new Map());
     // The save finishes on the server whatever the person does meanwhile; only the navigation depends on still being here.
     const stillHere = this.host.stillHere();
+    // The picks the request sends: a refusal names a pick by its place in them, whatever the person changes while it travels.
+    const sent = isBasic ? null : this.host.full();
     try {
       if (!(await this.persist(s, isBasic, stillHere))) {
         return;
@@ -135,7 +137,7 @@ export class SaveFlow {
       if (!stillHere()) {
         return;
       }
-      this.refused(err);
+      this.refused(err, sent);
     }
   }
 
@@ -186,13 +188,18 @@ export class SaveFlow {
     };
   }
 
-  /** The pick a refusal is about, found in the lists the save sent; `null` when it is another refusal or the list moved on. */
-  private pickRefused(err: unknown): { id: string; sentence: string; step: EditorStepKey } | null {
+  /** The pick a refusal is about, found in the lists the request sent; `null` when it is another refusal or the list moved on. */
+  private pickRefused(
+    err: unknown,
+    full: CharacterFormValue | null,
+  ): { id: string; sentence: string; step: EditorStepKey } | null {
     const at = pickRefusalAt(err);
     if (!at) {
       return null;
     }
-    const full = this.host.full();
+    if (!full) {
+      return null;
+    }
     const list =
       at.kind === 'skill'
         ? full.skillProficiencies
@@ -210,9 +217,9 @@ export class SaveFlow {
   }
 
   /** The server refused: a refusal that names a key says it by name; one that points at a class block marks that block. */
-  private refused(err: unknown): void {
+  private refused(err: unknown, sent: CharacterFormValue | null): void {
     this.classProblem.set(classBlockOfRefusal(err));
-    const pick = this.pickRefused(err);
+    const pick = this.pickRefused(err, sent);
     this.pickProblems.set(pick ? new Map([[pick.id, pick.sentence]]) : new Map());
     if (pick) {
       this.host.openStep?.(pick.step);

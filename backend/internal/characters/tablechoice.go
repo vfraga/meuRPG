@@ -178,16 +178,6 @@ func unfitSentence(view *rules.Content, b rules.Build, field, key string) string
 	return fmt.Sprintf("A ferramenta %s não está em nenhuma das escolhas de ferramenta do personagem.", view.ProficiencyNamePT(key))
 }
 
-// refuseClosedPick is refuseClosedChoices against the stored sheet of a character the caller sees. Nothing is refused
-// when that sheet cannot be read, so the later checks answer for it as before.
-func refuseClosedPick(content *rules.Content, m authz.Membership, characterID string, storedOf func() *charactersv1.FullSheet, sheet *charactersv1.FullSheet) error {
-	stored := storedOf()
-	if stored == nil {
-		return nil
-	}
-	return refuseClosedChoices(content, m, characterID, stored, sheet)
-}
-
 // noSheet is the stored sheet of a character that does not exist yet.
 func noSheet() *charactersv1.FullSheet { return nil }
 

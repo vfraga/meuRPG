@@ -7727,7 +7727,7 @@ async function scanPickLists(browser: Browser, colorScheme: 'light' | 'dark', wi
     await expect(page.getByText(fitSentence)).toHaveCount(0);
     await expect(page.getByText('Escolha fora das listas.')).toHaveCount(0);
 
-    // A sheet no entry changed since it was saved has no changed-entry notice to tell the sentence: the master (not refused, S4) creates
+    // A sheet no entry changed since it was saved has no changed-entry notice to tell the sentence: the master is never refused a pick no list places, so it creates
     // an NPC with a skill in no list, and "Pendências de regra" carries "Escolha fora das listas." once. The player never reads it.
     const npcBody = icaroSheetWith(guardian, raceKey, ['skill:athletics', 'skill:nature', 'skill:stealth']);
     const npcId = await createSheetRPC(m, campaignId, { ...npcBody, kind: 'CHARACTER_KIND_ENEMY', name: 'Capitão Fora da Lista' });
