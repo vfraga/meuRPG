@@ -66,6 +66,7 @@ describe('RowMount, the master\'s "Montaria" select of a row', () => {
     expect(options.map((o) => o.getAttribute('aria-selected'))).toEqual(['false', 'false', 'true']);
     // The check is on the left, before the name, and only on the picked one.
     expect(options.map((o) => text(o.querySelector('.opt__check')))).toEqual(['', '', 'check']);
+    expect(getComputedStyle(options[2].querySelector('.opt__row')!).display).toBe('flex');
     const check = options[2].querySelector('.opt__check')!;
     expect(check.compareDocumentPosition(options[2].querySelector('.opt__body')!)).toBe(
       Node.DOCUMENT_POSITION_FOLLOWING,

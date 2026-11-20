@@ -107,16 +107,16 @@ import { MatIconModule } from '@angular/material/icon';
       }
     }
 
-    // The master's list: the box reaches past the panel's padding, so its rows
-    // keep the same columns as the rows outside it.
+    // The master's list: the box is a rounded frame inside the panel's padding, and its rows take the frame's
+    // width off their own padding so the numbers keep the columns of the rows outside it.
     :host(.bleed) {
       .box {
-        margin: 8px -14px;
+        margin: 8px 0;
       }
 
       ::ng-deep .row {
         margin: 0;
-        padding: 10px 14px 10px 12px;
+        padding: 10px 10px 10px 4px;
       }
 
       // The state pill under the name: the order's column is narrow.
@@ -129,7 +129,7 @@ import { MatIconModule } from '@angular/material/icon';
       // The dots hang 10px outside their box as in the rows outside; the box's own padding is 4px narrower than a row's,
       // so the dots and "Dano/Cura" line up with the rows outside (E8-01).
       ::ng-deep .row {
-        padding-right: 12.5px;
+        padding-right: 10px;
       }
 
       ::ng-deep .row__more,

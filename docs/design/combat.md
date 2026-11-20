@@ -50,6 +50,7 @@ The browser draws what the server sends (reach from `GetMoveOptions`, totals, ve
   The pair on turn is one turn, for the master and for every viewer: the box has "Vez" in its head and its rows carry no "Ainda age" chips.
   The head has one separator, the middle dot ("Montado · iniciativa 17"), the "Vez" pill keeps its line, and a row's link icon stays on the first line of its words.
   The player's order column reads the pair the same way.
+  In the master's list the box is a rounded frame inside the panel, not a band across it.
   The master reads one pair card in the turn panel (the rider and the mount with their numbers, no action buttons, "Próximo turno encerra a vez dos dois.") instead of the joint-turn card.
   The master's "Próximo turno" on that pair ends the rider's part and then the mount's, in two calls, as the player's "Encerrar turno" does.
   A refusal on the first call stops there.

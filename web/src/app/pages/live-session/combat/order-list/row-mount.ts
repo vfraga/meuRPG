@@ -47,14 +47,16 @@ import { SaddleIcon } from '../../../../shared/saddle-icon/saddle-icon';
         </mat-select-trigger>
         @for (o of view().options; track o.kind) {
           <mat-option [value]="o.kind" [disabled]="o.disabled || busy()" class="mount__opt">
-            <span class="opt__check">
-              @if (o.kind === view().current) {
-                <mat-icon aria-hidden="true">check</mat-icon>
-              }
-            </span>
-            <span class="opt__body">
-              <b class="opt__t">{{ o.label }}</b>
-              <span class="opt__d">{{ o.hint }}</span>
+            <span class="opt__row">
+              <span class="opt__check">
+                @if (o.kind === view().current) {
+                  <mat-icon aria-hidden="true">check</mat-icon>
+                }
+              </span>
+              <span class="opt__body">
+                <b class="opt__t">{{ o.label }}</b>
+                <span class="opt__d">{{ o.hint }}</span>
+              </span>
             </span>
           </mat-option>
         }
@@ -102,7 +104,7 @@ import { SaddleIcon } from '../../../../shared/saddle-icon/saddle-icon';
       min-height: 48px;
       padding-block: 6px;
     }
-    .mount__opt .mdc-list-item__primary-text {
+    .opt__row {
       display: flex;
       align-items: flex-start;
       gap: 8px;
