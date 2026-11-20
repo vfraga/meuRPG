@@ -13,6 +13,7 @@ import {
   endsConfirmText,
   missingOf,
   spellRowsOf,
+  noticeLead,
   summonedNotice,
   targetChoicesOf,
   wayCardsOf,
@@ -278,5 +279,18 @@ describe('the ways to cast a granted spell', () => {
     expect(missingOf(granted, { ...none, pick: { id: 'g', way: 'slot', grant, slot: true } })).toBe(
       'Escolha o espaço de magia.',
     );
+  });
+});
+
+describe('noticeLead', () => {
+  it('splits the first sentence from what follows, keeping the space with the rest', () => {
+    expect(noticeLead('Estrela chegou. Convocar Montaria: o espaço de magia foi gasto.')).toEqual({
+      lead: 'Estrela chegou.',
+      rest: ' Convocar Montaria: o espaço de magia foi gasto.',
+    });
+  });
+
+  it('keeps a single sentence whole', () => {
+    expect(noticeLead('Estrela chegou.')).toEqual({ lead: 'Estrela chegou.', rest: '' });
   });
 });

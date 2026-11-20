@@ -195,3 +195,11 @@ export function endsConfirmText(spellName: string, ends: string): CastConfirmDat
     cancel: 'Cancelar',
   };
 }
+
+/** A notice split at its first sentence: "Estrela chegou." and " Convocar Montaria: o espaço de magia foi gasto.". */
+export function noticeLead(text: string): { lead: string; rest: string } {
+  const end = text.indexOf('. ');
+  return end < 0
+    ? { lead: text, rest: '' }
+    : { lead: text.slice(0, end + 1), rest: text.slice(end + 1) };
+}

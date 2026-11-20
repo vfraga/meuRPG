@@ -64,6 +64,7 @@ import {
   endsConfirmText,
   missingOf,
   spellRowsOf,
+  noticeLead,
   summonedNotice,
   targetChoicesOf,
   wayCardsOf,
@@ -146,6 +147,8 @@ export class CastOutSheet {
   protected readonly cast = signal<OutsideCast | null>(null);
   /** What a summoning spell brought, once the creature sheet cast it ("Nanquim chegou. ..."). */
   protected readonly summoned = signal('');
+  /** The notice in two: the first sentence ("Estrela chegou.") in bold, then what it cost. */
+  protected readonly summonedParts = computed(() => noticeLead(this.summoned()));
   protected readonly lockWhileBusy = effect(() => this.sheet.lock(this.busy()));
   private readonly key = new ActionKey();
 

@@ -10,7 +10,7 @@
     @if (summoned()) {
       <div class="mr-notice mr-notice--success" role="status">
         <mat-icon aria-hidden="true">pets</mat-icon>
-        <p>{{ summoned() }}</p>
+        <p><b class="notice__lead">{{ summonedParts().lead }}</b>{{ summonedParts().rest }}</p>
       </div>
     } @else if (cast(); as c) {
       <ul class="result">
