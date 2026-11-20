@@ -487,8 +487,17 @@ func tableEffectsOf(in []*rulesv1.TableEffect) []rules.Effect {
 			DamageTypes: e.GetDamageTypes(), Kind: e.GetKind(), Conditions: e.GetConditions(), AgainstCondition: e.GetAgainstCondition(),
 			Flag: e.GetFlag(), Use: featureUseOf(e.GetUse()), Aura: tableSpellEffectOf(e.GetAura()),
 			AttackPenalty: int(e.GetAttackPenalty()), WeaponProperties: e.GetWeaponProperties(),
-			Filter: choiceFilterOf(e.GetFilter()), FromFeature: e.GetFromFeature(),
+			Filter: choiceFilterOf(e.GetFilter()), FromFeature: e.GetFromFeature(), Alternatives: choiceAlternativesOf(e.GetAlternatives()),
 		})
+	}
+	return out
+}
+
+// choiceAlternativesOf are the alternatives of a choice of alternatives, nil for none.
+func choiceAlternativesOf(in []*rulesv1.ChoiceAlternative) []rules.ChoiceAlternative {
+	var out []rules.ChoiceAlternative
+	for _, a := range in {
+		out = append(out, rules.ChoiceAlternative{Kind: a.GetKind(), From: a.GetFrom(), Filter: choiceFilterOf(a.GetFilter())})
 	}
 	return out
 }
@@ -1487,6 +1496,9 @@ func (v playerView) dropEffects(fs []*rulesv1.TableFeature) {
 		for _, ef := range f.GetEffects() {
 			ef.Spells = v.visible(ef.Spells)
 			ef.From = v.visible(ef.From)
+			for _, a := range ef.GetAlternatives() {
+				a.From = v.visible(a.From)
+			}
 			if v.hidden(ef.Spell) {
 				ef.Spell = "" // a granted spell the players do not see is not named to them
 			}
