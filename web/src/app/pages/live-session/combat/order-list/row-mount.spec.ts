@@ -64,6 +64,12 @@ describe('RowMount, the master\'s "Montaria" select of a row', () => {
     ]);
     expect(getComputedStyle(options[1].querySelector('.opt__d')!).display).toBe('block');
     expect(options.map((o) => o.getAttribute('aria-selected'))).toEqual(['false', 'false', 'true']);
+    // The check is on the left, before the name, and only on the picked one.
+    expect(options.map((o) => text(o.querySelector('.opt__check')))).toEqual(['', '', 'check']);
+    const check = options[2].querySelector('.opt__check')!;
+    expect(check.compareDocumentPosition(options[2].querySelector('.opt__body')!)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    );
   });
 
   it('sends the mark that was picked', async () => {
@@ -88,8 +94,14 @@ describe('RowMount, the master\'s "Montaria" select of a row', () => {
     expect(el.querySelector('.mount__note')).toBeNull();
   });
 
-  it('with no mark yet, says under the select what marking does', async () => {
+  it('with no mark yet, says above the select what marking does, where the open list does not cover it', async () => {
     const { el } = await setup({});
+    const note = el.querySelector('.mount__note')!;
+    expect(
+      (note.compareDocumentPosition(el.querySelector('mat-form-field')!) &
+        Node.DOCUMENT_POSITION_FOLLOWING) !==
+        0,
+    ).toBe(true);
     expect(text(el.querySelector('.mount__hint'))).toBe('Não aceita cavaleiro.');
     expect(text(el.querySelector('.mount__note'))).toBe(
       'Com a marca, o Cavalo de guerra aceita um cavaleiro, que monta na própria vez. Você monta qualquer criatura.',

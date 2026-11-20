@@ -59,8 +59,13 @@
 // full width, Conjurar on top.
 .actions {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
   gap: 10px;
+
+  // The primary label keeps one line: it has the wider column.
+  .cast {
+    white-space: nowrap;
+  }
 
   @media (max-width: 479.98px) {
     grid-template-columns: minmax(0, 1fr);

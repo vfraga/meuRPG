@@ -61,9 +61,9 @@ The browser draws what the server sends (reach from `GetMoveOptions`, totals, ve
 - **The master's mount mark:** "Mais" › "Montaria…" (the saddle before the words) opens a "Montaria" select in the opened row, as "Marcar cobertura" opens its picker; the focus goes into the select, and "Montaria…" again closes it (it has no button of its own).
   "Montaria…" is off for an NPC that is itself riding, with "Só depois que Cavaleiro desmontar." under it.
   It is a select and not three segments because the column is 288 px wide.
-  Each option is two lines, the name in bold and its line under it: "Nenhuma" with "Não aceita cavaleiro.", "Adestrada" with "Age logo depois de quem monta e só usa Disparada, Desengajar e Esquivar." and "Independente" with "Mantém a própria vez e leva quem monta."; the saddle shows in the trigger only for a mark; the current one is the picked one, and its line stays under the select, naming the rider it carries ("Age logo depois de Tor…").
+  Each option is two lines, the name in bold and its line under it: "Nenhuma" with "Não aceita cavaleiro.", "Adestrada" with "Age logo depois de quem monta e só usa Disparada, Desengajar e Esquivar." and "Independente" with "Mantém a própria vez e leva quem monta."; the saddle shows in the trigger only for a mark; the current one is the picked one (the check on its left, its name in the accent), and its line stays under the select, naming the rider it carries ("Age logo depois de Tor…").
   A pick is sent at once (`SetCombatantMount`); while the call is in the air the options are off and the select keeps the focus.
-  With no mark yet a note under the select says what marking does: "Com a marca, o Mastim aceita um cavaleiro, que monta na própria vez. Você monta qualquer criatura.".
+  With no mark yet a note above the select (the open list lies over what is under the field) says what marking does: "Com a marca, o Mastim aceita um cavaleiro, que monta na própria vez. Você monta qualquer criatura.".
   While the mount carries a rider "Nenhuma" is off, with "Nenhuma: só depois que Tor desmontar." under the line.
   A player's character has no item.
   The words are in `core/combat/mount-mark.ts`.
@@ -71,6 +71,7 @@ The browser draws what the server sends (reach from `GetMoveOptions`, totals, ve
   It is on by default, and the cast sends `also_steed` while it is on.
   The steed's name is the label of the combatant the caster rides, and only when that combatant is the caster's bonded steed (the id the summon options name): the sheet reads it when it opens.
   The check is framed in the accent on its soft ground.
+  The sheet's footer is "Cancelar" then the cast, the cast in the wider column and on one line.
   The line the server wrote about the steed (`SpellCast.steed_note`) closes the result (`app-cast-result`, the live region), not the notes of what the cast spent.
 - **The pair card:** on the rider's turn, the rider's player gets one turn, theirs ("Sua vez, Tor", "Cavalgando o Cavalo de guerra"), not a joint one: a card in the `accent` frame with three outlined buttons, "Disparada", "Desengajar", "Esquivar" (`TakeAction` with the mount's id; each is named as the mount's, "Disparada do Cavalo de guerra"), then one line.
   The three sit in one row, each as wide as its words and sharing what is left, with a 13 px label, so "Desengajar" is whole at 390 px and in the 368 px rail.

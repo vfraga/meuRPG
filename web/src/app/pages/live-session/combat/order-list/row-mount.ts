@@ -6,6 +6,7 @@ import {
   output,
   viewChild,
 } from '@angular/core';
+import { MatIconModule } from '@angular/material/icon';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelect, MatSelectModule } from '@angular/material/select';
 
@@ -23,8 +24,11 @@ import { SaddleIcon } from '../../../../shared/saddle-icon/saddle-icon';
 @Component({
   selector: 'app-row-mount',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [MatFormFieldModule, MatSelectModule, SaddleIcon],
+  imports: [MatFormFieldModule, MatIconModule, MatSelectModule, SaddleIcon],
   template: `
+    @if (view().note) {
+      <p class="mount__note">{{ view().note }}</p>
+    }
     <mat-form-field appearance="outline" class="mount__field" subscriptSizing="dynamic">
       <mat-label>Montaria</mat-label>
       <mat-select
@@ -32,6 +36,7 @@ import { SaddleIcon } from '../../../../shared/saddle-icon/saddle-icon';
         [attr.aria-busy]="busy()"
         [aria-label]="'Montaria: ' + label()"
         aria-describedby="mount-hint mount-why"
+        [hideSingleSelectionIndicator]="true"
         (valueChange)="pick.emit($event)"
       >
         <mat-select-trigger>
@@ -42,8 +47,15 @@ import { SaddleIcon } from '../../../../shared/saddle-icon/saddle-icon';
         </mat-select-trigger>
         @for (o of view().options; track o.kind) {
           <mat-option [value]="o.kind" [disabled]="o.disabled || busy()" class="mount__opt">
-            <b class="opt__t">{{ o.label }}</b>
-            <span class="opt__d">{{ o.hint }}</span>
+            <span class="opt__check">
+              @if (o.kind === view().current) {
+                <mat-icon aria-hidden="true">check</mat-icon>
+              }
+            </span>
+            <span class="opt__body">
+              <b class="opt__t">{{ o.label }}</b>
+              <span class="opt__d">{{ o.hint }}</span>
+            </span>
           </mat-option>
         }
       </mat-select>
@@ -51,9 +63,6 @@ import { SaddleIcon } from '../../../../shared/saddle-icon/saddle-icon';
     <p class="mount__hint" id="mount-hint">{{ view().hint }}</p>
     @if (view().why) {
       <p class="mount__why" id="mount-why">{{ view().why }}</p>
-    }
-    @if (view().note) {
-      <p class="mount__note">{{ view().note }}</p>
     }
   `,
   styles: `
@@ -78,10 +87,11 @@ import { SaddleIcon } from '../../../../shared/saddle-icon/saddle-icon';
       color: var(--mr-ink-muted);
       overflow-wrap: anywhere;
     }
+    // Above the field: the open list lies over what is under it, and the note must stay in view.
     .mount__note {
       margin: 0;
-      padding-top: 6px;
-      border-top: 1px solid var(--mr-line);
+      padding-bottom: 6px;
+      border-bottom: 1px solid var(--mr-line);
       font-size: var(--mr-font-13);
       line-height: 18px;
       color: var(--mr-ink-muted);
@@ -91,6 +101,29 @@ import { SaddleIcon } from '../../../../shared/saddle-icon/saddle-icon';
       height: auto;
       min-height: 48px;
       padding-block: 6px;
+    }
+    .mount__opt .mdc-list-item__primary-text {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+    }
+    // The chosen option: the check on the left, the name in the accent.
+    .opt__check {
+      flex: none;
+      width: 20px;
+      height: 20px;
+      color: var(--mr-accent-text);
+    }
+    .opt__check .mat-icon {
+      width: 20px;
+      height: 20px;
+      font-size: 20px;
+    }
+    .mount__opt.mdc-list-item--selected .opt__t {
+      color: var(--mr-accent-text);
+    }
+    .opt__body {
+      min-width: 0;
     }
     .opt__t,
     .opt__d {
