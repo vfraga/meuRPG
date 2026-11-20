@@ -519,6 +519,10 @@ message TableEffect {
   // them. Refused together with `from`, `set` and `filter`. The options the player may not
   // read are not in the pool; a feature that offers another feature's options is refused.
   string from_feature = 97;
+  // choice of kind "alternatives" only: a choice "one of these" that mixes kinds, a skill or a language, a skill or a
+  // tool. `count` is how many picks the player makes in all, from the union of the alternatives; each kind is listed
+  // once. Refused together with `from`, `set`, `filter`, `from_feature` and `daily_choice`.
+  repeated ChoiceAlternative alternatives = 98 [(meurpg.options.v1.max_items) = 3];
   // Field 90 is not used.
   reserved 90;
 }
@@ -531,6 +535,17 @@ message TableChoiceFilter {
   // The kinds of proficiency offered: "weapon", "tool" and "other" (the vehicles and the
   // kits the SRD lists apart from the tools). Each at most once; at least one.
   repeated string proficiency_kinds = 1 [(meurpg.options.v1.max_items) = 3];
+}
+
+// ChoiceAlternative is one kind of pick a choice of alternatives offers (TableEffect.alternatives).
+message ChoiceAlternative {
+  // "skill", "language" or "tool".
+  string kind = 1 [(meurpg.options.v1.max_len) = 16];
+  // The keys offered: SRD skill keys, language keys or proficiency keys. A skill or a language alternative lists at least
+  // one; a tool alternative lists keys or has a `filter`, not both.
+  repeated string from = 2 [(meurpg.options.v1.max_items) = 64];
+  // A tool alternative only: every proficiency of the kinds the filter names, in place of `from`.
+  TableChoiceFilter filter = 3;
 }
 
 // TableFeature is a class or subclass feature, a race or subrace trait, or a
