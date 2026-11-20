@@ -18,8 +18,9 @@ const (
 
 // The same fields, for the callers that name the list a pick is on.
 const (
-	SkillsField    = skillsField
-	ExpertiseField = expertiseField
+	SkillsField     = skillsField
+	ExpertiseField  = expertiseField
+	ChoiceKeysField = choiceKeysField
 )
 
 // readsFit says the derivation is the master's: a player's view of the table never carries the fit issue.

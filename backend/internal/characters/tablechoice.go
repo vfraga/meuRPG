@@ -112,7 +112,7 @@ func refuseUnfitPick(content *rules.Content, m authz.Membership, before func() *
 	if !found {
 		return nil
 	}
-	if strings.HasPrefix(field, "full.feature_choice_keys") && !view.IsToolProficiency(key) {
+	if strings.HasPrefix(field, rules.ChoiceKeysField) && !view.IsToolProficiency(key) {
 		return errUnknownKey("sheet." + field) // a tool pick of anything but a tool is a key the content does not have
 	}
 	return invalidArgument(&fieldError{field: "sheet." + field, err: errors.New(unfitSentence(view, buildOf(after), field, key))})
@@ -129,7 +129,7 @@ func unfitSentence(view *rules.Content, b rules.Build, field, key string) string
 	case strings.HasPrefix(field, rules.ExpertiseField) && listed:
 		name := view.NamePT(key)
 		return fmt.Sprintf("Não há vaga para a especialização em %s: as listas que a oferecem já estão preenchidas pelas outras especializações marcadas. Desmarque uma delas para marcar a especialização em %s.", name, name)
-	case strings.HasPrefix(field, "full.feature_choice_keys") && listed:
+	case strings.HasPrefix(field, rules.ChoiceKeysField) && listed:
 		name := view.ProficiencyNamePT(key)
 		return fmt.Sprintf("Não há vaga para a ferramenta %s: as listas que a oferecem já estão preenchidas pelas outras ferramentas marcadas. Desmarque uma delas para marcar %s.", name, name)
 	case strings.HasPrefix(field, rules.SkillsField):
