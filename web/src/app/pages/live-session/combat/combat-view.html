@@ -336,6 +336,7 @@
                   [hitPoints]="ownHitPoints()"
                   [effectNotes]="options()?.effectNotes ?? []"
                   (endTurn)="nextTurn()"
+                  (move)="moves.open()"
                   [formTime]="ownVitals()?.wildShape?.timeLeftPt ?? ''"
                   (endRage)="rage.end($event)"
                   (opportunity)="openAttack($event, true)"
@@ -1185,6 +1186,7 @@
           <div class="player__blocks">
             <app-action-groups
               [shapesAside]="!!riding() && !phone()"
+              [moveInBar]="!!riding() && laptop() && !joint()"
               [paired]="!!riding() && phone()"
               [withPair]="!!riding()"
               [options]="turnOptions"

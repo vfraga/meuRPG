@@ -190,6 +190,8 @@ export class ActionGroups {
   /** The character directs a mount and the screen is 768 px or wider: the pair card, projected in `[pair]`, comes
    * first and holds the character's shapes, so the economy row keeps only "Mover". On a phone the row is whole. */
   readonly shapesAside = input(false);
+  /** "Mover" is in the turn bar (a rider on a laptop): the panel's own economy row goes. */
+  readonly moveInBar = input(false);
   /** The pair card comes right under the economy row (a phone): the row has no divider and no room of its own under it. */
   readonly paired = input(false);
   /** A pair card is projected (`[pair]`): its slot is drawn, at any width. */

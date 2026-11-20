@@ -52,6 +52,7 @@ import { FormChip } from '../../../../shared/wild-shape/form-chip';
 import type { FallNote } from '../../../../core/traps/trap-log';
 import { CombatantToken } from '../../../../shared/combatant-token/combatant-token';
 import { PairToken } from '../../../../shared/combatant-token/pair-token';
+import { turnLineOf } from '../action-groups/turn-line';
 import { EndPart } from '../joint-turn/end-part';
 import { JointOthers } from '../joint-turn/joint-others';
 import { JointPill } from '../joint-turn/joint-pill';
@@ -143,6 +144,8 @@ export class TurnPanel {
   readonly hitPoints = input<OwnHitPoints | null>(null);
 
   readonly endTurn = output<void>();
+  /** "Mover" in the bar. */
+  readonly move = output<void>();
   /** "Ataque de oportunidade": the key of the melee attack. */
   readonly opportunity = output<string>();
   readonly endConcentration = output<void>();
@@ -158,6 +161,22 @@ export class TurnPanel {
    * 1280px the order is a column on the left, so the strip goes. */
   protected readonly desktop = mediaQuery('(min-width: 1024px)');
   protected readonly wide = mediaQuery('(min-width: 1280px)');
+  /** The rider's "Mover" is in the bar from 1024 px (the page's rail then has no economy row): the pair's one move. */
+  protected readonly barMove = computed(() => {
+    const me = this.own();
+    const mount = this.banner().riding;
+    if (!me || !mount || this.banner().joint) {
+      return false;
+    }
+    return turnLineOf(me, {
+      grappled: this.contest()?.grappled === true,
+      blocked: this.theatre() || this.contest()?.surprised === true,
+      attacksLeft: this.attacksLeft(),
+      attacksPerAction: this.attacksPerAction(),
+      mount,
+    }).canMove;
+  });
+
   protected readonly compact = computed(() => this.desktop() && this.banner().mine && !this.down());
   protected readonly banner = computed(() => turnBanner(this.encounter()));
   /** "Escondida" and "Surpresa": the state tags of the turn with the sentence under each (W7-X). */

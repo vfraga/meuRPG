@@ -145,6 +145,22 @@ describe('CombatView: the rider and the mount it directs', () => {
     expect(m.el.querySelectorAll('app-pair-card')).toHaveLength(1);
   });
 
+  it('from 1024 px has the one "Mover" in the turn bar beside "Encerrar turno", and no economy row under the card', async () => {
+    const m = mountCombatView({
+      enc: enc(),
+      turnOptions: (id) => (id === 'h' ? (three(true) as never) : undefined),
+      matches: ['(min-width: 1024px)'],
+    });
+    await settle(m.fixture);
+    const bar = m.el.querySelector('.banner__end')!;
+    const names = [...bar.querySelectorAll('button')].map((b) =>
+      b.textContent?.replace(/open_with|flag|\s+/g, ' ').trim(),
+    );
+    expect(names).toEqual(['Mover', 'Encerrar turno']);
+    expect(m.el.querySelector('.econ')).toBeNull();
+    expect(m.el.querySelectorAll('button.banner__move, .econ__move')).toHaveLength(1);
+  });
+
   it('keeps the card, dashed, beside the death saves of a rider at 0 hit points', async () => {
     const m = mountCombatView({
       enc: enc('controlled', CombatantState.DYING),

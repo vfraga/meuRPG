@@ -198,17 +198,15 @@ describe('PairCard', () => {
     expect(off.acted).toEqual([]);
   });
 
-  it('fits three in a row at 390 px and in the 368 px rail: each as wide as its words, sharing what is left, on one line', () => {
+  it('fits three equal thirds on one row at 390 px and in the 368 px rail', () => {
     const { el, buttons } = setup();
     const row = getComputedStyle(el.querySelector('.pair__actions')!);
-    expect(row.display).toBe('flex');
+    // Three equal columns; under about 360 px (320 is supported) they go two and one, and no label is cut.
+    expect(row.display).toBe('grid');
+    expect(row.gridTemplateColumns).toBe('repeat(3, minmax(0, 1fr))');
     expect(row.gap).toBe('6px');
-    // Under about 360 px (320 is supported) the three do not fit: the row wraps, and no label is cut.
-    expect(row.flexWrap).toBe('wrap');
     for (const b of buttons()) {
       const s = getComputedStyle(b);
-      expect(s.flexGrow).toBe('1');
-      expect(s.flexBasis).toBe('auto');
       expect(s.minWidth).toBe('0px');
       expect(s.whiteSpace).toBe('nowrap');
       expect(s.paddingLeft).toBe('6px');

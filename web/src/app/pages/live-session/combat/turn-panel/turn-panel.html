@@ -39,6 +39,20 @@
       @if (banner().joint) {
         <app-end-part [note]="footerNote()" [left]="partLeft()" [busy]="busy()" (endPart)="endTurn.emit()" />
       } @else {
+        @if (barMove()) {
+          <!-- The rider's one "Mover" (it moves the pair): in the bar beside "Encerrar turno", with the economy row of the rail gone. -->
+          <button
+            matButton="outlined"
+            type="button"
+            class="banner__move"
+            [class.mr-button--off]="!!waiting()?.title"
+            [disabled]="!!waiting()?.title || busy()"
+            disabledInteractive
+            (click)="!waiting()?.title && move.emit()"
+          >
+            <mat-icon aria-hidden="true">open_with</mat-icon>Mover
+          </button>
+        }
         <app-end-turn class="banner__endturn" [block]="true" [filled]="true" [own]="me" [attacksLeft]="attacksLeft()" [settling]="optionsSettling()" [busy]="busy()" [waiting]="waiting()?.title ?? ''" [label]="endLabel()" [surprised]="surprised()" (endTurn)="endTurn.emit()" />
       }
     </div>

@@ -56,14 +56,18 @@
   color: var(--mr-ink);
 }
 
-// Three in a row at 390 px and in the 368 px rail: each button as wide as its words, sharing what is left.
-// Equal columns would cut "Desengajar"; the label is one step smaller and the padding tight.
-// Under about 360 px (320 is supported) the three do not fit on one row: the row wraps, and no label is cut.
+// Three equal thirds on one row, the last button ending on the card's right edge, where the mount's line ends too.
+// The label is one step smaller and the padding tight, so "Desengajar" fits its third at 390 px and in the 368 px rail.
+// Under about 360 px (320 is supported) the three do not fit on one row: they go two and one, and no label is cut.
 .pair__actions {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 6px;
   margin-top: 10px;
+
+  @media (max-width: 359.98px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 .pair__act {
@@ -71,7 +75,6 @@
   --mat-button-outlined-horizontal-padding: 6px;
   --mat-button-outlined-icon-spacing: 4px;
   --mat-button-outlined-icon-offset: 0;
-  flex: 1 1 auto;
   min-width: 0;
   padding: 0 6px;
   white-space: nowrap;

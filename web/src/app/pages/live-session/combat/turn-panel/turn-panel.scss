@@ -226,9 +226,16 @@
 .banner__end {
   display: grid;
   flex: none;
-  grid-auto-columns: minmax(180px, 1fr);
+  grid-auto-columns: minmax(150px, 1fr);
+  grid-auto-flow: column;
+  gap: 12px;
   align-items: center;
-  max-width: 420px;
+  max-width: 460px;
+}
+
+.banner__move {
+  --mat-button-outlined-container-height: 44px;
+  white-space: nowrap;
 }
 
 .banner__strip {
