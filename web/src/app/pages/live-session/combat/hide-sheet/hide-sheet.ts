@@ -27,7 +27,6 @@ import { HeldRollController } from '../../../../core/held-rolls/held-roll-contro
 import { ResourceClient } from '../../../../core/resources/resources-client';
 import { HeldRollPrompt } from '../../../../shared/held-roll-prompt/held-roll-prompt';
 import { waysOf } from '../contest-held';
-import { article } from '../../../../core/combat/combat-log';
 import { RollAnimator, showOfCheck } from '../../../../shared/roll-overlay/roll-animator';
 import { combatErrorMessage } from '../../../../core/combat/combat-errors';
 import type { CombatState } from '../../../../core/combat/combat-state';
@@ -166,8 +165,6 @@ export class HideSheet {
   protected readonly modifier = this.data.option?.modifier ?? 0;
   protected readonly modifierText = signed(this.modifier);
   protected readonly subtitle = `${this.data.economy} · Destreza (${CHECK})`;
-  /** "quem a vê claramente" / "quem o vê claramente", by the character's name. */
-  protected readonly seen = computed(() => (article(this.own()?.label ?? '') === 'a' ? 'a' : 'o'));
   protected readonly status = computed(() => this.attempt()?.status);
   protected readonly Pending = HideAttemptStatus.PENDING;
   protected readonly Applied = HideAttemptStatus.APPLIED;

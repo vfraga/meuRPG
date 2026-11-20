@@ -116,7 +116,7 @@ describe("HideMasterCard, the master's decision on a Hide", () => {
     expect(api.hideDecisions[0].key).toEqual(expect.any(String));
     expect(state.encounter()?.revision).toBe(9);
     expect(contests.attempt('hd1')?.status).toBe(HideAttemptStatus.APPLIED);
-    expect(said).toEqual(['Brisa está escondido.']);
+    expect(said).toEqual(['Brisa se escondeu.']);
   });
 
   it('refuses with a reason of one sentence', async () => {

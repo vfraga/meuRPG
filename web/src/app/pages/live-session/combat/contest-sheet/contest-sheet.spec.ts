@@ -496,7 +496,7 @@ describe('ContestSheet', () => {
       expect(text()).toContain('Resultado');
       expect(text()).toContain('Você venceu a disputa. Escolha o que fazer com o Hobgoblin.');
       expect(text()).toContain(
-        'Derrubar O Hobgoblin fica Derrubado: só rasteja. Ataque corpo a corpo a até 1,5 m tem vantagem; de mais longe, desvantagem.',
+        'Derrubar O Hobgoblin fica Derrubado: só rasteja. Ataque corpo a corpo contra a criatura a até 1,5 m tem vantagem; de mais longe, desvantagem.',
       );
       expect(text()).toContain('Empurrar 1,5 m Para longe de você, em linha reta.');
       const push = el.querySelectorAll<HTMLInputElement>('input[name="shove"]')[1];
@@ -591,7 +591,7 @@ describe('ContestSheet', () => {
       expect(radios[0].checked).toBe(true);
     });
 
-    it('rolls with the chosen skill, spends nothing here, and says "Continua agarrada. A ação foi gasta." when lost', async () => {
+    it('rolls with the chosen skill, spends nothing here, and says "Continua Agarrado. A ação foi gasta." when lost', async () => {
       const { el, button, settle, text, contests } = escape();
       api.contest = contestView({
         purpose: ContestPurpose.ESCAPE,
@@ -619,7 +619,7 @@ describe('ContestSheet', () => {
       expect(plain(el.querySelector('.roll__formula')?.textContent)).toBe(
         '1d20 (9) + 7 · Acrobacia',
       );
-      expect(text()).toContain('Continua agarrada. A ação foi gasta.');
+      expect(text()).toContain('Continua Agarrado. A ação foi gasta.');
       expect(contests.contests()).toHaveLength(1);
     });
 

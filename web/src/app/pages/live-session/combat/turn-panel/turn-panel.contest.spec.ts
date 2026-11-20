@@ -24,20 +24,14 @@ function panel(label: string, state: Parameters<typeof create<typeof ContestTurn
   return fixture.nativeElement as HTMLElement;
 }
 
-describe('TurnPanel: Escondida and Surpresa (W7-X)', () => {
-  it('says "Escondida" with the sentence, never from whom (board W7-Xc 8b)', () => {
+describe('TurnPanel: Escondido and Surpresa (W7-X)', () => {
+  it('says "Escondido" with the sentence, never from whom (board W7-Xc 8b)', () => {
     const el = panel('Brisa', { hidden: true });
     const tag = el.querySelector('.turn__state .mr-tag');
     expect(textOf(tag!)).toBe('Escondido');
     expect(tag?.classList).toContain('mr-tag--success');
     expect(textOf(el.querySelector('.turn__state')!)).toBe('Escondido Você está escondido.');
     expect(textOf(el)).not.toMatch(/Percepção|notou|vê claramente/);
-  });
-
-  it('says it in the masculine for a male character', () => {
-    expect(textOf(panel('Toren', { hidden: true }).querySelector('.turn__state')!)).toBe(
-      'Escondido Você está escondido.',
-    );
   });
 
   it('says "Surpresa" with what it means for the turn (board W7-Xc 11)', () => {

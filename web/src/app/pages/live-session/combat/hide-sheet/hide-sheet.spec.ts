@@ -94,7 +94,7 @@ describe('HideSheet (board W7-Xc 8)', () => {
     expect(textOf(el.querySelector('h2')!)).toBe('Esconder-se');
     expect(text()).toContain('Ação · Destreza (Furtividade)');
     expect(text()).toContain(
-      'O mestre confirma se há onde se esconder. Você não se esconde de quem a vê claramente.',
+      'O mestre confirma se há onde se esconder. Você não se esconde de quem vê claramente quem se esconde.',
     );
     expect(text()).toContain('Seu teste de Furtividade: +7.');
     expect(button('Rolar no app')).toBeTruthy();
@@ -127,10 +127,9 @@ describe('HideSheet (board W7-Xc 8)', () => {
     expect(api.hides.map((h) => h.die)).toEqual([{ faces: [12] }]);
   });
 
-  it('says "Ação bônus" for the rogue’s Cunning Action, and "o vê" for a male character', () => {
+  it('says "Ação bônus" for the rogue’s Cunning Action', () => {
     const { text } = setup({ economy: 'Ação bônus', combatantId: 't' });
     expect(text()).toContain('Ação bônus · Destreza (Furtividade)');
-    expect(text()).toContain('de quem o vê claramente');
   });
 
   it('rolls with the action key and waits for the master, saying nothing of who noticed', async () => {
@@ -182,7 +181,7 @@ describe('HideSheet (board W7-Xc 8)', () => {
     await settle();
     expect(text()).toContain('Você está escondido.');
     expect(text()).toContain(
-      'Você sai do esconderijo quando atacar, conjurar ou for vista. O mestre decide o que cada criatura percebe.',
+      'Você sai do esconderijo quando atacar, conjurar ou quando alguém perceber você. O mestre decide o que cada criatura percebe.',
     );
     expect(document.activeElement?.textContent).toContain('Fechar');
   });

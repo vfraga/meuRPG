@@ -286,13 +286,9 @@ export interface InitiatorVerdict {
   readonly won: boolean;
 }
 
-/** The verdict of a grapple, a shove or an escape for the one that rolled first, once decided; never a total. `own` is the
- * label of the one that reads it (an escape says "Continua agarrada" by its gender). */
-export function initiatorVerdict(
-  c: ContestView,
-  target: Who,
-  own: string,
-): InitiatorVerdict | null {
+/** The verdict of a grapple, a shove or an escape for the one that rolled first, once decided; never a total. An escape says
+ * "Continua Agarrado". */
+export function initiatorVerdict(c: ContestView, target: Who): InitiatorVerdict | null {
   if (c.status === ContestStatus.CLOSED) {
     return { lead: 'O mestre encerrou a disputa.', rest: 'A ação foi gasta.', won: false };
   }
@@ -300,7 +296,7 @@ export function initiatorVerdict(
     return null;
   }
   if (c.purpose === ContestPurpose.ESCAPE) {
-    return escapeVerdict(c, own);
+    return escapeVerdict(c);
   }
   const the = named(target);
   if (initiatorWon(c)) {
@@ -334,8 +330,8 @@ function shoveDone(c: ContestView, target: Who): string {
   }
 }
 
-/** The result of an escape: "Você se soltou." / "Continua agarrada. A ação foi gasta." (a fixed DC says "Você escapou."). */
-export function escapeVerdict(c: ContestView, own = ''): InitiatorVerdict {
+/** The result of an escape: "Você se soltou." / "Continua Agarrado. A ação foi gasta." (a fixed DC says "Você escapou."). */
+export function escapeVerdict(c: ContestView): InitiatorVerdict {
   const won = initiatorWon(c);
   if (won) {
     return {
@@ -345,7 +341,7 @@ export function escapeVerdict(c: ContestView, own = ''): InitiatorVerdict {
     };
   }
   return {
-    lead: own && article(own) === 'a' ? 'Continua agarrada.' : 'Continua agarrado.',
+    lead: `Continua ${grappledWord()}.`,
     rest: 'A ação foi gasta.',
     won: false,
   };
@@ -410,10 +406,10 @@ export function pushLine(blocked: ShoveBlockedReason): string {
   }
 }
 
-/** The line under "Derrubar": "O Hobgoblin fica Derrubado: só rasteja. Ataque corpo a corpo a até 1,5 m tem vantagem; de mais longe, desvantagem." */
+/** The line under "Derrubar": "O Hobgoblin fica Derrubado: só rasteja. Ataque corpo a corpo contra a criatura a até 1,5 m tem vantagem; de mais longe, desvantagem." */
 export function proneLine(target: Who): string {
   return tight(
-    `${upFirst(named(target))} fica ${proneWord()}: só rasteja. Ataque corpo a corpo a até 1,5 m tem vantagem; de mais longe, desvantagem.`,
+    `${upFirst(named(target))} fica ${proneWord()}: só rasteja. Ataque corpo a corpo contra a criatura a até 1,5 m tem vantagem; de mais longe, desvantagem.`,
   );
 }
 

@@ -185,7 +185,7 @@ export class HideMasterCard {
       this.said.emit(
         refuse
           ? `Esconderijo de ${this.hiderLabel()} recusado.`
-          : `${this.hiderLabel()} está ${hiddenWord()}.`,
+          : `${this.hiderLabel()} se escondeu.`,
       );
     } catch (err) {
       this.error.set(combatErrorMessage(err, 'decidir o esconderijo'));

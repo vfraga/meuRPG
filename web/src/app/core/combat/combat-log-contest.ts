@@ -1,18 +1,7 @@
 import { type CombatLogEntry } from '../../../gen/meurpg/play/v1/combat_pb';
 import { ContestLogLine } from '../../../gen/meurpg/play/v1/contest_types_pb';
-import { article } from '../format/article';
 import { LogContext } from './combat-log-types';
 import { ofSubject, subject } from './combat-log-words';
-
-/** "surpreso" or "surpresa", by the name. */
-function surprisedWord(label: string): string {
-  return article(label) === 'a' ? 'surpresa' : 'surpreso';
-}
-
-/** "escondido" or "escondida", by the name. */
-function hiddenWordOf(label: string): string {
-  return article(label) === 'a' ? 'escondida' : 'escondido';
-}
 
 /** What each line of a contest or special action says (W7-X) and its icon: the sentence follows the actor, who is in bold. */
 const CONTEST_LINES: Partial<
@@ -53,24 +42,22 @@ const CONTEST_LINES: Partial<
     say: () => ' não conseguiu se esconder',
   },
   [ContestLogLine.HELPED]: { icon: 'handshake', say: (w) => ` ajudou ${w.target}` },
-  [ContestLogLine.SURPRISED]: { icon: 'bolt', say: (w) => ` está ${w.surprised}` },
+  [ContestLogLine.SURPRISED]: { icon: 'bolt', say: () => ' sofre surpresa' },
   [ContestLogLine.SURPRISE_CLEARED]: {
     icon: 'bolt',
-    say: (w) => ` não está mais ${w.surprised}`,
+    say: () => ' não sofre mais surpresa',
   },
   [ContestLogLine.STOOD_UP]: { icon: 'accessibility_new', say: () => ' se levantou' },
   [ContestLogLine.HIDE_REVEALED]: {
     icon: 'visibility',
-    say: (w) => ` não está mais ${w.hidden}`,
+    say: () => ' não se esconde mais',
   },
 };
 
-/** The names a contest line is written with: the target ("o Hobgoblin", "Brisa"), "do Hobgoblin", and "surpresa". */
+/** The names a contest line is written with: the target ("o Hobgoblin", "Brisa"), "do Hobgoblin". */
 interface ContestWords {
   readonly target: string;
   readonly from: string;
-  readonly surprised: string;
-  readonly hidden: string;
 }
 
 /** A contest or a special action (W7-X): the sentence from the line the server named, never a total or a DC (RN-20). `null` for a line this app does not know. */
@@ -88,8 +75,6 @@ export function contestText(
     text: line.say({
       target: subject(label, ctx),
       from: ofSubject(label, ctx),
-      surprised: surprisedWord(e.actorLabel),
-      hidden: hiddenWordOf(e.actorLabel),
     }),
   };
 }

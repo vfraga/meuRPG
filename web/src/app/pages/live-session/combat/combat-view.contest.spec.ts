@@ -449,7 +449,7 @@ describe('CombatView, the contests of the player (W7-X)', () => {
     expect(opened).toHaveLength(0);
   });
 
-  it('says "Escondida" on the turn and the notes of a surprised character', async () => {
+  it('says "Escondido" on the turn and the notes of a surprised character', async () => {
     const hidden = setup({ contest: create(ContestTurnStateSchema, { hidden: true }) });
     await settle(hidden.fixture);
     expect(textOf(hidden.el)).toContain('Escondido Você está escondido.');

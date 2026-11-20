@@ -324,7 +324,7 @@ export class HitRiderCard {
   }
 
   protected proneHint(o: HitRiderOffer): string {
-    return `${this.saveText('Destreza', o)} Se falhar, fica derrubado.`;
+    return `${this.saveText('Destreza', o)} Se falhar, fica Derrubado.`;
   }
 
   protected pushHint(o: HitRiderOffer): string {

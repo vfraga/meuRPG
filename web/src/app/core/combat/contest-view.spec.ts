@@ -219,12 +219,12 @@ describe('the words of the contests (W7-X)', () => {
   describe('what the one that started reads once it is decided', () => {
     it('a won grapple says the target is Agarrado, whoever it is, and how it is held', () => {
       const won = contestView({ status: ContestStatus.RESOLVED, winner: ContestWinner.INITIATOR });
-      expect(initiatorVerdict(won, hob, 'Toren')).toEqual({
+      expect(initiatorVerdict(won, hob)).toEqual({
         lead: 'Você venceu a disputa.',
         rest: 'O Hobgoblin está Agarrado.',
         won: true,
       });
-      expect(initiatorVerdict(won, brisa, 'Toren')?.rest).toBe('Brisa está Agarrado.');
+      expect(initiatorVerdict(won, brisa)?.rest).toBe('Brisa está Agarrado.');
       expect(HOLD_LINE).toBe(
         'Você mantém o agarrão enquanto quiser (solte sem gastar ação). Se você se mover, leva a criatura junto, com o deslocamento pela metade.',
       );
@@ -232,31 +232,27 @@ describe('the words of the contests (W7-X)', () => {
 
     it('a lost or tied grapple says only that it did not work, never a total', () => {
       const lost = contestView({ status: ContestStatus.RESOLVED, winner: ContestWinner.DEFENDER });
-      expect(initiatorVerdict(lost, hob, 'Toren')).toEqual({
+      expect(initiatorVerdict(lost, hob)).toEqual({
         lead: 'Você não conseguiu agarrar o Hobgoblin.',
         rest: '',
         won: false,
       });
       const tie = contestView({ status: ContestStatus.RESOLVED, winner: ContestWinner.TIE });
-      expect(initiatorVerdict(tie, hob, 'Toren')?.lead).toBe('Empate: nada muda.');
-      expect(initiatorVerdict(tie, hob, 'Toren')?.rest).toBe(
-        'Você não conseguiu agarrar o Hobgoblin.',
-      );
+      expect(initiatorVerdict(tie, hob)?.lead).toBe('Empate: nada muda.');
+      expect(initiatorVerdict(tie, hob)?.rest).toBe('Você não conseguiu agarrar o Hobgoblin.');
       const shove = contestView({
         purpose: ContestPurpose.SHOVE,
         status: ContestStatus.RESOLVED,
         winner: ContestWinner.DEFENDER,
       });
-      expect(initiatorVerdict(shove, hob, 'Toren')?.lead).toBe(
-        'Você não conseguiu empurrar o Hobgoblin.',
-      );
+      expect(initiatorVerdict(shove, hob)?.lead).toBe('Você não conseguiu empurrar o Hobgoblin.');
     });
 
     it('says nothing while the contest waits, and that the master closed one', () => {
-      expect(initiatorVerdict(contestView(), hob, 'Toren')).toBeNull();
-      expect(
-        initiatorVerdict(contestView({ status: ContestStatus.CLOSED }), hob, 'Toren')?.lead,
-      ).toBe('O mestre encerrou a disputa.');
+      expect(initiatorVerdict(contestView(), hob)).toBeNull();
+      expect(initiatorVerdict(contestView({ status: ContestStatus.CLOSED }), hob)?.lead).toBe(
+        'O mestre encerrou a disputa.',
+      );
     });
 
     it('a won shove says what was done', () => {
@@ -269,14 +265,13 @@ describe('the words of the contests (W7-X)', () => {
             shoveOutcome,
           }),
           hob,
-          'Toren',
         )?.rest;
       expect(done(ShoveOutcome.PRONE)).toBe('O Hobgoblin está Derrubado.');
       expect(plain(done(ShoveOutcome.PUSH) ?? '')).toBe('Você empurrou o Hobgoblin 1,5 m.');
       expect(done(ShoveOutcome.STAYS)).toBe('O Hobgoblin não saiu do lugar.');
     });
 
-    it('an escape says "Você se soltou", "Você escapou" against a fixed DC, or "Continua agarrada"', () => {
+    it('an escape says "Você se soltou", "Você escapou" against a fixed DC, or "Continua Agarrado"', () => {
       const won = contestView({
         purpose: ContestPurpose.ESCAPE,
         status: ContestStatus.RESOLVED,
@@ -285,12 +280,11 @@ describe('the words of the contests (W7-X)', () => {
       expect(escapeVerdict(won).lead).toBe('Você se soltou.');
       expect(escapeVerdict({ ...won, kind: ContestKind.ESCAPE_DC }).lead).toBe('Você escapou.');
       const lost = { ...won, winner: ContestWinner.DEFENDER };
-      expect(escapeVerdict(lost, 'Brisa')).toEqual({
-        lead: 'Continua agarrada.',
+      expect(escapeVerdict(lost)).toEqual({
+        lead: 'Continua Agarrado.',
         rest: 'A ação foi gasta.',
         won: false,
       });
-      expect(escapeVerdict(lost, 'Toren').lead).toBe('Continua agarrado.');
     });
 
     it('the escape’s sentence names whom the test is against, with no number', () => {
@@ -349,7 +343,7 @@ describe('the words of the contests (W7-X)', () => {
   describe('the shove’s choice', () => {
     it('says what each outcome does, and why a push is blocked', () => {
       expect(plain(proneLine(hob))).toBe(
-        'O Hobgoblin fica Derrubado: só rasteja. Ataque corpo a corpo a até 1,5 m tem vantagem; de mais longe, desvantagem.',
+        'O Hobgoblin fica Derrubado: só rasteja. Ataque corpo a corpo contra a criatura a até 1,5 m tem vantagem; de mais longe, desvantagem.',
       );
       expect(pushLine(ShoveBlockedReason.UNSPECIFIED)).toBe('Para longe de você, em linha reta.');
       expect(pushLine(ShoveBlockedReason.WALL)).toBe(

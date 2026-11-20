@@ -17,7 +17,7 @@ export interface Recipient {
   readonly amount: string;
   /** A state word beside the name ("Caído"), with its icon. */
   readonly tag?: { readonly label: string; readonly icon: string };
-  /** A quiet line under the sub ("Ainda de pé: recebe a sua parte."). */
+  /** A quiet line under the sub ("Não morreu: recebe a parte do grupo."). */
   readonly note?: string;
 }
 

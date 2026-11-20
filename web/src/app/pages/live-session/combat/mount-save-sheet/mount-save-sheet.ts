@@ -33,6 +33,7 @@ import { mountSaveResultView, mountSaveView } from '../../../../core/combat/moun
 import { ActionKey } from '../../../../core/connect/idempotency';
 import { genericDieFields, missingDice } from '../../../../core/effects/effects';
 import { HeldFollow } from '../../../../core/held-rolls/held-follow';
+import { RETRY_MS } from '../../../../core/held-rolls/held-questions';
 import { HeldRollController } from '../../../../core/held-rolls/held-roll-controller';
 import { type HeldAnswer, heldOfferOf } from '../../../../core/held-rolls/held-roll-offer';
 import { ResourceClient } from '../../../../core/resources/resources-client';
@@ -66,8 +67,6 @@ const EFFECT_DIE_FACES = 4;
 /** How often the master's wait is counted again, in milliseconds. */
 const CLOCK_TICK_MS = 1000;
 const MS_PER_SECOND = 1000;
-/** How long the buttons wait after the server refused the master as too early, in milliseconds. */
-const RETRY_MS = 2000;
 
 /**
  * "Você cai da montaria?", the Dexterity saving throw of a rider whose mount was moved
@@ -208,7 +207,11 @@ export class MountSaveSheet {
     if (this.data.byMaster) {
       effect(() => {
         if (this.held.refusal() === 'too-early') {
-          untracked(() => this.retryAt.set(Date.now() + RETRY_MS));
+          untracked(() => {
+            const now = Date.now();
+            this.clock.set(now);
+            this.retryAt.set(now + RETRY_MS);
+          });
         }
       });
       const timer = setInterval(() => this.clock.set(Date.now()), CLOCK_TICK_MS);

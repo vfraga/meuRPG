@@ -67,7 +67,7 @@ describe('HitRiderCard', () => {
     const f = TestBed.createComponent(Host);
     f.detectChanges();
     const text = ((f.nativeElement as HTMLElement).textContent ?? '').replace(/\s+/g, ' ');
-    expect(text).toContain('Teste de Destreza CD 14. Se falhar, fica derrubado.');
+    expect(text).toContain('Teste de Destreza CD 14. Se falhar, fica Derrubado.');
     expect(text).toContain('Teste de Força CD 14. Se falhar, é empurrado até 4,5 m.');
     expect(text).toContain('não pode usar reações até o fim do seu próximo turno');
   });

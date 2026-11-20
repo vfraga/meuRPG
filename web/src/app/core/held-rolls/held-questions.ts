@@ -17,7 +17,7 @@ const TICK_MS = 1000;
 const MS_PER_SECOND = 1000;
 /** When the server refuses the master as too early although the local clock says it is time (the clocks differ), the
  * buttons wait this long before trying again, in milliseconds. */
-const RETRY_MS = 2000;
+export const RETRY_MS = 2000;
 
 /** Where a question of the master stands:
  * - `waiting`: the roller answers first (the first ten seconds);

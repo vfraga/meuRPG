@@ -223,7 +223,7 @@ export class CombatXp {
         note: dead
           ? 'Morreu: não recebe XP.'
           : on && isDown(c)
-            ? 'Ainda de pé: recebe a sua parte.'
+            ? 'Não morreu: recebe a parte do grupo.'
             : undefined,
       };
     }),

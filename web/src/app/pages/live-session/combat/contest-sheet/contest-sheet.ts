@@ -309,7 +309,7 @@ export class ContestSheet {
   protected readonly waitingForMaster = computed(() => this.waitTitle() === 'Esperando o mestre');
   protected readonly verdict = computed(() => {
     const c = this.contest();
-    return c ? initiatorVerdict(c, this.other(), this.initiator()?.label ?? '') : null;
+    return c ? initiatorVerdict(c, this.other()) : null;
   });
   protected readonly holds = computed(
     () =>

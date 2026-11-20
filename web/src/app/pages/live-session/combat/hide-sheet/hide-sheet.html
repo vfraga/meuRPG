@@ -31,7 +31,7 @@
           <p><b>Você está {{ hidden() }}.</b></p>
         </div>
         <p class="line">
-          Você sai do esconderijo quando atacar, conjurar ou for vista. O mestre decide o que cada criatura percebe.
+          Você sai do esconderijo quando atacar, conjurar ou quando alguém perceber você. O mestre decide o que cada criatura percebe.
         </p>
       }
       @default {
@@ -49,7 +49,7 @@
   } @else {
     <div class="mr-notice mr-notice--neutral note">
       <mat-icon aria-hidden="true">info</mat-icon>
-      <p>O mestre confirma se há onde se esconder. Você não se esconde de quem {{ seen() }} vê claramente.</p>
+      <p>O mestre confirma se há onde se esconder. Você não se esconde de quem vê claramente quem se esconde.</p>
     </div>
     <p class="line">Seu teste de <b>{{ checkName }}</b>: <b>{{ modifierText }}</b>.</p>
     @if (held.offer(); as o) {

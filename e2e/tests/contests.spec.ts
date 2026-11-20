@@ -148,7 +148,7 @@ test('a ladina se esconde com a Ação Ardilosa sem ler quem notou, e ajuda um a
     await openActionTab(p, 'Ladino');
     await p.getByRole('button', { name: 'Usar Ação Ardilosa: Esconder' }).click();
     const sheet = p.getByRole('dialog');
-    await expect(sheet).toContainText(/Você não se esconde de quem [oa] vê claramente/);
+    await expect(sheet).toContainText(/Você não se esconde de quem vê claramente quem se esconde/);
     await typeD20(sheet, 20);
     await expect(sheet.getByText(/Esperando o mestre/)).toBeVisible();
 

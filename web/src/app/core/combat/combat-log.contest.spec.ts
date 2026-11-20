@@ -46,12 +46,12 @@ describe('the contest lines of the combat log (W7-X)', () => {
     [ContestLogLine.HIDE_APPLIED, 'Brisa', '', ' se escondeu'],
     [ContestLogLine.HIDE_REFUSED, 'Brisa', '', ' não conseguiu se esconder'],
     [ContestLogLine.HIDE_TRIED, 'Brisa', '', ' tentou se esconder'],
-    [ContestLogLine.SURPRISED, 'Nael', '', ' está surpreso'],
-    [ContestLogLine.SURPRISED, 'Brisa', '', ' está surpresa'],
-    [ContestLogLine.SURPRISE_CLEARED, 'Brisa', '', ' não está mais surpresa'],
+    [ContestLogLine.SURPRISED, 'Nael', '', ' sofre surpresa'],
+    [ContestLogLine.SURPRISED, 'Brisa', '', ' sofre surpresa'],
+    [ContestLogLine.SURPRISE_CLEARED, 'Brisa', '', ' não sofre mais surpresa'],
     [ContestLogLine.STOOD_UP, 'Brisa', '', ' se levantou'],
-    [ContestLogLine.HIDE_REVEALED, 'Brisa', '', ' não está mais escondida'],
-    [ContestLogLine.HIDE_REVEALED, 'Nael', '', ' não está mais escondido'],
+    [ContestLogLine.HIDE_REVEALED, 'Brisa', '', ' não se esconde mais'],
+    [ContestLogLine.HIDE_REVEALED, 'Nael', '', ' não se esconde mais'],
   ])('%s', (kind, actor, target, text) => {
     expect(line(kind, actor, target)?.text).toBe(text);
   });
