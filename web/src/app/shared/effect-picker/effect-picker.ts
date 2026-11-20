@@ -31,8 +31,8 @@ import {
   meterKey,
   unreadableNumber,
 } from '../../core/content/effect-draft';
-import { readWhole, wholeText } from '../../core/content/whole-number';
-import { withNumber } from '../../core/content/effect-number';
+import { readField, withNumber } from '../../core/content/effect-number';
+import { withResource, withRolls } from '../../core/content/effect-edits';
 import { keptView } from '../../core/content/effect-kept';
 import { neverFolded, visibleFields } from '../../core/content/effect-visible';
 import type { EffectMenuField } from '../../../gen/meurpg/rules/v1/table_content_pb';
@@ -48,6 +48,8 @@ import { RadioCards, type RadioCard } from '../form-fields/radio-cards';
 import { SelectField, type SelectOption } from '../form-fields/select-field';
 import { TextField } from '../form-fields/text-field';
 import { CHOICE_GROUP_ICON, insertIntoField } from './effect-picker-choices';
+import { noSource } from '../../core/content/effect-choice-source';
+import { ChoiceSourceView } from './choice-source-view';
 import { FeatChoiceView } from './feat-choice-view';
 import {
   afterTarget,
@@ -133,6 +135,8 @@ export class EffectPicker {
    * "Conjunto" field and, once a set is offered, the list of marked options.
    */
   readonly sourceInCards = input(false);
+  /** The effect may offer the options of another feature (`from_feature`): a class or subclass feature of the table. */
+  readonly offerFeatures = input(false);
   /** A block drawn under the fields and above "Mais opções": the feat editor's cards. */
   readonly afterFields = input<TemplateRef<unknown> | null>(null);
 
@@ -148,6 +152,16 @@ export class EffectPicker {
   });
 
   readonly effectChange = output<EffectDraft>();
+
+  /** Where the options of a choice come from: the list, a filter of proficiencies, or the options of another feature. */
+  protected readonly source: ChoiceSourceView = new ChoiceSourceView({
+    effect: this.effect,
+    menu: this.menu,
+    offerFeatures: this.offerFeatures,
+    featOption: this.featOption,
+    fields: (): readonly EffectMenuField[] => this.fields(),
+    emit: (e) => this.effectChange.emit(e),
+  });
 
   protected readonly typeOptions = computed<SelectOption[]>(() => {
     const menu = this.menu();
@@ -177,25 +191,28 @@ export class EffectPicker {
     ownerName: this.ownerName,
     inFeat: () => this.inFeat(),
   });
-  protected readonly allFields = computed(() =>
+  protected readonly allFields = computed<readonly EffectMenuField[]>(() =>
     visibleFields(this.menu().fieldsOf(this.effect().type), this.effect()).filter(
       // The feat editor names a choice by itself ("habilidade"), so the field is not asked.
       (f) =>
         !(f.name === 'name' && this.featEditor()) &&
         !(this.power.active() && POWER_BLOCK_FIELDS.has(f.name)) &&
+        !this.source.hidden(f) &&
         !this.feat.inCards(f, this.issuesOf()(this.path(f.name)).length > 0),
     ),
   );
   /** "Mais opções": the optional fields stay folded until they hold something, a refusal points at them, or the person opens them;
    * a field the menu says is always shown (what the effect does lies in it, as ranged_attack's switches) is never folded. */
   protected readonly expanded = signal(false);
-  protected readonly fields = computed(() =>
+  protected readonly fields = computed<readonly EffectMenuField[]>(() =>
     this.allFields().filter(
       (f) =>
         this.expanded() ||
         f.required ||
         f.alwaysShown ||
         neverFolded(this.effect().type, f.name) ||
+        f.name === 'filter' ||
+        f.name === 'from_feature' ||
         f.name === 'only_proficient' ||
         f.name === 'cap' ||
         this.filled(f) ||
@@ -238,7 +255,9 @@ export class EffectPicker {
   /** Rows the whole width of the effect: the rolls and the scope cards. */
   protected wide(f: EffectMenuField): boolean {
     const v = this.viewOf(f);
-    return v === 'rolls' || v === 'aura' || (v === 'cards' && f.name === 'applies');
+    return (
+      v === 'rolls' || v === 'aura' || v === 'filter' || (v === 'cards' && f.name === 'applies')
+    );
   }
 
   protected readonly resource = this.power.resource;
@@ -260,12 +279,8 @@ export class EffectPicker {
     return name === 'at_most' ? 'ou menos' : '';
   }
 
-  protected modeLocked(f: EffectMenuField): boolean {
-    return modeIsFixed(this.menu(), this.effect(), f.name);
-  }
-
   protected locked(f: EffectMenuField): boolean {
-    return this.modeLocked(f) || this.feat.countLocked(f);
+    return modeIsFixed(this.menu(), this.effect(), f.name) || this.feat.countLocked(f);
   }
 
   /** The reason a locked field is locked, written beside it with its lock. */
@@ -273,7 +288,7 @@ export class EffectPicker {
     if (this.feat.countLocked(f)) {
       return this.feat.countNote();
     }
-    return this.modeLocked(f) ? modeLockNote(this.effect()) : '';
+    return this.locked(f) ? modeLockNote(this.effect()) : '';
   }
 
   /** The id of a lock note: the locked control points `aria-describedby` at it. */
@@ -313,6 +328,9 @@ export class EffectPicker {
     }
     if (f.kind === 'resource_ref' || f.kind === 'state_ref') {
       return refHint(this.effect(), this.menu(), f, own);
+    }
+    if (f.kind === 'feature_ref') {
+      return this.source.featureNote(this.read(f.name));
     }
     if (f.kind === 'condition') {
       return 'Deixe vazio para valer sempre. Uma condição, como as fórmulas; active("nome") vale enquanto o estado de mesmo nome desta entrada está ligado.';
@@ -371,14 +389,7 @@ export class EffectPicker {
 
   /** What the draft holds for a field of the menu, by its proto name; a number shows what was typed while that still reads as the number. */
   protected read(name: string): string {
-    const v = this.effect()[draftKey(name)];
-    if (typeof v === 'number') {
-      const typed = this.effect().typed?.[name];
-      return typed !== undefined && Object.is(readWhole(typed, this.signed(name)), v)
-        ? typed
-        : wholeText(v);
-    }
-    return typeof v === 'string' ? v : '';
+    return readField(this.effect(), name, this.signed(name));
   }
 
   private signed(name: string): boolean {
@@ -478,7 +489,7 @@ export class EffectPicker {
     if (f.name === 'choice') {
       // A feat's choice of an ability or a damage type is named by the editor; any other kind has no name.
       const name = this.featEditor() ? this.feat.nameFor(value) : '';
-      this.effectChange.emit({ ...next, from: [], name });
+      this.effectChange.emit({ ...next, from: [], name, ...noSource() });
       return;
     }
     this.effectChange.emit(next);
@@ -486,21 +497,12 @@ export class EffectPicker {
 
   /** The rolls checked. A damage type holds only on damage alone: checking anything else drops it. */
   protected setRolls(rolls: string[]): void {
-    const only = rolls.length === 1 && rolls[0] === 'damage';
-    this.effectChange.emit({
-      ...this.effect(),
-      rolls,
-      damageType: only ? this.effect().damageType : '',
-    });
+    this.effectChange.emit(withRolls(this.effect(), rolls));
   }
 
   /** The resource picked from the list; taking it away drops the cost that went with it. */
   protected setResource(resource: string): void {
-    this.effectChange.emit({
-      ...this.effect(),
-      resource,
-      cost: resource === '' ? '' : this.effect().cost,
-    });
+    this.effectChange.emit(withResource(this.effect(), resource));
   }
 
   protected add(name: string, key: string): void {

@@ -19,6 +19,8 @@ export const EFFECT_FIELD_LABELS: Readonly<Record<string, string>> = {
   choice: 'O jogador escolhe',
   count: 'Quantos',
   from: 'Entre',
+  filter: 'Tipos de proficiência',
+  from_feature: 'Ou as opções de outra característica',
   economy: 'Tipo de ação',
   applies: 'Onde o dado entra',
   ability: 'Habilidade somada',
@@ -255,6 +257,23 @@ export const POWER_COPY = {
   folded: { resource: 'recurso', when: 'quando vale', text_pt: 'texto do efeito' } as Readonly<
     Record<string, string>
   >,
+} as const;
+
+/** Where the options of a choice of tools come from: the cards' legend, and the two sources. */
+export const TOOL_SOURCE_COPY = {
+  legend: 'De onde vêm as opções',
+  cards: [
+    {
+      value: 'list',
+      label: 'Uma lista que eu escrevo',
+      hint: 'Escolho as proficiências. Sem nenhuma, vale toda ferramenta.',
+    },
+    {
+      value: 'filter',
+      label: 'Toda proficiência de certos tipos',
+      hint: 'A lista acompanha as proficiências da mesa, sem eu escrever uma por uma.',
+    },
+  ],
 } as const;
 
 /** The line under "Vale nas jogadas" of each type that asks it. */

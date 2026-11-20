@@ -257,6 +257,7 @@ type HitPoints struct {
 type Content struct {
 	c       *content
 	refused []Refused
+	stored  []Refused
 }
 
 // Refused is a stored entry that the content was built without, and the first
@@ -271,8 +272,18 @@ type Refused struct {
 // WithRefused returns a content that shares c's data and reports refused as the
 // entries it was built without.
 func (c *Content) WithRefused(refused []Refused) *Content {
-	return &Content{c: c.c, refused: refused}
+	return &Content{c: c.c, refused: refused, stored: c.stored}
 }
+
+// WithStored returns a content that shares c's data and reports stored as the issues of the entries it loaded
+// with a part left out (StoredIssues).
+func (c *Content) WithStored(stored []Refused) *Content {
+	return &Content{c: c.c, refused: c.refused, stored: stored}
+}
+
+// Stored lists, in key order, the issues of the entries the content loaded with a part of them left out: the master
+// reads them on the entry, and no player does.
+func (c *Content) Stored() []Refused { return slices.Clone(c.stored) }
 
 // Refused lists the stored entries the content was built without that the master still has to fix, in key order.
 // An entry the master archived is not listed, nor is what it took with it.

@@ -40,6 +40,13 @@ type cutTable struct {
 // newCutTable builds the table and puts the skeleton's attack at the question of its die.
 func newCutTable(t *testing.T) *cutTable {
 	t.Helper()
+	return newCutTableAt(t, false)
+}
+
+// newCutTableAt is newCutTable with the bard and the skeleton on the east side of the wall (east): Caio, in the west, does not see them,
+// and the skeleton attacks the bard herself.
+func newCutTableAt(t *testing.T, east bool) *cutTable {
+	t.Helper()
 	rt := newRollsTableWith(t, func(rt *rollsTable) {
 		w := rt.world
 		// Ana's barbarian is a lore bard for this table.
@@ -62,9 +69,18 @@ func newCutTable(t *testing.T) *cutTable {
 	must(rt.master.combat.MoveCombatant(t.Context(), rq(&playv1.MoveCombatantRequest{
 		CampaignId: rt.campaign, EncounterId: rt.encounter.GetId(), CombatantId: rt.ids[labelPens], IdempotencyKey: newKey(), Col: 3, Row: 6, Forced: true,
 	})))
+	target := labelToren
+	if east {
+		target = labelPens
+		for label, row := range map[string]int32{"Esqueleto": 5, labelPens: 6} {
+			must(rt.master.combat.MoveCombatant(t.Context(), rq(&playv1.MoveCombatantRequest{
+				CampaignId: rt.campaign, EncounterId: rt.encounter.GetId(), CombatantId: rt.ids[label], IdempotencyKey: newKey(), Col: 14, Row: row, Forced: true,
+			})))
+		}
+	}
 	rt.toTurn("Esqueleto")
 	rt.giveDie("Esqueleto")
-	ct.name = rt.combatantOf(rt.caio, "Esqueleto").GetLabel()
+	ct.name = rt.combatantOf(rt.master, "Esqueleto").GetLabel()
 	key := ""
 	for _, a := range rt.optionsOf(rt.master, "Esqueleto").GetOptions().GetAttacks() {
 		if a.GetEnabled() && a.GetAttack().GetKey() != "" && a.GetAttack().GetSaveDc() == 0 {
@@ -75,7 +91,7 @@ func newCutTable(t *testing.T) *cutTable {
 	if key == "" {
 		t.Fatal("the skeleton has no attack to make")
 	}
-	held := rt.mustAttack(rt.master, "Esqueleto", key, labelToren, []int32{8}, nil)
+	held := rt.mustAttack(rt.master, "Esqueleto", key, target, []int32{8}, nil)
 	if !held.GetRoll().GetHeldForReaction() {
 		t.Fatalf("the skeleton's attack = %v, want it held for the bard's window", held.GetRoll())
 	}
@@ -96,9 +112,9 @@ func newCutTable(t *testing.T) *cutTable {
 }
 
 // readsOfLog are what a person reads of the combat and its log now.
-func (ct *cutTable) readsOfLog(p *person) []reply {
-	ct.encounter = ct.encounterOf(ct.master)
-	return ct.reads(p)
+func (rt *rollsTable) readsOfLog(p *person) []reply {
+	rt.encounter = rt.encounterOf(rt.master)
+	return rt.reads(p)
 }
 
 var reactionText = regexp.MustCompile(`"reactionTextPt":"([^"]*)"`)
@@ -116,11 +132,11 @@ func reactionTexts(body []byte) []string {
 func logReplyOf(rs []reply) reply { return rs[1] }
 
 // checkNothingOf says no read of the players holds a needle they may not read, and no field the master keeps.
-func (ct *cutTable) checkNothingOf(t *testing.T, when string, replies map[*person][]reply) {
+func (rt *rollsTable) checkNothingOf(t *testing.T, when string, replies map[*person][]reply) {
 	t.Helper()
 	for p, rs := range replies {
 		for _, r := range rs {
-			for _, f := range ct.inspect(p, r, nil) {
+			for _, f := range rt.inspect(p, r, nil) {
 				t.Errorf("%s %s: %s", when, p.name, f)
 			}
 		}
@@ -128,9 +144,9 @@ func (ct *cutTable) checkNothingOf(t *testing.T, when string, replies map[*perso
 }
 
 // the needle is registered for the master alone, and the master's own reads must hold it.
-func (ct *cutTable) needle(t *testing.T, kind, needle string, master []reply) {
+func (rt *rollsTable) needle(t *testing.T, kind, needle string, master []reply) {
 	t.Helper()
-	ct.secrets.add(&canary{needle: needle, kind: kind, readers: names([]*person{ct.master})})
+	rt.secrets.add(&canary{needle: needle, kind: kind, readers: names([]*person{rt.master})})
 	if !contains(logReplyOf(master).body, needle) {
 		t.Fatalf("the master's log does not hold %q: the needle is unreachable", needle)
 	}

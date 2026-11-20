@@ -41,6 +41,8 @@ export interface EntryList {
   readonly contentVersion: string;
   /** The entries the rules refuse, left out of the campaign's content: the first violation of each, for the master only. */
   readonly leftOut: readonly TableContentViolation[];
+  /** The entries that load with a part left out of the content (the master's only): one violation each, with the entry's key. */
+  readonly loadedWithIssues: readonly TableContentViolation[];
 }
 
 /**
@@ -62,6 +64,7 @@ export class TableContentClient {
       tableRevision: res.tableRevision,
       contentVersion: res.contentVersion,
       leftOut: res.leftOut,
+      loadedWithIssues: res.loadedWithIssues,
     };
   }
 

@@ -88,11 +88,11 @@ func hasPick(picks []proficiencyPick, value string) bool {
 
 // toolPickFits says the owner grants a tool pick with room left (taken are the ones made already) and offers the tool.
 func (c *content) toolPickFits(owner, tool string, taken int) bool {
-	picks, from, ok := c.choiceSpec(owner, "tool")
-	if !ok || taken >= picks || !c.isToolKey(tool) {
+	picks, from, open, ok := c.toolSpec(owner)
+	if !ok || taken >= picks {
 		return false
 	}
-	return len(from) == 0 || slices.Contains(from, tool)
+	return slices.Contains(c.toolsOffered(from, open), tool)
 }
 
 // proficiencyPicks reads the language and tool picks of the sheet, once the effects are collected.
@@ -135,11 +135,7 @@ func (x *deriver) checkProficiencyPicks() {
 	if bg, ok := x.c.backgrounds[x.b.Background]; ok {
 		languages += bg.LanguageChoices
 	}
-	for _, a := range x.active {
-		if a.effect.Type == "choice" && a.effect.Choice == "tool" && !a.effect.DailyChoice {
-			tools += max(a.effect.Count, 1)
-		}
-	}
+	tools = x.toolPicksAsked()
 	if n := tools - len(x.pickedTools) - len(x.b.ToolProficiencies); n > 0 {
 		x.openProficiencyPick(OpenChoiceTools, n, "ferramenta", "ferramentas")
 	}
@@ -147,6 +143,50 @@ func (x *deriver) checkProficiencyPicks() {
 	if n := languages - len(x.pickedLanguages) - len(x.b.Languages); n > 0 {
 		x.openProficiencyPick(OpenChoiceLanguages, n, "idioma", "idiomas")
 	}
+}
+
+// toolPicksAsked is how many tool picks the sheet's choices of tools ask in all, each choice asking what
+// requiredToolPicks says, as the choice does.
+func (x *deriver) toolPicksAsked() int {
+	had := map[string]bool{}
+	for _, k := range x.grantedProficiencies() {
+		had[k] = true
+	}
+	total := 0
+	var seen []string
+	for _, a := range x.active {
+		if a.effect.Type != "choice" || a.effect.Choice != "tool" || a.effect.DailyChoice || slices.Contains(seen, a.owner) {
+			continue
+		}
+		seen = append(seen, a.owner)
+		picks, from, open, ok := x.c.toolSpec(a.owner)
+		if !ok {
+			continue
+		}
+		var held []string
+		for _, p := range x.pickedTools {
+			if p.Owner == a.owner {
+				held = append(held, p.Value)
+			}
+		}
+		total += requiredToolPicks(picks, x.c.toolsOffered(from, open), had, held)
+	}
+	return total
+}
+
+// requiredToolPicks is requiredPicks for a choice of tools: the proficiencies it offers that the sheet does not have
+// are the picks to make, and the picks it holds are made.
+func requiredToolPicks(picks int, offered []string, had map[string]bool, held []string) int {
+	var pickable, made []string
+	for _, k := range offered {
+		switch {
+		case slices.Contains(held, k):
+			made = append(made, k)
+		case !had[k]:
+			pickable = append(pickable, k)
+		}
+	}
+	return requiredPicks(picks, pickable, made)
 }
 
 // openProficiencyPick records a language or tool pick the sheet has not made: an open choice, and an issue that sends the
@@ -201,11 +241,11 @@ func (cb *choiceBuilder) languageChoice(g *groupBuild, owner string) {
 	cb.answerWithTyped(ch, len(cb.b.Languages), &cb.typedLanguages)
 }
 
-// toolChoice is the pick of the tool proficiencies a `choice` effect of kind tool offers: the ones it lists (any
+// toolChoice is the pick of the tool proficiencies a `choice` effect of kind tool offers: the ones it lists or its filter names (any
 // tool without a list), but the ones the character has already and the ones another pick took.
 func (cb *choiceBuilder) toolChoice(g *groupBuild, owner string) {
 	c := cb.c
-	picks, from, ok := c.choiceSpec(owner, "tool")
+	picks, from, open, ok := c.toolSpec(owner)
 	if !ok {
 		return
 	}
@@ -214,26 +254,21 @@ func (cb *choiceBuilder) toolChoice(g *groupBuild, owner string) {
 	if picks > 1 {
 		title, hint = "Ferramentas", fmt.Sprintf("%d proficiências com ferramentas à escolha.", picks)
 	}
-	ch := cb.addChoice(g, &Choice{Key: key, FeatureKey: owner, Kind: ChoiceKindOptions, TitlePT: title, HintPT: hint + " As que o personagem já tem não entram.", Picks: picks, family: familyToolPick, Advisory: true})
-	if len(from) == 0 {
-		for k := range c.proficiencies {
-			if c.isToolKey(k) {
-				from = append(from, k)
-			}
-		}
-	}
-	from = slices.DeleteFunc(slices.Clone(from), func(k string) bool { return !c.isToolKey(k) })
+	from = c.toolsOffered(from, open)
 	slices.SortFunc(from, func(a, b string) int {
 		return strings.Compare(foldPT(c.proficiencyNamePT(a)), foldPT(c.proficiencyNamePT(b)))
 	})
 	had := cb.toolsHad()
+	var options []ChoiceOption
 	for _, k := range from {
 		o := ChoiceOption{Key: k, Stored: ScopedChoice(key, k), NamePT: c.proficiencyNamePT(k)}
 		if had[k] {
 			blockOption(&o, "Você já tem esta proficiência.")
 		}
-		ch.Options = append(ch.Options, o)
+		options = append(options, o)
 	}
+	// The choice asks for no more than the sheet can make: the proficiencies it does not have, and the picks it holds.
+	ch := cb.addChoice(g, &Choice{Key: key, FeatureKey: owner, Kind: ChoiceKindOptions, TitlePT: title, HintPT: hint + " As que o personagem já tem não entram.", Picks: requiredToolPicks(picks, from, had, cb.scoped[key]), family: familyToolPick, Advisory: true, Options: options})
 	cb.takeScoped(ch)
 	unmeetBlockedPicks(ch)
 	cb.answerWithTyped(ch, len(cb.b.ToolProficiencies), &cb.typedTools)

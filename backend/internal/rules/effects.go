@@ -98,6 +98,11 @@ type Effect struct {
 	Duration    string `json:"duration,omitempty"`
 	DailyChoice bool   `json:"daily_choice,omitempty"`
 
+	// choice: Filter, on a choice of tools, offers every proficiency of the kinds it names in place of a From
+	// list, and FromFeature, on a choice of features, offers the options of the feature it names (choicefilter.go).
+	Filter      *ChoiceFilter `json:"filter,omitempty"`
+	FromFeature string        `json:"from_feature,omitempty"`
+
 	// choice, picks of a feat (picks.go).
 	// Name names the choice within its entry (a-z, 0-9 and _).
 	// A later effect of the same feat writes "@name" for what was picked.

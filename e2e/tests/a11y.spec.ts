@@ -7478,6 +7478,159 @@ for (const [scheme, theme] of [['light', 'claro'], ['dark', 'escuro']] as const)
 }
 
 /**
+ * The master's effect editor for where the options of a choice come from (#574, MR-025, RN-33): a choice of tools with its filter (the
+ * kinds ticked and the count of what they offer today, the filter with no kind ticked, the list back), and a choice of features that offers
+ * the options of another feature (the feature picked with the count of its options, and "Nenhuma"). The entries come through the API; the
+ * phone only reads.
+ */
+async function scanChoiceSources(browser: Browser, colorScheme: 'light' | 'dark', width: number): Promise<void> {
+  test.setTimeout(240_000);
+  const mContext = await browser.newContext({ storageState: authStatePath('Mestre Teste'), colorScheme, viewport: { width, height: 900 } });
+  try {
+    const m = await mContext.newPage();
+    await m.goto('/');
+    const campaignId = await masterCampaign(m, `Acessibilidade origem das opções ${Date.now()}`);
+    const where = `(${colorScheme}, ${width}px)`;
+    const subclassBody = (name: string, feature: Record<string, unknown>) => ({
+      namePt: name,
+      classKey: 'class:fighter',
+      descPt: ['Quem aprendeu a lâmina com os corvos.'],
+      levels: [{ level: 3, features: [feature] }],
+    });
+    const source = await createSubclassRPC(m, campaignId, subclassBody('Guarda do Corvo', {
+      namePt: 'Truques de lâmina',
+      descPt: ['Escolha entre as opções da lista.'],
+      effects: [{ type: 'choice', choice: 'feature', count: 1 }],
+      options: ['Corte baixo', 'Finta', 'Recuo'].map((n) => ({ namePt: n, descPt: [`${n}: um golpe da lista.`] })),
+    }));
+    const sourceEntry = (await listEntries(m, campaignId)).find((e) => e.key === source)!;
+    const sourceFeature = sourceEntry.tableSubclass.levels[0].features[0].key as string;
+    const tools = await createSubclassRPC(m, campaignId, subclassBody('Guarda de Pedra', {
+      namePt: 'Ofício de campanha',
+      descPt: ['Você aprende um ofício com quem passa pela estrada.'],
+      effects: [{ type: 'choice', choice: 'tool', count: 1, filter: { proficiencyKinds: ['weapon', 'tool'] } }],
+    }));
+    const more = await createSubclassRPC(m, campaignId, subclassBody('Guarda de Cinza', {
+      namePt: 'Mais truques',
+      descPt: ['Você aprende mais golpes dos corvos.'],
+      effects: [{ type: 'choice', choice: 'feature', count: 1, fromFeature: sourceFeature }],
+    }));
+
+    if (width >= 768) {
+      // The filter: the kinds ticked, the cards on "Toda proficiência de certos tipos" and the count of what they offer today.
+      await open(m, entryRoute(campaignId, tools));
+      await m.getByRole('button', { name: /Ofício de campanha/ }).first().click();
+      const kinds = m.getByRole('group', { name: 'Tipos de proficiência' });
+      await expect(kinds).toBeVisible();
+      await expect(kinds.getByRole('checkbox', { name: 'Armas' })).toBeChecked();
+      await expect(kinds.getByRole('checkbox', { name: 'Ferramentas' })).toBeChecked();
+      await expect(kinds.getByRole('checkbox', { name: 'Veículos e kits' })).not.toBeChecked();
+      await expect(m.getByRole('radio', { name: /Toda proficiência de certos tipos/ })).toBeChecked();
+      await expect(m.getByText(/^Oferece \d+ proficiências hoje\.$/)).toBeVisible();
+      await expectScreenPasses(m, `Editor de subclasse, a escolha de ferramentas com o filtro e a contagem ${where}`);
+      // A third kind adds its proficiencies to the count.
+      await kinds.locator('app-check-row', { hasText: 'Veículos e kits' }).click();
+      await expect(m.getByText(/^Oferece \d+ proficiências hoje\.$/)).toBeVisible();
+      await expectScreenPasses(m, `Editor de subclasse, o filtro com os três tipos ${where}`);
+      // No kind ticked: the filter is still the source, and the line says what it needs.
+      for (const kind of ['Armas', 'Ferramentas', 'Veículos e kits']) await kinds.locator('app-check-row', { hasText: kind }).click();
+      await expect(m.getByText('Marque ao menos um tipo.')).toBeVisible();
+      await expectScreenPasses(m, `Editor de subclasse, o filtro sem tipo marcado ${where}`);
+      // Back to the list: the kinds go away and the list the master writes is there.
+      await m.locator('app-radio-cards label', { hasText: 'Uma lista que eu escrevo' }).click();
+      await expect(m.getByRole('group', { name: 'Tipos de proficiência' })).toHaveCount(0);
+      await expectScreenPasses(m, `Editor de subclasse, a escolha de ferramentas de volta à lista ${where}`);
+
+      // The options of another feature: the feature picked, with the count of its options today.
+      await open(m, entryRoute(campaignId, more));
+      await m.getByRole('button', { name: /Mais truques/ }).first().click();
+      const from = m.getByLabel('Ou as opções de outra característica', { exact: true });
+      await expect(from).toHaveValue(sourceFeature);
+      await expect(m.getByText('Oferece 3 opções hoje.')).toBeVisible();
+      await expectScreenPasses(m, `Editor de subclasse, a escolha com as opções de outra característica e a contagem ${where}`);
+      await from.selectOption({ label: 'Nenhuma' });
+      await expect(m.getByText('Vazio: a escolha usa a lista ou as opções desta característica.')).toBeVisible();
+      await expectScreenPasses(m, `Editor de subclasse, a escolha de característica sem outra de origem ${where}`);
+    } else {
+      await open(m, entryRoute(campaignId, tools));
+      await expect(m.getByText('Para criar ou editar, abra o conteúdo da mesa no notebook.')).toBeVisible();
+      await expectScreenPasses(m, `Subclasse com a escolha de ferramentas por tipo, lida pelo mestre no celular ${where}`);
+      await open(m, entryRoute(campaignId, more));
+      await expectScreenPasses(m, `Subclasse com as opções de outra característica, lida pelo mestre no celular ${where}`);
+    }
+  } finally {
+    await mContext.close();
+  }
+}
+
+for (const [scheme, theme] of [['light', 'claro'], ['dark', 'escuro']] as const) {
+  for (const width of [390, 768, 1280]) {
+    test(`a origem das opções de uma escolha passa no axe e nas conferências de layout no tema ${theme}, em ${width}px`, { tag: ['@a11y', '@574', '@MR-025', '@RN-33'] }, async ({ browser }) => {
+      await scanChoiceSources(browser, scheme, width);
+    });
+  }
+}
+
+/**
+ * The notice of a stored entry that loads with a part left out (#574, MR-025, RN-33): the master opens a background whose tool list
+ * cites a key that is not a tool, and the page says so as a warning, not as an entry that is out. The response is the real server's with
+ * one issue set on the entry and the key put in its list: the Go tests (`internal/leaktest/loadedissues_test.go` and
+ * `internal/characters/tablecontent_stored_test.go`) cover what the server sends, and this row covers what the page draws. The editor is
+ * on the wider screens only: the phone reads.
+ */
+async function scanLoadedNotice(browser: Browser, colorScheme: 'light' | 'dark', width: number): Promise<void> {
+  test.setTimeout(240_000);
+  const mContext = await browser.newContext({ storageState: authStatePath('Mestre Teste'), colorScheme, viewport: { width, height: 900 } });
+  try {
+    const m = await mContext.newPage();
+    await m.goto('/');
+    const campaignId = await masterCampaign(m, `Acessibilidade aviso da entrada ${Date.now()}`);
+    const where = `(${colorScheme}, ${width}px)`;
+    const key = await createEntryRPC(m, campaignId, 'tableBackground', {
+      namePt: 'Cais do Farol',
+      skills: ['skill:investigation', 'skill:survival'],
+      tools: ['proficiency:thieves-tools'],
+      equipmentPt: 'Uma lanterna, uma corda e 10 PO',
+      feature: {
+        namePt: 'Rede do cais',
+        descPt: ['Você escolhe uma ferramenta que os pescadores do cais usam.'],
+        effects: [{ type: 'choice', choice: 'tool', count: 1, from: ['proficiency:smiths-tools', 'proficiency:thieves-tools'] }],
+      },
+    });
+    await m.route('**/meurpg.rules.v1.TableContentService/ListTableEntries', async (route) => {
+      const res = await route.fetch();
+      const body = await res.json();
+      for (const e of body.entries ?? []) {
+        if (e.key === key) {
+          e.tableBackground.feature.effects[0].from[1] = 'skill:athletics';
+        }
+      }
+      body.loadedWithIssues = [{ key, field: 'table_background.feature.effects[0].from[1]', reason: 'bad_value', message: 'not a tool' }];
+      await route.fulfill({ response: res, json: body });
+    });
+    await open(m, entryRoute(campaignId, key));
+    const notice = m.locator('.mr-notice--warning');
+    await expect(notice).toContainText('Esta entrada tem um aviso.');
+    await expect(notice).toContainText('A lista de ferramentas cita «');
+    await expect(m.locator('.mr-notice--danger')).toHaveCount(0);
+    if (width >= 768) {
+      await expect(m.getByLabel('Nome', { exact: true })).toHaveValue('Cais do Farol');
+    }
+    await expectScreenPasses(m, `Entrada com aviso de parte deixada de fora, lida pelo mestre ${where}`);
+  } finally {
+    await mContext.close();
+  }
+}
+
+for (const [scheme, theme] of [['light', 'claro'], ['dark', 'escuro']] as const) {
+  for (const width of [390, 768, 1280]) {
+    test(`o aviso de uma entrada que carrega com uma parte de fora passa no axe e nas conferências de layout no tema ${theme}, em ${width}px`, { tag: ['@a11y', '@574', '@MR-025', '@RN-33'] }, async ({ browser }) => {
+      await scanLoadedNotice(browser, scheme, width);
+    });
+  }
+}
+
+/**
  * The power attack on the player's screens (#586, MR-025): the weapon rows with the trade's line, the roll step with the trade off
  * and on (the before and after box), the bow's trade off for lack of uses, a miss (the +10 does not come in) and a hit (the +10 is
  * an automatic part of the damage). Toren has the feats "Golpe Pesado" and "Disparo Firme" through the content helpers.

@@ -119,6 +119,20 @@
         </div>
       }
 
+      @if (loaded(); as note) {
+        <div class="mr-notice mr-notice--warning">
+          <mat-icon aria-hidden="true">warning</mat-icon>
+          <div>
+            @for (text of note.texts; track $index) {
+              <p>
+                <strong>{{ note.lead }}</strong>
+                {{ text }}
+              </p>
+            }
+          </div>
+        </div>
+      }
+
       @if (savedLine() && isMaster()) {
         <div class="mr-notice mr-notice--success" role="status">
           <mat-icon aria-hidden="true">check_circle</mat-icon>

@@ -1,5 +1,6 @@
 import { create } from '@bufbuild/protobuf';
 
+import { choiceSourceMenu } from './content-testing-menu-choices';
 import { TableEffectSchema } from '../../../gen/meurpg/rules/v1/table_content_pb';
 import { conditionMenu, menu, resistanceMenu } from './content-testing-menu';
 import { rangedAttackMenu } from './content-testing-menu-ranged';
@@ -187,6 +188,13 @@ describe("an effect from the server's menu (ADR-0018, section 4)", () => {
     expect(draftToEffect(d, m)).toMatchObject({ rangeFt: 60 });
     // 4 m is not a whole number of feet at the table's rate: it is rounded once, on sending.
     expect(draftToEffect({ ...d, rangeM: '4' }, m)).toMatchObject({ rangeFt: 13 });
+  });
+
+  it("a tool choice's list offers a weapon (#574)", () => {
+    const keys = choiceSourceMenu()
+      .fromOptions('tool')
+      .map((o) => o.key);
+    expect(keys).toContain('proficiency:longsword');
   });
 
   it('offers what a choice may list, by the kind of choice', () => {

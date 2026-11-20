@@ -8,6 +8,7 @@ import (
 	"slices"
 
 	"connectrpc.com/connect"
+	"github.com/jackc/pgx/v5"
 	"google.golang.org/protobuf/proto"
 
 	playv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/play/v1"
@@ -165,8 +166,14 @@ func (s *Service) holdAction(ctx context.Context, c *combatTx, m authz.Membershi
 }
 
 // releaseHold replays a held action once its windows are all closed. A change
-// the replay refuses (a client error: the target is gone, the slot was spent) drops
-// the hold, as the table would: the action does not happen and nothing was spent.
+// the replay refuses (a client error: the target is gone, the slot was spent, the mode
+// asked is not allowed) drops the hold, as the table would: the action does not happen.
+// The replay runs inside a savepoint, so a refused one is rolled back whole: everything it
+// wrote (the Inspiração, a slot, a reason, an event) and everything it queued in memory
+// (hints, lines, answers) goes with it. What stays spent is only what the windows' own
+// answers wrote before the savepoint: the reactor's slot and reaction, as a reaction used
+// against an action that then did not happen. A serialization failure or any other server
+// error is no refusal: it aborts the transaction and reaches the retry untouched.
 func (s *Service) releaseHold(ctx context.Context, c *combatTx, h playdb.ReactionHold) error {
 	windows, err := c.q.ListReactionWindowsOfGroup(ctx, playdb.ListReactionWindowsOfGroupParams{EncounterID: c.enc.ID, GroupID: h.GroupID})
 	if err != nil {
@@ -184,20 +191,54 @@ func (s *Service) releaseHold(ctx context.Context, c *combatTx, h playdb.Reactio
 	defer func() { c.replay = nil }()
 	// The replay runs in a savepoint: a refusal drops the action, and what it wrote before it met the refusal (the slot, the
 	// action, the damage of the rays it had rolled) goes with it. What the answers of the windows did stays.
+	g, err := guardReplay(ctx, c)
+	if err != nil {
+		return err
+	}
+	err = s.replayHeld(withAmbient(ctx, c), m, h)
+	return s.settleReplay(ctx, c, h, windows, st, g, err)
+}
+
+// replayGuard is the savepoint a replay runs in, with the change's state as it was when the replay began.
+type replayGuard struct {
+	sp     pgx.Tx
+	before combatTx
+	marked hintMark
+}
+
+// guardReplay opens the savepoint of a replay and keeps a copy of what the change holds in memory: the combat's own
+// state and the hints it gathered, so a refused replay leaves both as they were. The copy is shallow: replay_guard_fields_test.go
+// names how each map, slice and pointer field of combatTx gets back whole, and fails when a new one is not named.
+func guardReplay(ctx context.Context, c *combatTx) (*replayGuard, error) {
 	sp, err := c.tx.Begin(ctx)
 	if err != nil {
-		return fmt.Errorf("guard the replay of a held action: %w", err)
+		return nil, fmt.Errorf("guard the replay of a held action: %w", err)
 	}
-	before, marked := *c, c.hints.mark()
-	err = s.replayHeld(withAmbient(ctx, c), m, h)
-	if err != nil && clientError(err) {
-		_ = sp.Rollback(ctx) // the transaction decides what a failed rollback means: the next statement fails with it
-		*c = before
-		c.hints.rewind(marked) // hints is a pointer: the restore above leaves what the replay told, and the streams would hear of writes rolled back
-	} else if cerr := sp.Commit(ctx); cerr != nil {
-		return fmt.Errorf("release the guard of the replay of a held action: %w", cerr)
+	g := &replayGuard{sp: sp, before: *c}
+	if c.hints != nil {
+		g.marked = c.hints.mark()
 	}
-	return s.settleReplay(ctx, c, h, windows, st, err)
+	return g, nil
+}
+
+// keep ends the guard of a replay that went through (or that asks): it keeps its writes.
+func (g *replayGuard) keep(ctx context.Context) error {
+	if err := g.sp.Commit(ctx); err != nil {
+		return fmt.Errorf("release the guard of a replay: %w", err)
+	}
+	return nil
+}
+
+// undo ends the guard of a refused replay: the rows it wrote are rolled back and the change is as it was before it.
+func (g *replayGuard) undo(ctx context.Context, c *combatTx) error {
+	if err := g.sp.Rollback(ctx); err != nil {
+		return fmt.Errorf("roll back a refused replay: %w", err)
+	}
+	*c = g.before
+	if c.hints != nil {
+		c.hints.rewind(g.marked) // hints is a pointer: the restore above leaves what the replay told, and the streams would hear of writes rolled back
+	}
+	return nil
 }
 
 // replayStateOf is what the answered windows of a held action change in its replay: a
@@ -270,12 +311,15 @@ func (s *Service) replayHeld(ctx context.Context, m authz.Membership, h playdb.R
 
 // settleReplay reads how the replay of a held action ended: the event that stands for
 // it, a refusal that drops the hold, or a failure.
-func (s *Service) settleReplay(ctx context.Context, c *combatTx, h playdb.ReactionHold, windows []playdb.ReactionWindow, st *replayState, err error) error {
+func (s *Service) settleReplay(ctx context.Context, c *combatTx, h playdb.ReactionHold, windows []playdb.ReactionWindow, st *replayState, g *replayGuard, err error) error {
 	var done *ambientDoneError
 	switch {
 	case errors.As(err, &done) && done.asking:
-		return nil
+		return g.keep(ctx)
 	case errors.As(err, &done):
+		if err := g.keep(ctx); err != nil {
+			return err
+		}
 		c.tellActorVitals(done.event)
 		c.pushed = append(pushesOf(done.event.Hits), c.pushed...)
 		if done.event.Rider != nil {
@@ -285,7 +329,10 @@ func (s *Service) settleReplay(ctx context.Context, c *combatTx, h playdb.Reacti
 		return nil
 	case err != nil && clientError(err):
 		// The action cannot happen any more: it is dropped, and the master reads that it was, since the
-		// answers may have spent slots and reactions already.
+		// answers may have spent slots and reactions already (those were written before the savepoint and stay).
+		if err := g.undo(ctx, c); err != nil {
+			return err
+		}
 		if err := c.q.SetReactionHoldState(ctx, playdb.SetReactionHoldStateParams{ID: h.ID, State: "dropped"}); err != nil {
 			return err
 		}

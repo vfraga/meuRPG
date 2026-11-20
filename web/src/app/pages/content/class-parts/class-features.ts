@@ -60,6 +60,7 @@ import { SelectField, type SelectOption } from '../../../shared/form-fields/sele
                 [withLead]="true"
                 [allowOptions]="true"
                 [allowSummon]="true"
+                [offerFeatures]="true"
                 [campaignId]="campaignId()"
                 [entries]="entries()"
                 [catalog]="catalog()"

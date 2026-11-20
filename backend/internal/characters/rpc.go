@@ -469,10 +469,14 @@ func checkCreatorKind(m authz.Membership, kind string) error {
 // refuses.
 func checkNewSheet(content *rules.Content, m authz.Membership, kind string, raw *charactersv1.CharacterSheet) (*charactersv1.CharacterSheet, error) {
 	sheet, err := checkSheet(content, raw)
-	if err == nil {
-		err = checkSheetKind(kind, sheet)
-	}
 	if err != nil {
+		return nil, invalidArgument(err)
+	}
+	// What the table keeps out of the offer reads as a key the content does not have, where that key is refused.
+	if err := refuseKeptOutPick(content, m, noSheet, sheet.GetFull()); err != nil {
+		return nil, err
+	}
+	if err := checkSheetKind(kind, sheet); err != nil {
 		return nil, invalidArgument(err)
 	}
 	if sheet.GetFull() != nil {
@@ -490,6 +494,9 @@ func checkNewSheet(content *rules.Content, m authz.Membership, kind string, raw 
 // not a new choice (RN-23), and neither is one the master switched off, except
 // for the master. The ones the stored sheet already has stay.
 func refuseNewChoices(content *rules.Content, m authz.Membership, characterID string, stored, sheet *charactersv1.FullSheet) error {
+	if err := refuseKeptOutPick(content, m, func() *charactersv1.FullSheet { return stored }, sheet); err != nil {
+		return err
+	}
 	if key, _, found := newArchivedChoice(content, stored, sheet); found {
 		return errArchivedChoice(characterID, key)
 	}

@@ -650,3 +650,20 @@ func TestTwoCutLinesOfAHiddenRollerStayNeutralForThePlayers(t *testing.T) {
 		t.Errorf("the master reads %q, want %q", master, want)
 	}
 }
+
+// A roll whose holding event is gone cannot name its group: the answer still goes through, and the cut line is not completed, so it
+// keeps waiting (the cut's own event says only that the roll was asked).
+func TestAnAnswerWhoseHoldingEventIsGoneStillGoesThrough(t *testing.T) {
+	t.Parallel()
+	a, e := bardTable(t)
+	offer := heldWeaponCut(t, a, e, d20(1))
+	tag, err := a.h.pool.Exec(t.Context(), `DELETE FROM session_events WHERE idempotency_key IN (SELECT idempotency_key FROM inspiration_holds WHERE id = $1)`, offer.GetHoldId())
+	if err != nil || tag.RowsAffected() != 1 {
+		t.Fatalf("delete the event that held the roll: rows %d, error %v", tag.RowsAffected(), err)
+	}
+	res, err := a.answerHeldRoll(t, a.caio, offer.GetHoldId(), luckyAnswer(15))
+	if err != nil || res.GetAttack().GetRoll().GetD20().GetFaces()[0] != 15 {
+		t.Fatalf("AnswerHeldRoll() = %v, %v; want Pipo's attack settled on the 15", res, err)
+	}
+	a.wantLines(t, e, a.bardTableReaders(), cutPendingMaster, cutPendingPlayers)
+}

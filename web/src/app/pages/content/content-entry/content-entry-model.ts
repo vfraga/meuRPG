@@ -20,15 +20,18 @@ import {
 import {
   type LeftOutModel,
   type LeftOutNote,
+  type LoadedNote,
   NO_LEFT_OUT,
   buildLeftOut,
   leftOutNote,
+  loadedNote,
   violationOfEntry,
 } from '../../../core/content/left-out';
 import { readEntry } from '../../../core/content/content-read';
 import type { EntryRead, NameOf } from '../../../core/content/content-read-parts';
 import { optionSummary } from '../../../core/content/feat-options';
 import { featureToDraft } from '../../../core/content/feature-draft';
+import { offeringFeatures, offeringLabel } from '../../../core/content/offering-features';
 import { parentViewOf } from '../../../core/content/subrace-traits';
 import type { EffectMenuVm } from '../../../core/content/effect-draft';
 import { openSheet } from '../../../shared/sheet/sheet-host';
@@ -262,6 +265,11 @@ export function wireMenu(
   if (menu && catalog) {
     menu.classNamePt = (key) => catalog.nameOf(key);
     menu.featOptions = featChoices(entries);
+    menu.tableFeatures = offeringFeatures(entries).map((f) => ({
+      key: f.key,
+      namePt: offeringLabel(f),
+      count: f.options.length,
+    }));
   }
 }
 
@@ -320,4 +328,14 @@ export function leftOutView(
     note: entry ? leftOutNote(entry, model, editing) : null,
     verb: violation ? 'Remover' : 'Arquivar',
   };
+}
+
+/** The note of an entry that loads with a part left out (the master's only), or `null`. */
+export function loadedNoteView(
+  ctx: ContentContext | null,
+  key: string,
+  nameOf: (key: string) => string,
+): LoadedNote | null {
+  const entry = ctx?.isMaster ? ctx.entries.find((e) => e.key === key) : undefined;
+  return entry && ctx ? loadedNote(entry, ctx.loadedWithIssues, nameOf) : null;
 }

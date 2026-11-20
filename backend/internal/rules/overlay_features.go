@@ -1,6 +1,7 @@
 package rules
 
 import (
+	"errors"
 	"fmt"
 	"slices"
 	"strconv"
@@ -335,7 +336,11 @@ func (b *overlayBuilder) addFeatureOption(f, o *TableFeature, k featureKind, at 
 
 // effectSite is where an effect is, for the errors it gets: the owner's key and
 // the effect's path in the Overlay.
-type effectSite struct{ owner, path string }
+type effectSite struct {
+	owner, path string
+	// strict says the entry is being written (Overlay.Strict): what is stored is read as it was before.
+	strict bool
+}
 
 // fail is the refusal of the effect's attribute attr.
 func (s effectSite) fail(attr, reason, format string, args ...any) error {
@@ -345,7 +350,7 @@ func (s effectSite) fail(attr, reason, format string, args ...any) error {
 // checkEffect is the closed menu: what is not on it is refused, naming the key.
 // The error carries the effect's path.
 func (b *overlayBuilder) checkEffect(owner, path string, e *Effect, strict bool) error {
-	site := effectSite{owner: owner, path: path}
+	site := effectSite{owner: owner, path: path, strict: strict}
 	if err := checkEffectType(site, e); err != nil {
 		return err
 	}
@@ -473,6 +478,12 @@ func (b *overlayBuilder) checkChoiceEffect(site effectSite, e *Effect) error {
 	if err := checkChoiceCount(site, e); err != nil {
 		return err
 	}
+	if err := checkChoiceFilter(site, e); err != nil {
+		return err
+	}
+	if e.FromFeature != "" {
+		return b.checkFromFeature(site, e)
+	}
 	if err := b.checkChoiceList(site, e); err != nil {
 		return err
 	}
@@ -584,6 +595,25 @@ func (b *overlayBuilder) checkPickChoice(site effectSite, e *Effect) error {
 	return nil
 }
 
+// checkToolKey checks a key the list of a tool choice offers is a proficiency a tool choice may name. A write that names
+// another kind is refused; an entry stored with one loads as it always did: the pool leaves the key out, and the content
+// keeps the issue for the master (Content.StoredIssues).
+func (b *overlayBuilder) checkToolKey(site effectSite, e *Effect, k string) error {
+	if b.base.isToolPickKey(k) {
+		return nil
+	}
+	const message = "%q is not a tool, a weapon or another kind of proficiency a tool choice offers"
+	if site.strict {
+		return site.fail(".from", ReasonValue, message, k)
+	}
+	// The issue names the key it is about: the path is the item of the list.
+	err := site.fail(fmt.Sprintf(".from[%d]", slices.Index(e.From, k)), ReasonValue, message, k)
+	if oe, ok := errors.AsType[*OverlayError](err); ok {
+		b.n.kept = append(b.n.kept, oe)
+	}
+	return nil
+}
+
 // checkChoiceKey checks one key a choice offers.
 func (b *overlayBuilder) checkChoiceKey(site effectSite, e *Effect, k string) error {
 	if e.Choice == "feature" && b.optionEntry[k] != "" {
@@ -607,6 +637,9 @@ func (b *overlayBuilder) checkChoiceKey(site effectSite, e *Effect, k string) er
 	}
 	if e.Choice == "feature" && !isOption(b.base, k) {
 		return site.fail(".from", ReasonReference, "%q is not an option of an SRD feature", k)
+	}
+	if e.Choice == "tool" {
+		return b.checkToolKey(site, e, k)
 	}
 	return nil
 }
@@ -687,7 +720,7 @@ var ownFields = map[string][]string{
 	"roll_mode":    {"roll", "targets", "against_condition", "while"},
 	"sense":        {"sense", "range_ft"},
 	"resource":     {"resource", "max", "recharge"},
-	"choice":       {"choice", "count", "from", "name", "set", "daily_choice", "duration"},
+	"choice":       {"choice", "count", "from", "name", "set", "daily_choice", "duration", "filter", "from_feature"},
 	"extra_attack": {"count"},
 	// A grant_action may cost several uses of its resource, let the player choose how many,
 	// and heal or give temporary hit points; an on_event is the owner's hook on an event.
@@ -846,6 +879,8 @@ var effectFields = []effectField{
 	{"flag", func(e *Effect) bool { return e.Flag != "" }, func(e *Effect) { e.Flag = "" }},
 	{"use", func(e *Effect) bool { return e.Use != nil }, func(e *Effect) { e.Use = nil }},
 	{"aura", func(e *Effect) bool { return e.Aura != nil }, func(e *Effect) { e.Aura = nil }},
+	{"filter", func(e *Effect) bool { return e.Filter != nil }, func(e *Effect) { e.Filter = nil }},
+	{"from_feature", func(e *Effect) bool { return e.FromFeature != "" }, func(e *Effect) { e.FromFeature = "" }},
 }
 
 // effectFieldClear is how to clear each of effectFields, by name.

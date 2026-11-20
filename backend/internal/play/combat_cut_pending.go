@@ -19,6 +19,10 @@ import (
 // group (CutGroup), and the log joins them when it reads: until then the line says nothing of the roll, and once the roll is written it
 // says what it became. No event is ever changed.
 
+// answersOf and completeAnswers read c.answered as the answers of this change alone: the window answered last, whose answer
+// released the replay. An answer written in an earlier change of the same group is not in it; markWaiting marks each one when it
+// is written, so the log completes it from the group (#1061).
+
 // markWaiting marks the answer of a Cutting Words that took something off a roll a window holds, when the held action is an attack or a
 // spell attack. A held check or a damage roll is not marked: its line is not completed this way. An answer that did nothing says so
 // whatever the roll becomes, and is not marked either.
@@ -143,6 +147,8 @@ func (b *logBuilder) completeCuts(g *cutGroup) {
 func (r reactionEvent) completedBy(final actionEvent, taken int32) (reactionEvent, bool) {
 	outcome, ac, total := final.Outcome, final.TargetAC, final.Total
 	if len(final.Hits) > 0 {
+		// More than one hit (the rays of a Scorching Ray) cannot reach here: a replay asks only when its attack has one ray, because
+		// holdSpellAttack puts rayCombatants (one per ray) through spellMayAsk, which wants exactly one, so no such roll asks.
 		if len(final.Hits) != 1 {
 			return r, false
 		}
