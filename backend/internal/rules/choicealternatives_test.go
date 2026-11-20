@@ -418,6 +418,8 @@ func TestASkillPickIsRefusedOnlyForAnUnconditionalFullSource(t *testing.T) {
 		{"a full proficiency", Effect{Type: "proficiency", Proficiency: "skill:stealth"}, true},
 		{"an expertise that gives the proficiency", Effect{Type: "proficiency", Proficiency: "skill:stealth", Level: "expertise"}, true},
 		{"an expertise only for those who are proficient", Effect{Type: "proficiency", Proficiency: "skill:stealth", Level: "expertise", OnlyProficient: true}, false},
+		{"every skill", Effect{Type: "proficiency", Proficiency: "skill:*"}, true},
+		{"half of every skill", Effect{Type: "proficiency", Proficiency: "skill:*", Level: "half"}, false},
 		{"half a proficiency", Effect{Type: "proficiency", Proficiency: "skill:stealth", Level: "half"}, false},
 	}
 	for _, r := range rows {

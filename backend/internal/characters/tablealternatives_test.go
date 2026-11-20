@@ -12,6 +12,7 @@ import (
 	charactersv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/characters/v1"
 	"github.com/PuraFome/meuRPG/backend/gen/meurpg/characters/v1/charactersv1connect"
 	rulesv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/rules/v1"
+	"github.com/PuraFome/meuRPG/backend/internal/authz"
 	"github.com/PuraFome/meuRPG/backend/internal/rules"
 )
 
@@ -345,5 +346,51 @@ func TestAHeldAlternativePickStaysOnTheScreenAndInTheSave(t *testing.T) {
 	}
 	if _, err := f.davi.update(t, held, "Ícaro", f.repeating(2, "skill:stealth")); err != nil {
 		t.Errorf("the update of the held pick: %v", err)
+	}
+}
+
+// The preview of a character and the level-up plan refuse a new repeated pick as the update does, and a sheet a package brings
+// keeps its picks: the import accepts the repeated pick, as it does a pick no list takes.
+func TestARepeatedAlternativePickIsRefusedOnPreviewAndLevelUpAndKeptOnImport(t *testing.T) {
+	t.Parallel()
+	f := newAlternativesFlow(t)
+	// A character at level 1 whose background gives stealth and elvish: the choice of level 2 is not asked yet.
+	level1 := f.sheet(1)
+	level1.GetFull().GetCustomBackground().SkillKeys = []string{"skill:stealth", "skill:survival"}
+	c := f.davi.create(t, f.campaign, charactersv1.CharacterKind_CHARACTER_KIND_PLAYER, "Ícaro", level1)
+
+	_, err := f.davi.api.PreviewCharacter(t.Context(), connect.NewRequest(&charactersv1.PreviewCharacterRequest{
+		CampaignId: f.campaign, CharacterId: c.GetId(), Kind: charactersv1.CharacterKind_CHARACTER_KIND_PLAYER, Sheet: f.repeating(2, "skill:stealth"),
+	}))
+	if repeatedField(err) == "" {
+		t.Errorf("the preview of the character takes the repeated pick: %v", err)
+	}
+
+	up := func(pick string) error {
+		ch := &charactersv1.LevelUpChoices{ClassKey: f.class.GetKey(), HitPoints: &charactersv1.LevelUpHitPoints{Method: charactersv1.LevelUpHitPointsMethod_LEVEL_UP_HIT_POINTS_METHOD_AVERAGE},
+			FeatureChoiceKeys: []string{rules.ScopedChoice(f.key, pick)}}
+		_, err := f.davi.api.PreviewLevelUp(t.Context(), connect.NewRequest(&charactersv1.PreviewLevelUpRequest{CampaignId: f.campaign, CharacterId: c.GetId(), Choices: ch}))
+		return err
+	}
+	if err := up("skill:stealth"); repeatedField(err) == "" {
+		t.Errorf("the level-up plan takes the repeated pick: %v", err)
+	}
+	if err := up("language:elvish"); repeatedField(err) == "" {
+		t.Errorf("the level-up plan takes the language the background gives: %v", err)
+	}
+	if err := up("language:giant"); err != nil {
+		t.Errorf("the level-up plan refuses a pick that is new: %v", err)
+	}
+
+	content, err := f.h.svc.contentFor(t.Context(), nil, f.campaign)
+	if err != nil {
+		t.Fatal(err)
+	}
+	master := authz.Membership{CampaignID: f.campaign, Role: authz.RoleMaster}
+	if _, err := checkNewSheet(content, master, kindPlayer, proto.CloneOf(f.repeating(2, "skill:stealth"))); err == nil {
+		t.Error("a sheet made now with the repeated pick is accepted")
+	}
+	if _, err := checkImportedSheet(content, master, kindPlayer, proto.CloneOf(f.repeating(2, "skill:stealth"))); err != nil {
+		t.Errorf("the imported sheet is refused: %v", err)
 	}
 }
