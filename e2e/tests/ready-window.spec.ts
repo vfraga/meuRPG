@@ -56,6 +56,7 @@ test('o mestre dispara, o jogador lê o gatilho e ataca, e o mestre lê a mesma 
     await expect(prompt).toContainText('Em quem · 2 criaturas ao alcance');
     await expect(prompt.getByRole('radio', { name: /Capitão Goblin/ })).toBeChecked();
     await expect(prompt.locator('label', { hasText: 'Goblin 2' })).toContainText('Fora de alcance: até 18 m');
+    // "Deixar passar" has the focus at open. Whether the browser draws a ring on a focus a script sets is its own call (a window opened by the master's word has had no pointer), so only the focus is asserted.
     await expect(prompt.getByRole('button', { name: 'Deixar passar' })).toBeFocused();
     await expect(prompt).toContainText(/Se você não responder, passa sozinho em \d+ s\./);
 
@@ -378,7 +379,13 @@ test('uma magia de uma criatura preparada é solta na criatura que o jogador esc
     await expect(prompt).toContainText(/Você está escolhendo: a mesa espera 1 min \d+ s\. Depois disso, passa sozinho\./);
     const queue = m.locator('app-reaction-queue[part="rest"]');
     await expect
-      .poll(async () => Number(/passa sozinho em (\d+) s/.exec(await queue.innerText())?.[1] ?? '0'), { message: 'os segundos do relógio do mestre' })
+      .poll(
+        async () => {
+          const left = /passa sozinho em (?:(\d+) min)?\s*(?:(\d+) s)?/.exec(await queue.innerText());
+          return Number(left?.[1] ?? 0) * 60 + Number(left?.[2] ?? 0);
+        },
+        { message: 'os segundos do relógio do mestre' },
+      )
       .toBeGreaterThan(30);
     await release.click();
     await expect(prompt).toHaveCount(0);

@@ -62,6 +62,7 @@ export abstract class CombatViewPartsDirective extends CombatViewActingDirective
     mapName: () => this.mapName(),
     layers: () => this.layers(),
     fogVision: () => this.fogVision(),
+    releaseMove: (id) => this.moves.openRelease(id),
     spendClosed: () => this.moves.moveNote.set(''),
     calls: this.calls,
     note: (text) => this.actionNote.set(text),
@@ -104,6 +105,7 @@ export abstract class CombatViewPartsDirective extends CombatViewActingDirective
     creatureOptions: () => this.creatureOptions.data(),
     takeAction: (id, key) => this.takeActionFor(id, key),
     openSpend: (id) => this.sheets.actions.spend(id),
+    reopenWindow: (id) => this.sheets.reactions.reopenReadied(id),
   });
   /** The legendary cards' side of the page: the options' names for the log, the legendary attack and the armed move (`LegendaryFlow`). */
   protected readonly legendary = new LegendaryFlow({

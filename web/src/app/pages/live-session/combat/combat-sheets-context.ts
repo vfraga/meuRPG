@@ -73,6 +73,8 @@ export interface CombatSheetsContext {
   readonly fogVision: () => CastMapData['fog'];
   /** The player's choice of a target on the map (C7-04); absent where the sheets keep their own list. */
   readonly target?: () => TargetFlow;
+  /** "Mover agora" and "Mover por Tor" (#856): the Mover page of the readied move the window holds. */
+  readonly releaseMove?: (windowId: string) => void;
   /** The "Gastar movimento" sheet closed: the move note it replaced goes. */
   readonly spendClosed: () => void;
   /** The calls that answer with the combat (a use of a feature that asks nothing is made at once) and the note of the turn it leaves. */

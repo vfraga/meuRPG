@@ -10,7 +10,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { Code, ConnectError } from '@connectrpc/connect';
 
-import type { Combatant, SpellTargets } from '../../../../../gen/meurpg/play/v1/combat_pb';
+import type { Combatant } from '../../../../../gen/meurpg/play/v1/combat_pb';
 import { CombatantState } from '../../../../../gen/meurpg/play/v1/combat_pb';
 import type { TurnOptions } from '../../../../../gen/meurpg/rules/v1/rules_pb';
 import { CombatClient } from '../../../../core/combat/combat-client';
@@ -54,8 +54,6 @@ export interface ReadySheetData {
   readonly summaries: ReadonlyMap<string, string>;
   /** The spells that ask an ability, creatures or a damage type when they are cast: the window sends none of them yet, so they stay off. */
   readonly choices: ReadonlyMap<string, CastChoice>;
-  /** What `GetTurnOptions` says of who each spell can target: darts, a placed area or several targets cannot be released by the window. */
-  readonly spellTargets: readonly SpellTargets[];
   /** A combat with no map: no square to walk to. */
   readonly theatre: boolean;
   /** The readier has no speed now. */
@@ -92,7 +90,7 @@ export class ReadySheet {
   protected readonly max = READY_TRIGGER_MAX;
   protected readonly hint = TRIGGER_HINT;
 
-  protected readonly kinds = readyKinds(this.data.options);
+  protected readonly kinds = readyKinds(this.data.options, { theatre: this.data.theatre });
   protected readonly moveText = readyMoveText(this.data.speedFt);
   /** The creatures the trigger may name: everyone in the fight but the readier and the fallen. */
   protected readonly targets = this.data.combatants
@@ -113,12 +111,7 @@ export class ReadySheet {
       case 'attack':
         return readyAttackRows(this.data.options);
       case 'spell':
-        return readySpellRows(
-          this.data.options,
-          this.data.spellTargets,
-          this.data.summaries,
-          this.data.choices,
-        );
+        return readySpellRows(this.data.options, this.data.summaries, this.data.choices);
       case 'other':
         return readyOtherRows(this.data.options);
       default:

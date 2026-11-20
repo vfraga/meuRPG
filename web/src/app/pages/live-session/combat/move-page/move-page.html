@@ -14,8 +14,21 @@
       <p class="move__lead">Quadrados de 1,5 m. Role de lado para ver o resto do mapa.</p>
     } @else {
       <h1 class="mr-page-title move__title">{{ title() }}</h1>
-      <p class="move__lead">{{ lead() }}</p>
-      @if (jumps()) {
+      @if (!goneView()) {
+        <!-- The player reads the band, then the budget (857-06); the master the budget, then the band (857-07). -->
+        @if (release(); as r) {
+          @if (r.foot) {
+            <p class="move__lead">{{ lead() }}</p>
+            <app-release-band [band]="r.band" />
+          } @else {
+            <app-release-band [band]="r.band" />
+            <p class="move__lead">{{ lead() }}</p>
+          }
+        } @else {
+          <p class="move__lead">{{ lead() }}</p>
+        }
+      }
+      @if (jumps() && !release()) {
         <app-segmented class="move__seg" label="Como se mover" [segments]="modes" [value]="mode()" (choose)="setMode($event)" />
         @if (jumping()) {
           <app-segmented class="move__seg" label="Tipo de salto" [segments]="kinds" [value]="kind()" (choose)="setKind($event)" />
@@ -23,8 +36,8 @@
       }
     }
 
-    @if (!soloHeight()) {
-      <div class="move__map">
+    @if (!soloHeight() && !goneView()) {
+      <div class="move__map" [class.move__map--release]="!!release()" [style.--move-ratio]="encounter().gridColumns / encounter().gridRows">
         <div #scroller class="move__scroll">
           <app-combat-map
             [fog]="fog()"
@@ -62,7 +75,8 @@
         <!-- The zoom sits beside the legend under the map, never over it. -->
         <div class="move__below">
         <app-map-layers-legend class="move__legend" [layers]="layers()">
-          <li><span class="mr-swatch mr-swatch--reach" aria-hidden="true"></span>{{ jumping() ? 'Alcance do salto' : 'Você alcança' }}</li>
+          <!-- The master's release page names the mover (857-07); a name agrees with no gender. -->
+          <li><span class="mr-swatch mr-swatch--reach" aria-hidden="true"></span>{{ jumping() ? 'Alcance do salto' : (release()?.master ? (own()?.label ?? 'Quem se move') + ' alcança' : 'Você alcança') }}</li>
           <li><span class="mr-swatch mr-swatch--ring" aria-hidden="true"></span>Alcance de {{ jumping() ? limitText() : leftText() }}</li>
           @if (chosen()) {
             <li><span class="mr-swatch mr-swatch--chosen" aria-hidden="true"></span>Quadrado escolhido</li>
@@ -104,6 +118,13 @@
       </button>
     } @else {
       <div class="move__body">
+        @if (goneView(); as g) {
+          <div class="mr-notice mr-notice--neutral" role="status" data-testid="release-gone">
+            <mat-icon aria-hidden="true">info</mat-icon>
+            <p><b>{{ g.lead }}</b> {{ g.rest }}</p>
+          </div>
+        }
+        @if (!goneView()) {
         @if (jumping() && jumps(); as limits) {
           <app-jump-panel [limits]="limits" [kind]="kind()" [height]="height()" [atMin]="atMin()" [atMax]="atMax()" (step)="step($event)" />
         }
@@ -132,10 +153,16 @@
             [summary]="summary()"
             [canDisengage]="canDisengage()"
             [busy]="busy()"
+            [note]="release()?.note ?? ''"
             [chosen]="disengaging()"
             (disengage)="chooseDisengage()"
             (undo)="takeBackDisengage()"
           />
+        }
+        @if (release(); as r) {
+          @if (summary().kind !== 'ok') {
+            <p class="move__release-note" data-testid="release-note">{{ r.note }}</p>
+          }
         }
         @if (optionsFailed()) {
           <div class="mr-notice mr-notice--warning" role="status">
@@ -146,12 +173,24 @@
         @if (wide() && !soloHeight()) {
           <app-move-adjust (nudge)="nudge($event)" />
         }
+        }
       </div>
     }
   </div>
 
-  @if (!readOnly()) {
+  @if (goneView()) {
     <div class="move__foot">
+      <div class="move__buttons">
+        <button matButton="filled" type="button" class="move__go" data-testid="release-done" (click)="back.emit()">Voltar à sessão</button>
+      </div>
+    </div>
+  } @else if (!readOnly()) {
+    <div class="move__foot">
+      @if (release()?.foot; as foot) {
+        <p class="move__release-foot" role="status" data-testid="release-foot">{{ foot }}</p>
+      } @else if (release()?.wait; as wait) {
+        <p class="move__release-foot move__release-foot--wait" role="status"><mat-icon aria-hidden="true">hourglass_empty</mat-icon><span data-testid="release-wait">{{ wait }}</span></p>
+      }
       @if (trapAsk()) {
         <p class="move__ask" role="alert">{{ trapText() }}</p>
         <div class="move__buttons">
@@ -161,7 +200,7 @@
           </button>
         </div>
       } @else {
-        <div class="move__buttons">
+        <div class="move__buttons" [class.move__buttons--stack]="!!release()">
           <button
             #goButton
             matButton="filled"
@@ -175,7 +214,10 @@
             <mat-icon aria-hidden="true">{{ goIcon() }}</mat-icon>{{ goLabel() }}
           </button>
           <button matButton="outlined" type="button" class="move__cancel" (click)="back.emit()">
-            Cancelar
+            @if (release()) {
+              <mat-icon aria-hidden="true">arrow_back</mat-icon>
+            }
+            {{ release() ? 'Voltar' : 'Cancelar' }}
           </button>
         </div>
       }

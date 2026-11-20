@@ -135,4 +135,8 @@ describe('what the area picker says', () => {
     expect(nobodyText(false, 3, false).strong).toBe('Ninguém está marcado.');
     expect(nobodyText(true, 0, true).rest).toBe('A magia gasta a sua ação bônus mesmo assim.');
   });
+
+  it('says a released readied spell spends only the reaction: its slot went at Ready (#857)', () => {
+    expect(nobodyText(true, 3, false, true).rest).toBe('A magia gasta a sua reação mesmo assim.');
+  });
 });

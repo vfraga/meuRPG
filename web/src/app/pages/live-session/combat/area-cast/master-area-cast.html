@@ -1,4 +1,13 @@
-<app-sheet-frame [title]="data.caster.label + ' conjura ' + data.name" [subtitle]="subtitle()" [phone]="inSheet" (closed)="close()">
+<app-sheet-frame [title]="title" [subtitle]="subtitle()" [subtitleLead]="lead" [icon]="release ? 'alarm' : ''" [phone]="inSheet" [closable]="!release" (closed)="close()">
+  @if (band; as b) {
+    <app-release-band [band]="b" />
+  }
+  @if (gone(); as g) {
+    <div class="mr-notice mr-notice--neutral" role="status" data-testid="release-gone">
+      <mat-icon aria-hidden="true">info</mat-icon>
+      <p><b>{{ g.lead }}</b> {{ g.rest }}</p>
+    </div>
+  } @else {
   <div class="cols">
     <div class="col">
       <app-area-step [n]="1" [title]="stepOne" />
@@ -73,13 +82,30 @@
       }
     </div>
   </div>
+  }
 
+  @if (gone()) {
+    <div foot class="foot">
+      <button matButton="filled" type="button" class="btn" data-testid="release-done" (click)="close()">{{ doneLabel }}</button>
+    </div>
+  } @else {
   <div foot class="foot">
-    <button matButton type="button" class="quiet" [disabled]="busy()" (click)="close()">Cancelar</button>
+    @if (release) {
+      <p class="footnote" role="status" data-testid="release-foot">{{ foot }}</p>
+    }
+    <button matButton type="button" class="quiet" [class.quiet--release]="release" [disabled]="busy()" (click)="close()">
+      @if (release) {
+        <mat-icon aria-hidden="true">arrow_back</mat-icon>
+      }
+      {{ release ? backLabel : 'Cancelar' }}
+    </button>
     @if (flow.step() === 'list') {
       @if (placement !== Placement.CASTER) {
         <button matButton="outlined" type="button" class="btn" [disabled]="busy()" (click)="back()">
-          <mat-icon aria-hidden="true">arrow_back</mat-icon>Mudar o local
+          @if (!release) {
+            <mat-icon aria-hidden="true">arrow_back</mat-icon>
+          }
+          Mudar o local
         </button>
       }
       <button matButton="filled" type="button" class="btn" [disabled]="busy()" (click)="cast()">
@@ -102,4 +128,5 @@
       </button>
     }
   </div>
+  }
 </app-sheet-frame>

@@ -1,9 +1,15 @@
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { Code, ConnectError } from '@connectrpc/connect';
+import { timestampFromMs } from '@bufbuild/protobuf/wkt';
 import { vi } from 'vitest';
 
-import { CombatantKind, type Encounter, ReactionKind } from '../../../gen/meurpg/play/v1/combat_pb';
+import {
+  CombatantKind,
+  type Encounter,
+  ReactionKind,
+  ReadiedKind,
+} from '../../../gen/meurpg/play/v1/combat_pb';
 import { MasterAutoPass, autoPassOffers, masterWaitNote } from './auto-pass';
 import { CombatState } from './combat-state';
 import { combatant, encounter, reactionWindow } from './combat-testing';
@@ -120,6 +126,27 @@ describe('MasterAutoPass', () => {
     expect(api.answerReaction).toHaveBeenCalledTimes(2);
   });
 
+  it('counts the readied 120 s on a monotonic clock: a wall-clock jump of +1 h mid-wait does not pass the window', async () => {
+    const t0 = Date.parse('2026-10-16T12:00:00Z');
+    const held = reactionWindow({
+      id: 'r1',
+      kind: ReactionKind.READIED,
+      reactorId: 't',
+      reactorIsPlayer: true,
+      answerNow: true,
+      rolling: true,
+      waitBeganAt: timestampFromMs(t0),
+      waitedMs: 10_000n,
+    } as never);
+    const { pass, api } = setup({ enc: withWindows({ reactionWindows: [held] }) });
+    expect(pass.windowsLeft()).toEqual({ r1: 110 });
+    await vi.advanceTimersByTimeAsync(5000);
+    vi.setSystemTime(t0 + 3_600_000);
+    await vi.advanceTimersByTimeAsync(5000);
+    expect(pass.windowsLeft()).toEqual({ r1: 100 });
+    expect(api.answerReaction).not.toHaveBeenCalled();
+  });
+
   it('stops the timer with the screen', () => {
     setup();
     expect(vi.getTimerCount()).toBe(1);
@@ -146,5 +173,75 @@ describe('masterWaitNote', () => {
   it('names the player an opportunity attack waits for, before any reaction', () => {
     const e = withWindows({ opportunityOffers: [offer('o1', 't')] });
     expect(masterWaitNote(e, { w1: 5 }, name)).toContain('Vinicius');
+  });
+});
+
+describe("masterWaitNote of a readied window's wait (#857, 857-08 card 7)", () => {
+  const name = () => '';
+  const readied = (over: object = {}) =>
+    reactionWindow({
+      id: 'r1',
+      kind: ReactionKind.READIED,
+      reactorId: 'p',
+      reactorLabel: 'Pensantus',
+      reactorIsPlayer: true,
+      answerNow: true,
+      ...over,
+    } as never);
+  const pen = combatant({ id: 'p', label: 'Pensantus', kind: CombatantKind.PLAYER });
+
+  it('says "Esperando a reação de Pensantus" and the time left before the player is on the map', () => {
+    const e = encounter({ combatants: [pen, goblin], reactionWindows: [readied()] });
+    expect(masterWaitNote(e, { r1: 24 }, name)).toBe(
+      'Esperando a reação de Pensantus · passa sozinho em 24 s',
+    );
+  });
+
+  const holding = (kind: ReadiedKind) =>
+    combatant({
+      id: 'p',
+      label: 'Pensantus',
+      kind: CombatantKind.PLAYER,
+      readied: { id: 'h1', kind } as never,
+    });
+
+  it('says the player is on the map, with the 2 minutes counted as minutes, for a held move', () => {
+    const e = encounter({
+      combatants: [holding(ReadiedKind.MOVE), goblin],
+      reactionWindows: [readied({ rolling: true })],
+    });
+    expect(masterWaitNote(e, { r1: 108 }, name)).toBe(
+      'Pensantus está no mapa · passa sozinho em 1 min 48 s',
+    );
+  });
+
+  it('does not say "no mapa" for the mark of a player who only chooses targets in the window', () => {
+    const e = encounter({
+      combatants: [holding(ReadiedKind.ATTACK), goblin],
+      reactionWindows: [readied({ rolling: true })],
+    });
+    expect(masterWaitNote(e, { r1: 108 }, name)).toBe(
+      'Esperando a reação de Pensantus · passa sozinho em 1 min 48 s',
+    );
+  });
+
+  it('says it for a held spell the caller knows is placed on the map', () => {
+    const e = encounter({
+      combatants: [holding(ReadiedKind.SPELL), goblin],
+      reactionWindows: [readied({ rolling: true })],
+    });
+    expect(masterWaitNote(e, { r1: 108 }, name, () => true)).toBe(
+      'Pensantus está no mapa · passa sozinho em 1 min 48 s',
+    );
+  });
+
+  it('says it again as the same wait once the player is back from the map', () => {
+    const e = encounter({
+      combatants: [pen, goblin],
+      reactionWindows: [readied({ rolling: false })],
+    });
+    expect(masterWaitNote(e, { r1: 72 }, name)).toBe(
+      'Esperando a reação de Pensantus · passa sozinho em 1 min 12 s',
+    );
   });
 });

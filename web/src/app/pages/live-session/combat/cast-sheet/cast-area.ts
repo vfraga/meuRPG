@@ -95,6 +95,7 @@ export class CastArea {
       !!this.flow,
       this.s.data.level > 0 && !this.s.viaGrant() ? this.s.slotLevel() : 0,
       this.s.data.economy === ActionEconomy.BONUS_ACTION,
+      !!this.s.data.release,
     ),
   );
   /** The dice of the burning side at the slot ("5d8"), for the wall's note. */

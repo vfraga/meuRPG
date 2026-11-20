@@ -1,4 +1,5 @@
 import {
+  computed,
   Component,
   DestroyRef,
   ElementRef,
@@ -44,7 +45,7 @@ import { MatIconModule } from '@angular/material/icon';
         }
       </div>
       @if (subtitle()) {
-        <p class="frame__sub">{{ subtitle() }}</p>
+        <p class="frame__sub">@if (lead(); as word) {<span class="frame__mark" aria-hidden="true"></span><b>{{ word }}</b>{{ subtitle().slice(word.length) }}} @else {{{ subtitle() }}}</p>
       }
       <div #body class="frame__body" [class.frame__body--scrolls]="scrolls()" [attr.tabindex]="focusableBody() && scrolls() ? 0 : null"><ng-content /></div>
       <div class="frame__foot"><ng-content select="[foot]" /></div>
@@ -56,6 +57,13 @@ import { MatIconModule } from '@angular/material/icon';
 export class SheetFrame {
   readonly title = input.required<string>();
   readonly subtitle = input('');
+  /** The first word of the subtitle drawn bold after a filled marker (a release's "Reação"); only when the subtitle begins with it. */
+  readonly subtitleLead = input('');
+  protected readonly lead = computed(() =>
+    this.subtitleLead() && this.subtitle().startsWith(this.subtitleLead())
+      ? this.subtitleLead()
+      : '',
+  );
   readonly titleId = input('sheet-t');
   /** A leading icon before the title (Escudo's shield). */
   readonly icon = input('');

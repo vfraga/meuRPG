@@ -1,0 +1,132 @@
+<app-sheet-frame
+  icon="alarm"
+  [title]="view.title"
+  [subtitle]="view.subtitle"
+  [phone]="inSheet"
+  [closable]="false"
+  [focusableBody]="true"
+>
+  <div class="body">
+    @if (error()) {
+      <div class="mr-notice mr-notice--danger" role="alert">
+        <mat-icon aria-hidden="true">error</mat-icon>
+        <p>{{ error() }}</p>
+      </div>
+    }
+    @if (gone()) {
+      <p class="what" role="status" data-testid="readied-gone">
+        @if (goneView(); as g) {
+          <b>{{ g.lead }}</b> {{ g.rest }}
+        } @else {
+          {{ goneText() }}
+        }
+      </p>
+    } @else {
+      @if (useHeld()) {
+        <p class="what" role="status">
+          A sua jogada espera as reações de outros. Assim que responderem, ela acontece.
+        </p>
+      }
+      <p class="what">
+        <b>{{ view.lead }}</b> {{ view.quote }}. {{ view.question }}
+      </p>
+      @if (aims) {
+        <app-readied-aim
+          [campaignId]="data.campaignId"
+          [encounterId]="data.encounterId"
+          [readied]="data.readied!"
+          [encounter]="data.state.encounter()"
+          [reactorId]="data.window.reactorId"
+          [(need)]="need"
+          [(target)]="target"
+          [(release)]="release"
+          [(plan)]="plan"
+          (touched)="choosing()"
+        />
+      }
+      @if (mapNotice(); as n) {
+        <div class="mr-notice mr-notice--neutral" data-testid="release-map-notice">
+          <mat-icon aria-hidden="true">map</mat-icon>
+          <p>
+            <b>{{ n.lead }}</b> {{ n.rest }}
+          </p>
+        </div>
+      }
+      @if (view.legend.length) {
+        <ul class="legend" data-testid="readied-legend">
+          @for (line of view.legend; track line.text) {
+            <li>
+              <mat-icon aria-hidden="true" [class.mr-icon-filled]="line.icon === 'square'">{{ line.icon }}</mat-icon>
+              <span>
+                @if (line.lead) {
+                  <b>{{ line.lead }}</b>
+                }
+                {{ line.text }}
+              </span>
+            </li>
+          }
+        </ul>
+      } @else {
+        <p class="small">{{ view.note }}</p>
+      }
+      @if (moveOff()) {
+        <p class="missing" id="readied-limit" role="status">
+          <mat-icon aria-hidden="true">block</mat-icon>{{ moveOffLine() }}
+        </p>
+      }
+    }
+  </div>
+  <div foot>
+    @if (gone()) {
+      <button matButton="outlined" type="button" class="foot__one" data-initial-focus (click)="sheet.close()">
+        Fechar
+      </button>
+    } @else {
+      <p class="small foot__clock" role="status" data-testid="readied-clock">
+        @if (otherDevice()) {
+          <mat-icon aria-hidden="true">location_on</mat-icon>
+        }
+        {{ autoPass() }}
+      </p>
+      <div class="pair">
+        <button
+          matButton="outlined"
+          type="button"
+          class="pair__btn"
+          data-initial-focus
+          [disabled]="busy()"
+          (click)="answer(false)"
+        >
+          {{ view.declineLabel }}
+        </button>
+        @if (mapRelease()) {
+          <button
+            matButton="filled"
+            type="button"
+            class="pair__btn"
+            [class.pair__btn--off]="moveOff()"
+            [attr.aria-describedby]="moveOff() ? 'readied-limit' : null"
+            [disabled]="!ready() || busy() || moveOff()"
+            disabledInteractive
+            data-testid="release-to-map"
+            (click)="goToMap()"
+          >
+            <mat-icon aria-hidden="true">{{ isMove ? 'directions_walk' : 'map' }}</mat-icon
+            >{{ isMove ? view.useLabel : 'Soltar no mapa' }}
+          </button>
+        } @else if (view.releasable) {
+          <button
+            matButton="filled"
+            type="button"
+            class="pair__btn"
+            [disabled]="!ready() || busy()"
+            disabledInteractive
+            (click)="answer(true)"
+          >
+            {{ busy() ? 'Usando…' : useLabel() }}
+          </button>
+        }
+      </div>
+    }
+  </div>
+</app-sheet-frame>

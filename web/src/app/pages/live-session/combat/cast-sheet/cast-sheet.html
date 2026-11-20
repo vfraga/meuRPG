@@ -1,5 +1,5 @@
-<app-sheet-frame [title]="tx.title()" [subtitle]="tx.subtitle()" [phone]="inSheet" (closed)="close()">
-  @if (!s.done()) {
+<app-sheet-frame [title]="tx.title()" [subtitle]="tx.subtitle()" [subtitleLead]="release && !s.done() ? releaseLead : ''" [icon]="release && !s.done() ? 'alarm' : ''" [phone]="inSheet" [closable]="!release" (closed)="close()">
+  @if (!s.done() && !gone()) {
     <app-spell-help head-action [name]="data.name" (press)="describe()" />
   }
   <div class="body">
@@ -10,7 +10,19 @@
       </div>
     }
 
-    @if (questions.held.offer(); as o) {
+    @if (!s.done() && releaseBand; as band) {
+      @if (!gone()) {
+        <app-release-band [band]="band" />
+      }
+    }
+
+    @if (gone(); as g) {
+      <!-- The window went away while the map was open (857-09 card 1): nothing left to place. -->
+      <div class="mr-notice mr-notice--neutral" role="status" data-testid="release-gone">
+        <mat-icon aria-hidden="true">info</mat-icon>
+        <p><b>{{ g.lead }}</b> {{ g.rest }}</p>
+      </div>
+    } @else if (questions.held.offer(); as o) {
       <!-- The d20 of the spell attack is rolled and kept; nothing is spent until the player answers: the halfling's 1 first, then the Bardic Inspiration die (SRD 5.1). -->
       <app-held-roll-prompt
         [offer]="o"
@@ -339,8 +351,16 @@
     }
   </div>
 
-  @if (!s.done() && ar.flow; as f) {
+  @if (gone()) {
     <div foot>
+      <button #back matButton="filled" type="button" class="cast" data-testid="release-done" (click)="close()">{{ doneLabel }}</button>
+    </div>
+  }
+  @if (!s.done() && !gone() && ar.flow; as f) {
+    <div foot>
+      @if (release) {
+        <p class="wait" role="status"><mat-icon aria-hidden="true">hourglass_empty</mat-icon><span data-testid="release-wait">{{ waitLine }}</span></p>
+      }
       @if (f.step() === 'place') {
         @if (ch.missing()) {
           <p class="missing" role="status"><mat-icon aria-hidden="true">block</mat-icon>{{ ch.missing() }}</p>
@@ -360,7 +380,11 @@
           >
             {{ ar.confirmText }}
           </button>
-          @if (f.wall()) {
+          @if (release) {
+            <button matButton="outlined" type="button" class="cancel" [disabled]="f.busy()" (click)="close()">
+              <mat-icon aria-hidden="true">arrow_back</mat-icon>{{ backLabel }}
+            </button>
+          } @else if (f.wall()) {
             <button matButton="outlined" type="button" class="cancel" [disabled]="f.busy()" (click)="close()">Cancelar</button>
           } @else {
             <button matButton type="button" class="quiet" [disabled]="f.busy()" (click)="close()">Cancelar</button>
@@ -389,7 +413,12 @@
             </button>
           }
           @if (ar.placement === Placement.CASTER) {
-            <button #changePlace matButton="outlined" type="button" class="cancel" [disabled]="s.busy()" (click)="close()">Cancelar</button>
+            <button #changePlace matButton="outlined" type="button" class="cancel" [disabled]="s.busy()" (click)="close()">
+              @if (release) {
+                <mat-icon aria-hidden="true">arrow_back</mat-icon>
+              }
+              {{ release ? backLabel : 'Cancelar' }}
+            </button>
           } @else {
             <button #changePlace matButton="outlined" type="button" class="cancel" [disabled]="s.busy()" (click)="changeArea()">
               <mat-icon aria-hidden="true">arrow_back</mat-icon>Mudar o local
@@ -399,7 +428,7 @@
       }
     </div>
   }
-  @if (!s.done() && !ar.flow && ch.kind() !== 'attack' && !(ch.kind() === 'pool' && ch.usesPicker())) {
+  @if (!s.done() && !gone() && !ar.flow && ch.kind() !== 'attack' && !(ch.kind() === 'pool' && ch.usesPicker())) {
     <div foot>
       @if (tx.endsConcentration(); as ends) {
         <!-- A concentration spell cast over another one: what it ends, and what goes with it (the combat's own data). -->
@@ -438,7 +467,7 @@
   }
   @if (s.done() && !damage.owed()) {
     <div foot>
-      <button #back matButton="filled" type="button" class="cast" (click)="close()">Voltar à sua vez</button>
+      <button #back matButton="filled" type="button" class="cast" (click)="close()">{{ doneLabel }}</button>
     </div>
   }
 </app-sheet-frame>

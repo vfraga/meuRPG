@@ -166,3 +166,20 @@
   font-size: var(--mr-font-14);
   line-height: 20px;
 }
+
+/* "A mesa espera você: até 2 min." over the buttons of a release: quiet, not a notice. */
+.wait {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 8px;
+  font-size: var(--mr-font-14);
+  color: var(--mr-ink-muted);
+
+  .mat-icon {
+    flex: none;
+    width: 18px;
+    height: 18px;
+    font-size: var(--mr-font-18);
+  }
+}

@@ -21,6 +21,8 @@ export class CombatMoveCalls {
    * "Movimento forçado" box: a teleport, a push or a pull) skips the offers.
    * `legendaryOption` (the master only) is the key of a legendary option of kind "move":
    * the walk spends its cost in legendary actions.
+   * `releaseReadied` (the master only) makes the walk the release of the combatant's readied move: "Usar pelo jogador";
+   * without it the master's walk is a plain one and leaves the window open.
    * `key` is the caller's, kept across the retries of one jump (a lost answer
    * must not charge it twice). */
   async move(
@@ -33,6 +35,7 @@ export class CombatMoveCalls {
     key?: string,
     forced = false,
     legendaryOption = '',
+    releaseReadied = false,
   ): Promise<MoveResult> {
     const res = await this.base.keyed(
       [
@@ -45,6 +48,7 @@ export class CombatMoveCalls {
         jump,
         forced,
         legendaryOption,
+        releaseReadied,
       ],
       (sent) =>
         this.base.client.moveCombatant({
@@ -62,6 +66,7 @@ export class CombatMoveCalls {
           jumpHeightDft: jump?.kind === 'high' ? jump.heightDft : 0,
           forced,
           legendaryOption,
+          releaseReadied,
         }),
       key,
     );

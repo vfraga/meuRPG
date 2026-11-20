@@ -82,6 +82,19 @@
   color: var(--mr-ink-muted);
 }
 
+// "■ Reação · …": a filled square and the first word in bold before the rest (the boards' release sheets).
+.frame__sub b {
+  color: var(--mr-ink);
+}
+
+.frame__mark {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  margin-right: 6px;
+  background: var(--mr-ink-muted);
+}
+
 // An icon button projected before the close one: the title's row keeps both at
 // the top right, 44 px each, like the artboard's "?" and X.
 .frame__head ::ng-deep [head-action] {

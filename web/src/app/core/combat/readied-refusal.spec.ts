@@ -1,7 +1,11 @@
 import { create } from '@bufbuild/protobuf';
 import { Code, ConnectError } from '@connectrpc/connect';
 
-import { ReadiedActionSchema, ReadiedKind } from '../../../gen/meurpg/play/v1/combat_pb';
+import {
+  AreaPlacement,
+  ReadiedActionSchema,
+  ReadiedKind,
+} from '../../../gen/meurpg/play/v1/combat_pb';
 import type { ReleasePlan } from './readied-release';
 import { readiedRefusalText } from './readied-refusal';
 
@@ -11,6 +15,9 @@ const planOf = (kind: ReleasePlan['rule']['kind'], rays = false): ReleasePlan =>
   rule: { kind, max: 3, min: 1, ...(rays ? { rays } : {}) },
   rows: [],
   total: kind === 'darts' ? 3 : 0,
+  placement: AreaPlacement.UNSPECIFIED,
+  onMap: false,
+  wall: false,
 });
 
 describe('the refusal of the answer of a readied action (#582)', () => {

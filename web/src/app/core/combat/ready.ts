@@ -1,9 +1,4 @@
-import {
-  AreaPlacement,
-  type GetTurnOptionsResponse,
-  ReadiedKind,
-  type SpellTargets,
-} from '../../../gen/meurpg/play/v1/combat_pb';
+import { type GetTurnOptionsResponse, ReadiedKind } from '../../../gen/meurpg/play/v1/combat_pb';
 import {
   ActionEconomy,
   AttackKind,
@@ -14,10 +9,10 @@ import {
   type TurnOptions,
 } from '../../../gen/meurpg/rules/v1/rules_pb';
 import { joinDots, tight } from '../format/text';
-import { targetsOfOption } from './cast-ref';
 import { CHOICE_ASKS, type CastChoice } from './ready-choices';
 import type { ReadyArgs } from './combat-client-ready';
 import { circleLabel } from './combat-grid';
+import { THEATRE_WHY } from './theatre';
 import {
   attackDetail,
   attackName,
@@ -69,13 +64,7 @@ export interface ReadyRow {
   readonly spell: boolean;
 }
 
-/** The window has no way yet to move the token of a readied move: the master does it (#856). */
-export const MOVE_PENDING_TEXT =
-  'Mover pela janela ainda não dá: por enquanto o mestre move a ficha.';
-/** A spell placed on the map: `AnswerReaction` carries no point or direction for it yet (#857, part 2). */
-export const SPELL_PENDING_TEXT =
-  'Soltar pela janela ainda não dá para esta magia: ela pede um ponto ou uma direção no mapa.';
-/** A spell that asks the caster an ability, creatures or a damage type: the release of the window sends none of them yet (#857). */
+/** A spell that asks the caster an ability, creatures or a damage type: the Ready sheet leaves it off (#857), see `readyChoices`. */
 export function choicePendingText(choice: CastChoice): string {
   return `Soltar pela janela ainda não dá para esta magia: ela pede ${CHOICE_ASKS[choice]} ao conjurar.`;
 }
@@ -140,21 +129,24 @@ export function readySpeed(
   return { noSpeed, speedFt: best === undefined || best === walkFt ? walkFt : 0 };
 }
 
-/** The kind buttons, in the board's order: "Magia" only for a combatant with spells; "Mover" is off, with its reason, until the window moves the token (#856). */
-export function readyKinds(options: TurnOptions): readonly ReadyKindChoice[] {
+/** The kind buttons, in the board's order: "Magia" only for a combatant with spells; "Mover" only on a map, where the window moves the token (#856). */
+export function readyKinds(
+  options: TurnOptions,
+  where: { readonly theatre: boolean },
+): readonly ReadyKindChoice[] {
   const hasSpells = readySpellRows(options).length > 0;
   return KINDS.filter((k) => k.key !== 'spell' || hasSpells).map((k) => ({
     ...k,
-    blocked: kindBlocked(k.key, options),
+    blocked: kindBlocked(k.key, options, where.theatre),
   }));
 }
 
-function kindBlocked(kind: ReadyKind, options: TurnOptions): string {
+function kindBlocked(kind: ReadyKind, options: TurnOptions, theatre: boolean): string {
   switch (kind) {
     case 'attack':
       return heldAttacks(options).length === 0 ? NO_ATTACK_TEXT : '';
     case 'move':
-      return MOVE_PENDING_TEXT;
+      return theatre ? THEATRE_WHY : '';
     case 'other':
       return heldOthers(options).length === 0 ? NO_OTHER_TEXT : '';
     default:
@@ -175,10 +167,10 @@ export function readyAttackRows(options: TurnOptions): readonly ReadyRow[] {
   }));
 }
 
-/** "1º círculo · restam 2": a slot level and how many are free. */
+/** "1º nível · restam 2": a slot level and how many are free. */
 function slotText(level: number, free: number): string {
   const word = free === 1 ? 'resta 1' : `restam ${free}`;
-  return `${level}º círculo · ${word}`;
+  return `${level}º nível · ${word}`;
 }
 
 /** The levels a spell can be held with, one entry each: pact and plain slots of one level count together. */
@@ -208,27 +200,10 @@ function spellBlocked(o: SpellOption): string {
   }
   if (!o.enabled) {
     return o.reason?.code === DisabledReasonCode.NO_SLOT
-      ? `Sem espaços de ${o.spell?.level ?? 1}º círculo.`
+      ? `Sem espaços de ${o.spell?.level ?? 1}º nível.`
       : reasonText(o.reason);
   }
   return '';
-}
-
-/**
- * Whether the window can release a spell today: it names darts, creatures (one or several) or nothing, as the cast screens do. A spell
- * placed on the map (a point or a direction) cannot yet. Read from what `GetTurnOptions` says of the spell (`spell_targets`); with no
- * entry (an attack cantrip, which is released as an attack) nothing is known against it. In a combat with no map nothing is placed.
- * A spell that asks the caster a choice (`choices`) cannot either: the answer carries none.
- */
-function releaseBlocked(
-  t: SpellTargets | undefined,
-  key: string,
-  choices: ReadonlyMap<string, CastChoice> = new Map(),
-): string {
-  if (t && t.placement !== AreaPlacement.UNSPECIFIED) {
-    return SPELL_PENDING_TEXT;
-  }
-  return choiceBlocked(choices, key);
 }
 
 /** Why the window cannot release a spell that asks the caster a choice (an ability, creatures, a damage type); `''` when it asks none. */
@@ -237,7 +212,7 @@ function choiceBlocked(choices: ReadonlyMap<string, CastChoice>, key: string): s
   return choice ? choicePendingText(choice) : '';
 }
 
-/** "1º círculo · 1 ação · Evocação ...": the line under a spell's name. */
+/** "1º nível · 1 ação · Evocação ...": the line under a spell's name. */
 function spellSub(o: SpellOption, level: number, summaries: ReadonlyMap<string, string>): string {
   const line = spellLine(o, summaries.get(o.spell?.key ?? '') ?? '');
   const action = o.economy === ActionEconomy.ACTION ? '1 ação' : '';
@@ -247,11 +222,10 @@ function spellSub(o: SpellOption, level: number, summaries: ReadonlyMap<string, 
 /**
  * The spells: the cantrips that attack, then the spells of the list the server sends. A spell a feature grants is not offered (the
  * server holds the class spells only). A spell that is not of 1 action, or has no slot, is listed with its reason, and so is one that
- * asks a choice at the cast (`choices`, see `readyChoices`).
+ * asks a choice at the cast (`choices`, see `readyChoices`). A spell placed on the map is held like any other: the window releases it there.
  */
 export function readySpellRows(
   options: TurnOptions,
-  spellTargets: readonly SpellTargets[] = [],
   summaries: ReadonlyMap<string, string> = new Map(),
   choices: ReadonlyMap<string, CastChoice> = new Map(),
 ): readonly ReadyRow[] {
@@ -266,10 +240,7 @@ export function readySpellRows(
         rangeText(o.attack!),
       ]),
     ),
-    blocked: releaseBlocked(
-      spellTargets.find((x) => x.spellKey === o.attack?.key),
-      o.attack?.key ?? '',
-    ),
+    blocked: '',
     level: 0,
     slots: [],
     spell: true,
@@ -282,13 +253,7 @@ export function readySpellRows(
         id: o.spell?.key ?? '',
         title: o.spell?.namePt || o.spell?.name || '',
         sub: spellSub(o, level, summaries),
-        blocked:
-          spellBlocked(o) ||
-          releaseBlocked(
-            targetsOfOption(options.spells, spellTargets, o),
-            o.spell?.key ?? '',
-            choices,
-          ),
+        blocked: spellBlocked(o) || choiceBlocked(choices, o.spell?.key ?? ''),
         level,
         slots: level > 0 ? slotsOf(o) : [],
         spell: true,

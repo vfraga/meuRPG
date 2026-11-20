@@ -1192,6 +1192,10 @@ A player reads only their own windows, and the numbers of the trigger (an attack
 - **An optional reaction a player does not answer passes after 30 seconds** (Shield, Uncanny Dodge, Hellish Rebuke's cast, Counterspell, Cutting Words, Deflect Missiles, Protection, Feather Fall, Slow Fall, a readied action the master fired, a reaction feature whose trigger happened and an opportunity attack offered to a player). The master's screen counts it ("Passa sozinho em N s"), the player's prompt reads "Se você não responder, passa sozinho em N s.". Never a saving throw, a contest or the master's check.
 - **A player who is rolling gets longer.** While the player rolls a physical die, the window waits up to 2 minutes: "Você está rolando: a mesa espera 2 min", and the master reads "Rolando… passa sozinho em N s". The master can pass it sooner.
   The same wait is for a player choosing the targets or the darts of a held spell.
+  The same wait is for a player who takes a held move or a held spell to the map ("Mover agora", "Soltar no mapa").
+  The 2 minutes run once per window, from the first time the player is on the map: going back to the window and onto the map again does not start them over.
+  While the player is on the map the master's screen says so ("No mapa"), and the window passes by itself only when the 2 minutes end.
+  A player who is only choosing the targets or the darts is not on the map, and the master's screen says that and not "No mapa".
 - **Ready** (SRD 5.1, "Ready").
   On its turn a creature spends its action to hold another until a trigger its player writes.
   The held action is an attack, a move, a spell or another standard action.
@@ -1204,13 +1208,13 @@ A player reads only their own windows, and the numbers of the trigger (an attack
   At a table with physical dice, a readied action released from the window takes the faces typed, as on the player's turn: the d20 (the pair for advantage or disadvantage) of an attack, and the sum of the dice of a spell that rolls a pool (Sleep, Color Spray); a spell with several rays (Scorching Ray) takes one typed d20, or pair, for each ray.
   The creature named at Ready is only a suggestion for the release.
   A spell that asks an ability, a damage type, the creatures of a summon or a revival cannot be released, and Ready refuses it.
-  A spell placed on the map (a point, a direction, a wall) or that lays a zone there is released on the map while the window is open, by casting the spell there, not by answering the window.
+  A spell placed on the map (a point, a direction, a wall) or that lays a zone there is released on the map while the window is open ("Soltar no mapa"), not by the window's "Use".
   The spell is lost, with its slot, if the concentration ends first, if the creature lets it pass, or when the readied action is lost.
   Hide and Help cannot be held: they have their own calls, which a reaction does not run.
   Dash and Disengage cannot be held either: they last only for the creature's own turn.
   A move cannot be held in a combat without a map.
   A readied move is up to the combatant's speed, not the movement its turn had left (SRD 5.1, Ready: "move up to your speed").
-  A readied move that goes nowhere, stopped before its first square (a creature the player cannot see is in the way), is not used: the reaction stays free, the action keeps waiting and its window stays open. The reply says the walk stopped early.
+  A readied move that goes nowhere, stopped before its first square (a creature the player cannot see is in the way), is not used: the reaction stays free, the action keeps waiting and its window stays open, and the Mover page stays open on the player's screen (and the master's) with "Algo bloqueia o caminho: nada foi gasto. Escolha outro quadrado.", so the player can choose another square or let it pass.
   One that is stopped after at least one square is still the use.
   The master's own walk of the token is not the release: it is free as ever and leaves the window as it was, unless the master chooses to release the move for the player.
   A Ready cannot fire during the readier's own turn.

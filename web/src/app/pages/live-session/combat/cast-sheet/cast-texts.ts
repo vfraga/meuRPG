@@ -4,6 +4,7 @@ import type { CombatantState } from '../../../../../gen/meurpg/play/v1/combat_pb
 import { castRows, castSubtitle, effectSentence } from '../../../../core/combat/cast-flow';
 import { shapeText } from '../../../../core/combat/area-text';
 import { poolRollText } from '../../../../core/combat/hp-effects';
+import { releaseSubtitle, releaseTitle } from '../../../../core/combat/release-text';
 import type { CastArea } from './cast-area';
 import type { CastChoices } from './cast-choices';
 import type { CastDamage } from './cast-damage';
@@ -38,17 +39,28 @@ export class CastTexts {
     () => this.s.done() && (this.choices.kind() === 'pool' || this.choices.kind() === 'hp'),
   );
   readonly title = computed(() =>
-    castTitle({
-      name: this.s.data.name,
-      resume: !!this.s.data.resume,
-      done: this.s.done(),
-      hpDone: this.hpDone(),
-      placedArea: !!this.area.flow,
-      typing: this.s.typing(),
-    }),
+    this.releasing()
+      ? releaseTitle(
+          this.s.data.name,
+          !!this.s.data.master,
+          this.s.data.release?.reactorLabel ?? '',
+        )
+      : castTitle({
+          name: this.s.data.name,
+          resume: !!this.s.data.resume,
+          done: this.s.done(),
+          hpDone: this.hpDone(),
+          placedArea: !!this.area.flow,
+          typing: this.s.typing(),
+        }),
   );
+  /** The release's own words: before the cast, while the held spell is placed. */
+  private readonly releasing = computed(() => !!this.s.data.release && !this.s.done());
   readonly subtitle = computed(() => {
     const { data } = this.s;
+    if (data.release && !this.s.done()) {
+      return releaseSubtitle(data.release.reactorLabel, !!data.master);
+    }
     if (this.s.done()) {
       return doneSubtitle({
         cast: this.s.cast(),

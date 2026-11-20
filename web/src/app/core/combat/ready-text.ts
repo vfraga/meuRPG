@@ -19,7 +19,7 @@ export function readyLegend(kind: ReadyKind, slotLevel: number): readonly ReadyL
     return [
       {
         icon: 'circle',
-        lead: slotLevel > 0 ? `Ação e espaço de ${slotLevel}º círculo:` : 'Ação:',
+        lead: slotLevel > 0 ? `Ação e espaço de ${slotLevel}º nível:` : 'Ação:',
         text: 'gastos agora, ao preparar.',
       },
       {

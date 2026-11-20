@@ -1192,6 +1192,10 @@ Um jogador lê só as próprias janelas, e os números do gatilho (um total de a
 - **Uma reação opcional que o jogador não responde passa depois de 30 segundos** (Escudo Arcano, Esquiva Sobrenatural, a conjuração da Repreensão Infernal, Contramágica, Palavras de Interrupção, Defletir Projéteis, Proteção, Queda Suave, Queda Lenta, uma ação preparada que o mestre disparou, uma característica com reação cujo gatilho aconteceu e um ataque de oportunidade oferecido a um jogador). A tela do mestre a conta ("Passa sozinho em N s"), o aviso do jogador diz "Se você não responder, passa sozinho em N s.". Nunca um teste de resistência, uma disputa nem o teste do mestre.
 - **Um jogador que está rolando ganha mais tempo.** Enquanto o jogador rola um dado físico, a janela espera até 2 minutos: "Você está rolando: a mesa espera 2 min", e o mestre lê "Rolando… passa sozinho em N s". O mestre pode passá-la antes.
   A mesma espera vale para o jogador que escolhe os alvos ou os dardos de uma magia preparada.
+  A mesma espera vale para o jogador que leva um movimento ou uma magia preparada ao mapa ("Mover agora", "Soltar no mapa").
+  Os 2 minutos correm uma vez por janela, desde a primeira vez que o jogador está no mapa: voltar à janela e ir ao mapa de novo não os reinicia.
+  Enquanto o jogador está no mapa, a tela do mestre diz isso ("No mapa"), e a janela só passa sozinha quando os 2 minutos acabam.
+  O jogador que só escolhe os alvos ou os dardos não está no mapa, e a tela do mestre diz isso, não "No mapa".
 - **Preparar** (SRD 5.1, "Ready").
   No próprio turno, uma criatura gasta a ação para guardar outra até um gatilho que o jogador dela escreve.
   A ação guardada é um ataque, um movimento, uma magia ou outra ação padrão.
@@ -1204,13 +1208,13 @@ Um jogador lê só as próprias janelas, e os números do gatilho (um total de a
   Numa mesa com dados físicos, uma ação preparada liberada pela janela usa as faces digitadas, como no turno do jogador: o d20 (o par, com vantagem ou desvantagem) de um ataque e a soma dos dados de uma magia que rola um conjunto (Sono, Leque Cromático); uma magia com vários raios (Raio Ardente) pede um d20, ou um par, para cada raio.
   A criatura nomeada ao preparar é só uma sugestão para a liberação.
   Uma magia que pede uma habilidade, um tipo de dano, as criaturas de uma invocação ou a volta de uma criatura morta à vida não pode ser liberada, e o Preparar a recusa.
-  Uma magia colocada no mapa (um ponto, uma direção, uma parede) ou que deixa uma zona nele é liberada no mapa enquanto a janela está aberta, lançando a magia ali, e não respondendo à janela.
+  Uma magia colocada no mapa (um ponto, uma direção, uma parede) ou que deixa uma zona nele é liberada no mapa enquanto a janela está aberta ("Soltar no mapa"), e não pelo "Usar" da janela.
   A magia se perde, com o espaço gasto, se a concentração acabar antes, se a criatura a deixar passar ou quando a ação preparada se perde.
   Esconder-se e Ajudar não podem ser guardados: têm chamadas próprias, que uma reação não executa.
   Correr e Desengajar também não: valem só para o turno da própria criatura.
   Um movimento não pode ser guardado num combate sem mapa.
   Um movimento preparado vai até a velocidade que a criatura tem, e não até o deslocamento que o turno dela ainda tinha (SRD 5.1, Ready: o movimento da reação é de até a velocidade da criatura).
-  Um movimento preparado que não vai a lugar nenhum, parado antes do primeiro quadrado (uma criatura que o jogador não vê está no caminho), não é usado: a reação continua livre, a ação continua esperando e a janela dela continua aberta. A resposta diz que a caminhada parou antes do fim.
+  Um movimento preparado que não vai a lugar nenhum, parado antes do primeiro quadrado (uma criatura que o jogador não vê está no caminho), não é usado: a reação continua livre, a ação continua esperando e a janela dela continua aberta, e a página Mover continua aberta, com "Algo bloqueia o caminho: nada foi gasto. Escolha outro quadrado.", para escolher outro quadrado ou deixar passar.
   Um que para depois de pelo menos um quadrado ainda é o uso.
   A caminhada do mestre com a ficha não é a liberação: é livre como sempre e deixa a janela como estava, a não ser que o mestre escolha liberar o movimento pelo jogador.
   Uma ação preparada não dispara durante o turno de quem a preparou.

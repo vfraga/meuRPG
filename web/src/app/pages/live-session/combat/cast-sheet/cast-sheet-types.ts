@@ -24,6 +24,18 @@ export interface CastMapData {
   readonly fog: Vision | null;
 }
 
+/** The cast sheet released from a READIED window (#857): the held spell is placed on the map and cast, the slot already spent at Ready. */
+export interface CastRelease {
+  readonly windowId: string;
+  readonly readiedId: string;
+  /** The readier: "Pensantus". */
+  readonly reactorLabel: string;
+  /** What the master said would trigger it: "Quando o ogro passar pela porta". */
+  readonly trigger: string;
+  /** The level the spell was held at; 0 for a cantrip. */
+  readonly slotLevel: number;
+}
+
 /** What the page hands the cast sheet. */
 export interface CastSheetData {
   readonly campaignId: string;
@@ -87,4 +99,6 @@ export interface CastSheetData {
   /** The battle map, in a combat with a grid: an area spell is placed on it. Absent without a map (theatre of the mind),
    * where every area spell keeps the list of who it hits. */
   readonly map?: CastMapData | null;
+  /** The sheet releases a readied spell: the slot is the held one, the band says what was prepared, "Voltar" shows the window again. */
+  readonly release?: CastRelease;
 }

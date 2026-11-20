@@ -2,7 +2,7 @@ import { expect } from '@playwright/test';
 import { test } from './diagnostics';
 import { attackCombatSquares, beginAttackCombatRPC, combatRPC, getEncounterRPC, tableForCombat } from './combat-support';
 import { endSessionOf } from './feature-use-support';
-import { goblinTrigger, moveOffText, openReadySheet, pensantusReadyKit, readiedOf, spellOffText } from './ready-support';
+import { goblinTrigger, openReadySheet, pensantusReadyKit, readiedOf } from './ready-support';
 import { openSessionPage } from './live-session-support';
 import { waitForEncounterRevision } from './revision-support';
 import { newSignedInContext, openSpentGroup } from './support';
@@ -73,7 +73,7 @@ test('um jogador prepara um ataque, lê o cartão e desiste dele na própria vez
 });
 
 /**
- * A spell is held with its slot (boards 582-02): the sheet lists the spells of 1 action with the circle, writes the reason in the card of the
+ * A spell is held with its slot (boards 582-02): the sheet lists the spells of 1 action with the level, writes the reason in the card of the
  * others (Escudo Arcano is a reaction), warns that the held spell is the concentration, and the card marks it. The server's refusal, when the
  * action was spent meanwhile, is written in the red band of the sheet with what was typed kept.
  */
@@ -94,27 +94,25 @@ test('um jogador prepara uma magia com o espaço e o servidor recusa quando a a�
     await openSessionPage(p, campaignId);
     await expect(p.getByRole('heading', { name: 'Sua vez, Pensantus' })).toBeVisible();
     const sheet = await openReadySheet(p);
-    // Mover is off in the sheet for now (#856): its reason is written and nothing can be held with it.
+    // Mover is on in a combat with a map (#856): what it does is written, and the trigger is all it needs to be held.
     await sheet.getByRole('button', { name: 'Mover', exact: true }).click();
-    await expect(sheet.getByText(moveOffText)).toBeVisible();
+    await expect(sheet.getByText(/Você anda até\s.+ quando o mestre disparar\./)).toBeVisible();
     await sheet.getByLabel('Quando dispara, nas suas palavras').fill('Quando o goblin recuar, corro até a porta');
-    await expect(sheet.getByRole('button', { name: 'Preparar', exact: true })).toBeDisabled();
+    await expect(sheet.getByRole('button', { name: 'Preparar', exact: true })).toBeEnabled();
     await sheet.getByRole('button', { name: 'Magia', exact: true }).click();
     const shield = sheet.locator('label', { hasText: 'Escudo Arcano' });
     await expect(shield).toContainText('É uma reação: só uma magia de 1 ação pode ser preparada.');
-    // What the window cannot release yet (a point, a direction) is listed off with its reason, and a click on it holds nothing.
-    for (const name of ['Sono', 'Mãos Flamejantes']) {
-      await expect(sheet.locator('label', { hasText: name })).toContainText(spellOffText);
+    // The window releases every spell on the map (#857): a sleep, a cone and the darts are all listed on, none with a reason to be off.
+    for (const name of ['Sono', 'Mãos Flamejantes', 'Mísseis Mágicos']) {
+      await expect(sheet.locator('label', { hasText: name })).not.toContainText('Soltar pela janela');
     }
-    await expect(sheet.getByRole('radio', { name: /Sono/ })).toBeDisabled();
-    // The darts are released from the window (#857): Mísseis Mágicos is on.
-    await expect(sheet.locator('label', { hasText: 'Mísseis Mágicos' })).not.toContainText(spellOffText);
-    // A spell of one creature stays on: the circle to hold it with, and the warning that it is the concentration.
+    await expect(sheet.getByRole('radio', { name: /Sono/ })).toBeEnabled();
+    // A spell of one creature stays on: the level to hold it with, and the warning that it is the concentration.
     const charm = sheet.locator('label', { hasText: 'Enfeitiçar Pessoa' });
     await expect(charm).not.toContainText('Soltar pela janela');
     await charm.click();
     await expect(sheet.getByRole('group', { name: 'Com que espaço' })).toBeVisible();
-    await expect(sheet.getByText(/Ação e espaço de 1º círculo/)).toBeVisible();
+    await expect(sheet.getByText(/Ação e espaço de 1º\s+nível/)).toBeVisible();
     const field = sheet.getByLabel('Quando dispara, nas suas palavras');
     await field.fill('Se o goblin sair da sombra do pilar');
     const go = sheet.getByRole('button', { name: 'Preparar Enfeitiçar Pessoa' });

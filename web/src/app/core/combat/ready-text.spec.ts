@@ -14,7 +14,7 @@ describe('the words of the Ready sheet (#582)', () => {
 
   it('says a spell spends the slot too, and is lost with the concentration', () => {
     const lines = readyLegend('spell', 2);
-    expect(lines[0].lead).toBe('Ação e espaço de 2º círculo:');
+    expect(lines[0].lead).toBe('Ação e espaço de 2º nível:');
     expect(lines[1].text).toBe('só se o mestre disparar e você soltar a magia.');
     expect(lines[2].text).toContain('a magia e o espaço se perdem');
   });

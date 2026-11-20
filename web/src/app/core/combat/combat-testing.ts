@@ -118,6 +118,7 @@ export function reactionWindow(over: Partial<ReactionWindow> & { id: string }): 
     forYou: true,
     answerNow: true,
     secondStep: false,
+    waitedMs: 0n,
     prompt: { case: undefined, value: undefined },
     ...over,
   } as unknown as ReactionWindow;

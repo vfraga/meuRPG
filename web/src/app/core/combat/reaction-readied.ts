@@ -43,21 +43,43 @@ export interface ReadiedPromptView {
   readonly declineLabel: string;
   /** The words of the one button that uses it ("Esquivar agora"); an attack's are made from the target. */
   readonly useLabel: string;
-  /** Whether this app can answer "usar" for the held action: an attack and another action yes, a move not yet (it is made on the map). */
+  /** Whether this app can answer "usar" for the held action: every kind is released from the prompt, a spell or a move that needs the map on the map (#857, #856). */
   readonly releasable: boolean;
-  /** Said under the question when the held action cannot be used from the prompt. */
-  readonly limit: string;
+  /** What the held action costs, one line each with its icon (boards 857-01 and 857-05); empty for the kinds that keep the single `note`. */
+  readonly legend: readonly ReadiedLegendLine[];
   readonly ariaLabel: string;
 }
 
-const COST_NOTE = 'Gasta a sua reação; ela volta no começo da sua vez.';
-/** The note of a held spell: passing loses the slot spent on holding it only when one was spent (not for a cantrip). */
-function spellNote(slotLevel: number): string {
-  return slotLevel > 0
-    ? 'A concentração acaba quando a magia sai. Deixar passar perde a magia e o espaço gasto ao preparar.'
-    : 'A concentração acaba quando a magia sai. Deixar passar perde a magia.';
+/** One line of what a held action costs: the icon, a bold lead (`''` for none) and the rest. */
+export interface ReadiedLegendLine {
+  readonly icon: string;
+  readonly lead: string;
+  readonly text: string;
 }
-const ONLY_PASS = 'Por aqui só dá para deixar passar.';
+
+const COST_NOTE = 'Gasta a sua reação; ela volta no começo da sua vez.';
+/** The note of every held spell, whether or not it keeps its concentration once released (product owner, #857). */
+export const SPELL_NOTE =
+  'Guardada, a magia prende a sua concentração. Deixar passar perde a magia e o espaço.';
+const MOVE_COST = 'gasta quando você mover; volta no começo da sua vez.';
+const PROVOKES = 'Provoca ataques de oportunidade, como qualquer movimento.';
+
+/** The three lines of a held spell's window: the reaction, the slot spent at Ready and the concentration it holds. */
+function spellLegend(slotLevel: number): readonly ReadiedLegendLine[] {
+  const reaction = { icon: 'square', lead: 'Reação:', text: 'gasta quando a magia sair.' };
+  const note = { icon: 'adjust', lead: '', text: SPELL_NOTE };
+  return slotLevel > 0
+    ? [
+        reaction,
+        {
+          icon: 'auto_fix_normal',
+          lead: 'Sem espaço:',
+          text: `o de ${slotLevel}º nível foi gasto ao preparar.`,
+        },
+        note,
+      ]
+    : [reaction, note];
+}
 
 /** "a Espada longa", "o Arco curto": the held weapon with its article. */
 function theHeld(name: string): string {
@@ -85,7 +107,7 @@ export function readiedPrompt(
       note: COST_NOTE,
       useLabel: 'Usar agora',
       releasable: true,
-      limit: '',
+      legend: [],
       ariaLabel: 'Ação preparada',
     };
   }
@@ -96,10 +118,10 @@ export function readiedPrompt(
         title: `Soltar ${name || 'a magia preparada'}`,
         subtitle: `Reação · a ação preparada de ${reactorLabel}`,
         question: `Soltar ${name || 'a magia preparada'} agora?`,
-        note: spellNote(r.slotLevel),
+        note: SPELL_NOTE,
         useLabel: 'Soltar agora',
         releasable: true,
-        limit: '',
+        legend: spellLegend(r.slotLevel),
         ariaLabel: `Soltar ${name || 'a magia preparada'}`,
       };
     case ReadiedKind.MOVE:
@@ -108,10 +130,13 @@ export function readiedPrompt(
         title: 'Ação preparada',
         subtitle: `Reação · Rodada ${round}`,
         question: `Mover agora${r.moveFt > 0 ? `, até ${metersText(r.moveFt)}` : ''}?`,
-        note: `${COST_NOTE} Provoca ataques de oportunidade, como qualquer movimento.`,
+        note: `${COST_NOTE} ${PROVOKES}`,
         useLabel: 'Mover agora',
-        releasable: false,
-        limit: ONLY_PASS,
+        releasable: true,
+        legend: [
+          { icon: 'square', lead: 'Reação:', text: MOVE_COST },
+          { icon: 'open_with', lead: '', text: PROVOKES },
+        ],
         ariaLabel: 'Ação preparada: mover',
       };
     case ReadiedKind.OTHER:
@@ -123,7 +148,7 @@ export function readiedPrompt(
         note: COST_NOTE,
         useLabel: `${name || 'Usar'} agora`,
         releasable: true,
-        limit: '',
+        legend: [],
         ariaLabel: `Ação preparada: ${name}`,
       };
     default:
@@ -135,7 +160,7 @@ export function readiedPrompt(
         note: COST_NOTE,
         useLabel: 'Atacar',
         releasable: true,
-        limit: '',
+        legend: [],
         ariaLabel: `Ação preparada: atacar com ${name}`,
       };
   }
@@ -185,20 +210,24 @@ export function readiedLegend(rows: readonly ReadiedTargetRow[]): string {
 
 /**
  * What the readier reads when the window closed with no answer from them. Nothing on the wire says who closed it (the time, or the
- * master passing or answering it by hand): the 30 s are said only when this screen's own clock ran out (`timedOut`).
+ * master passing or answering it by hand): the wait is said only when this screen's own clock ran out (`timedOut`).
  */
 export function readiedGoneText(o: {
   readonly reactionUsed: boolean;
   readonly down: boolean;
   readonly timedOut: boolean;
+  /** The player had been on the map: the wait that ran out was the one of 2 minutes. */
+  readonly afterMap?: boolean;
 }): string {
   if (o.down) {
-    return 'Você ficou Caído.';
+    return 'Condição Caído.';
   }
   if (o.reactionUsed) {
     return 'A janela fechou e a sua reação foi usada.';
   }
-  return o.timedOut ? 'Passou sozinho: você não respondeu em 30 s.' : 'A janela fechou.';
+  return o.timedOut
+    ? `Passou sozinho: você não respondeu em ${o.afterMap ? '2 min' : '30 s'}.`
+    : 'A janela fechou.';
 }
 
 /** What the master's row of the window says (the fields of `QueueRow` a readied action fills). */
@@ -209,29 +238,21 @@ export interface ReadiedMasterRow {
   readonly waits: string;
   readonly useLabel: string;
   readonly passLabel: string;
-  /** Why "use" is not offered from the queue, or `''`. */
-  readonly useOff: string;
 }
 
-/** The words of the use for each held kind, and why a move cannot be used from the queue. */
-function useWords(
-  r: ReadiedAction | undefined,
-  who: string,
-): Pick<ReadiedMasterRow, 'useLabel' | 'useOff'> {
+/** The words of the use for each held kind. A move and a spell that needs the map open it for the master (#857, #856), so none is off. */
+function useWords(r: ReadiedAction | undefined, who: string): Pick<ReadiedMasterRow, 'useLabel'> {
   switch (r?.kind) {
     case ReadiedKind.ATTACK:
-      return { useLabel: `Atacar por ${who}`, useOff: '' };
+      return { useLabel: `Atacar por ${who}` };
     case ReadiedKind.OTHER:
-      return { useLabel: `${r.actionNamePt || 'Usar'} por ${who}`, useOff: '' };
+      return { useLabel: `${r.actionNamePt || 'Usar'} por ${who}` };
     case ReadiedKind.MOVE:
-      return {
-        useLabel: `Mover ${who}`,
-        useOff: `Mover é pelo mapa: mova ${who} com a janela aberta.`,
-      };
+      return { useLabel: `Mover por ${who}` };
     case ReadiedKind.SPELL:
-      return { useLabel: `Soltar por ${who}`, useOff: '' };
+      return { useLabel: `Soltar por ${who}` };
     default:
-      return { useLabel: `Usar por ${who}`, useOff: '' };
+      return { useLabel: `Usar por ${who}` };
   }
 }
 
@@ -262,8 +283,6 @@ export function readiedRowFields(e: Encounter, w: ReactionWindow) {
     useLabel: row.useLabel,
     passLabel: row.passLabel,
     readied: {
-      waits: row.waits,
-      useOff: row.useOff,
       aims: [ReadiedKind.ATTACK, ReadiedKind.SPELL].includes(readiedOfWindow(e, w)?.kind as never),
     },
   };

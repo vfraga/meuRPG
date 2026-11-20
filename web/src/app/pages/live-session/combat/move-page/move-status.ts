@@ -48,7 +48,7 @@ export interface MoveSummary {
               }{{ extra.note }}
             </p>
           }
-          <p class="status__text">{{ summary().detail }}</p>
+          <p class="status__text">{{ note() || summary().detail }}</p>
         </div>
       }
       @case ('refused') {
@@ -111,6 +111,8 @@ export class MoveStatus {
   readonly summary = input.required<MoveSummary>();
   readonly canDisengage = input(false);
   readonly busy = input(false);
+  /** A readied move spends no travel: its note ("É o movimento preparado…") stands in the card for "Depois restam…" (board 857-06). */
+  readonly note = input('');
   /** Desengajar was chosen for a jump, to be spent with the jump: the notice says so and "Voltar atrás" takes it back. */
   readonly chosen = input(false);
   readonly disengage = output<void>();

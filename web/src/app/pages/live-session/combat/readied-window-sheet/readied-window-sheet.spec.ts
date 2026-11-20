@@ -3,7 +3,10 @@ import { TestBed } from '@angular/core/testing';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { Code, ConnectError } from '@connectrpc/connect';
 
+import { timestampFromMs } from '@bufbuild/protobuf/wkt';
+
 import {
+  AreaPlacement,
   AttackTargetsSchema,
   CombatantState,
   GetTurnOptionsResponseSchema,
@@ -70,16 +73,28 @@ describe('ReadiedWindowSheet (#582, boards 582-06 to 582-08)', () => {
       gone?: boolean;
       used?: boolean;
       spellTargets?: Record<string, unknown>;
+      /** The map opens for the release: what the sheet calls. */
+      toMap?: ReturnType<typeof vi.fn>;
+      moveLeft?: number;
+      window?: Record<string, unknown>;
+      conditions?: string[];
     } = {},
   ) {
     const state = new State();
     state.apply(
       encounter({
         combatants: [
-          combatant({ id: 'tor', label: 'Tor', mine: true, reactionUsed: !!opts.used }),
+          combatant({
+            id: 'tor',
+            label: 'Tor',
+            mine: true,
+            reactionUsed: !!opts.used,
+            conditions: opts.conditions ?? [],
+            readied: held(opts.row),
+          }),
           combatant({ id: 'z1', label: 'Zumbi 1' }),
         ],
-        reactionWindows: opts.gone ? [] : [window],
+        reactionWindows: opts.gone ? [] : [{ ...window, ...opts.window }],
       } as never),
     );
     const loadOptions = async () => {
@@ -115,11 +130,12 @@ describe('ReadiedWindowSheet (#582, boards 582-06 to 582-08)', () => {
     const data: ReadiedWindowSheetData = {
       campaignId: 'c',
       encounterId: 'enc',
-      window,
+      window: { ...window, ...opts.window } as typeof window,
       round: 2,
       readied: held(opts.row),
       reactorLabel: 'Tor',
       state,
+      toMap: opts.toMap as ReadiedWindowSheetData['toMap'],
     };
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
@@ -132,6 +148,7 @@ describe('ReadiedWindowSheet (#582, boards 582-06 to 582-08)', () => {
             answerReaction,
             markReactionRolling,
             turnOptions: loadOptions,
+            moveOptions: async () => ({ movementLeftDft: opts.moveLeft ?? 300 }),
           }),
         },
       ],
@@ -155,7 +172,8 @@ describe('ReadiedWindowSheet (#582, boards 582-06 to 582-08)', () => {
       encounter({
         revision: 3,
         combatants: [combatant({ id: 'tor', label: 'Tor', mine: true })],
-        reactionWindows: [window],
+        // The server's mark: the window rolls and its one wait of 120 s begins now.
+        reactionWindows: [{ ...window, rolling: true, waitBeganAt: timestampFromMs(Date.now()) }],
       } as never),
     );
     close.mockReset();
@@ -177,7 +195,8 @@ describe('ReadiedWindowSheet (#582, boards 582-06 to 582-08)', () => {
       'Deixar passar',
       'Atacar o Zumbi 1',
     ]);
-    expect(button('Deixar passar').hasAttribute('data-initial-focus')).toBe(true);
+    // "Deixar passar" has the focus at open. Whether it shows a ring is the browser's call (the e2e checks it after a click); the sheet forces none.
+    expect(document.activeElement).toBe(button('Deixar passar'));
     expect(flat(el.querySelector('.foot__clock'))).toMatch(
       /^Se você não responder, passa sozinho em \d+ s\.$/,
     );
@@ -454,15 +473,144 @@ describe('ReadiedWindowSheet (#582, boards 582-06 to 582-08)', () => {
     );
   });
 
-  it('lets a move only pass, and says so', async () => {
+  it('opens the map for a move with "Mover agora", says what the map does and closes', async () => {
+    const toMap = vi.fn();
     const move = setup({
+      toMap,
       row: { kind: ReadiedKind.MOVE, moveFt: 25, actionNamePt: '', targetCombatantId: '' },
     });
     await move.settle();
     expect(flat(move.el.querySelector('.what'))).toContain('Mover agora, até 7,5 m?');
-    expect(move.el.querySelectorAll('.pair button').length).toBe(1);
-    expect(flat(move.el.querySelector('#readied-limit'))).toContain(
-      'Por aqui só dá para deixar passar.',
+    expect(flat(move.el.querySelector('[data-testid=release-map-notice] p'))).toBe(
+      'O mapa abre para você escolher o quadrado. Lá a mesa espera até 2 min, e dá para voltar antes de mover.',
+    );
+    expect(flat(move.el.querySelector('[data-testid=release-map-notice] mat-icon'))).toBe('map');
+    expect(
+      Array.from(move.el.querySelectorAll('[data-testid=readied-legend] li span')).map((l) =>
+        flat(l),
+      ),
+    ).toEqual([
+      'Reação: gasta quando você mover; volta no começo da sua vez.',
+      'Provoca ataques de oportunidade, como qualquer movimento.',
+    ]);
+    expect(Array.from(move.el.querySelectorAll('.pair button')).map((b) => flat(b))).toEqual([
+      'Deixar passar',
+      'directions_walkMover agora',
+    ]);
+    move.button('directions_walk').click();
+    expect(close).toHaveBeenCalled();
+    expect(toMap).toHaveBeenCalledWith(null);
+    expect(answerReaction).not.toHaveBeenCalled();
+  });
+
+  it('turns "Mover agora" off with a speed of 0, and says why in the grapple\'s words too', async () => {
+    const toMap = vi.fn();
+    const row = { kind: ReadiedKind.MOVE, moveFt: 25, actionNamePt: '', targetCombatantId: '' };
+    const speed0 = setup({ toMap, row, moveLeft: 0 });
+    await speed0.settle();
+    expect(flat(speed0.el.querySelector('#readied-limit'))).toContain(
+      'O seu deslocamento é 0. Dá para deixar passar.',
+    );
+    const go = speed0.button('directions_walk');
+    expect(go.classList.contains('pair__btn--off')).toBe(true);
+    expect(go.getAttribute('aria-describedby')).toBe('readied-limit');
+    go.click();
+    expect(toMap).not.toHaveBeenCalled();
+    const grapple = setup({ toMap, row, moveLeft: 0, conditions: ['condition:grappled'] });
+    await grapple.settle();
+    expect(flat(grapple.el.querySelector('#readied-limit'))).toContain(
+      'Condição Agarrado: o seu deslocamento é 0.',
+    );
+  });
+
+  it('releases a held spell that needs the map with "Soltar no mapa": the sheet closes and the map gets the plan', async () => {
+    const toMap = vi.fn();
+    const { el, settle, button } = setup({
+      toMap,
+      row: {
+        kind: ReadiedKind.SPELL,
+        actionKey: 'spell:fireball',
+        actionNamePt: 'Bola de Fogo',
+        targetCombatantId: '',
+        slotLevel: 3,
+      },
+      spellTargets: { spellKey: 'spell:fireball', placement: AreaPlacement.POINT },
+    });
+    await settle();
+    expect(flat(el.querySelector('[data-testid=release-map-notice] p'))).toBe(
+      'Ela pede um ponto no mapa. Lá a mesa espera até 2 min, nada sai antes de “Conjurar” e dá para voltar.',
+    );
+    expect(
+      Array.from(el.querySelectorAll('[data-testid=readied-legend] li span')).map((l) => flat(l)),
+    ).toEqual([
+      'Reação: gasta quando a magia sair.',
+      'Sem espaço: o de 3º nível foi gasto ao preparar.',
+      'Guardada, a magia prende a sua concentração. Deixar passar perde a magia e o espaço.',
+    ]);
+    expect(Array.from(el.querySelectorAll('.pair button')).map((b) => flat(b))).toEqual([
+      'Deixar passar',
+      'mapSoltar no mapa',
+    ]);
+    button('map').click();
+    expect(close).toHaveBeenCalled();
+    expect(toMap).toHaveBeenCalledWith(expect.objectContaining({ onMap: true }));
+    expect(answerReaction).not.toHaveBeenCalled();
+  });
+
+  it('counts the 120 s from the start the server dated, and says it is another device when the player is on the map', async () => {
+    const began = timestampFromMs(Date.now() - 48_000);
+    const mine = setup({ window: { waitBeganAt: began, waitedMs: 48_000n } });
+    await mine.settle();
+    expect(flat(mine.el.querySelector('[data-testid=readied-clock]'))).toBe(
+      'Se você não responder, passa sozinho em 1 min 12 s.',
+    );
+    const other = setup({
+      toMap: vi.fn(),
+      row: { kind: ReadiedKind.MOVE, moveFt: 25, actionNamePt: '' },
+      window: { waitBeganAt: began, waitedMs: 48_000n, rolling: true },
+    });
+    await other.settle();
+    expect(flat(other.el.querySelector('[data-testid=readied-clock]'))).toContain(
+      'Você abriu o mapa em outro aparelho. Passa sozinho em 1 min 12 s.',
+    );
+  });
+
+  it('does not say the map is open elsewhere when the mark is a player choosing targets', async () => {
+    const began = timestampFromMs(Date.now() - 48_000);
+    const { el, settle } = setup({
+      row: { kind: ReadiedKind.ATTACK },
+      window: { waitBeganAt: began, waitedMs: 48_000n, rolling: true },
+    });
+    await settle();
+    const clock = flat(el.querySelector('[data-testid=readied-clock]'));
+    expect(clock).not.toContain('outro aparelho');
+    expect(clock).toBe(
+      'Você está escolhendo: a mesa espera 1 min 12 s. Depois disso, passa sozinho.',
+    );
+  });
+
+  it('says the master undid the trigger when the window goes away and the held spell still waits', async () => {
+    const { el, settle, state } = setup({
+      row: { kind: ReadiedKind.SPELL, actionKey: 'spell:fireball', actionNamePt: 'Bola de Fogo' },
+    });
+    await settle();
+    state.apply(
+      encounter({
+        revision: 9,
+        combatants: [
+          combatant({
+            id: 'tor',
+            label: 'Tor',
+            mine: true,
+            readied: held({ kind: ReadiedKind.SPELL, actionNamePt: 'Bola de Fogo' }),
+          }),
+        ],
+        reactionWindows: [],
+      } as never),
+    );
+    await settle();
+    expect(flat(el.querySelector('[data-testid=readied-gone]'))).toBe(
+      'O mestre desfez o gatilho: a Bola de Fogo continua preparada.',
     );
   });
 

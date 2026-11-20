@@ -1,4 +1,4 @@
-import { computed, effect, signal, untracked } from '@angular/core';
+import { Injector, computed, effect, inject, signal, untracked } from '@angular/core';
 
 import {
   type Combatant,
@@ -24,10 +24,12 @@ import { MoveSaves } from '../../../core/maps/move-saves';
 import { metersFixed } from '../../../core/units';
 import type { Reach, TokenDrop } from '../../../shared/combat-map/combat-map';
 import type { JumpRequest } from './move-page/move-page';
+import { jumpCall, stoppedText, walkCall } from './move-jump';
+import { MoveReleaseFlow, RELEASE_BLOCKED_TEXT } from './move-release-flow';
 
 /** What `MoveFlow` reads from the screen it serves. */
 export interface MoveFlowContext {
-  readonly api: Pick<CombatClient, 'moves'>;
+  readonly api: Pick<CombatClient, 'moves'> & Partial<Pick<CombatClient, 'attacks'>>;
   readonly calls: Pick<CombatCalls, 'busy' | 'error' | 'refreshAfter'>;
   readonly campaignId: () => string;
   readonly encounter: () => Encounter | null;
@@ -44,6 +46,8 @@ export interface MoveFlowContext {
   readonly takeAction: (id: string, key: string) => Promise<boolean>;
   /** "Gastar movimento": the sheet for the player's character (no id) or one of their creatures. */
   readonly openSpend: (id?: string) => void;
+  /** Shows the readied window again (the player went back from the map of a release). */
+  readonly reopenWindow?: (windowId: string) => void;
 }
 
 /**
@@ -62,6 +66,8 @@ export class MoveFlow {
   readonly moveError = signal('');
   /** "Você parou antes: algo bloqueou o caminho.": what the last move said when it stopped short. */
   readonly moveNote = signal('');
+  /** The last move was a readied release that stopped before its first square: nothing was spent, and the release stays open. */
+  private blocked = false;
   /** The last move stopped before a locked door: the "Mover" page stays open and says so (RN-26). */
   readonly lockedDoor = signal(false);
   /** The master's "Movimento forçado" box: it is for one drag, and goes off when the drag is taken. */
@@ -91,15 +97,18 @@ export class MoveFlow {
     // A creature that left the combat is not the character: nothing moves, and the page closes (the effect below says so).
     return e ? (id ? (e.combatants.find((c) => c.id === id) ?? null) : this.ctx.own()) : null;
   });
+  /** The page of a readied move, off the readier's turn (#856): the window it releases, the wait mark and the words (`MoveReleaseFlow`). */
+  readonly release: MoveReleaseFlow;
   private readonly moverActs = computed(() => {
     const e = this.ctx.encounter();
     const who = this.mover();
-    return !!e && !!who && acts(e, who);
+    // A readied move is made off the turn: the page stays for the release, whatever the turn says.
+    return !!e && !!who && (acts(e, who) || this.release.current()?.reactorId === who.id);
   });
-  /** "Desengajar" can still be taken here: the action is free and it was not. */
+  /** "Desengajar" can still be taken here: the action is free and it was not (a readied move is a walk: no Disengage). */
   readonly canDisengage = computed(() => {
     const who = this.mover();
-    return !!who && !who.actionUsed && !who.disengaged;
+    return !!who && !who.actionUsed && !who.disengaged && !this.release.current();
   });
   /** How far and how high the mover can jump: the creature's own options, or the character's. */
   readonly jumps = computed(() => {
@@ -149,6 +158,7 @@ export class MoveFlow {
   private readonly jumpKey = new ActionKey();
 
   constructor(private readonly ctx: MoveFlowContext) {
+    this.release = new MoveReleaseFlow(ctx, inject(Injector));
     // "Mover" belongs to the player's turn: when it ends, the page closes.
     effect(() => {
       if (!this.moverActs() || !this.ctx.active()) {
@@ -183,6 +193,7 @@ export class MoveFlow {
         `${article(this.moverName) === 'a' ? 'A' : 'O'} ${this.moverName} saiu do combate.`,
       );
     }
+    this.release.end();
     this.ctx.state().moving.set(false);
     this.moverId.set('');
   }
@@ -264,7 +275,10 @@ export class MoveFlow {
               `${c.label} foi mov${article(c.label) === 'a' ? 'ida' : 'ido'} à força. Ninguém recebeu oferta de ataque de oportunidade.`,
             );
           }
-          this.sayStopped(res);
+          const said = stoppedText(res);
+          if (said) {
+            calls.error.set(said);
+          }
         },
         failed: (saved, err) => {
           if (legendary) {
@@ -320,21 +334,6 @@ export class MoveFlow {
     this.overDrag = null;
   }
 
-  /** What stopped the master's drag short, in the page's notice. */
-  private sayStopped(res: MoveResult): void {
-    if (res.lockedDoor) {
-      // The master walks through closed doors but a locked one stops them too (RN-26).
-      this.ctx.calls.error.set(
-        'Uma porta trancada parou o movimento. Destranque a porta (toque nela no mapa) e mova de novo.',
-      );
-    } else if (res.stoppedEarly) {
-      // A barred or secret door stops it too: the token stands where it stopped.
-      this.ctx.calls.error.set(
-        'Uma grade levadiça ou uma porta secreta parou o movimento. Abra a porta (toque nela no mapa) e mova de novo.',
-      );
-    }
-  }
-
   /** "Mover para cá" on the "Mover" page. */
   async confirmMove(to: Square): Promise<void> {
     const own = this.mover();
@@ -343,7 +342,7 @@ export class MoveFlow {
     }
     this.moveError.set('');
     const ok = await this.runMove((e) =>
-      this.ctx.api.moves.move(this.ctx.campaignId(), e.id, own.id, to.col, to.row),
+      walkCall(this.ctx.api, this.ctx.campaignId(), e, own, to, !!this.release.current()?.master),
     );
     this.afterMove(ok);
   }
@@ -361,7 +360,16 @@ export class MoveFlow {
     if (req.kind === 'long' && req.disengage && !(await this.disengage())) {
       return;
     }
-    const ok = await this.runMove((e) => this.sendJump(e, own, req));
+    const ok = await this.runMove((e) =>
+      jumpCall(
+        this.ctx.api,
+        this.ctx.campaignId(),
+        e,
+        own,
+        req,
+        this.jumpKey.keyFor([e.id, own.id, req]),
+      ),
+    );
     if (ok) {
       this.jumpKey.renew();
     }
@@ -377,38 +385,20 @@ export class MoveFlow {
     this.afterMove(ok);
   }
 
-  /** The jump's call. The same jump again (a lost answer) is a retry: it keeps its key and is not charged twice. */
-  private sendJump(e: Encounter, own: Combatant, req: JumpRequest): Promise<MoveResult> {
-    const key = this.jumpKey.keyFor([e.id, own.id, req]);
-    const campaignId = this.ctx.campaignId();
-    return req.kind === 'long'
-      ? this.ctx.api.moves.move(
-          campaignId,
-          e.id,
-          own.id,
-          req.square.col,
-          req.square.row,
-          { kind: 'long' },
-          key,
-        )
-      : this.ctx.api.moves.move(
-          campaignId,
-          e.id,
-          own.id,
-          own.col,
-          own.row,
-          { kind: 'high', heightDft: req.heightDft },
-          key,
-        );
-  }
-
   private afterMove(ok: boolean): void {
+    if (ok && this.blocked) {
+      // A readied move that stopped before its first square is not used (the server keeps the window open): the page stays, so the player
+      // picks another square or lets it pass.
+      this.moveError.set(RELEASE_BLOCKED_TEXT);
+      return;
+    }
     if (ok && this.lockedDoor()) {
       // A locked door stopped the move: the page stays, with the notice (E10-05 9). The token already stands where it stopped.
       return;
     }
     if (ok) {
       this.ctx.state().moving.set(false);
+      this.release.finish();
     } else {
       // The refusal's own words, next to the map where the person looks.
       this.moveError.set(this.ctx.calls.error());
@@ -427,12 +417,15 @@ export class MoveFlow {
     calls.error.set('');
     this.moveNote.set('');
     this.lockedDoor.set(false);
+    this.blocked = false;
+    const from = this.mover();
     try {
       const res = await call(e);
       this.ctx.state().apply(res.encounter);
+      this.blocked = this.release.blocked(res, from, this.mover());
       if (res.lockedDoor) {
         this.lockedDoor.set(true);
-      } else if (res.stoppedEarly) {
+      } else if (res.stoppedEarly && !this.blocked) {
         // Never what stopped it: the player did not see it.
         this.moveNote.set('Você parou antes: algo bloqueou o caminho.');
       }
@@ -453,11 +446,26 @@ export class MoveFlow {
   }
 
   closeFullPage(): void {
+    if (this.release.current()) {
+      // "Voltar" on the page of a readied move: the mark comes off and the window shows again, then the page closes.
+      void this.release.back().then(() => this.closeFullPage());
+      return;
+    }
     this.lockedDoor.set(false);
     this.moverId.set('');
     this.dropStart.set(null);
     this.ctx.state().moving.set(false);
     this.ctx.state().mapOpen.set(false);
+  }
+
+  /** "Mover agora" and "Mover por Tor": the page of the readied move the window holds, for the reactor (the master moves for the player). */
+  openRelease(windowId: string): void {
+    const release = this.release.open(windowId);
+    if (release) {
+      // The player's own page is the character's (no id); the master's is told whose it is.
+      const mine = !this.ctx.isMaster() && release.reactorId === this.ctx.own()?.id;
+      this.show(mine ? '' : release.reactorId);
+    }
   }
 
   /** "Mover": the page of the player's character, or "Gastar movimento" in a combat without a map. */
@@ -466,12 +474,8 @@ export class MoveFlow {
       this.ctx.openSpend();
       return;
     }
-    this.lockedDoor.set(false);
     // The master moves the character he acts for: the page is told whose it is.
-    this.moverId.set(this.ctx.isMaster() ? (this.ctx.own()?.id ?? '') : '');
-    this.dropStart.set(null);
-    this.moveError.set('');
-    this.ctx.state().moving.set(true);
+    this.show(this.ctx.isMaster() ? (this.ctx.own()?.id ?? '') : '');
   }
 
   /** "Mover o Lobo atroz 1": the same page, for the creature. */
@@ -481,8 +485,13 @@ export class MoveFlow {
       return;
     }
     this.moverName = this.ctx.encounter()?.combatants.find((c) => c.id === id)?.label ?? '';
-    this.moverId.set(id);
+    this.show(id);
+  }
+
+  /** The "Mover" page for `moverId` (`''`: the player's own), with nothing left of the last one. */
+  private show(moverId: string): void {
     this.lockedDoor.set(false);
+    this.moverId.set(moverId);
     this.dropStart.set(null);
     this.moveError.set('');
     this.ctx.state().moving.set(true);

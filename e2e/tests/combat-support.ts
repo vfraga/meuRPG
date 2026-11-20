@@ -177,7 +177,8 @@ export interface Encounter {
   status: string;
   round?: number;
   currentCombatantId?: string;
-  reactionWindows?: { id: string; kind: string }[];
+  /** `rolling` and `waitBeganAt` are the mark of a reactor on the map and the start of its one wait of 2 minutes (#857). */
+  reactionWindows?: { id: string; kind: string; rolling?: boolean; waitBeganAt?: string }[];
   masterTurn?: boolean;
   gridColumns: number;
   gridRows: number;

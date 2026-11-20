@@ -379,7 +379,9 @@ describe("what the master's held actions say", () => {
     const card = reactionCards(encounter({ combatants, reactionWindows: [w] })).find(
       (c) => c.type === 'queue' || c.type === 'single',
     );
-    expect(JSON.stringify(card)).toContain('Reações a uma montaria');
+    expect(JSON.stringify(card, (_k, v) => (typeof v === 'bigint' ? v.toString() : v))).toContain(
+      'Reações a uma montaria',
+    );
   });
 });
 
@@ -414,6 +416,29 @@ describe("the master's card for an effect's saving throw (RN-22)", () => {
       prompt: { case: 'effectSave', value: { handedToMaster: true } } as never,
     });
     expect(reactionCards(e(handed)).map((c) => c.type)).toEqual(['effectSave']);
+  });
+
+  it("a readied action's window stays a row of the queue after 10 s: it keeps its own wait and its buttons, not the late card (#857)", () => {
+    const e = encounter({
+      combatants,
+      reactionWindows: [
+        reactionWindow({
+          id: 'held',
+          kind: ReactionKind.READIED,
+          reactorId: 'pen',
+          reactorLabel: 'Pensantus',
+          reactorIsPlayer: true,
+          answerNow: true,
+          unanswered: true,
+        } as never),
+      ],
+    } as never);
+    const [card] = reactionCards(e);
+    expect(card.type).toBe('queue');
+    if (card.type === 'queue') {
+      expect(card.rows).toHaveLength(1);
+      expect(card.rows[0].readied).toBeDefined();
+    }
   });
 
   it("a player's reaction nobody answered in 10 s is a card of its own with the numbers, and the bar asks the master", () => {

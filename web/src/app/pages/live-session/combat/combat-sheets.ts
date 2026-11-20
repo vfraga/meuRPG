@@ -31,6 +31,7 @@ import { openRevivifySheet } from './revivify-sheet/revivify-sheet';
 import { ActionSheets } from './action-sheets';
 import type { AttackOpen, CombatSheetsContext } from './combat-sheets-context';
 import { ReactionSheets } from './reaction-sheets';
+import { ReleaseSheets } from './release-sheets';
 
 /** The player's own attack of a turn, which has a target to tap on the map: not a creature's, a reaction, a damage or a held roll's. */
 function aimsOnMap(req: AttackOpen): boolean {
@@ -56,9 +57,20 @@ export class CombatSheets {
   readonly reactions: ReactionSheets;
   /** The dialogs of one purpose (the door, the conditions, the resources...). */
   readonly actions: ActionSheets;
+  /** The map of a readied spell or move released from its window (#857, #856). */
+  readonly release: ReleaseSheets;
 
   constructor(private readonly ctx: CombatSheetsContext) {
-    this.reactions = new ReactionSheets(ctx, (req) => this.attack(req));
+    this.release = new ReleaseSheets(
+      ctx,
+      () => this.castMap(),
+      (id) => this.reactions.reopenReadied(id),
+    );
+    this.reactions = new ReactionSheets(
+      ctx,
+      (req) => this.attack(req),
+      (id) => this.release.open(id),
+    );
     this.actions = new ActionSheets(ctx);
   }
 

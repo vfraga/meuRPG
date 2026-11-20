@@ -1,3 +1,4 @@
+import { timestampFromMs } from '@bufbuild/protobuf/wkt';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { ReactionKind, ReactionWindowStatus } from '../../../gen/meurpg/play/v1/combat_pb';
@@ -44,6 +45,10 @@ describe("the automatic pass of a player's optional reaction", () => {
   it('never passes a window that came to the master: his answer is the one that counts', () => {
     expect(autoPasses(win('w', ReactionKind.SHIELD))).toBe(true);
     expect(autoPasses(win('w', ReactionKind.SHIELD, { unanswered: true }))).toBe(false);
+  });
+
+  it('still passes a readied action flagged as unanswered: the server flags every window 10 s old once the combat is sent again (#857)', () => {
+    expect(autoPasses(win('w', ReactionKind.READIED, { unanswered: true }))).toBe(true);
   });
 
   it("passes a monk's Queda Lenta like any other optional reaction", () => {
@@ -193,6 +198,14 @@ describe("the automatic pass of a player's optional reaction", () => {
     expect(playerSecondsLeft(Date.now() - 99 * MS, Date.now())).toBe(0);
   });
 
+  it("keeps the bar's words for a readied action flagged as unanswered: the table waits for the player, not for the master (#857)", () => {
+    const e = encounter({
+      combatants: [combatant({ id: 'pen', label: 'Pensantus' })],
+      reactionWindows: [win('w1', ReactionKind.READIED, { unanswered: true })],
+    } as never);
+    expect(windowsBarText(e)).toBe('Esperando a reação de Pensantus');
+  });
+
   it("goes with the master's bar text", () => {
     const e = encounter({
       combatants: [combatant({ id: 'pen', label: 'Pensantus' })],
@@ -232,12 +245,34 @@ describe('a reaction its player is rolling', () => {
 
   it('waits the longer time for a readied action too: the master reads the same mark of a READIED window (#857)', () => {
     const clock = new AutoPassClock();
-    const held = win('w1', ReactionKind.READIED, { rolling: true });
+    // The server's mark dates the one wait (`wait_began_at`) along with `rolling`: the clock reads that date, not its own sight of the mark.
+    const held = win('w1', ReactionKind.READIED, {
+      rolling: true,
+      waitBeganAt: timestampFromMs(Date.now()),
+      waitedMs: 0n,
+    });
     clock.sync([held], Date.now());
     expect(clock.secondsLeft('w1', Date.now())).toBe(ROLLING_WAIT_SECONDS);
     vi.advanceTimersByTime(AUTO_PASS_SECONDS * MS);
     clock.sync([held], Date.now());
     expect(clock.due(Date.now())).toEqual([]);
+  });
+
+  it("counts a marked readied window from the server's waited_ms and the time since it was read, not from this device's clock (#857)", () => {
+    const clock = new AutoPassClock();
+    // This device's clock is an hour behind the server's: wait_began_at is an hour ahead of it.
+    const held = win('w1', ReactionKind.READIED, {
+      rolling: true,
+      waitBeganAt: timestampFromMs(Date.now() + 3_600_000),
+      waitedMs: 30_000n,
+    });
+    clock.sync([held], Date.now());
+    expect(clock.secondsLeft('w1', Date.now())).toBe(ROLLING_WAIT_SECONDS - 30);
+    vi.advanceTimersByTime(10 * MS);
+    clock.sync([held], Date.now());
+    expect(clock.secondsLeft('w1', Date.now())).toBe(ROLLING_WAIT_SECONDS - 40);
+    vi.advanceTimersByTime(5 * MS);
+    expect(clock.secondsLeft('w1', Date.now())).toBe(ROLLING_WAIT_SECONDS - 45);
   });
 
   it('tells the player who is choosing the targets how long the table waits', () => {

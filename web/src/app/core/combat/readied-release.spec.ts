@@ -1,6 +1,7 @@
 import { create } from '@bufbuild/protobuf';
 
 import {
+  AreaPlacement,
   CombatantState,
   GetTurnOptionsResponseSchema,
   ReadiedActionSchema,
@@ -11,6 +12,7 @@ import {
 import {
   NO_PICK,
   aimedUse,
+  releaseMapNotice,
   releaseComplete,
   releasePlan,
   releaseStart,
@@ -151,5 +153,54 @@ describe('readied-release (#857: a held spell released from its window)', () => 
       die: { inApp: true },
     });
     expect(aimedUse(null, NO_PICK, null)).toEqual({ use: true, die: { inApp: true } });
+  });
+  describe('a held spell or move that needs the map (#857, #856)', () => {
+    const placed = (placement: AreaPlacement, mapOn = true, key = 'spell:fireball') =>
+      releasePlan(options({ spellKey: key, placement, targets }), held(key), 'tor', mapOn);
+
+    it('needs the map when it is placed (a point, a direction, around the caster) and the combat has one', () => {
+      expect(placed(AreaPlacement.POINT)?.onMap).toBe(true);
+      expect(placed(AreaPlacement.DIRECTION)?.onMap).toBe(true);
+      expect(placed(AreaPlacement.CASTER)?.onMap).toBe(true);
+    });
+
+    it('keeps the list of creatures in a combat with no map, and for a spell that is not placed', () => {
+      expect(placed(AreaPlacement.POINT, false)?.onMap).toBe(false);
+      expect(placed(AreaPlacement.UNSPECIFIED)?.onMap).toBe(false);
+    });
+
+    it('asks nothing to pick: the map is where it is placed', () => {
+      const plan = placed(AreaPlacement.POINT)!;
+      expect(releaseComplete(plan, NO_PICK)).toBe(true);
+    });
+
+    it('says what the map asks, in the words of board 857-01', () => {
+      expect(releaseMapNotice(placed(AreaPlacement.POINT), ReadiedKind.SPELL)).toEqual({
+        lead: 'Ela pede um ponto no mapa.',
+        rest: 'Lá a mesa espera até 2 min, nada sai antes de “Conjurar” e dá para voltar.',
+      });
+      expect(releaseMapNotice(placed(AreaPlacement.DIRECTION), ReadiedKind.SPELL)?.lead).toBe(
+        'Ela pede uma direção no mapa.',
+      );
+      expect(releaseMapNotice(placed(AreaPlacement.CASTER), ReadiedKind.SPELL)?.lead).toBe(
+        'Ela age ao redor de você: o mapa mostra quem está na área.',
+      );
+      expect(
+        releaseMapNotice(placed(AreaPlacement.POINT, true, 'spell:wall-of-fire'), ReadiedKind.SPELL)
+          ?.lead,
+      ).toBe('Ela pede onde a muralha fica no mapa.');
+    });
+
+    it('says what the map asks of a move, in the words of board 857-05, whatever the plan', () => {
+      expect(releaseMapNotice(null, ReadiedKind.MOVE)).toEqual({
+        lead: 'O mapa abre para você escolher o quadrado.',
+        rest: 'Lá a mesa espera até 2 min, e dá para voltar antes de mover.',
+      });
+    });
+
+    it('says nothing for a spell released from the window, nor for an attack', () => {
+      expect(releaseMapNotice(placed(AreaPlacement.POINT, false), ReadiedKind.SPELL)).toBeNull();
+      expect(releaseMapNotice(null, ReadiedKind.ATTACK)).toBeNull();
+    });
   });
 });

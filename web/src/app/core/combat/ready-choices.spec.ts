@@ -109,7 +109,6 @@ describe('Ready (#857): the spells that ask a choice the release does not send y
           spell('spell:bless'),
         ],
       } as never),
-      [],
       new Map(),
       new Map([
         ['spell:enhance-ability', 'ability'],

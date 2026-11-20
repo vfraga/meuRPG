@@ -6,7 +6,7 @@ import {
 } from '../../../gen/meurpg/play/v1/combat_pb';
 import { ofThe } from './move-plan';
 import { listNames } from './joint-turn';
-import { openWindows } from './reactions';
+import { cameToMaster, openWindows } from './reactions';
 
 /** "do Mago 1" for an NPC, "de Pensantus" for a player's character: a player's name takes no article. */
 export function ofReactor(w: ReactionWindow, player: boolean): string {
@@ -45,7 +45,7 @@ export function windowsBarText(e: Encounter): string {
     return '';
   }
   // A player's reaction that came to the master after 10 s without an answer (C8-04).
-  const late = open.filter((w) => w.unanswered);
+  const late = open.filter(cameToMaster);
   if (late.length > 0) {
     // Repreensão Infernal's second step is the master's roll of the aggressor's save: the player has answered already.
     const rolls = late.filter((w) => w.secondStep && w.prompt.case === 'hellishRebukeSave');

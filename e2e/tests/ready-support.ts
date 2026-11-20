@@ -31,18 +31,14 @@ export async function readyRPC(page: Page, method: 'ReadyAction' | 'FireReadied'
 }
 
 /**
- * What Pensantus carries in the sheet specs of the Ready action: the casting list (Mísseis Mágicos, Sono, Teia, Mãos Flamejantes, which the
- * window cannot release yet) plus Enfeitiçar Pessoa, a spell of one creature, which it can.
+ * What Pensantus carries in the sheet specs of the Ready action: the casting list (Mísseis Mágicos, Sono, Teia, Mãos Flamejantes) plus
+ * Enfeitiçar Pessoa, a spell of one creature. The window releases them all: the placed ones on the map (#857).
  */
 export const pensantusReadyKit = {
   ...pensantusCasting,
   knownSpellKeys: [...pensantusCasting.knownSpellKeys, 'spell:charm-person'],
   preparedSpellKeys: [...pensantusCasting.preparedSpellKeys, 'spell:charm-person'],
 };
-
-/** Why Mover is off in the sheet, and why a spell placed on the map (a point or a direction) is: the window does not place it yet. */
-export const moveOffText = 'Mover pela janela ainda não dá: por enquanto o mestre move a ficha.';
-export const spellOffText = 'Soltar pela janela ainda não dá para esta magia: ela pede um ponto ou uma direção no mapa.';
 
 /** Why a spell that asks the caster a choice is off in the sheet: here a summon's creatures (the window sends no `summon` yet). */
 export const summonOffText = 'Soltar pela janela ainda não dá para esta magia: ela pede as criaturas ao conjurar.';
@@ -63,7 +59,7 @@ export async function openReadySheet(page: Page): Promise<Locator> {
 /** The folder the screenshots go to when `E2E_SHOTS_DIR` names one; otherwise nothing is written. */
 const shotsDir = process.env.E2E_SHOTS_DIR;
 
-/** Saves the viewport as `582-<screen>-<width>-<claro|escuro>.png` when `E2E_SHOTS_DIR` is set; a normal run writes nothing. */
+/** Saves the viewport as `<issue>-<screen>-<width>-<claro|escuro>.png` (`582` unless `issue` says another, `857-ready-map` for the map's screens) when `E2E_SHOTS_DIR` is set; a normal run writes nothing. */
 export async function shootReady(page: Page, screen: string, width: number, scheme: 'light' | 'dark', issue = '582'): Promise<void> {
   if (!shotsDir) {
     return;

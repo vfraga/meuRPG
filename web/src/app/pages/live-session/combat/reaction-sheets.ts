@@ -57,6 +57,8 @@ export class ReactionSheets {
     private readonly ctx: CombatSheetsContext,
     /** The attack sheet of the screen (the throw-back attack opens it). */
     private readonly openAttack: (req: AttackOpen) => void,
+    /** "Soltar no mapa" and "Mover agora": the map opens for the readied action the window holds (#857, #856). */
+    private readonly openRelease: (windowId: string) => void = () => undefined,
   ) {}
 
   /** "Você foi atingido: usar Escudo?" and the other reactions: opens by itself, and has to be answered. */
@@ -148,6 +150,7 @@ export class ReactionSheets {
       readied: readiedOfWindow(e, window),
       reactorLabel: window.reactorLabel,
       state: this.ctx.state(),
+      toMap: () => this.openRelease(window.id),
     };
     trackOpen(
       this.reactionOpen,
@@ -162,6 +165,15 @@ export class ReactionSheets {
         },
       ),
     );
+  }
+
+  /** The player went back from the map of a release: the window of the readied action shows again, if it is still open. */
+  reopenReadied(windowId: string): void {
+    const e = this.ctx.encounter();
+    const window = e?.reactionWindows.find((w) => w.id === windowId);
+    if (e && window && isReadiedWindow(window) && !this.reactionOpen()) {
+      this.readiedWindow(window, e);
+    }
   }
 
   /** The saving throw an effect asks at the end or the start of this player's turn (RN-22): opens by itself, and again from "Rolar o teste". */

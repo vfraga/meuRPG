@@ -123,6 +123,23 @@
   color: var(--mr-ink-muted);
 }
 
+// The wait of a readied window (857-08): bold, warning ink, with the hourglass (or the pin when the player is on the map).
+.row__status--wait {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--mr-font-14);
+  font-weight: 700;
+  color: var(--mr-warning-ink);
+
+  .row__pin {
+    flex: none;
+    width: 16px;
+    height: 16px;
+    font-size: 16px;
+  }
+}
+
 .tag {
   display: inline-flex;
   align-items: center;

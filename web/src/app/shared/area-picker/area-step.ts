@@ -107,7 +107,8 @@ export class AreaStep {
 
   private readonly heading = viewChild.required<ElementRef<HTMLElement>>('heading');
 
-  focus(): void {
-    this.heading().nativeElement.focus();
+  /** `preventScroll`: a dialog that shows both steps side by side keeps its body where it is (the band stays under the header). */
+  focus(preventScroll = false): void {
+    this.heading().nativeElement.focus({ preventScroll });
   }
 }

@@ -1,7 +1,9 @@
-import type {
-  GetTurnOptionsResponse,
-  ReadiedAction,
-  SpellTargets,
+import {
+  AreaPlacement,
+  type GetTurnOptionsResponse,
+  type ReadiedAction,
+  ReadiedKind,
+  type SpellTargets,
 } from '../../../gen/meurpg/play/v1/combat_pb';
 import {
   type CastTargetRow,
@@ -16,12 +18,13 @@ import {
   toggled,
 } from './cast-flow';
 import type { CastTarget, ReactionAnswer } from './combat-client-types';
+import { laysWall } from './spell-wall';
 
 /**
  * How a readied spell is released from its window (#857): the same pieces as the cast screens, fed by the targets the server lists
  * for the held spell (`GetTurnOptions.spell_targets` while the row waits). Darts are split, creatures are picked, and a spell that
- * stays on its caster or has no map to aim at asks nothing. The point and the direction are not here yet: the Ready sheet leaves
- * those spells off. Pure functions, tested without a DOM.
+ * stays on its caster or has no map to aim at asks nothing. A spell placed on the map (a point, a direction, around the caster) is
+ * released from the cast sheet's map, which the window opens (`onMap`). Pure functions, tested without a DOM.
  */
 
 /** What the window asks for the held spell: the rule, the rows and the darts to share out. */
@@ -30,6 +33,12 @@ export interface ReleasePlan {
   readonly rows: readonly CastTargetRow[];
   /** The darts (or rays) to hand out; 0 for a spell that is not shared out. */
   readonly total: number;
+  /** How the spell is placed on the map; `UNSPECIFIED` for a spell with no area. */
+  readonly placement: AreaPlacement;
+  /** The spell is placed on the combat's map: it is released with `CastSpell` from the cast sheet's map, not from a list. */
+  readonly onMap: boolean;
+  /** The spell lays a wall (Muralha de Fogo). */
+  readonly wall: boolean;
 }
 
 /** What was picked so far: the creatures ticked, or the darts dealt. */
@@ -60,6 +69,7 @@ export function releasePlan(
   res: GetTurnOptionsResponse,
   r: ReadiedAction,
   reactorId: string,
+  mapOn = true,
 ): ReleasePlan | null {
   const st = heldTargetsOf(res, r);
   if (!st) {
@@ -70,11 +80,57 @@ export function releasePlan(
   // The darts of the held slot, all of them: `rule.max` is the most creatures a list holds (10), which Magic Missile at the 9th level (11 darts) passes.
   const total = rule.kind === 'darts' ? dartsAt(st.darts, slot) : 0;
   const reach = st.rangeFt > 0 ? st.rangeFt : null;
-  return { rule, rows: castTargetRows(st.targets, reactorId, reach), total };
+  return {
+    rule,
+    rows: castTargetRows(st.targets, reactorId, reach),
+    total,
+    placement: st.placement,
+    onMap: mapOn && st.placement !== AreaPlacement.UNSPECIFIED,
+    wall: laysWall(r.actionKey),
+  };
+}
+
+const MAP_TAIL = 'Lá a mesa espera até 2 min, nada sai antes de “Conjurar” e dá para voltar.';
+
+/** The lead of what a spell placed on the map asks, by how it is placed. */
+function placedLead(plan: ReleasePlan): string {
+  if (plan.wall) {
+    return 'Ela pede onde a muralha fica no mapa.';
+  }
+  switch (plan.placement) {
+    case AreaPlacement.DIRECTION:
+      return 'Ela pede uma direção no mapa.';
+    case AreaPlacement.CASTER:
+      return 'Ela age ao redor de você: o mapa mostra quem está na área.';
+    default:
+      return 'Ela pede um ponto no mapa.';
+  }
+}
+
+/**
+ * What the window says about the map (boards 857-01 and 857-05): a bold lead and the rest, for a spell that is placed and for a move;
+ * `null` for anything the window answers itself. The master reads the same words for the player.
+ */
+export function releaseMapNotice(
+  plan: ReleasePlan | null,
+  kind: ReadiedKind,
+): { readonly lead: string; readonly rest: string } | null {
+  if (kind === ReadiedKind.MOVE) {
+    return {
+      lead: 'O mapa abre para você escolher o quadrado.',
+      rest: 'Lá a mesa espera até 2 min, e dá para voltar antes de mover.',
+    };
+  }
+  return kind === ReadiedKind.SPELL && plan?.onMap
+    ? { lead: placedLead(plan), rest: MAP_TAIL }
+    : null;
 }
 
 /** Whether the pick is enough to release: all the darts dealt, one creature, or at least the area's least. */
 export function releaseComplete(plan: ReleasePlan, pick: ReleasePick): boolean {
+  if (plan.onMap) {
+    return true;
+  }
   switch (plan.rule.kind) {
     case 'darts':
       return plan.total > 0 && dartsPlaced(pick.dealt) === plan.total;

@@ -48,7 +48,7 @@ import { ResourcePick } from '../resource-pick/resource-pick';
     } @else if (need() === 'loading') {
       <p class="small" role="status">Lendo quem está ao alcance…</p>
     } @else if (aim().plan; as plan) {
-      @if (plan.rule.kind !== 'none') {
+      @if (plan.rule.kind !== 'none' && !plan.onMap) {
         <app-cast-targets
           [rows]="plan.rows"
           [rule]="plan.rule"

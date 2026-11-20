@@ -33,6 +33,15 @@ export function isOpen(w: ReactionWindow): boolean {
   );
 }
 
+/**
+ * A player's question that came to the master (`unanswered`: 10 s without an answer, C8-04). A readied action's window never does: the
+ * server flags every window of a player that is 10 s old whenever the combat is sent again (the mark of the map is one such change),
+ * but this one keeps its own clock (30 s, then the 2 min of the map) and its own buttons, and the table still waits for the player.
+ */
+export function cameToMaster(w: ReactionWindow): boolean {
+  return w.unanswered && w.kind !== ReactionKind.READIED;
+}
+
 /** The windows that are open, in the order the server answers them. */
 export function openWindows(e: Encounter): readonly ReactionWindow[] {
   // The master's question about a hidden creature an area hit is a window of the server's, drawn by its own card; a contest

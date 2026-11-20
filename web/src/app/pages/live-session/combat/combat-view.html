@@ -93,14 +93,15 @@
         </div>
       }
       @case (Status.ACTIVE) {
-        @if ((state().mapOpen() || (state().moving() && !!acting())) && image(); as fullMap) {
-          <!-- "Ver mapa" (read-only), or the "Mover" page of the character the master acts for (C8-01). -->
+        @if ((state().mapOpen() || (state().moving() && (!!acting() || !!moves.release.current()))) && image(); as fullMap) {
+          <!-- "Ver mapa" (read-only), or the "Mover" page of the character the master acts for (C8-01), or of the readied move he releases for a player (#856). -->
           <app-move-page
             [encounter]="e"
             [image]="fullMap"
             [mapName]="mapName()"
             [sessionNumber]="sessionNumber()"
-            [readOnly]="!(state().moving() && !!acting())"
+            [readOnly]="!(state().moving() && (!!acting() || !!moves.release.current()))"
+            [release]="moves.release.view()"
             [isMaster]="true"
             [layers]="layers()"
             [busy]="busy()"
@@ -202,6 +203,7 @@
             [serverError]="moves.moveError()"
             [lockedDoor]="moves.lockedDoor()"
             [readOnly]="state().mapOpen()"
+            [release]="moves.release.view()"
             [fog]="fogVision()"
             [layers]="layers()"
             [options]="moves.options.data()"
@@ -788,6 +790,7 @@
       [state]="state()"
       [autoLeft]="autoLeft()"
       part="late"
+      (release)="sheets.release.open($event.window.id)"
     />
     @for (q of held.entries(); track q.holdId) {
       <app-held-question
@@ -906,6 +909,7 @@
       [state]="state()"
       [autoLeft]="autoLeft()"
       part="rest"
+      (release)="sheets.release.open($event.window.id)"
     >
       <!-- The legendary creatures' cards: after the windows the master answers; "Opcional" when nothing holds the table. -->
       <app-legendary-offers

@@ -1,16 +1,20 @@
 import { DestroyRef, computed, effect, inject, signal, untracked } from '@angular/core';
 import { Code, ConnectError } from '@connectrpc/connect';
 
-import type {
-  Encounter,
-  OpportunityOffer,
-  ReactionWindow,
+import {
+  type Encounter,
+  type OpportunityOffer,
+  ReactionKind,
+  ReadiedKind,
+  type ReactionWindow,
 } from '../../../gen/meurpg/play/v1/combat_pb';
 import type { CombatClient } from './combat-client';
 import type { CombatState } from './combat-state';
 import { barText, offersToAnswer, reactorIsMasters } from './opportunity';
 import { revealBarText } from './hidden-reveal';
 import { AutoPassClock, autoPassKey, autoPassText } from './reaction-autopass';
+import { readiedOfWindow } from './reaction-readied';
+import { masterBarWait } from './readied-wait';
 import { openWindows } from './reactions';
 import { windowsBarText } from './reaction-master';
 
@@ -48,6 +52,8 @@ export function masterWaitNote(
   e: Encounter,
   left: Readonly<Record<string, number>>,
   playerName: (characterId: string) => string,
+  /** Whether a readied window's held action is released on the map: only then is the mark "on the map" (a player choosing targets sets it too). */
+  onMap: (w: ReactionWindow) => boolean = (w) => readiedOfWindow(e, w)?.kind === ReadiedKind.MOVE,
 ): string {
   const other = revealBarText(e) || barText(e, playerName);
   if (other) {
@@ -55,6 +61,13 @@ export function masterWaitNote(
   }
   const soonest = Math.min(...Object.values(left));
   const text = windowsBarText(e);
+  // A readied window says where its player is, and counts a minute as a minute (#857).
+  const readied = openWindows(e).find(
+    (w) => w.kind === ReactionKind.READIED && left[w.id] === soonest,
+  );
+  if (readied && text && Number.isFinite(soonest)) {
+    return masterBarWait(readied.reactorLabel, readied.rolling && onMap(readied), soonest);
+  }
   return text && Number.isFinite(soonest)
     ? `${text} · ${autoPassText(soonest).toLowerCase()}`
     : text;
@@ -71,6 +84,8 @@ export class MasterAutoPass {
   /** The same clock for the opportunity attacks a player's character may take and has not answered. */
   private readonly offersClock = new AutoPassClock();
   private readonly now = signal(Date.now());
+  /** The monotonic clock of the readied wait (`performance.now()`): a step of the wall clock does not move the 120 s. */
+  private readonly mono = signal(performance.now());
   private timer: ReturnType<typeof setInterval> | undefined;
 
   /** The seconds left of each player's optional reaction the master's screen passes by itself, by window id. */
@@ -95,13 +110,14 @@ export class MasterAutoPass {
 
   private secondsLeft(clock: AutoPassClock, idsOf: (e: Encounter) => string[]) {
     const now = this.now();
+    const mono = this.mono();
     const e = this.ctx.encounter();
     const left: Record<string, number> = {};
     if (!e || !this.ctx.isMaster()) {
       return left;
     }
     for (const id of idsOf(e)) {
-      const s = clock.secondsLeft(id, now);
+      const s = clock.secondsLeft(id, now, mono);
       if (s !== null) {
         left[id] = s;
       }
@@ -112,14 +128,16 @@ export class MasterAutoPass {
   /** Starts (or stops) the second-by-second clock of the automatic pass for the windows the master's screen waits on. */
   private watch(windows: readonly ReactionWindow[], offers: readonly OpportunityOffer[]): void {
     const now = Date.now();
-    this.windowsClock.sync(windows, now);
+    const mono = performance.now();
+    this.windowsClock.sync(windows, now, mono);
     this.offersClock.syncIds(
       offers.map((o) => o.id),
       now,
     );
     this.now.set(now);
+    this.mono.set(mono);
     const running = this.timer !== undefined;
-    if (this.windowsClock.soonest(now) === null && this.offersClock.soonest(now) === null) {
+    if (this.windowsClock.soonest(now, mono) === null && this.offersClock.soonest(now) === null) {
       clearInterval(this.timer);
       this.timer = undefined;
     } else if (!running) {
@@ -129,12 +147,14 @@ export class MasterAutoPass {
 
   private tick(): void {
     const now = Date.now();
+    const mono = performance.now();
     this.now.set(now);
+    this.mono.set(mono);
     const e = this.ctx.encounter();
     if (!e) {
       return;
     }
-    for (const id of this.windowsClock.due(now)) {
+    for (const id of this.windowsClock.due(now, mono)) {
       void this.passWindow(e.id, id);
     }
     for (const id of this.offersClock.due(now)) {

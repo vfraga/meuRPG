@@ -76,10 +76,7 @@ func (s *Service) reactionView(ctx context.Context, m authz.Membership, d *encou
 	if d.enc.Status != statusActive {
 		return nil, nil, nil
 	}
-	open, err := s.queries.ListOpenReactionWindows(ctx, d.enc.ID)
-	if err != nil {
-		return nil, nil, s.dbError(ctx, "list the reaction windows", err)
-	}
+	open := d.openWindows
 	offers, err := s.queries.ListPendingOpportunityOffers(ctx, d.enc.ID)
 	if err != nil {
 		return nil, nil, s.dbError(ctx, "list the opportunity offers", err)

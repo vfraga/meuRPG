@@ -291,7 +291,6 @@ export class ActionSheets {
       options: options.options,
       summaries: new Map(),
       choices,
-      spellTargets: options.spellTargets,
       theatre: this.ctx.theatre(),
       ...readySpeed(own.speedFt, options),
       concentrating: own.concentrationSpell ? own.concentrationSpellNamePt : '',

@@ -6,6 +6,7 @@ import {
 } from '../../../gen/meurpg/play/v1/combat_pb';
 import type { Attack } from '../../../gen/meurpg/rules/v1/rules_pb';
 import { stateWord } from './combat-view';
+import { isTheatre } from './theatre';
 import { type ReadiedTargetRow, readiedLegend, readiedTargetRows } from './reaction-readied';
 import { type ReleasePlan, releasePlan } from './readied-release';
 
@@ -83,7 +84,7 @@ export function readiedAim(
       plan: null,
     };
   }
-  const plan = releasePlan(res, r, reactorId);
+  const plan = releasePlan(res, r, reactorId, !isTheatre(e));
   if (plan) {
     return { need: 'optional', rows: [], legend: '', chosen: null, plan };
   }

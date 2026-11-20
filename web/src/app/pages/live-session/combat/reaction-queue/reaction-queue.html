@@ -351,14 +351,15 @@
           <p class="row__status" [id]="uid + row.window.id + '-why'">{{ row.status }}</p>
         }
         @if (row.readied) {
-          <p class="row__status" [id]="uid + row.window.id + '-wait'">
-            {{ row.readied.waits }}@if (autoLeft()[row.window.id] !== undefined) {
-              · {{ autoText(autoLeft()[row.window.id]).toLowerCase() }}
+          @let wait = aim.waitOf(row, autoLeft()[row.window.id]);
+          <p class="row__status row__status--wait" [id]="uid + row.window.id + '-wait'" data-testid="readied-wait">
+            @if (wait.onMap) {
+              <mat-icon class="row__pin" aria-hidden="true">location_on</mat-icon>
+            } @else {
+              <mat-icon class="row__pin" aria-hidden="true">hourglass_top</mat-icon>
             }
+            {{ wait.text }}
           </p>
-          @if (row.readied.useOff) {
-            <p class="row__status" [id]="uid + row.window.id + '-off'">{{ row.readied.useOff }}</p>
-          }
         } @else if (autoLeft()[row.window.id] !== undefined) {
           <p class="row__status">
             {{ row.window.rolling ? rollingText(autoLeft()[row.window.id]) : autoText(autoLeft()[row.window.id]) }}
@@ -405,7 +406,7 @@
         [attr.data-initial]="row.answerNow && !row.readied ? '' : null"
         [disabled]="busy() || aim.useOff(row)"
         disabledInteractive
-        [attr.aria-describedby]="describedBy(row, true)"
+        [attr.aria-describedby]="aim.describedBy(row)"
         (click)="use(row)"
       >
         {{ row.useLabel }}
@@ -421,7 +422,7 @@
         [attr.data-initial]="row.answerNow && row.readied ? '' : null"
         [disabled]="busy() || !row.answerNow"
         disabledInteractive
-        [attr.aria-describedby]="describedBy(row, false)"
+        [attr.aria-describedby]="aim.describedBy(row)"
         (click)="pass(row.window)"
       >
         {{ row.passLabel }}

@@ -4,13 +4,11 @@ import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { Code, ConnectError } from '@connectrpc/connect';
 
 import {
-  AreaPlacement,
   CombatantState,
   EncounterBlockedReason,
   EncounterBlockedSchema,
   EncounterSchema,
   ReadiedKind,
-  SpellTargetsSchema,
 } from '../../../../../gen/meurpg/play/v1/combat_pb';
 import {
   ActionEconomy,
@@ -114,7 +112,6 @@ describe('ReadySheet (#582)', () => {
       options: options(),
       summaries: new Map(),
       choices: new Map(),
-      spellTargets: [],
       theatre: false,
       noSpeed: false,
       speedFt: 25,
@@ -242,44 +239,33 @@ describe('ReadySheet (#582)', () => {
     expect(close).toHaveBeenCalledWith(true);
   });
 
-  it('turns Mover off with its reason, on a map or not, and "Preparar" cannot send it (#856)', () => {
-    const why = 'Mover pela janela ainda não dá: por enquanto o mestre move a ficha.';
-    for (const theatre of [true, false]) {
-      const r = render({ theatre });
-      const move = Array.from(r.el.querySelectorAll('.kind')).find((b) =>
-        flat(b).includes('Mover'),
-      )!;
-      expect(move.classList).toContain('kind--off');
-      r.click(move as HTMLElement);
-      expect(flat(r.el.querySelector('#ready-kind-why'))).toContain(why);
-      r.type('Quando Tor recuar, corro até a porta');
-      expect(r.button('Preparar').getAttribute('aria-disabled')).toBe('true');
-      expect(r.button('Preparar').getAttribute('aria-describedby')).toBe('ready-kind-why');
-      expect(r.el.querySelector('#ready-missing')).toBeNull(); // the reason is written once
-      expect(r.el.querySelector('#ready-move')).toBeNull(); // and the move's own text is not under it
-      r.click(r.button('Preparar'));
-      expect(readyAction).not.toHaveBeenCalled();
-    }
+  it('offers Mover on a map and sends it, and keeps it off in a combat with no map (#856)', async () => {
+    readyAction.mockResolvedValue(create(EncounterSchema, { id: 'enc' }));
+    const on = render({ theatre: false });
+    on.click(on.button('Mover'));
+    expect(on.el.querySelector('#ready-kind-why')).toBeNull();
+    expect(flat(on.el.querySelector('#ready-move'))).toContain('Provoca ataques de oportunidade');
+    on.type('Quando Tor recuar, corro até a porta');
+    on.click(on.button('Preparar'));
+    await on.settle();
+    expect(readyAction.mock.calls[0][0]).toMatchObject({ kind: ReadiedKind.MOVE });
+
+    const off = render({ theatre: true });
+    const move = Array.from(off.el.querySelectorAll('.kind')).find((b) =>
+      flat(b).includes('Mover'),
+    )!;
+    expect(move.classList).toContain('kind--off');
+    off.click(move as HTMLElement);
+    expect(flat(off.el.querySelector('#ready-kind-why'))).toContain(
+      'Sem mapa, o app não sabe onde ninguém está.',
+    );
   });
 
-  it('writes the reason in the card of a spell placed on the map the window cannot release, and lets the others be held', () => {
-    const { el, button, click } = render({
-      options: options({ spells: [missiles, charm] }),
-      spellTargets: [
-        create(SpellTargetsSchema, {
-          spellKey: 'spell:magic-missile',
-          maxTargets: 0,
-          placement: AreaPlacement.POINT,
-        }),
-        create(SpellTargetsSchema, { spellKey: 'spell:charm-person', maxTargets: 1 }),
-      ],
-    });
+  it('lets a spell placed on the map be held: the window releases it on the map (#857)', () => {
+    const { el, button, click } = render({ options: options({ spells: [missiles, charm] }) });
     click(button('Magia'));
     const cards = Array.from(el.querySelectorAll('label.opt'));
-    expect(cards[0].classList).toContain('opt--off');
-    expect(flat(cards[0])).toContain('Soltar pela janela ainda não dá para esta magia');
-    expect(cards[1].classList).not.toContain('opt--off');
-    expect(flat(cards[1])).toContain('Enfeitiçar Pessoa');
+    expect(cards.every((c) => !c.classList.contains('opt--off'))).toBe(true);
   });
 
   it('writes the reason in the card of a spell that asks an ability, creatures or a damage type, and lets a plain one be held', () => {
@@ -343,10 +329,10 @@ describe('ReadySheet (#582)', () => {
       'A concentração em Névoa Obscurecente acaba agora.',
     );
     expect(flat(el.querySelector('.legend'))).toContain(
-      'Ação e espaço de 1º círculo: gastos agora, ao preparar.',
+      'Ação e espaço de 1º nível: gastos agora, ao preparar.',
     );
-    click(button('2º círculo'));
-    expect(flat(el.querySelector('.legend'))).toContain('Ação e espaço de 2º círculo');
+    click(button('2º nível'));
+    expect(flat(el.querySelector('.legend'))).toContain('Ação e espaço de 2º nível');
     type('Se o wight sair da sombra do pilar');
     expect(flat(button('Preparar Mísseis Mágicos'))).toContain('Preparar Mísseis Mágicos');
     click(button('Preparar Mísseis Mágicos'));
@@ -359,7 +345,7 @@ describe('ReadySheet (#582)', () => {
     });
   });
 
-  it('writes "Sem espaços de 2º círculo." in the card of a spell with no slot', () => {
+  it('writes "Sem espaços de 2º nível." in the card of a spell with no slot', () => {
     const scorching = {
       spell: {
         key: 'spell:scorching-ray',
@@ -374,7 +360,7 @@ describe('ReadySheet (#582)', () => {
     };
     const { el, click, button } = render({ options: options({ spells: [scorching] }) });
     click(button('Magia'));
-    expect(flat(el.querySelector('label.opt'))).toContain('Sem espaços de 2º círculo.');
+    expect(flat(el.querySelector('label.opt'))).toContain('Sem espaços de 2º nível.');
   });
 
   it("writes the server's refusal in a red band and keeps what was typed and chosen; nothing closes", async () => {

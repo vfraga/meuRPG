@@ -234,9 +234,11 @@ export function nobodyText(
   grid: boolean,
   slotLevel: number,
   bonusAction: boolean,
+  /** A readied spell released on the map: the slot went at Ready, and what is spent now is the reaction. */
+  released = false,
 ): { strong: string; rest: string } {
-  const spent = bonusAction ? 'a sua ação bônus' : 'a sua ação';
-  const slot = slotLevel > 0 ? `o espaço de ${slotLevel}º nível e ` : '';
+  const spent = released ? 'a sua reação' : bonusAction ? 'a sua ação bônus' : 'a sua ação';
+  const slot = slotLevel > 0 && !released ? `o espaço de ${slotLevel}º nível e ` : '';
   return {
     strong: grid ? 'Ninguém que você vê está na área.' : 'Ninguém está marcado.',
     rest: `A magia gasta ${slot}${spent} mesmo assim.`,

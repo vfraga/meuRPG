@@ -145,10 +145,19 @@ type encounterData struct {
 	zones []*zone
 	// readied are the readied actions that wait (ready_turn.go).
 	readied []playdb.ReadiedAction
+	// openWindows are the open reaction windows, read before the rows that say what became of them (readied above).
+	openWindows []playdb.ReactionWindow
 }
 
 // loadEncounter reads a combat's combatants, in turn order.
 func loadEncounter(ctx context.Context, q *playdb.Queries, enc playdb.Encounter, rerolls bool) (*encounterData, error) {
+	// The open windows come first: a read through the pool is no snapshot, and a pass that commits between the two reads must
+	// show as "window still open, readied action already ignored" (the window is gone at the next read), never as "window gone,
+	// readied action still waiting", which the readier's sheet reads as the master undoing the trigger. A read closes no window.
+	open, err := q.ListOpenReactionWindows(ctx, enc.ID)
+	if err != nil {
+		return nil, fmt.Errorf("list the reaction windows: %w", err)
+	}
 	cs, err := q.ListCombatants(ctx, enc.ID)
 	if err != nil {
 		return nil, fmt.Errorf("list the combatants: %w", err)
@@ -186,7 +195,7 @@ func loadEncounter(ctx context.Context, q *playdb.Queries, enc playdb.Encounter,
 		return nil, fmt.Errorf("list the readied actions: %w", err)
 	}
 	cs = withSilenceDeaf(cs, zones)
-	return &encounterData{enc: enc, cs: cs, states: states, requests: requests, holds: holds, allHolds: allHolds, setupOffers: setupOffers, riders: riders, zones: zones, readied: readied}, nil
+	return &encounterData{enc: enc, cs: cs, states: states, requests: requests, holds: holds, allHolds: allHolds, setupOffers: setupOffers, riders: riders, zones: zones, readied: readied, openWindows: open}, nil
 }
 
 // openInitiatives are the questions of the initiatives of a combat in SETUP that wait for an answer, by character: the

@@ -107,6 +107,15 @@
   }
 }
 
+// On the readied-move release page, from 1024px the whole map is shown, and on a window as short as 1280x800 its legend and the nudge line under it stay in view, as the boards
+// draw them: the map is no wider than what fits the height left under the title, the band and the budget (the grid's width over its height
+// is `--move-ratio`). A taller window or a wider grid than the column leaves the column's own width.
+.move__map--release {
+  @media (min-width: 1024px) {
+    max-width: max(320px, calc((100dvh - 380px) * var(--move-ratio, 1.5)));
+  }
+}
+
 .move__map[hidden] {
   display: none;
 }
@@ -259,6 +268,18 @@
   }
 }
 
+// The readied move's two buttons stay stacked at full width in the side column too (board 857-07).
+.move__buttons--stack {
+  @media (min-width: 1024px) {
+    flex-direction: column;
+
+    > .move__go,
+    > .move__cancel {
+      width: 100%;
+    }
+  }
+}
+
 .move__go {
   --mat-button-filled-container-height: 48px;
   width: 100%;
@@ -315,4 +336,28 @@
   margin: 0;
   font-size: var(--mr-font-16);
   line-height: 22px;
+}
+
+/* The note under the cost card of a readied move, and the master's line over the buttons. */
+.move__release-note,
+.move__release-foot {
+  margin: 0;
+  font-size: var(--mr-font-14);
+  line-height: 20px;
+  color: var(--mr-ink-muted);
+}
+
+// "A mesa espera você: até 2 min.": the hourglass, then the line, over the buttons (board 857-06).
+.move__release-foot--wait {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: var(--mr-space-2);
+
+  .mat-icon {
+    flex: none;
+    width: 18px;
+    height: 18px;
+    font-size: var(--mr-font-18);
+  }
 }

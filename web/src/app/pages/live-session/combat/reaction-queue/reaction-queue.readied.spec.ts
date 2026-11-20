@@ -2,6 +2,7 @@ import { create } from '@bufbuild/protobuf';
 import { TestBed } from '@angular/core/testing';
 
 import {
+  AreaPlacement,
   AttackTargetsSchema,
   CombatantKind,
   GetTurnOptionsResponseSchema,
@@ -10,6 +11,7 @@ import {
   ReadiedActionSchema,
   ReadiedKind,
   ReadiedStatus,
+  SpellTargetsSchema,
   TargetInReachSchema,
 } from '../../../../../gen/meurpg/play/v1/combat_pb';
 import {
@@ -47,6 +49,7 @@ describe("ReactionQueue, a readied action's window (#582, board 582-05)", () => 
     row: Record<string, unknown> = {},
     window: Record<string, unknown> = {},
     wait = false,
+    spellTargets: Record<string, unknown>[] = [],
   ) {
     turnOptions.mockReset().mockResolvedValue(
       create(GetTurnOptionsResponseSchema, {
@@ -63,6 +66,7 @@ describe("ReactionQueue, a readied action's window (#582, board 582-05)", () => 
             } as never),
           ],
         }),
+        spellTargets: spellTargets.map((t) => create(SpellTargetsSchema, t as never)),
         attackTargets: [
           create(AttackTargetsSchema, {
             attackKey: 'equipment:longsword',
@@ -128,7 +132,9 @@ describe("ReactionQueue, a readied action's window (#582, board 582-05)", () => 
     expect(plain(row.querySelector('.row__desc')?.textContent)).toBe(
       'Ação preparada: Espada longa no Zumbi 1 · “Quando o zumbi passar pela porta”',
     );
-    expect(plain(row.querySelector('.row__status')?.textContent)).toMatch(/^Esperando Tor/);
+    expect(plain(row.querySelector('.row__status')?.textContent)).toMatch(
+      /^hourglass_top Esperando Tor/,
+    );
     expect(buttons(el).map((b) => plain(b.textContent))).toEqual([
       'Deixar passar',
       'Atacar por Tor',
@@ -220,14 +226,80 @@ describe("ReactionQueue, a readied action's window (#582, board 582-05)", () => 
     );
   });
 
-  it('does not use a move for the player from the queue, and says why', async () => {
+  it('opens the map for a held move with "Mover por Tor", and answers nothing', async () => {
     const { fixture, el } = setup({ kind: ReadiedKind.MOVE, moveFt: 25, actionNamePt: '' });
-    expect(plain(el.querySelector('.row')?.textContent)).toContain(
-      'Mover é pelo mapa: mova Tor com a janela aberta.',
-    );
-    expect(buttons(el)[1].classList.contains('btn--off')).toBe(true);
+    const asked = vi.fn();
+    fixture.componentInstance.release.subscribe(asked);
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(buttons(el).map((b) => plain(b.textContent))).toEqual([
+      'Deixar passar',
+      'Mover por Tor',
+    ]);
+    expect(plain(el.querySelector('.row')?.textContent)).not.toContain('Mover é pelo mapa');
+    expect(buttons(el)[1].classList.contains('btn--off')).toBe(false);
     buttons(el)[1].click();
     await fixture.whenStable();
+    expect(asked).toHaveBeenCalledWith(expect.objectContaining({ plan: null }));
+    expect(asked.mock.calls[0][0].window.id).toBe('w1');
     expect(api.answerReaction).not.toHaveBeenCalled();
+  });
+
+  it('opens the map for a held spell that needs it with "Soltar por Tor", handing the plan', async () => {
+    const { fixture, el } = setup(
+      {
+        kind: ReadiedKind.SPELL,
+        actionKey: 'spell:fireball',
+        actionNamePt: 'Bola de Fogo',
+        targetCombatantId: '',
+      },
+      {},
+      false,
+      [{ spellKey: 'spell:fireball', placement: AreaPlacement.POINT }],
+    );
+    const asked = vi.fn();
+    fixture.componentInstance.release.subscribe(asked);
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(buttons(el).map((b) => plain(b.textContent))).toEqual([
+      'Deixar passar',
+      'Soltar por Tor',
+    ]);
+    buttons(el)[1].click();
+    await fixture.whenStable();
+    expect(asked).toHaveBeenCalledWith(
+      expect.objectContaining({ plan: expect.objectContaining({ onMap: true }) }),
+    );
+    expect(api.answerReaction).not.toHaveBeenCalled();
+  });
+
+  it('says only "Esperando Tor" when the mark is a player choosing targets, not a map release', () => {
+    const { fixture, el } = setup({}, { rolling: true });
+    fixture.componentRef.setInput('autoLeft', { w1: 108 });
+    fixture.detectChanges();
+    expect(plain(el.querySelector('[data-testid=readied-wait]')?.textContent)).toBe(
+      'hourglass_top Esperando Tor · passa sozinho em 1 min 48 s',
+    );
+  });
+
+  it('says "No mapa · passa sozinho em ..." while the player is on the map, and "Esperando Tor" when back (857-08)', async () => {
+    const left = { w1: 108 };
+    const move = { kind: ReadiedKind.MOVE, moveFt: 25, actionNamePt: '' };
+    const { fixture, el } = setup(move, { rolling: true });
+    fixture.componentRef.setInput('autoLeft', left);
+    fixture.detectChanges();
+    expect(plain(el.querySelector('[data-testid=readied-wait]')?.textContent)).toContain(
+      'location_on No mapa · passa sozinho em 1 min 48 s',
+    );
+    fixture.componentRef.setInput('autoLeft', { w1: 72 });
+    const back = setup(move, { rolling: false });
+    back.fixture.componentRef.setInput('autoLeft', { w1: 72 });
+    back.fixture.detectChanges();
+    expect(plain(back.el.querySelector('[data-testid=readied-wait]')?.textContent)).toBe(
+      'hourglass_top Esperando Tor · passa sozinho em 1 min 12 s',
+    );
+    expect(back.el.querySelector('[data-testid=readied-wait]')?.classList).toContain(
+      'row__status--wait',
+    );
   });
 });

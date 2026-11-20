@@ -9,11 +9,12 @@ import { needsAbility } from '../effects/ability-choice';
 /**
  * The spells that ask the caster for a choice when they are cast (#857): an ability (Enhance Ability), the creatures of a summon
  * (Conjure Animals) or a damage type (Flame Strike). The cast sheet asks them with its pickers and sends `ability_key`, `summon` and
- * `damage_type_key`; the release of a readied spell does not send them yet, so the Ready sheet leaves these spells off. Each kind is
- * known the way the cast sheet knows it: the ability by `needsAbility`, the damage type by the spell's details (`damage_choice` with
- * two or more damages), the summon by the character's summon options (`GetSummonOptions`). No spell key is listed here. A revival
- * (Revivify) is not here: nothing in the spell details or the turn options says a spell revives, so the server refuses it at Ready
- * (`READY_SPELL_NOT_RELEASABLE`) and the sheet shows that sentence.
+ * `damage_type_key`; a release of a readied spell carries none of them: the window's answer has no such field, and the map's cast sheet
+ * of a release has no such picker. So the Ready sheet shows these spells with a reason and does not offer them, and the server refuses
+ * them at Ready (`READY_SPELL_NOT_RELEASABLE`). Each kind is known the way the cast sheet knows it: the ability by `needsAbility`,
+ * the damage type by the spell's details (`damage_choice` with two or more damages), the summon by the character's summon options
+ * (`GetSummonOptions`). No spell key is listed here. A revival (Revivify) is not here: nothing in the spell details or the turn
+ * options says a spell revives, so only the server refuses it, and the sheet then shows that sentence.
  */
 
 /** What a spell asks when it is cast. */

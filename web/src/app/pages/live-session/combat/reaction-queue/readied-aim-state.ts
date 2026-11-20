@@ -1,9 +1,11 @@
 import { signal } from '@angular/core';
 
 import type { ReactionAnswer } from '../../../../core/combat/combat-client-types';
-import type { Encounter } from '../../../../../gen/meurpg/play/v1/combat_pb';
+import type { Encounter, ReactionWindow } from '../../../../../gen/meurpg/play/v1/combat_pb';
 import type { AimNeed } from '../../../../core/combat/readied-aim';
 import type { QueueRow } from '../../../../core/combat/reaction-master';
+import { ReadiedKind } from '../../../../../gen/meurpg/play/v1/combat_pb';
+import { masterRowWait } from '../../../../core/combat/readied-wait';
 import { readiedOfWindow } from '../../../../core/combat/reaction-readied';
 import { readiedRefusalText } from '../../../../core/combat/readied-refusal';
 import {
@@ -13,6 +15,12 @@ import {
   aimedUse,
   releaseComplete,
 } from '../../../../core/combat/readied-release';
+
+/** "Soltar por X" and "Mover por X" open the map for the master (#857, #856): the window, and the plan of a held spell (`null` for a move). */
+export interface ReleaseRequest {
+  readonly window: ReactionWindow;
+  readonly plan: ReleasePlan | null;
+}
 
 /**
  * What the master's list of creatures of each readied window asks, and what he picked (`app-readied-aim`): "Atacar por X" and
@@ -24,7 +32,30 @@ export class ReadiedAimState {
   private readonly picks = signal<Readonly<Record<string, ReleasePick>>>({});
   private readonly plans = signal<Readonly<Record<string, ReleasePlan | null>>>({});
 
-  constructor(private readonly encounter: () => Encounter) {}
+  constructor(
+    private readonly encounter: () => Encounter,
+    /** The prefix of the ids of the queue's rows, for what a row's buttons point to. */
+    private readonly uid = '',
+  ) {}
+
+  /** What a row's buttons point to: the reason "use" is off, the wait another window holds, or the line that says who the table waits for. */
+  describedBy(row: QueueRow): string | null {
+    const id = this.uid + row.window.id;
+    if (row.status) {
+      return `${id}-why`;
+    }
+    return row.readied ? `${id}-wait` : null;
+  }
+
+  /** The wait line of a readied row: where the player is and the time left (`undefined` for a window with no clock). */
+  waitOf(row: QueueRow, seconds: number | undefined) {
+    // The mark is also set by a player who only chooses targets in the window: "No mapa" is for a held action that is released on the map.
+    return masterRowWait(
+      row.window.reactorLabel,
+      row.window.rolling && this.mapRelease(row) !== null,
+      seconds,
+    );
+  }
 
   held(row: Pick<QueueRow, 'window'>) {
     return readiedOfWindow(this.encounter(), row.window);
@@ -67,6 +98,16 @@ export class ReadiedAimState {
     this.targets.update((m) => ({ ...m, [row.window.id]: target }));
   }
 
+  /** A held move, or a held spell the options place on the map: its use opens the map (`plan` is `null` for a move); `null` for any other. */
+  mapRelease(row: QueueRow): { readonly plan: ReleasePlan | null } | null {
+    const kind = this.held(row)?.kind;
+    if (kind === ReadiedKind.MOVE) {
+      return { plan: null };
+    }
+    const plan = this.planOf(row);
+    return kind === ReadiedKind.SPELL && plan?.onMap ? { plan } : null;
+  }
+
   /** Whether the use waits for a creature to be picked. */
   off(row: QueueRow): boolean {
     if (!row.readied?.aims) {
@@ -88,12 +129,12 @@ export class ReadiedAimState {
 
   /** Whether the use button is off: not this window's turn, a use the queue cannot make, or a creature still to pick. */
   useOff(row: QueueRow): boolean {
-    return !row.answerNow || !!row.readied?.useOff || this.off(row);
+    return !row.answerNow || this.off(row);
   }
 
   /** The use of a readied action: the creature picked or the held spell's targets, and the d20 of the app (`creature_ids` or `targets`, `roll`); `null` while it is off. */
   answerOf(row: QueueRow): ReactionAnswer | null {
-    if (row.readied?.useOff || this.off(row)) {
+    if (this.off(row)) {
       return null;
     }
     return row.readied?.aims

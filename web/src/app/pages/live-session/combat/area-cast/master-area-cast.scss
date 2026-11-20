@@ -56,6 +56,11 @@
   font-weight: 700;
 }
 
+// The release's "Voltar" reads as the board draws it: the ink of the other buttons, with the back arrow.
+.quiet--release {
+  --mat-button-text-label-text-color: var(--mr-ink);
+}
+
 .missing {
   display: flex;
   align-items: center;
@@ -69,5 +74,18 @@
     width: 16px;
     height: 16px;
     font-size: var(--mr-font-16);
+  }
+}
+
+/* "Pensantus ainda pode responder no próprio aparelho: vale a primeira resposta." above the buttons of a release. */
+.footnote {
+  flex: 1 1 100%;
+  margin: 0;
+  font-size: var(--mr-font-14);
+  color: var(--mr-ink-muted);
+
+  /* The footer's column is reversed on a phone, so the line that comes first reads last: it goes to the top. */
+  @media (max-width: 767.98px) {
+    order: 1;
   }
 }

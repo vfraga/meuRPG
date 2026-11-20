@@ -131,7 +131,7 @@ export class CastChoices {
       detailsRead: !!this.s.details(),
       detailsFailed: this.s.detailsFailed(),
       level: this.s.data.level,
-      slotChosen: !!this.s.slot() || this.viaGrant(),
+      slotChosen: !!this.s.slot() || this.viaGrant() || !!this.s.data.release,
       spellKey: this.s.data.spellKey,
       ability: this.s.ability(),
       placedArea: !!this.area.flow,

@@ -1,7 +1,7 @@
 import { type Encounter } from '../../../gen/meurpg/play/v1/combat_pb';
 import { legendaryCards, type LegendaryCard, windowsAbove } from './legendary-card';
 import { type ReactionCard, reactionCards } from './reaction-master';
-import { openWindows } from './reactions';
+import { cameToMaster, openWindows } from './reactions';
 
 /**
  * The master's "Esperando você" queue (#557): the cards he must answer, one at a time, and the legendary cards after them.
@@ -34,7 +34,7 @@ export interface MasterQueue {
 export function isMasterTurn(card: ReactionCard): boolean {
   switch (card.type) {
     case 'queue':
-      return card.rows.some((r) => !r.isPlayer || r.window.unanswered);
+      return card.rows.some((r) => !r.isPlayer || cameToMaster(r.window));
     case 'concentration':
       return !card.player;
     default:

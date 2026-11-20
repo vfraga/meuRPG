@@ -65,6 +65,14 @@ describe('CombatClient, the legendary calls', () => {
     expect(calls['move'][1]['legendaryOption']).toBe('');
   });
 
+  it("sends release_readied with the master's move of a readied move, and false otherwise", async () => {
+    const { client, calls } = fake();
+    await client.moves.move('c', 'e', 'd', 3, 4, undefined, undefined, false, '', true);
+    await client.moves.move('c', 'e', 'd', 3, 4);
+    expect(calls['move'][0]['releaseReadied']).toBe(true);
+    expect(calls['move'][1]['releaseReadied']).toBe(false);
+  });
+
   it('answers a Legendary Resistance window with the ticked creatures, or passes with none', async () => {
     const { client, calls } = fake();
     await client.attacks.answerLegendaryResistance(

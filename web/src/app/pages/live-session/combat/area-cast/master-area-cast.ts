@@ -62,7 +62,18 @@ import { WallControls } from '../../../../shared/area-picker/wall-controls';
 import { HiddenSwitch } from '../../../../shared/hidden-switch/hidden-switch';
 import { injectSheet } from '../../../../shared/sheet/sheet-host';
 import { SheetFrame } from '../../../../shared/sheet/sheet-frame/sheet-frame';
-import type { CastMapData } from '../cast-sheet/cast-sheet';
+import {
+  RELEASE_BACK,
+  RELEASE_DONE,
+  masterFoot,
+  releaseBand,
+  RELEASE_LEAD,
+  releaseSubtitle,
+  releaseTitle,
+} from '../../../../core/combat/release-text';
+import { ReleaseWatch } from '../../../../core/combat/release-watch';
+import type { CastMapData, CastRelease } from '../cast-sheet/cast-sheet';
+import { ReleaseBandView } from '../release-band/release-band';
 
 /** What the page hands the master's area cast. */
 export interface MasterAreaCastData {
@@ -81,6 +92,8 @@ export interface MasterAreaCastData {
   readonly targets: SpellTargets;
   readonly map: CastMapData;
   readonly state: CombatState;
+  /** The master releases a readied spell for the player: the slot is the held one (`slot` is `null`), the band says what was prepared. */
+  readonly release?: CastRelease;
 }
 
 /**
@@ -101,6 +114,7 @@ export interface MasterAreaCastData {
     HiddenSwitch,
     MatButtonModule,
     MatIconModule,
+    ReleaseBandView,
     SheetFrame,
     WallControls,
   ],
@@ -116,6 +130,32 @@ export class MasterAreaCast {
   private readonly sheet = injectSheet<MasterAreaCastData, boolean>();
   protected readonly data = this.sheet.data;
   protected readonly inSheet = this.sheet.inSheet;
+
+  /** A readied spell released for the player (#857): its words, its band and the footer that says the player may still answer. */
+  protected readonly release = this.data.release;
+  protected readonly title = this.release
+    ? releaseTitle(this.data.name, true, this.release.reactorLabel)
+    : `${this.data.caster.label} conjura ${this.data.name}`;
+  protected readonly band = this.release
+    ? releaseBand(this.release.trigger, this.release.slotLevel)
+    : null;
+  protected readonly foot = this.release ? masterFoot(this.release.reactorLabel) : '';
+  protected readonly backLabel = RELEASE_BACK;
+  protected readonly lead = this.release ? RELEASE_LEAD : '';
+  protected readonly doneLabel = RELEASE_DONE;
+  private readonly watch = this.release
+    ? new ReleaseWatch(() => this.data.state.encounter(), {
+        windowId: this.release.windowId,
+        readiedId: this.release.readiedId,
+        reactorId: this.data.caster.id,
+        spellName: this.data.name,
+        move: false,
+      })
+    : null;
+  /** The window went away under the map (the player answered first): the map goes and the one button is "Voltar à sessão". */
+  protected readonly gone = computed(() =>
+    this.watch && this.watch.gone() && !this.busy() ? this.watch.view() : null,
+  );
 
   protected readonly placement = this.data.targets.placement;
   protected readonly Placement = AreaPlacement;
@@ -162,6 +202,7 @@ export class MasterAreaCast {
   protected readonly error = signal('');
   private readonly key = new ActionKey();
   private readonly listTitle = viewChild<AreaStep>('listTitle');
+  private readonly frame = viewChild(SheetFrame);
 
   protected readonly combatants = computed(() => this.data.state.encounter()?.combatants ?? []);
   /** Everyone placed on the map, hidden ones too: "Centrar em…" for the master. */
@@ -187,6 +228,9 @@ export class MasterAreaCast {
       ),
   );
   protected readonly subtitle = computed(() => {
+    if (this.release) {
+      return releaseSubtitle(this.release.reactorLabel, true);
+    }
     const parts = [
       'NPC',
       castSubtitle(
@@ -243,7 +287,7 @@ export class MasterAreaCast {
   });
   protected readonly nobody = computed(() =>
     this.flow.nobody() && !this.flow.nobodyAccepted()
-      ? nobodyText(true, this.data.slot?.level ?? 0, false)
+      ? nobodyText(true, this.data.slot?.level ?? 0, false, !!this.release)
       : null,
   );
 
@@ -260,7 +304,14 @@ export class MasterAreaCast {
     effect(() => {
       if (this.flow.step() === 'list') {
         untracked(() =>
-          afterNextRender(() => this.listTitle()?.focus(), { injector: this.injector }),
+          afterNextRender(
+            () => {
+              this.listTitle()?.focus(true);
+              // The picking may have scrolled the body: the list opens at the top, with the band under the header.
+              this.frame()?.scrollToTop();
+            },
+            { injector: this.injector },
+          ),
         );
       }
     });
