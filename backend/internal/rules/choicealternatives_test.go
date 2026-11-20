@@ -483,7 +483,7 @@ func TestAHeldPickStaysAfterTheMasterGivesTheSameSkill(t *testing.T) {
 	alt := Effect{Type: "choice", Choice: choiceAlternatives, Count: 1, Alternatives: skillOrLanguage.Alternatives}
 	plain, _, _ := altSheet(t, alt, nil, nil)
 	edited, b, _ := altSheet(t, alt, []Effect{{Type: "proficiency", Proficiency: "skill:stealth"}}, nil, altStored(alt, "skill:stealth"))
-	var stored Build = b
+	stored := b
 	if _, _, found := plain.NewDuplicateAlternativePick(nil, b); found {
 		t.Fatal("refused before the master's edit")
 	}

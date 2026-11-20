@@ -44,6 +44,9 @@ const (
 // alternativeKinds are the kinds an alternative may have, in the order the menu lists them.
 var alternativeKinds = []string{altSkill, altLanguage, altTool}
 
+// everySkill is the proficiency key of an effect that gives every skill.
+const everySkill = "skill:*"
+
 // alternativeKindNames are the Portuguese names of the kinds.
 var alternativeKindNames = map[string]string{altSkill: "Perícia", altLanguage: "Idioma", altTool: "Ferramenta"}
 
@@ -285,7 +288,7 @@ func (x *deriver) skillHeldApart(skill string) bool {
 	}
 	return slices.ContainsFunc(x.active, func(a activeEffect) bool {
 		e := a.effect
-		return e.Type == "proficiency" && (e.Proficiency == skill || e.Proficiency == "skill:*") && len(e.Tags) == 0 &&
+		return e.Type == "proficiency" && (e.Proficiency == skill || e.Proficiency == everySkill) && len(e.Tags) == 0 &&
 			!e.OnlyProficient && proficiencyLevelOf(e.Level) >= ProficiencyFull && x.applies(a)
 	})
 }
