@@ -309,6 +309,43 @@ describe('CombatView: the rider and the mount it directs', () => {
     expect(m.callsOf('endTurn').map((c) => c.args[2])).toEqual(['h']);
   });
 
+  describe('for the master', () => {
+    it('"Próximo turno" on a trained pair ends the rider\'s part, then the mount\'s', async () => {
+      const after = enc();
+      after.combatants[0].turnPartEnded = true;
+      const m = mountCombatView({ enc: enc(), master: true, api: { endTurn: async () => after } });
+      await settle(m.fixture);
+      await m.view.nextTurn(false);
+      expect(m.callsOf('endTurn').map((c) => c.args[2])).toEqual(['tor', 'h']);
+    });
+
+    it("stops at a refusal on the rider's part and sends nothing for the mount", async () => {
+      const m = mountCombatView({
+        enc: enc(),
+        master: true,
+        api: {
+          endTurn: async () => {
+            throw new ConnectError('o dano espera', Code.FailedPrecondition);
+          },
+        },
+      });
+      await settle(m.fixture);
+      await m.view.nextTurn(false);
+      expect(m.callsOf('endTurn').map((c) => c.args[2])).toEqual(['tor']);
+    });
+
+    it("a fallen rider's card has the button that ends the mount's part alone", async () => {
+      const down = enc('controlled', CombatantState.DYING);
+      const m = mountCombatView({ enc: down, master: true, api: { endTurn: async () => down } });
+      await settle(m.fixture);
+      const card = m.el.querySelector('app-pair-card')!;
+      expect(card.textContent).toContain('Caído: você conduz a montaria.');
+      card.querySelector('button')!.click();
+      await settle(m.fixture);
+      expect(m.callsOf('endTurn').map((c) => c.args[2])).toEqual(['h']);
+    });
+  });
+
   describe('tied with another character (a larger group)', () => {
     const tied = () => {
       const e = enc();

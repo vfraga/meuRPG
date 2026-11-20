@@ -1,7 +1,9 @@
 import { computed, Directive } from '@angular/core';
 
+import type { Encounter } from '../../../../gen/meurpg/play/v1/combat_pb';
 import { isDead, isDown, isPlayer, soloTitle } from '../../../core/combat/combat-view';
 import { vitalsPool } from '../../../core/combat/form-pool';
+import { acts, pairTurn } from '../../../core/combat/joint-turn';
 import { type MineTab, membersToEnd } from '../../../core/combat/mine';
 import { moveLine } from '../../../core/combat/move-line';
 import { ownPairWindowOpen, turnEnds } from '../../../core/combat/pair-turn';
@@ -92,13 +94,25 @@ export abstract class CombatViewActingDirective extends CombatViewDerivedDirecti
       const now = this.encounter();
       return reactionPending(err) && !!rider && !!now && ownPairWindowOpen(now, rider);
     };
-    for (const id of e ? turnEnds(e, this.own(), this.riding()) : []) {
+    for (const id of e ? this.partsToEnd(e) : []) {
       if (!(await this.endPart(id, discard, ended > 0 ? ownPairQuestion : undefined))) {
         return false;
       }
       ended++;
     }
     return !!e;
+  }
+
+  /**
+   * The parts one press ends. The master's "Próximo turno" on a trained pair ends the rider's part and then the mount's, as the
+   * player's "Encerrar turno" does (a rider at 0 hit points has its death save first, which holds the button). Anything else
+   * is `turnEnds`.
+   */
+  private partsToEnd(e: Encounter): string[] {
+    const pair = this.isMaster() && !this.own() ? pairTurn(e) : null;
+    return pair
+      ? [pair.rider, pair.mount].filter((c) => acts(e, c)).map((c) => c.id)
+      : turnEnds(e, this.own(), this.riding());
   }
 
   /** "Revelar" or "Manter escondidas" on a question about hidden creatures (PM-02c state 9). */

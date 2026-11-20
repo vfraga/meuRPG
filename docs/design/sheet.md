@@ -124,7 +124,7 @@ The browser draws what the server sends and computes no rule: multiclass prerequ
   Under the list, "Tipo do corcel" is three segments with the app's words (Celestial, Fada, Ínfero), none picked at first; the footer reads "Escolha a forma e o tipo do corcel." until both are picked, and the button is "Convocar Cavalo de guerra".
   With a bonded steed there is no list and no type: one fixed row in the chosen row's frame, above the slot (the silhouette, the name, the tag "Mesmo corcel" with the link icon, "Cavalo de guerra · celestial · Grande · 18 m · CA 11 · PV 19"), the line "Estrela volta como era: a mesma forma, o mesmo tipo e os PV cheios. Para outra forma ou outro tipo, liberte Estrela antes, no bloco Criaturas.", and the button "Convocar Estrela".
   "Como funciona" (`app-fold`) holds the spell's notes and the least Intelligence, closed on every screen until the player opens it.
-  The five forms show all their rows with no scroller of their own, in a phone's bottom sheet and in a dialog.
+  A list of six rows or fewer shows all of them with no scroller of its own, in a phone's bottom sheet and in a dialog; a longer list scrolls inside itself.
   "Tipo do corcel" sits whole above the pinned footer at 390 by 844 without scrolling.
   The footer says "Gasta um espaço de 2º nível ou maior. Só durante uma sessão, fora de combate.", with only the first sentence in bold; the two refusals read "Agora não há sessão aberta." and "Leva 10 minutos: não dá durante um combate.".
   A choice the server refuses for a bonded steed reads "Estrela já tem forma e tipo. Para escolher outros, liberte Estrela antes."; a call that did not arrive reads "Não deu para convocar agora. Nada foi gasto. Tente de novo.".

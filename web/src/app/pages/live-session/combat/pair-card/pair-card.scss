@@ -103,3 +103,11 @@
     font-size: var(--mr-font-16);
   }
 }
+
+// The master's button for a fallen rider's mount: the card's full width, 44 px.
+.pair__end {
+  --mat-button-outlined-container-height: 44px;
+  --mat-button-outlined-label-text-color: var(--mr-ink);
+  width: 100%;
+  margin-top: 10px;
+}

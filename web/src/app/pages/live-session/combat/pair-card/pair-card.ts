@@ -8,7 +8,7 @@ import {
   type GetTurnOptionsResponse,
 } from '../../../../../gen/meurpg/play/v1/combat_pb';
 import { withArticle } from '../../../../core/format/article';
-import { combatantInitial } from '../../../../core/combat/combat-view';
+import { combatantInitial, isDown } from '../../../../core/combat/combat-view';
 import { pairActions, type PairAction } from '../../../../core/combat/pair-actions';
 import { metersFixed } from '../../../../core/units';
 import { PHONE_QUERY, mediaQuery } from '../../../../shared/map-view/media-query';
@@ -79,8 +79,13 @@ import { EconomyShapes, economyShapes } from '../../../../shared/economy-shapes/
           <p class="pair__why" id="pair-why"><mat-icon aria-hidden="true">block</mat-icon>{{ text }}</p>
         }
       </div>
-      @if (master()) {
-        <p class="pair__note">Montaria adestrada: só a ação e o movimento dela. O jogador encerra a vez dos dois.</p>
+      @if (master() && riderDown()) {
+        <p class="pair__note">Caído: você conduz a montaria.</p>
+        <button matButton="outlined" type="button" class="pair__end" [disabled]="busy()" disabledInteractive (click)="end.emit(mount().id)">
+          Encerrar a vez {{ ofMount() }}
+        </button>
+      } @else if (master()) {
+        <p class="pair__note">Montaria adestrada: só a ação e o movimento dela. Próximo turno encerra a vez dos dois.</p>
       } @else if (!why()) {
         @if (phone()) {
           <p class="pair__note"><mat-icon aria-hidden="true">link</mat-icon>Adestrada: só estas três. "Mover" leva os dois.</p>
@@ -106,6 +111,10 @@ export class PairCard {
   protected readonly phone = mediaQuery(PHONE_QUERY);
   /** The key of the action pressed ("standard:dash"). */
   readonly act = output<string>();
+  /** The master ends the mount's part alone (the rider is down, so the mount is his to lead): the mount's id. */
+  readonly end = output<string>();
+  /** The rider is at 0 hit points: the mount is the master's to lead. */
+  protected readonly riderDown = computed(() => isDown(this.rider()));
 
   protected readonly initial = computed(() => combatantInitial(this.mount().label));
   protected readonly riderInitial = computed(() => combatantInitial(this.rider().label));

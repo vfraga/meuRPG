@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 
-import { CombatantKind } from '../../../../../gen/meurpg/play/v1/combat_pb';
+import { CombatantKind, CombatantState } from '../../../../../gen/meurpg/play/v1/combat_pb';
 import { DisabledReasonCode } from '../../../../../gen/meurpg/rules/v1/rules_pb';
 import { combatant } from '../../../../core/combat/combat-testing';
 import { PHONE_QUERY } from '../../../../shared/map-view/media-query';
@@ -243,6 +243,39 @@ describe('PairCard for the master', () => {
   it('has no action buttons: the rider’s player directs the mount', () => {
     const el = master();
     expect(el.querySelectorAll('button')).toHaveLength(0);
-    expect(flat(el.querySelector('.pair__note'))).toContain('O jogador encerra a vez dos dois.');
+    expect(flat(el.querySelector('.pair__note'))).toContain(
+      'Próximo turno encerra a vez dos dois.',
+    );
+  });
+
+  it('with the rider down says the master leads the mount, and ends its part with its own button', () => {
+    TestBed.resetTestingModule();
+    const fixture = TestBed.createComponent(PairCard);
+    fixture.componentRef.setInput(
+      'rider',
+      combatant({
+        id: 'tor',
+        label: 'Tor',
+        kind: CombatantKind.PLAYER,
+        mountedOnId: 'h',
+        state: CombatantState.DYING,
+      }),
+    );
+    fixture.componentRef.setInput('mount', horse());
+    fixture.componentRef.setInput('master', true);
+    const ended: string[] = [];
+    fixture.componentInstance.end.subscribe((id) => ended.push(id));
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    expect(flat(el.querySelector('.pair__note'))).toBe('Caído: você conduz a montaria.');
+    const buttons = el.querySelectorAll('button');
+    expect(buttons).toHaveLength(1);
+    expect(flat(buttons[0])).toBe('Encerrar a vez do Cavalo de guerra');
+    buttons[0].click();
+    expect(ended).toEqual([horse().id]);
+  });
+
+  it('with the rider on its feet has no button of its own', () => {
+    expect(master().querySelectorAll('button')).toHaveLength(0);
   });
 });

@@ -48,7 +48,9 @@ The browser draws what the server sends (reach from `GetMoveOptions`, totals, ve
   An independent mount keeps its own row, with the link line on both ("Cavalgando o Esqueleto", "Leva o Wight · independente").
   A pair that ties with others stays together inside the "Turno conjunto" box.
   The pair on turn is one turn, for the master and for every viewer: the box has "Vez" in its head and its rows carry no "Ainda age" chips.
-  The master reads one pair card in the turn panel (the rider and the mount with their numbers, no buttons, "O jogador encerra a vez dos dois.") instead of the joint-turn card.
+  The master reads one pair card in the turn panel (the rider and the mount with their numbers, no action buttons, "Próximo turno encerra a vez dos dois.") instead of the joint-turn card.
+  The master's "Próximo turno" on that pair ends the rider's part and then the mount's, in two calls, as the player's "Encerrar turno" does; a refusal on the first stops there.
+  With the rider at 0 hit points the card reads "Caído: você conduz a montaria." and has one outlined button, "Encerrar a vez do Cavalo de guerra", that ends the mount's part alone.
   The combat bar shows the pair token, "Vez de Isolda" and "Cavalgando o Cavalo de guerra · em seguida: …", and "Próximo turno" is not dashed.
   Every viewer who sees both rows reads the mount's kind while it is ridden.
   The order boxes the pair only when the kind says it is trained.
@@ -87,7 +89,7 @@ The browser draws what the server sends (reach from `GetMoveOptions`, totals, ve
   - **A player's own steed** has no creature tab while the card stands in for it, so its three actions are not on the screen twice.
 - **The rider's save:**
   "Você cai da montaria?" is a sheet that opens by itself for the rider's player, as an alert with no "Fechar".
-  Only one dialog is on screen: a contest's answer or result that is open closes before it opens.
+  Only one dialog is on screen: a contest's answer or result that is open closes before "Você cai da montaria?" opens.
   The mount's saddle is the glyph beside the title.
   The title gains "· CD 10" only where the reader gets the DC (a table that shows the DC of saves, or the master).
   The line under it is "Teste de resistência de Destreza".
