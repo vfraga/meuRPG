@@ -216,7 +216,7 @@ describe('CombatXp (E7-06)', () => {
     expect(boxes(el)[3].disabled).toBe(true);
     // The one who is down gets a word and the reason she is checked.
     expect(text(el)).toContain('Caído');
-    expect(text(el)).toContain('Está viva, então recebe a parte dela.');
+    expect(text(el)).toContain('Ainda de pé: recebe a sua parte.');
     expect(text(el)).toContain('Morreu: não recebe XP.');
     expect(text(el)).toContain('Não recebe');
   });

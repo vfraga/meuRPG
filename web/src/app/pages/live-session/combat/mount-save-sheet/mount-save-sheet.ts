@@ -65,6 +65,9 @@ type Stage = 'ask' | 'result' | 'gone';
 const EFFECT_DIE_FACES = 4;
 /** How often the master's wait is counted again, in milliseconds. */
 const CLOCK_TICK_MS = 1000;
+const MS_PER_SECOND = 1000;
+/** How long the buttons wait after the server refused the master as too early, in milliseconds. */
+const RETRY_MS = 2000;
 
 /**
  * "Você cai da montaria?", the Dexterity saving throw of a rider whose mount was moved
@@ -130,7 +133,15 @@ export class MountSaveSheet {
   /** The time, moved every second while the master waits for the rider's player. */
   private readonly clock = signal(Date.now());
   /** Seconds until the master may answer the question for the rider; `0` for the rider's player and once the time has passed. */
-  protected readonly waitSeconds = computed(() => this.held.waitSeconds(this.clock()));
+  protected readonly waitSeconds = computed(() =>
+    Math.max(
+      this.held.waitSeconds(this.clock()),
+      Math.ceil((this.retryAt() - this.clock()) / MS_PER_SECOND),
+      0,
+    ),
+  );
+  /** When the server refused the master as too early although the clock says it is time (the clocks differ), the buttons wait a little longer. */
+  private readonly retryAt = signal(0);
   /** "Tor responde primeiro", the words a reader of the live region hears (the countdown beside it is not read each second). */
   protected readonly waitLead = computed(() =>
     this.waitSeconds() > 0
@@ -195,6 +206,11 @@ export class MountSaveSheet {
 
   constructor() {
     if (this.data.byMaster) {
+      effect(() => {
+        if (this.held.refusal() === 'too-early') {
+          untracked(() => this.retryAt.set(Date.now() + RETRY_MS));
+        }
+      });
       const timer = setInterval(() => this.clock.set(Date.now()), CLOCK_TICK_MS);
       inject(DestroyRef).onDestroy(() => clearInterval(timer));
     }

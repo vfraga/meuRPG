@@ -16,16 +16,7 @@ import {
   SurpriseSuggestionReason,
 } from '../../../gen/meurpg/play/v1/contest_types_pb';
 import { article } from './combat-log';
-import {
-  type Who,
-  countedFace,
-  named,
-  pronoun,
-  signed,
-  skillLine,
-  verb,
-  whoIs,
-} from './contest-view';
+import { type Who, countedFace, named, signed, skillLine, verb, whoIs } from './contest-view';
 import { upFirst } from '../format/text';
 
 /**
@@ -105,9 +96,9 @@ export function waitingForPlayer(c: ContestView): boolean {
 export function masterPushLine(shover: string, blocked: ShoveBlockedReason): string {
   switch (blocked) {
     case ShoveBlockedReason.WALL:
-      return `Para longe ${shover}. Há uma parede na casa de trás: ele não sai do lugar.`;
+      return `Para longe ${shover}. Há uma parede na casa de trás: o alvo não sai do lugar.`;
     case ShoveBlockedReason.CREATURE:
-      return `Para longe ${shover}. Há uma criatura na casa de trás: ele não sai do lugar.`;
+      return `Para longe ${shover}. Há uma criatura na casa de trás: o alvo não sai do lugar.`;
     default:
       return `Para longe ${shover}, em linha reta.`;
   }
@@ -117,7 +108,7 @@ export function masterPushLine(shover: string, blocked: ShoveBlockedReason): str
 export function answerWait(e: Encounter | null, c: ContestView): string {
   if (c.deferred) {
     const defender = labelOf(e, c.defenderId);
-    return `${defender} deixou o mestre rolar por ${pronoun(defender)}.`;
+    return `${defender} deixou o mestre rolar o teste.`;
   }
   if (waitingForPlayer(c)) {
     return `Esperando ${labelOf(e, c.waitingCombatantId)}. O jogador está respondendo no celular.`;
@@ -164,7 +155,7 @@ export function observerRows(
   }));
 }
 
-/** "Aplicar: escondida (3 não notam)" / "Aplicar: escondido (1 não nota)" / "Aplicar: ninguém é enganado". */
+/** "Aplicar: escondido (3 não notam)" / "Aplicar: escondido (1 não nota)" / "Aplicar: ninguém é enganado". */
 export function applyLabel(hidden: string, notNoticing: number): string {
   if (notNoticing === 0) {
     return 'Aplicar: ninguém é enganado';

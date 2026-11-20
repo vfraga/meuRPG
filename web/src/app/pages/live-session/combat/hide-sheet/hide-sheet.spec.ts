@@ -164,7 +164,7 @@ describe('HideSheet (board W7-Xc 8)', () => {
     expect(button('Rolar no app')).toBeUndefined();
   });
 
-  it('says only "Você está escondida." once the master applied it, and when it ends', async () => {
+  it('says only "Você está escondido." once the master applied it, and when it ends', async () => {
     const { contests, fixture, button, settle, text } = setup();
     api.attempt = hideAttempt({
       status: HideAttemptStatus.PENDING,
@@ -180,7 +180,7 @@ describe('HideSheet (board W7-Xc 8)', () => {
     );
     fixture.detectChanges();
     await settle();
-    expect(text()).toContain('Você está escondida.');
+    expect(text()).toContain('Você está escondido.');
     expect(text()).toContain(
       'Você sai do esconderijo quando atacar, conjurar ou for vista. O mestre decide o que cada criatura percebe.',
     );
@@ -232,6 +232,6 @@ describe('HideSheet (board W7-Xc 8)', () => {
     const contests = new ContestState();
     contests.applyAttempt(hideAttempt({ id: 'hd1', status: HideAttemptStatus.APPLIED }));
     const { text } = setup({ attemptId: 'hd1', contests });
-    expect(text()).toContain('Você está escondida.');
+    expect(text()).toContain('Você está escondido.');
   });
 });

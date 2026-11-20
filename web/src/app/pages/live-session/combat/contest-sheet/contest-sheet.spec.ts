@@ -333,7 +333,7 @@ describe('ContestSheet', () => {
       await settle();
       expect(plain(el.querySelector('h2')?.textContent)).toBe('Agarrar Brisa');
       expect(textOf(el.querySelector('[data-testid="contest-wait"]')!)).toBe(
-        'Esperando Brisa. Ela escolhe Atletismo ou Acrobacia e rola.',
+        'Esperando Brisa. Brisa escolhe Atletismo ou Acrobacia e rola.',
       );
       expect(text()).not.toContain('Fechar a folha” só a esconde');
       expect(data.contests.contests()).toHaveLength(1);
@@ -440,7 +440,7 @@ describe('ContestSheet', () => {
       await settle();
       expect(text()).toContain('Você venceu a disputa. O Hobgoblin está Agarrado.');
       expect(text()).toContain(
-        'Você o segura enquanto quiser (solte sem gastar ação). Se você se mover, leva-o junto, com o deslocamento pela metade.',
+        'Você mantém o agarrão enquanto quiser (solte sem gastar ação). Se você se mover, leva a criatura junto, com o deslocamento pela metade.',
       );
       expect(
         Array.from(el.querySelectorAll('.steps__item')).at(2)?.getAttribute('aria-current'),
@@ -496,7 +496,7 @@ describe('ContestSheet', () => {
       expect(text()).toContain('Resultado');
       expect(text()).toContain('Você venceu a disputa. Escolha o que fazer com o Hobgoblin.');
       expect(text()).toContain(
-        'Derrubar O Hobgoblin fica Derrubado: só rasteja. Ataque corpo a corpo contra ele a até 1,5 m tem vantagem; de mais longe, desvantagem.',
+        'Derrubar O Hobgoblin fica Derrubado: só rasteja. Ataque corpo a corpo a até 1,5 m tem vantagem; de mais longe, desvantagem.',
       );
       expect(text()).toContain('Empurrar 1,5 m Para longe de você, em linha reta.');
       const push = el.querySelectorAll<HTMLInputElement>('input[name="shove"]')[1];
@@ -522,7 +522,7 @@ describe('ContestSheet', () => {
       expect(push.disabled).toBe(true);
       expect(push.closest('label')?.classList).toContain('card--off');
       expect(text()).toContain(
-        'Empurrar 1,5 m Para longe de você. Há uma parede na casa de trás: ele não sai do lugar.',
+        'Empurrar 1,5 m Para longe de você. Há uma parede na casa de trás: o alvo não sai do lugar.',
       );
     });
 

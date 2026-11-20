@@ -265,7 +265,7 @@ export class ActionGroups {
   protected readonly surprised = computed(() => this.contest()?.surprised === true);
   protected readonly grappled = computed(() => this.contest()?.grappled === true);
   protected readonly hiddenNote = computed(() =>
-    this.contest()?.hidden ? hiddenAttackNote(hiddenWord(this.own().label)) : '',
+    this.contest()?.hidden ? hiddenAttackNote(hiddenWord()) : '',
   );
   protected readonly specialNote = computed(() =>
     this.beast() ? SHOVE_ATTACK_NOTE : SPECIAL_ATTACKS_NOTE,

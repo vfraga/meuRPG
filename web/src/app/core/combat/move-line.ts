@@ -5,7 +5,7 @@ import { grappledWord } from './contest-view';
 
 /** The line of the movement row under the map ("Restam 9,0 m · 6 quadrados"), its bar, and whether there is a move to make. */
 export interface MoveLine {
-  /** The bold part: "Restam 9,0 m", "Sem movimento", "Indisponível: Agarrada.". */
+  /** The bold part: "Restam 9,0 m", "Sem movimento", "Indisponível: Agarrado.". */
   readonly lead: string;
   /** What follows it after a dot: "6 quadrados", "6 quadrados · sem provocar". Empty when nothing follows. */
   readonly rest: string;
@@ -25,7 +25,7 @@ export function moveLine(own: Combatant, grappled: boolean): MoveLine {
   const left = metersFixed(own.movementLeftDft / 10);
   if (grappled) {
     return {
-      lead: `Indisponível: ${grappledWord(own.label)}.`,
+      lead: `Indisponível: ${grappledWord()}.`,
       rest: '',
       left,
       percent: 0,

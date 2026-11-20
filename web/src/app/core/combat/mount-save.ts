@@ -196,7 +196,7 @@ export function mountSaveResultView(
     return {
       word: r.held ? 'Passou' : 'Falha automática',
       good: r.held,
-      line: `${fell.charAt(0).toUpperCase()}${fell.slice(1)}`,
+      line: upFirst(fell),
     };
   }
   const dc = dcLabel(r.dc);

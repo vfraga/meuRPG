@@ -415,7 +415,7 @@ describe('CombatView, the contests of the player (W7-X)', () => {
     expect(textOf(hidden.el)).toContain('Escondido Você está escondido.');
     const surprised = setup({ contest: create(ContestTurnStateSchema, { surprised: true }) });
     await settle(surprised.fixture);
-    expect(textOf(surprised.el)).toContain('Surpresa Você está surpreso neste turno.');
+    expect(textOf(surprised.el)).toContain('Surpresa Surpresa neste turno: você não se move');
     expect(textOf(surprised.el)).toContain('Passar o turno');
     expect(textOf(surprised.el)).toContain('Reação Indisponível Surpresa até o fim do turno.');
   });

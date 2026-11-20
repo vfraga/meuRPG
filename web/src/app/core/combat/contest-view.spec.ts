@@ -25,7 +25,7 @@ import {
   defenderVerdict,
   escapeIntro,
   escapeVerdict,
-  holdLine,
+  HOLD_LINE,
   initiatorVerdict,
   named,
   noteLines,
@@ -204,10 +204,10 @@ describe('the words of the contests (W7-X)', () => {
         'O Hobgoblin escolhe Atletismo ou Acrobacia e rola.',
       );
       expect(waitDetail(e, contestView({ defenderId: 'b' }))).toBe(
-        'Ela escolhe Atletismo ou Acrobacia e rola.',
+        'Brisa escolhe Atletismo ou Acrobacia e rola.',
       );
       expect(waitDetail(e, contestView({ defenderId: 'b', deferred: true }))).toBe(
-        'Brisa deixou o mestre rolar por ela.',
+        'Brisa deixou o mestre rolar o teste.',
       );
       expect(waitDetail(e, contestView({ status: ContestStatus.AWAITING_OUTCOME }))).toBe(
         'Você escolhe o que fazer.',
@@ -217,19 +217,17 @@ describe('the words of the contests (W7-X)', () => {
   });
 
   describe('what the one that started reads once it is decided', () => {
-    it('a won grapple says the target is Agarrado, by its gender, and how it is held', () => {
+    it('a won grapple says the target is Agarrado, whoever it is, and how it is held', () => {
       const won = contestView({ status: ContestStatus.RESOLVED, winner: ContestWinner.INITIATOR });
       expect(initiatorVerdict(won, hob, 'Toren')).toEqual({
         lead: 'Você venceu a disputa.',
         rest: 'O Hobgoblin está Agarrado.',
         won: true,
       });
-      expect(initiatorVerdict(won, brisa, 'Toren')?.rest).toBe('Brisa está Agarrada.');
-      expect(holdLine('Hobgoblin')).toBe(
-        'Você o segura enquanto quiser (solte sem gastar ação). Se você se mover, leva-o junto, com o deslocamento pela metade.',
+      expect(initiatorVerdict(won, brisa, 'Toren')?.rest).toBe('Brisa está Agarrado.');
+      expect(HOLD_LINE).toBe(
+        'Você mantém o agarrão enquanto quiser (solte sem gastar ação). Se você se mover, leva a criatura junto, com o deslocamento pela metade.',
       );
-      expect(holdLine('Brisa')).toContain('Você a segura');
-      expect(holdLine('Brisa')).toContain('leva-a junto');
     });
 
     it('a lost or tied grapple says only that it did not work, never a total', () => {
@@ -311,21 +309,21 @@ describe('the words of the contests (W7-X)', () => {
         status: ContestStatus.RESOLVED,
         winner: ContestWinner.INITIATOR,
       });
-      expect(defenderVerdict(lost, hob, 'Brisa')).toEqual({
+      expect(defenderVerdict(lost, hob)).toEqual({
         lead: 'Você perdeu a disputa.',
-        rest: 'O Hobgoblin agarrou você: você está Agarrada, com deslocamento 0.',
+        rest: 'O Hobgoblin agarrou você: você está Agarrado, com deslocamento 0.',
         won: false,
       });
     });
 
     it('a won defence says the grapple did not work', () => {
       const won = contestView({ status: ContestStatus.RESOLVED, winner: ContestWinner.DEFENDER });
-      expect(defenderVerdict(won, brisa, 'Toren')).toEqual({
+      expect(defenderVerdict(won, brisa)).toEqual({
         lead: 'Você venceu a disputa.',
         rest: 'Brisa não conseguiu agarrar você.',
         won: true,
       });
-      expect(defenderVerdict({ ...won, winner: ContestWinner.TIE }, hob, 'Brisa')?.lead).toBe(
+      expect(defenderVerdict({ ...won, winner: ContestWinner.TIE }, hob)?.lead).toBe(
         'Empate: nada muda.',
       );
     });
@@ -337,46 +335,43 @@ describe('the words of the contests (W7-X)', () => {
         winner: ContestWinner.INITIATOR,
         shoveOutcome: ShoveOutcome.PRONE,
       });
-      expect(defenderVerdict(shove, hob, 'Brisa')?.rest).toBe('O Hobgoblin derrubou você.');
+      expect(defenderVerdict(shove, hob)?.rest).toBe('O Hobgoblin derrubou você.');
+      expect(defenderVerdict({ ...shove, shoveOutcome: ShoveOutcome.STAYS }, hob)?.rest).toBe(
+        'O Hobgoblin não tirou você do lugar.',
+      );
       expect(
-        defenderVerdict({ ...shove, shoveOutcome: ShoveOutcome.STAYS }, hob, 'Brisa')?.rest,
-      ).toBe('O Hobgoblin não tirou você do lugar.');
-      expect(
-        defenderVerdict(contestView({ status: ContestStatus.AWAITING_OUTCOME }), hob, 'Brisa')
-          ?.lead,
+        defenderVerdict(contestView({ status: ContestStatus.AWAITING_OUTCOME }), hob)?.lead,
       ).toBe('Você perdeu a disputa.');
-      expect(defenderVerdict(contestView(), hob, 'Brisa')).toBeNull();
+      expect(defenderVerdict(contestView(), hob)).toBeNull();
     });
   });
 
   describe('the shove’s choice', () => {
     it('says what each outcome does, and why a push is blocked', () => {
       expect(plain(proneLine(hob))).toBe(
-        'O Hobgoblin fica Derrubado: só rasteja. Ataque corpo a corpo contra ele a até 1,5 m tem vantagem; de mais longe, desvantagem.',
+        'O Hobgoblin fica Derrubado: só rasteja. Ataque corpo a corpo a até 1,5 m tem vantagem; de mais longe, desvantagem.',
       );
       expect(pushLine(ShoveBlockedReason.UNSPECIFIED)).toBe('Para longe de você, em linha reta.');
       expect(pushLine(ShoveBlockedReason.WALL)).toBe(
-        'Para longe de você. Há uma parede na casa de trás: ele não sai do lugar.',
+        'Para longe de você. Há uma parede na casa de trás: o alvo não sai do lugar.',
       );
       expect(pushLine(ShoveBlockedReason.CREATURE)).toContain('uma criatura');
     });
   });
 
   describe('the states of the turn', () => {
-    it('says "Escondida" without saying from whom, and "Surpresa"', () => {
+    it('says "Escondido" without saying from whom, and "Surpresa", with no word that agrees with a name', () => {
       const hidden = create(ContestTurnStateSchema, { hidden: true });
-      expect(contestNotes(hidden, 'Brisa')).toEqual([
-        { tag: 'Escondida', icon: 'visibility', tone: 'success', text: 'Você está escondida.' },
+      expect(contestNotes(hidden)).toEqual([
+        { tag: 'Escondido', icon: 'visibility', tone: 'success', text: 'Você está escondido.' },
       ]);
-      expect(contestNotes(hidden, 'Toren')[0].text).toBe('Você está escondido.');
       const surprised = create(ContestTurnStateSchema, { surprised: true });
-      expect(contestNotes(surprised, 'Nael')[0]).toMatchObject({
+      expect(contestNotes(surprised)[0]).toMatchObject({
         tag: 'Surpresa',
-        text: 'Você está surpreso neste turno. Você não se move, não age e não reage até o fim dele.',
+        text: 'Surpresa neste turno: você não se move, não age e não reage até o fim do turno.',
       });
-      expect(contestNotes(surprised, 'Brisa')[0].text).toContain('Você está surpresa neste turno.');
-      expect(contestNotes(undefined, 'Brisa')).toEqual([]);
-      expect(contestNotes(create(ContestTurnStateSchema), 'Brisa')).toEqual([]);
+      expect(contestNotes(undefined)).toEqual([]);
+      expect(contestNotes(create(ContestTurnStateSchema))).toEqual([]);
     });
 
     it('splits the master’s refusal at its colon', () => {

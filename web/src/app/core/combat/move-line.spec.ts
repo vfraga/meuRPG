@@ -47,9 +47,9 @@ describe('moveLine', () => {
     });
   });
 
-  it('says a grapple makes the movement unavailable, by the character’s gender', () => {
+  it('says a grapple makes the movement unavailable', () => {
     expect(moveLine(own(), true)).toMatchObject({
-      lead: 'Indisponível: Agarrada.',
+      lead: 'Indisponível: Agarrado.',
       canMove: false,
     });
     expect(moveLine(own({ label: 'Toren' }), true).lead).toBe('Indisponível: Agarrado.');

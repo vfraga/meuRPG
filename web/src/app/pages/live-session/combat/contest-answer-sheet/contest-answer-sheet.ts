@@ -40,7 +40,6 @@ import {
   defenderVerdict,
   isSettled,
   noteLines,
-  pronoun,
   signed,
   skillChoices,
   skillLine,
@@ -197,10 +196,7 @@ export class ContestAnswerSheet {
   protected readonly modifier = computed(() => this.chosen()?.modifier ?? 0);
   protected readonly checkName = computed(() => skillLine(this.chosenSkill()));
   protected readonly waitTitle = computed(() => waitTitle(this.encounter(), this.contest()));
-  protected readonly waitText = computed(() => {
-    const own = this.own()?.label;
-    return own ? `O mestre rola por ${pronoun(own)}.` : 'O mestre rola por você.';
-  });
+  protected readonly waitText = 'O mestre rola por você.';
   protected readonly roll = computed(() => this.contest()?.defenderRoll);
   protected readonly rollSkill = computed(() => {
     const r = this.roll();
@@ -208,7 +204,7 @@ export class ContestAnswerSheet {
   });
   protected readonly verdict = computed(() => {
     const c = this.contest();
-    return c ? defenderVerdict(c, whoIs(this.initiator()), this.own()?.label ?? '') : null;
+    return c ? defenderVerdict(c, whoIs(this.initiator())) : null;
   });
   /** The master's Inspiração (RN-43) for the defender's d20; never for "Deixar o mestre rolar por mim" (no d20 is rolled). */
   protected readonly fav = new FavorSpend({

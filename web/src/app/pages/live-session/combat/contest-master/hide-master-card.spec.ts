@@ -83,7 +83,7 @@ describe("HideMasterCard, the master's decision on a Hide", () => {
     const text = textOf(el);
     expect(textOf(el.querySelector('h2')!)).toBe('Brisa tenta se esconder: Furtividade 19');
     expect(text).toContain(
-      'Compare com a Percepção passiva de quem poderia vê-la. Quem a vê claramente não é enganado.',
+      'Compare com a Percepção passiva de quem poderia ver quem se esconde. Quem vê claramente quem se esconde não é enganado.',
     );
     const rows = Array.from(el.querySelectorAll('.row')).map((r) => textOf(r));
     expect(rows).toEqual([
@@ -92,7 +92,7 @@ describe("HideMasterCard, the master's decision on a Hide", () => {
       'Hobgoblin Percepção passiva 10 Não nota Vê claramente',
       'Capitão bandido Percepção passiva 10 Nota Vê claramente',
     ]);
-    expect(text).toContain('Aplicar: escondida (3 não notam)');
+    expect(text).toContain('Aplicar: escondido (3 não notam)');
     expect(text).toContain('Recusar: não há onde se esconder');
     expect(text).toContain(
       'Empate: continua notado (leitura do app: o total precisa superar a Percepção passiva).',
@@ -103,8 +103,8 @@ describe("HideMasterCard, the master's decision on a Hide", () => {
     const { api, el, button, settle, said, state, contests } = setup();
     el.querySelectorAll<HTMLInputElement>('input[type="checkbox"]')[2].click();
     await settle();
-    expect(textOf(el)).toContain('Aplicar: escondida (2 não notam)');
-    button('Aplicar: escondida')!.click();
+    expect(textOf(el)).toContain('Aplicar: escondido (2 não notam)');
+    button('Aplicar: escondido')!.click();
     await settle();
     expect(api.hideDecisions).toHaveLength(1);
     expect(api.hideDecisions[0].decision).toEqual({
@@ -116,7 +116,7 @@ describe("HideMasterCard, the master's decision on a Hide", () => {
     expect(api.hideDecisions[0].key).toEqual(expect.any(String));
     expect(state.encounter()?.revision).toBe(9);
     expect(contests.attempt('hd1')?.status).toBe(HideAttemptStatus.APPLIED);
-    expect(said).toEqual(['Brisa está escondida.']);
+    expect(said).toEqual(['Brisa está escondido.']);
   });
 
   it('refuses with a reason of one sentence', async () => {
@@ -148,7 +148,7 @@ describe("HideMasterCard, the master's decision on a Hide", () => {
     await settle();
     button('Voltar')!.click();
     await settle();
-    expect(button('Aplicar: escondida')).toBeTruthy();
+    expect(button('Aplicar: escondido')).toBeTruthy();
     button('Recusar: não há onde se esconder')!.click();
     await settle();
     button('Recusar o esconderijo')!.click();
@@ -159,7 +159,7 @@ describe("HideMasterCard, the master's decision on a Hide", () => {
   it('shows the server refusal (nothing pending any more)', async () => {
     const { api, el, button, settle } = setup();
     api.error = new ConnectError('gone', Code.FailedPrecondition);
-    button('Aplicar: escondida')!.click();
+    button('Aplicar: escondido')!.click();
     await settle();
     expect(el.querySelector('[role="alert"]')).toBeTruthy();
   });

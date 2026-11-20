@@ -95,7 +95,7 @@ describe('what the master reads of a contest', () => {
       'Esperando Brisa. O jogador está respondendo no celular.',
     );
     expect(answerWait(e, contestView({ defenderId: 'b', deferred: true }))).toBe(
-      'Brisa deixou o mestre rolar por ela.',
+      'Brisa deixou o mestre rolar o teste.',
     );
   });
 
@@ -104,7 +104,7 @@ describe('what the master reads of a contest', () => {
       'Para longe de Toren, em linha reta.',
     );
     expect(masterPushLine('de Toren', ShoveBlockedReason.WALL)).toBe(
-      'Para longe de Toren. Há uma parede na casa de trás: ele não sai do lugar.',
+      'Para longe de Toren. Há uma parede na casa de trás: o alvo não sai do lugar.',
     );
     expect(masterPushLine('de Toren', ShoveBlockedReason.CREATURE)).toContain('uma criatura');
   });

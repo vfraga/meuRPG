@@ -39,7 +39,7 @@ import {
   type Who,
   contestSteps,
   escapeIntro,
-  holdLine,
+  HOLD_LINE,
   initiatorVerdict,
   named,
   ofNamed,
@@ -315,7 +315,7 @@ export class ContestSheet {
     () =>
       !this.escape && this.data.purpose === ContestPurpose.GRAPPLE && this.verdict()?.won === true,
   );
-  protected readonly hold = computed(() => holdLine(this.other().label));
+  protected readonly hold = computed(() => HOLD_LINE);
 
   // ---- the shove's choice ----
 

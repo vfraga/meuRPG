@@ -230,7 +230,7 @@ test('o teste em grupo é encerrado pelo mestre sem mostrar a CD, e a surpresa m
     }
     await combatRPC(m, 'BeginCombat', { campaignId, encounterId: enc.id });
     await expect(p.getByRole('heading', { name: 'Sua vez, Vex' })).toBeVisible();
-    await expect(p.getByText(/Você está surpres[oa] neste turno/)).toBeVisible();
+    await expect(p.getByText(/Surpresa neste turno/)).toBeVisible();
     await expect(p.getByRole('button', { name: 'Passar o turno' })).toBeVisible();
     for (const line of ['Atacar', 'Movimento', 'Ação bônus', 'Reação']) {
       await expect(p.getByText(line, { exact: true }).first()).toBeVisible();

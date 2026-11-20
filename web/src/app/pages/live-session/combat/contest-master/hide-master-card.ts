@@ -22,16 +22,16 @@ import {
   observerRows,
 } from '../../../../core/combat/contest-master';
 import type { ContestState } from '../../../../core/combat/contest-state';
-import { hiddenWord, pronoun } from '../../../../core/combat/contest-view';
+import { hiddenWord } from '../../../../core/combat/contest-view';
 import { ActionKey } from '../../../../core/connect/idempotency';
 
 let nextId = 0;
 
 /**
  * "Brisa tenta se esconder: Furtividade 19" (W7-X, board W7-Xc 8, the master's side): the Hide that waits for him. The total
- * against the passive Perception of each creature that could see the hider (his only: the hider reads "Você está escondida" and
+ * against the passive Perception of each creature that could see the hider (his only: the hider reads "Você está escondido" and
  * nothing more, RN-10 and RN-20), a "Vê claramente" key on each row for the cover the app does not see, and the decision:
- * "Aplicar: escondida (3 não notam)" (one state per creature) or "Recusar: não há onde se esconder" with a one-sentence reason
+ * "Aplicar: escondido (3 não notam)" (one state per creature) or "Recusar: não há onde se esconder" with a one-sentence reason
  * the hider reads. A tie keeps the creature noticed (the app's reading). Answers with `ResolveHide`; the key is made once.
  */
 @Component({
@@ -136,12 +136,11 @@ export class HideMasterCard {
     () => `${this.hiderLabel()} tenta se esconder: Furtividade ${this.attempt().roll?.total ?? 0}`,
   );
   protected readonly sub = computed(() => {
-    const she = pronoun(this.hiderLabel()) === 'ela';
-    return `Compare com a Percepção passiva de quem poderia ${she ? 'vê-la' : 'vê-lo'}. Quem ${she ? 'a' : 'o'} vê claramente não é enganado.`;
+    return 'Compare com a Percepção passiva de quem poderia ver quem se esconde. Quem vê claramente quem se esconde não é enganado.';
   });
   protected readonly rows = computed(() => observerRows(this.encounter(), this.attempt()));
   protected readonly applyText = computed(() =>
-    applyLabel(hiddenWord(this.hiderLabel()), notNoticing(this.rows(), this.clearly())),
+    applyLabel(hiddenWord(), notNoticing(this.rows(), this.clearly())),
   );
 
   protected noticed(r: { readonly id: string; readonly noticed: boolean }): boolean {
@@ -186,7 +185,7 @@ export class HideMasterCard {
       this.said.emit(
         refuse
           ? `Esconderijo de ${this.hiderLabel()} recusado.`
-          : `${this.hiderLabel()} está ${hiddenWord(this.hiderLabel())}.`,
+          : `${this.hiderLabel()} está ${hiddenWord()}.`,
       );
     } catch (err) {
       this.error.set(combatErrorMessage(err, 'decidir o esconderijo'));

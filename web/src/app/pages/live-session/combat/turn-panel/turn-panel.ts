@@ -161,7 +161,7 @@ export class TurnPanel {
   protected readonly compact = computed(() => this.desktop() && this.banner().mine && !this.down());
   protected readonly banner = computed(() => turnBanner(this.encounter()));
   /** "Escondida" and "Surpresa": the state tags of the turn with the sentence under each (W7-X). */
-  protected readonly states = computed(() => contestNotes(this.contest(), this.own()?.label ?? ''));
+  protected readonly states = computed(() => contestNotes(this.contest()));
   protected readonly surprised = computed(() => this.contest()?.surprised === true);
   protected readonly endLabel = computed(() =>
     this.surprised() ? 'Passar o turno' : 'Encerrar turno',

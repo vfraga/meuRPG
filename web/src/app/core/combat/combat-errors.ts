@@ -199,7 +199,7 @@ const BLOCKED_TEXT: ReadonlyMap<EncounterBlockedReason, string> = new Map([
     EncounterBlockedReason.NOTHING_TO_UNDO,
     'Não há mais nada para desfazer: só a última ação pode ser desfeita.',
   ],
-  [EncounterBlockedReason.COMBATANT_DOWN, 'Quem está caído não age.'],
+  [EncounterBlockedReason.COMBATANT_DOWN, 'Com 0 PV, não age.'],
   [
     EncounterBlockedReason.REACTION_PENDING,
     'Uma reação ainda espera resposta. Espere a resposta ou responda no lugar de quem reage.',

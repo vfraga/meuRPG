@@ -96,19 +96,19 @@ export function signed(n: number): string {
   return n < 0 ? `−${Math.abs(n)}` : `+${n}`;
 }
 
-/** "o" or "a" for a person (Agarrado, Agarrada), by the name. */
+/** "o" or "a", by the name: only for the words that agree with a thing, never for a state label of a person. */
 function gendered(label: string, male: string, female: string): string {
   return article(label) === 'a' ? female : male;
 }
 
-/** "Agarrado" or "Agarrada". */
-export function grappledWord(label: string): string {
-  return gendered(label, 'Agarrado', 'Agarrada');
+/** The state label of a grappled creature: always "Agarrado", whoever it names. */
+export function grappledWord(): string {
+  return 'Agarrado';
 }
 
-/** "Derrubado" or "Derrubada". */
-export function proneWord(label: string): string {
-  return gendered(label, 'Derrubado', 'Derrubada');
+/** The state label of a prone creature: always "Derrubado", whoever it names. */
+export function proneWord(): string {
+  return 'Derrubado';
 }
 
 /** The size of a creature in words ("Médio"); '' when the server does not say. */
@@ -258,14 +258,12 @@ export function waitDetail(e: Encounter | null, contest: ContestView | undefined
     return (e ? reactionWait(e)?.detail : '') ?? '';
   }
   if (contest.deferred && defender) {
-    return `${defender.label} deixou o mestre rolar por ${pronoun(defender.label)}.`;
+    return `${defender.label} deixou o mestre rolar o teste.`;
   }
   if (!defender) {
     return 'O alvo escolhe Atletismo ou Acrobacia e rola.';
   }
-  const who = isPlayer(defender)
-    ? upFirst(pronoun(defender.label))
-    : upFirst(named(whoIs(defender)));
+  const who = isPlayer(defender) ? defender.label : upFirst(named(whoIs(defender)));
   return `${who} escolhe Atletismo ou Acrobacia e rola.`;
 }
 
@@ -311,7 +309,7 @@ export function initiatorVerdict(
       rest:
         c.purpose === ContestPurpose.SHOVE
           ? shoveDone(c, target)
-          : `${upFirst(the)} está ${grappledWord(target.label)}.`,
+          : `${upFirst(the)} está ${grappledWord()}.`,
       won: true,
     };
   }
@@ -326,7 +324,7 @@ function shoveDone(c: ContestView, target: Who): string {
   const the = named(target);
   switch (c.shoveOutcome) {
     case ShoveOutcome.PRONE:
-      return `${upFirst(the)} está ${proneWord(target.label)}.`;
+      return `${upFirst(the)} está ${proneWord()}.`;
     case ShoveOutcome.PUSH:
       return `Você empurrou ${the} 1,5 m.`;
     case ShoveOutcome.STAYS:
@@ -360,12 +358,8 @@ export function escapeIntro(grappler: Who, fixedDc: boolean): string {
     : `Você usa a ação. Escolha Atletismo ou Acrobacia: o teste é contra o Atletismo ${ofNamed(grappler)}.`;
 }
 
-/** What the defender reads when the contest is decided: "Você perdeu a disputa. O Hobgoblin agarrou você: você está Agarrada, com deslocamento 0." */
-export function defenderVerdict(
-  c: ContestView,
-  initiator: Who,
-  ownLabel: string,
-): InitiatorVerdict | null {
+/** What the defender reads when the contest is decided: "Você perdeu a disputa. O Hobgoblin agarrou você: você está Agarrado, com deslocamento 0." */
+export function defenderVerdict(c: ContestView, initiator: Who): InitiatorVerdict | null {
   const by = upFirst(named(initiator));
   if (c.status === ContestStatus.CLOSED) {
     return { lead: 'O mestre encerrou a disputa.', rest: '', won: true };
@@ -382,7 +376,7 @@ export function defenderVerdict(
       lead: 'Você perdeu a disputa.',
       rest: shove
         ? shoveAgainst(c, by)
-        : `${by} agarrou você: você está ${grappledWord(ownLabel)}, com deslocamento 0.`,
+        : `${by} agarrou você: você está ${grappledWord()}, com deslocamento 0.`,
       won: false,
     };
   }
@@ -408,30 +402,28 @@ function shoveAgainst(c: ContestView, by: string): string {
 export function pushLine(blocked: ShoveBlockedReason): string {
   switch (blocked) {
     case ShoveBlockedReason.WALL:
-      return 'Para longe de você. Há uma parede na casa de trás: ele não sai do lugar.';
+      return 'Para longe de você. Há uma parede na casa de trás: o alvo não sai do lugar.';
     case ShoveBlockedReason.CREATURE:
-      return 'Para longe de você. Há uma criatura na casa de trás: ele não sai do lugar.';
+      return 'Para longe de você. Há uma criatura na casa de trás: o alvo não sai do lugar.';
     default:
       return 'Para longe de você, em linha reta.';
   }
 }
 
-/** The line under "Derrubar": "O Hobgoblin fica Derrubado: só rasteja. Ataque corpo a corpo contra ele a até 1,5 m tem vantagem; de mais longe, desvantagem." */
+/** The line under "Derrubar": "O Hobgoblin fica Derrubado: só rasteja. Ataque corpo a corpo a até 1,5 m tem vantagem; de mais longe, desvantagem." */
 export function proneLine(target: Who): string {
   return tight(
-    `${upFirst(named(target))} fica ${proneWord(target.label)}: só rasteja. Ataque corpo a corpo contra ${pronoun(target.label)} a até 1,5 m tem vantagem; de mais longe, desvantagem.`,
+    `${upFirst(named(target))} fica ${proneWord()}: só rasteja. Ataque corpo a corpo a até 1,5 m tem vantagem; de mais longe, desvantagem.`,
   );
 }
 
-/** The sentence under the verdict of a won grapple: "Você o segura enquanto quiser (solte sem gastar ação). Se você se mover, leva-o junto, com o deslocamento pela metade." */
-export function holdLine(targetLabel: string): string {
-  const it = gendered(targetLabel, 'o', 'a');
-  return `Você ${it} segura enquanto quiser (solte sem gastar ação). Se você se mover, leva-${it} junto, com o deslocamento pela metade.`;
-}
+/** The sentence under the verdict of a won grapple. */
+export const HOLD_LINE =
+  'Você mantém o agarrão enquanto quiser (solte sem gastar ação). Se você se mover, leva a criatura junto, com o deslocamento pela metade.';
 
-/** "escondido" or "escondida", by the character's name. */
-export function hiddenWord(label: string): string {
-  return gendered(label, 'escondido', 'escondida');
+/** The state label of a hidden character: always "escondido", whoever it names. */
+export function hiddenWord(): string {
+  return 'escondido';
 }
 
 /** The master's refusal of a Hide as the sheet writes it: the part up to the colon is bold ("Alguém vê você claramente:"), the rest plain. */
@@ -442,7 +434,7 @@ export function refusalParts(text: string): { readonly lead: string; readonly re
     : { lead: text.slice(0, at + 1), rest: text.slice(at + 2) };
 }
 
-/** A state of the player's own turn: "Escondida" or "Surpresa", with the sentence under its tag. */
+/** A state of the player's own turn: "Escondido" or "Surpresa", with the sentence under its tag. */
 export interface ContestNote {
   readonly tag: string;
   readonly icon: string;
@@ -450,27 +442,23 @@ export interface ContestNote {
   readonly text: string;
 }
 
-/** The tags the turn shows for what `contest_state` says: hidden ("Você está escondida.", never from whom) and surprised. */
-export function contestNotes(
-  state: ContestTurnState | undefined,
-  ownLabel: string,
-): readonly ContestNote[] {
+/** The tags the turn shows for what `contest_state` says: hidden ("Você está escondido.", never from whom) and surprised. */
+export function contestNotes(state: ContestTurnState | undefined): readonly ContestNote[] {
   const notes: ContestNote[] = [];
   if (state?.hidden) {
     notes.push({
-      tag: upFirst(hiddenWord(ownLabel)),
+      tag: upFirst(hiddenWord()),
       icon: 'visibility',
       tone: 'success',
-      text: `Você está ${hiddenWord(ownLabel)}.`,
+      text: `Você está ${hiddenWord()}.`,
     });
   }
   if (state?.surprised) {
-    const word = gendered(ownLabel, 'surpreso', 'surpresa');
     notes.push({
       tag: 'Surpresa',
       icon: 'bolt',
       tone: 'pending',
-      text: `Você está ${word} neste turno. Você não se move, não age e não reage até o fim dele.`,
+      text: 'Surpresa neste turno: você não se move, não age e não reage até o fim do turno.',
     });
   }
   return notes;

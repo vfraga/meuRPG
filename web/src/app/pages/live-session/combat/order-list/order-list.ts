@@ -96,7 +96,7 @@ function concentrationOf(c: Combatant): string {
  * every row has "Condições…" (E6-29); under the name stand the condition tags
  * and the spell it concentrates on, and a character at 0 hit points shows its
  * word ("Caído", "Estável", "Morrendo · 3 falhas" on the danger surface, "✕
- * Morta") and the marks of its death saves (E6-30).
+ * Morto") and the marks of its death saves (E6-30).
  */
 @Component({
   selector: 'app-order-list',

@@ -10,12 +10,17 @@ import {
   MountSavePromptSchema,
   MountSaveResultSchema,
 } from '../../../../../gen/meurpg/play/v1/combat_pb';
+import {
+  ResourceBlockedReason,
+  ResourceBlockedSchema,
+} from '../../../../../gen/meurpg/play/v1/resources_pb';
 import { RollMode } from '../../../../../gen/meurpg/play/v1/combat_rolls_pb';
 import { CombatClient } from '../../../../core/combat/combat-client';
 import { fakeCombatClient } from '../../../../core/combat/combat-client-testing';
 import { CombatState } from '../../../../core/combat/combat-state';
 import { combatant, encounter } from '../../../../core/combat/combat-testing';
 import { askedAt, heldAnswer, heldLucky } from '../../../../core/held-rolls/held-roll-testing';
+import { MASTER_TOO_EARLY_REASON } from '../../../../core/held-rolls/held-roll-errors';
 import { ResourceClient } from '../../../../core/resources/resources-client';
 import { MountSaveSheet, type MountSaveSheetData } from './mount-save-sheet';
 
@@ -395,6 +400,42 @@ describe('MountSaveSheet', () => {
       await flush(fixture);
       expect(el.querySelector('.wait')).toBeNull();
       expect(button(el, 'Rolar de novo').getAttribute('aria-disabled')).not.toBe('true');
+    });
+
+    it('pauses the buttons a little after the server refuses the master as too early, then gives them back', async () => {
+      vi.useFakeTimers({ toFake: ['setInterval', 'Date'] });
+      // The generated enum has no value for this reason yet: the spec adds one to its reverse map, as the new enum would carry it.
+      const tooEarly = 9999;
+      const names = ResourceBlockedReason as unknown as Record<number, string>;
+      names[tooEarly] = MASTER_TOO_EARLY_REASON;
+      try {
+        // The roller's ten seconds are long past by the clock of this screen, but the server's clock says otherwise.
+        const { fixture, el } = setup(
+          prompt(),
+          { byMaster: true },
+          heldLucky([1], 1, { rollerLabel: 'Tor', ...askedAt(Date.now() - 60_000) }),
+        );
+        await flush(fixture);
+        expect(el.querySelector('.wait')).toBeNull();
+        resources.answerHeldRoll.mockRejectedValue(
+          new ConnectError('x', Code.FailedPrecondition, undefined, [
+            {
+              desc: ResourceBlockedSchema,
+              value: create(ResourceBlockedSchema, { reason: tooEarly as ResourceBlockedReason }),
+            },
+          ]),
+        );
+        button(el, 'Rolar de novo').click();
+        await flush(fixture);
+        expect(button(el, 'Rolar de novo').getAttribute('aria-disabled')).toBe('true');
+        expect(plain(el.querySelector('.wait')?.textContent)).toContain('Tor responde primeiro.');
+        vi.advanceTimersByTime(2_000);
+        await flush(fixture);
+        expect(el.querySelector('.wait')).toBeNull();
+        expect(button(el, 'Rolar de novo').getAttribute('aria-disabled')).not.toBe('true');
+      } finally {
+        delete names[tooEarly];
+      }
     });
 
     it("never makes the rider's own player wait", async () => {

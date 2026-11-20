@@ -28,9 +28,9 @@ describe('TurnPanel: Escondida and Surpresa (W7-X)', () => {
   it('says "Escondida" with the sentence, never from whom (board W7-Xc 8b)', () => {
     const el = panel('Brisa', { hidden: true });
     const tag = el.querySelector('.turn__state .mr-tag');
-    expect(textOf(tag!)).toBe('Escondida');
+    expect(textOf(tag!)).toBe('Escondido');
     expect(tag?.classList).toContain('mr-tag--success');
-    expect(textOf(el.querySelector('.turn__state')!)).toBe('Escondida Você está escondida.');
+    expect(textOf(el.querySelector('.turn__state')!)).toBe('Escondido Você está escondido.');
     expect(textOf(el)).not.toMatch(/Percepção|notou|vê claramente/);
   });
 
@@ -43,7 +43,7 @@ describe('TurnPanel: Escondida and Surpresa (W7-X)', () => {
   it('says "Surpresa" with what it means for the turn (board W7-Xc 11)', () => {
     const el = panel('Nael', { surprised: true });
     expect(textOf(el.querySelector('.turn__state')!)).toBe(
-      'Surpresa Você está surpreso neste turno. Você não se move, não age e não reage até o fim dele.',
+      'Surpresa Surpresa neste turno: você não se move, não age e não reage até o fim do turno.',
     );
   });
 

@@ -266,7 +266,7 @@ describe('ContestAnswerSheet (board W7-Xb 4)', () => {
     );
     fixture.detectChanges();
     await settle();
-    expect(text()).toContain('Esperando o mestre. O mestre rola por ela.');
+    expect(text()).toContain('Esperando o mestre. O mestre rola por você.');
     expect(button('Fechar a folha')).toBeTruthy();
     button('Fechar a folha')!.click();
     expect(close).toHaveBeenCalledWith({ contestId: 'ct1' });
@@ -294,7 +294,7 @@ describe('ContestAnswerSheet (board W7-Xb 4)', () => {
     expect(el.querySelector('.roll__total')?.textContent).toBe('15');
     expect(textOf(el.querySelector('.roll__formula')!)).toBe('1d20 (8) + 7 · Acrobacia');
     expect(text()).toContain(
-      'Você perdeu a disputa. O Hobgoblin agarrou você: você está Agarrada, com deslocamento 0.',
+      'Você perdeu a disputa. O Hobgoblin agarrou você: você está Agarrado, com deslocamento 0.',
     );
     expect(document.activeElement?.textContent).toContain('Fechar');
   });

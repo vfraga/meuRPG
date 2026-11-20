@@ -361,7 +361,7 @@ export class ContestCard {
       this.contests().applyContest(res.contest);
       this.said.emit(
         outcome === ShoveOutcome.PRONE
-          ? `${upFirst(this.targetName())} ficou ${proneWord(this.defenderLabel())}.`
+          ? `${upFirst(this.targetName())} ficou ${proneWord()}.`
           : outcome === ShoveOutcome.PUSH
             ? `${upFirst(this.targetName())} foi empurrado 1,5 m.`
             : `${upFirst(this.targetName())} não saiu do lugar.`,

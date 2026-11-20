@@ -26,7 +26,6 @@ import {
   type XPAward,
 } from '../../../../../gen/meurpg/progression/v1/progression_pb';
 import { newKey } from '../../../../core/connect/idempotency';
-import { article } from '../../../../core/combat/combat-log';
 import { groupLabel } from '../../../../core/combat/monsters';
 import { isDown, isPlayer, stateWord } from '../../../../core/combat/combat-view';
 import { isCreature } from '../../../../core/combat/creature-names';
@@ -206,7 +205,6 @@ export class CombatXp {
     this.people().map(({ c, row }) => {
       const on = this.checked().has(c.characterId);
       const dead = c.state === CombatantState.DEAD || !row;
-      const feminine = article(c.label) === 'a';
       const classLine = this.info().get(c.characterId)?.classSummary || '';
       return {
         id: c.characterId,
@@ -225,9 +223,7 @@ export class CombatXp {
         note: dead
           ? 'Morreu: não recebe XP.'
           : on && isDown(c)
-            ? feminine
-              ? 'Está viva, então recebe a parte dela.'
-              : 'Está vivo, então recebe a parte dele.'
+            ? 'Ainda de pé: recebe a sua parte.'
             : undefined,
       };
     }),

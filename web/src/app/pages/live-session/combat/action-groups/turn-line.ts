@@ -35,7 +35,7 @@ export function movementOf(
   const left = own.movementLeftFt;
   if (grappled) {
     // Grappled: the speed is 0 (SRD 5.1, Conditions), and the line says why.
-    return { left: 0, pill: 'Sem movimento', text: `Indisponível: ${grappledWord(own.label)}.` };
+    return { left: 0, pill: 'Sem movimento', text: `Indisponível: ${grappledWord()}.` };
   }
   // Tenths of a foot, metres with one decimal ("Restam 6,9 m").
   const leftM = metersFixed(own.movementLeftDft / 10);

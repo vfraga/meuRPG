@@ -169,7 +169,7 @@ describe('ActionGroups: the special attacks, escape and the states of the turn (
         label: 'Brisa',
       });
       expect(textOf(el.querySelector('[data-testid="hidden-note"]')!)).toBe(
-        'Atacar de onde você está escondida dá vantagem ao ataque. Depois do ataque, acertando ou errando, você deixa de estar escondida para todos.',
+        'Atacar de onde você está escondido dá vantagem ao ataque. Depois do ataque, acertando ou errando, você deixa de estar escondido para todos.',
       );
     });
 

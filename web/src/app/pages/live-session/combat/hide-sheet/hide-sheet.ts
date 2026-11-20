@@ -91,7 +91,7 @@ export function openHideSheet(
 /**
  * "Esconder-se" (W7-X, board W7-Xc 8): a Dexterity (Stealth) check, with the action or, for the rogue's Cunning Action, the
  * bonus action. The roll waits for the master, who says whether there is somewhere to hide and what each creature notices; the
- * player reads only "Você está escondida." (never who noticed, never a Perception, RN-10 and RN-20) or the master's refusal, and
+ * player reads only "Você está escondido." (never who noticed, never a Perception, RN-10 and RN-20) or the master's refusal, and
  * the action is spent either way. It reads the attempt the page keeps; "Fechar a folha" only hides it, and the page brings it
  * back with the master's answer.
  */
@@ -171,7 +171,7 @@ export class HideSheet {
   protected readonly status = computed(() => this.attempt()?.status);
   protected readonly Pending = HideAttemptStatus.PENDING;
   protected readonly Applied = HideAttemptStatus.APPLIED;
-  protected readonly hidden = computed(() => hiddenWord(this.own()?.label ?? ''));
+  protected readonly hidden = computed(() => hiddenWord());
   protected readonly refusal = computed(() => refusalParts(this.attempt()?.refusal ?? ''));
 
   constructor() {

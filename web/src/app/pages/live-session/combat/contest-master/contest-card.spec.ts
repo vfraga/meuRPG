@@ -228,7 +228,7 @@ describe('ContestCard, the master answers a contest', () => {
           answerOptions: [answerOptions[1]],
         }),
       );
-      expect(textOf(el)).toContain('Brisa deixou o mestre rolar por ela.');
+      expect(textOf(el)).toContain('Brisa deixou o mestre rolar o teste.');
       expect(el.querySelector('input[type="radio"]')).toBeNull();
       expect(button('Rolar por Brisa')).toBeTruthy();
     });
@@ -255,7 +255,7 @@ describe('ContestCard, the master answers a contest', () => {
       const text = textOf(el);
       expect(textOf(el.querySelector('h2')!)).toBe('Hobgoblin tenta empurrar Brisa');
       expect(text).toContain('Hobgoblin vence a disputa. Escolha o que fazer com Brisa.');
-      expect(text).toContain('Derrubar Brisa fica Derrubada: só rasteja.');
+      expect(text).toContain('Derrubar Brisa fica Derrubado: só rasteja.');
       expect(text).toContain('Empurrar 1,5 m Para longe do Hobgoblin, em linha reta.');
       expect(button('Confirmar')).toBeTruthy();
     });
@@ -267,7 +267,7 @@ describe('ContestCard, the master answers a contest', () => {
       expect(api.shoves).toEqual([
         { contestId: 'ct1', outcome: ShoveOutcome.PRONE, key: expect.any(String) },
       ]);
-      expect(said).toEqual(['Brisa ficou Derrubada.']);
+      expect(said).toEqual(['Brisa ficou Derrubado.']);
     });
 
     it('pushes, and a blocked square says why and sends "não sai do lugar"', async () => {
@@ -280,7 +280,7 @@ describe('ContestCard, the master answers a contest', () => {
       TestBed.resetTestingModule();
       const blocked = setup(won({ pushAvailable: false, pushBlocked: ShoveBlockedReason.WALL }));
       expect(textOf(blocked.el)).toContain(
-        'Para longe do Hobgoblin. Há uma parede na casa de trás: ele não sai do lugar.',
+        'Para longe do Hobgoblin. Há uma parede na casa de trás: o alvo não sai do lugar.',
       );
       blocked.el.querySelectorAll<HTMLInputElement>('input[type="radio"]')[1].click();
       await blocked.settle();

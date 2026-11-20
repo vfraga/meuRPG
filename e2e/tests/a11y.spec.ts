@@ -12221,7 +12221,7 @@ async function scanGroupCheckScreens(browser: Browser, colorScheme: 'light' | 'd
       enc = await combatRPC(m, 'MoveCombatant', { campaignId, encounterId: enc.id, combatantId: idOf(enc, label), col, row });
     }
     await combatRPC(m, 'BeginCombat', { campaignId, encounterId: enc.id });
-    await expect(p.getByText(/Você está surpres[oa] neste turno/)).toBeVisible();
+    await expect(p.getByText(/Surpresa neste turno/)).toBeVisible();
     await expectScreenPasses(p, `A surpresa do jogador ${where}`);
   } finally {
     if (campaignId) {
