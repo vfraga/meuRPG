@@ -517,3 +517,39 @@ func TestAChoiceOverTwoKeysWithOneHeldApartAsksOne(t *testing.T) {
 		t.Errorf("with the language picked: the choice misses %d, the sheet %d; want none", m, missingIssues(Derive(b, c)))
 	}
 }
+
+// The choices and the save read the same baseline: a pick that repeats another source and that the stored sheet does not hold
+// (none, on a create) is unmet on the screen and missing, as the save refuses it; a pick the stored sheet holds stays.
+func TestTheChoicesAreReadAgainstTheStoredSheetAsTheSaveIs(t *testing.T) {
+	t.Parallel()
+	alt := Effect{Type: "choice", Choice: choiceAlternatives, Count: 1, Alternatives: skillOrLanguage.Alternatives}
+	c := withOverlayOn(t, loadForTest(t), filterBackgroundWith(alt))
+	dwarf := altBuild(altStored(alt, "language:dwarvish"))
+	dwarf.Race = "race:dwarf" // the player changed the race after picking the language
+	human := altBuild(altStored(alt, "language:dwarvish"))
+	rows := []struct {
+		name   string
+		stored *Build
+		refuse bool
+	}{
+		{"a create", nil, true},
+		{"an update whose stored sheet holds the pick", &human, false},
+		{"an update whose stored sheet does not hold the pick", &Build{}, true},
+	}
+	for _, r := range rows {
+		t.Run(r.name, func(t *testing.T) {
+			t.Parallel()
+			set := c.ChoicesAgainst(r.stored, dwarf)
+			ch := choiceOf(t, set, altKey(alt))
+			if got := slices.Contains(ch.Unmet, "language:dwarvish"); got != r.refuse {
+				t.Errorf("unmet = %v, want %v", got, r.refuse)
+			}
+			if got := ch.Missing() > 0; got != r.refuse {
+				t.Errorf("missing = %d, want it only when the save refuses", ch.Missing())
+			}
+			if _, _, found := c.NewDuplicateAlternativePick(r.stored, dwarf); found != r.refuse {
+				t.Errorf("the save refuses = %v, want %v", found, r.refuse)
+			}
+		})
+	}
+}

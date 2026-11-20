@@ -20,7 +20,7 @@ import (
 func skillOrLanguageEffect() *rulesv1.TableEffect {
 	return &rulesv1.TableEffect{Type: "choice", Choice: "alternatives", Count: 1, Alternatives: []*rulesv1.ChoiceAlternative{
 		{Kind: "skill", From: []string{"skill:stealth", "skill:persuasion"}},
-		{Kind: "language", From: []string{"language:dwarvish", "language:giant"}},
+		{Kind: "language", From: []string{"language:dwarvish", "language:elvish", "language:giant"}},
 	}}
 }
 
@@ -42,7 +42,7 @@ func newAlternativesFlow(t *testing.T) *alternativesFlow {
 	f.owner = f.master.entries(t, f.campaign)[f.class.GetKey()].GetTableClass().GetLevels()[1].GetFeatures()[0].GetKey()
 	f.key = rules.AlternativesKey(f.owner, &rules.Effect{Count: 1, Alternatives: []rules.ChoiceAlternative{
 		{Kind: "skill", From: []string{"skill:stealth", "skill:persuasion"}},
-		{Kind: "language", From: []string{"language:dwarvish", "language:giant"}},
+		{Kind: "language", From: []string{"language:dwarvish", "language:elvish", "language:giant"}},
 	}})
 	return f
 }
@@ -85,7 +85,7 @@ func TestAChoiceOfAlternativesIsAskedAsOneChoiceOfBothKinds(t *testing.T) {
 	if ch == nil {
 		t.Fatal("the choice is not asked")
 	}
-	if got, want := optionKeysOf(ch), []string{"language:dwarvish", "language:giant", "skill:persuasion", "skill:stealth"}; !slices.Equal(got, want) || ch.GetPicks() != 1 {
+	if got, want := optionKeysOf(ch), []string{"language:dwarvish", "language:elvish", "language:giant", "skill:persuasion", "skill:stealth"}; !slices.Equal(got, want) || ch.GetPicks() != 1 {
 		t.Errorf("options %v for %d picks, want %v for 1", got, ch.GetPicks(), want)
 	}
 	for _, o := range ch.GetOptions() {
@@ -124,7 +124,7 @@ func TestAnUpdateWithAPickNoAlternativeOffersIsRefusedAsAKeyThatDoesNotExist(t *
 	f := newAlternativesFlow(t)
 	pc := f.davi.create(t, f.campaign, charactersv1.CharacterKind_CHARACTER_KIND_PLAYER, "Ícaro", f.sheet(2, "skill:stealth"))
 	var messages []string
-	for _, bad := range []string{"skill:arcana", "language:elvish", "skill:nao-existe"} {
+	for _, bad := range []string{"skill:arcana", "language:abyssal", "skill:nao-existe"} {
 		_, err := f.davi.update(t, pc, "Ícaro", f.sheet(2, bad))
 		ce, ok := errors.AsType[*connect.Error](err)
 		if !ok || ce.Code() != connect.CodeInvalidArgument {
@@ -153,8 +153,8 @@ func TestALevelUpOffersAndTakesAChoiceOfAlternatives(t *testing.T) {
 			}
 		}
 	}
-	if offered == nil || len(offered.GetOptions()) != 4 {
-		t.Fatalf("the level-up offers %v, want the choice with its four options", offered)
+	if offered == nil || len(offered.GetOptions()) != 5 {
+		t.Fatalf("the level-up offers %v, want the choice with its five options", offered)
 	}
 	up := func(picks ...string) (*charactersv1.LevelUpCharacterResponse, error) {
 		ch := &charactersv1.LevelUpChoices{ClassKey: f.class.GetKey(), HitPoints: &charactersv1.LevelUpHitPoints{Method: charactersv1.LevelUpHitPointsMethod_LEVEL_UP_HIT_POINTS_METHOD_AVERAGE}}
@@ -286,5 +286,64 @@ func TestANewPickOfWhatAnotherSourceGivesIsRefused(t *testing.T) {
 		CampaignId: f.campaign, Kind: charactersv1.CharacterKind_CHARACTER_KIND_PLAYER, Name: "Ícaro", Sheet: repeating("language:giant"),
 	})); err != nil {
 		t.Errorf("the pick of a language: error = %v", err)
+	}
+}
+
+// repeating is Ícaro whose custom background gives stealth and elvish, with the pick; the sheet has the skill and the language
+// from another source whatever the choice does.
+func (f *alternativesFlow) repeating(level int32, pick string) *charactersv1.CharacterSheet {
+	s := f.sheet(level, pick)
+	s.GetFull().GetCustomBackground().SkillKeys = []string{"skill:stealth", "skill:survival"}
+	return s
+}
+
+func (f *alternativesFlow) previewChoices(t *testing.T, id string, sheet *charactersv1.CharacterSheet) error {
+	t.Helper()
+	_, err := f.davi.api.PreviewChoices(t.Context(), connect.NewRequest(&charactersv1.PreviewChoicesRequest{
+		CampaignId: f.campaign, CharacterId: id, Kind: charactersv1.CharacterKind_CHARACTER_KIND_PLAYER, Sheet: sheet,
+	}))
+	return err
+}
+
+func repeatedField(err error) string {
+	if ce, ok := errors.AsType[*connect.Error](err); ok && ce.Code() == connect.CodeInvalidArgument && strings.Contains(ce.Message(), "feature_choice_keys") {
+		return ce.Message()
+	}
+	return ""
+}
+
+// The choices screen and the save read the same baseline: a repeated pick that the stored sheet does not hold (none, on a
+// create) is refused by the screen's preview as by the save, with the same answer; one the stored sheet holds is fine in both.
+// (The unmet pick of a screen that is not refused, the locked sheet's, is the rules row TestTheChoicesAreReadAgainstTheStoredSheetAsTheSaveIs.)
+func TestTheChoicesScreenAndTheSaveAgreeOnARepeatedAlternativePick(t *testing.T) {
+	t.Parallel()
+	f := newAlternativesFlow(t)
+	pick := "skill:stealth"
+	_, createErr := f.davi.api.CreateCharacter(t.Context(), connect.NewRequest(&charactersv1.CreateCharacterRequest{
+		CampaignId: f.campaign, Kind: charactersv1.CharacterKind_CHARACTER_KIND_PLAYER, Name: "Ícaro", Sheet: f.repeating(2, pick),
+	}))
+	screen := f.previewChoices(t, "", f.repeating(2, pick))
+	if repeatedField(createErr) == "" || repeatedField(screen) != repeatedField(createErr) {
+		t.Errorf("a create: the save answers %v, the screen %v; want the same refusal", createErr, screen)
+	}
+
+	other := f.davi.create(t, f.campaign, charactersv1.CharacterKind_CHARACTER_KIND_PLAYER, "Ícaro", f.sheet(2, "language:giant"))
+	_, updateErr := f.davi.update(t, other, "Ícaro", f.repeating(2, pick))
+	screen = f.previewChoices(t, other.GetId(), f.repeating(2, pick))
+	if repeatedField(updateErr) == "" || repeatedField(screen) != repeatedField(updateErr) {
+		t.Errorf("an update that adds it: the save answers %v, the screen %v; want the same refusal", updateErr, screen)
+	}
+}
+
+// A pick the stored sheet holds stays when the sheet then has the same thing from another source.
+func TestAHeldAlternativePickStaysOnTheScreenAndInTheSave(t *testing.T) {
+	t.Parallel()
+	f := newAlternativesFlow(t)
+	held := f.davi.create(t, f.campaign, charactersv1.CharacterKind_CHARACTER_KIND_PLAYER, "Ícaro", f.sheet(2, "skill:stealth"))
+	if err := f.previewChoices(t, held.GetId(), f.repeating(2, "skill:stealth")); err != nil {
+		t.Errorf("the screen: %v", err)
+	}
+	if _, err := f.davi.update(t, held, "Ícaro", f.repeating(2, "skill:stealth")); err != nil {
+		t.Errorf("the update of the held pick: %v", err)
 	}
 }

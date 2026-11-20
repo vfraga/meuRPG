@@ -76,7 +76,15 @@ func (s *Service) PreviewChoices(
 		return nil, invalidArgument(fieldErr("sheet.full", "is required: a basic sheet has no choices"))
 	}
 	build := buildOf(full)
-	res := choicesToProto(viewContent(content, m), build)
+	// The picks are read against the stored sheet, as the save reads them; a draft has none.
+	var stored *rules.Build
+	if id, ok := uid.Canonical(req.Msg.GetCharacterId()); ok {
+		if was := s.storedSheetOf(ctx, m, id)(); was != nil {
+			b := buildOf(was)
+			stored = &b
+		}
+	}
+	res := choicesToProto(viewContent(content, m), stored, build)
 	if len(notOffered) > 0 {
 		res.NotOffered = slices.Compact(slices.Sorted(slices.Values(append(res.NotOffered, notOffered...))))
 	}
@@ -137,8 +145,8 @@ func (s *Service) sheetForChoices(ctx context.Context, m authz.Membership, conte
 
 // choicesToProto answers every choice of a build, and where its spell pickers find the
 // spells outside the class list.
-func choicesToProto(content *rules.Content, b rules.Build) *charactersv1.PreviewChoicesResponse {
-	set := content.Choices(b)
+func choicesToProto(content *rules.Content, stored *rules.Build, b rules.Build) *charactersv1.PreviewChoicesResponse {
+	set := content.ChoicesAgainst(stored, b)
 	done, total := set.Counts()
 	res := &charactersv1.PreviewChoicesResponse{Done: i32(done), Total: i32(total), NotOffered: set.NotOffered}
 	skills, expertise := content.PickLists(b)

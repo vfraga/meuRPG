@@ -410,15 +410,25 @@ func (cb *choiceBuilder) alternativeChoiceOptions(e *Effect, key string) (option
 				continue
 			}
 			o := ChoiceOption{Key: k, Stored: ScopedChoice(key, k), NamePT: cb.c.alternativeOptionName(k), SummaryPT: alternativeKindNames[a.Kind] + "."}
-			if slices.Contains(cb.scoped[key], k) {
+			switch {
+			case slices.Contains(cb.scoped[key], k) && !cb.repeatsNewly(key, k):
 				held = append(held, k) // a pick the sheet holds stays, though another source gives it too
-			} else if cb.deriver().heldApart(k) {
+			case cb.deriver().heldApart(k):
 				blockOption(&o, "Você já tem isto.")
 			}
 			options = append(options, o)
 		}
 	}
 	return options, held
+}
+
+// repeatsNewly says the pick is one the save refuses: the choices are read against a stored sheet that does not hold it, and
+// another source gives the sheet what it names.
+func (cb *choiceBuilder) repeatsNewly(key, value string) bool {
+	if !cb.against || (cb.stored != nil && slices.Contains(cb.stored.FeatureChoices, ScopedChoice(key, value))) {
+		return false
+	}
+	return cb.deriver().heldApart(value)
 }
 
 // alternativeChoices adds the choices of alternatives that owner asks (and lists in g): one choice whose options are the
@@ -433,6 +443,7 @@ func (cb *choiceBuilder) alternativeChoices(g *groupBuild, owner string) {
 		}
 		ch := cb.addChoice(g, &Choice{Key: key, FeatureKey: owner, Kind: ChoiceKindOptions, TitlePT: alternativesTitle(e), HintPT: hint, Picks: cb.deriver().alternativeRequired(e, held), family: familyAlternativePick, Options: options})
 		cb.takeScoped(ch)
+		unmeetBlockedPicks(ch)
 	}
 }
 

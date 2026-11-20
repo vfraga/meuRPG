@@ -394,6 +394,9 @@ type choiceBuilder struct {
 
 	derived *Derived
 	dx      *deriver
+	// stored is the stored sheet the picks are compared with, when against says the choices are read against it.
+	stored  *Build
+	against bool
 	// typedLanguages and typedTools count the entries of the free fields that earlier choices took as answers.
 	typedLanguages, typedTools int
 	// legacyTaken counts the surplus cantrips choices already claimed.
@@ -402,10 +405,18 @@ type choiceBuilder struct {
 	keptOut []string
 }
 
-func (c *content) choiceSet(b Build) ChoiceSet {
+func (c *content) choiceSet(b Build) ChoiceSet { return c.choiceSetAgainst(b, nil, false) }
+
+// ChoicesAgainst is Choices of the new sheet b read against the stored sheet (nil for a character that does not exist yet): a
+// pick of a choice of alternatives that repeats what another source gives the sheet, and that the stored sheet does not hold, is
+// unmet and counts as missing, as the save refuses it. A pick the stored sheet holds stays.
+func (c *Content) ChoicesAgainst(stored *Build, b Build) ChoiceSet { return c.c.choiceSetAgainst(b, stored, true) }
+
+// choiceSetAgainst is choiceSet, with the stored sheet the picks are compared with when against says so.
+func (c *content) choiceSetAgainst(b Build, stored *Build, against bool) ChoiceSet {
 	x := &deriver{b: b, c: c, d: &Derived{}, proficient: map[string]bool{}, conditions: map[*Effect]bool{}}
 	x.resolve()
-	cb := &choiceBuilder{c: c, b: b, x: x, scoped: map[string][]string{}, used: map[string]bool{}, groups: map[string]*groupBuild{}}
+	cb := &choiceBuilder{c: c, b: b, x: x, scoped: map[string][]string{}, used: map[string]bool{}, groups: map[string]*groupBuild{}, stored: stored, against: against}
 	for _, k := range b.FeatureChoices {
 		if choiceKey, value, ok := SplitScopedChoice(k); ok {
 			if !slices.Contains(cb.scoped[choiceKey], value) {
