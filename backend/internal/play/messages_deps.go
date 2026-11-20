@@ -57,7 +57,7 @@ type messageDeps struct {
 	// gate lets one voice be made at a time on this server, so the daily count and the call to the
 	// model take turns; flights makes a second request for the same line wait for the first, and stops the work when the last reader leaves.
 	gate    sync.Mutex
-	flights voiceFlights
+	flights voice.Flights
 }
 
 func newMessageDeps(cfg MessagesConfig) *messageDeps {

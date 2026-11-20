@@ -14,6 +14,7 @@ import (
 	"github.com/PuraFome/meuRPG/backend/internal/platform/conv"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/dice"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/idem"
+	"github.com/PuraFome/meuRPG/backend/internal/play/against"
 	"github.com/PuraFome/meuRPG/backend/internal/play/link"
 	"github.com/PuraFome/meuRPG/backend/internal/play/playdb"
 	"github.com/PuraFome/meuRPG/backend/internal/rules"
@@ -423,11 +424,11 @@ func (s *Service) readEffectSaveFacts(ctx context.Context, c *combatTx, x *effec
 		return f, err
 	}
 	f.creature = sun.facts(creatureFacts(x.reactor, f.states, f.sheet.Traits), x.reactor)
-	against := effectSaveAgainst(conv.OrZero(x.st.SourceKey), x.def)
+	kinds := against.EffectSave(conv.OrZero(x.st.SourceKey), x.def)
 	if x.zone != nil { // a zone is a spell's: its save is against magic and what the spell imposes
-		against = effectAgainst(x.zone.z.row.SpellKey, nil)
+		kinds = against.Effect(x.zone.z.row.SpellKey, nil)
 	}
-	sources := combat.SaveMode(combat.SaveScene{Creature: f.creature, Ability: x.ability, EffectVisible: true, Against: against})
+	sources := combat.SaveMode(combat.SaveScene{Creature: f.creature, Ability: x.ability, EffectVisible: true, Against: kinds})
 	if x.t.OnDamage { // Riso Histérico: advantage on the save the damage asks (SRD)
 		sources = append(sources, combat.Source{Kind: combat.SourceEffectSave, Effect: combat.ModeAdvantage})
 	}

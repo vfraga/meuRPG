@@ -5,6 +5,7 @@ import (
 
 	playv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/play/v1"
 	"github.com/PuraFome/meuRPG/backend/internal/play/advantage"
+	"github.com/PuraFome/meuRPG/backend/internal/play/against"
 	"github.com/PuraFome/meuRPG/backend/internal/play/link"
 	"github.com/PuraFome/meuRPG/backend/internal/play/playdb"
 	"github.com/PuraFome/meuRPG/backend/internal/rules/combat"
@@ -40,7 +41,7 @@ func TestMagicResistanceReachesTheSaveOfASpellNotOfABreath(t *testing.T) {
 		"a spell":  {link.Spell{Key: "spell:burning-hands"}, combat.ModeAdvantage},
 		"a breath": {link.Spell{Key: "spell:burning-hands", Nonmagical: true}, combat.ModeNormal},
 	} {
-		got := combat.Resolve(combat.SaveMode(combat.SaveScene{Creature: facts, Ability: "dex", EffectVisible: true, Against: spellAgainst(tc.spell)}))
+		got := combat.Resolve(combat.SaveMode(combat.SaveScene{Creature: facts, Ability: "dex", EffectVisible: true, Against: against.Spell(tc.spell)}))
 		if got != tc.want {
 			t.Errorf("%s: mode = %v, want %v", name, got, tc.want)
 		}

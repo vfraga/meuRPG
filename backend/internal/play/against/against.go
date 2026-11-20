@@ -1,4 +1,6 @@
-package play
+// Package against holds what a saving throw is against (a kind of source: magic, poison, charm, fear) that needs no store, no
+// transport and no Service: play asks it for the kinds of a spell, of an effect that lasts and of a trap.
+package against
 
 import (
 	"slices"
@@ -62,32 +64,32 @@ func conditionsAgainst(keys []string) []string {
 
 // withConditions adds to what a save is against the conditions it can give, by their keys
 // ("condition:frightened"): a table's roll mode against a condition (any of the 15) holds on these.
-func withSaveConditions(against, conditions []string) []string {
+func WithSaveConditions(against, conditions []string) []string {
 	return withAgainst(slices.Clone(against), conditions...)
 }
 
-// effectSaveAgainst is what the saving throw of an effect that lasts is against: effectAgainst and the
+// EffectSave is what the saving throw of an effect that lasts is against: Effect and the
 // conditions the effect gives.
-func effectSaveAgainst(key string, def *rules.EffectDef) []string {
-	against := effectAgainst(key, def)
+func EffectSave(key string, def *rules.EffectDef) []string {
+	against := Effect(key, def)
 	if def == nil {
 		return against
 	}
-	return withSaveConditions(against, def.Conditions)
+	return WithSaveConditions(against, def.Conditions)
 }
 
-// trapSaveAgainst is what the saving throw of a trap is against: trapAgainst and the conditions it gives.
-func trapSaveAgainst(effect *rulesv1.TrapEffect) []string {
+// TrapSave is what the saving throw of a trap is against: Trap and the conditions it gives.
+func TrapSave(effect *rulesv1.TrapEffect) []string {
 	var conditions []string
 	for _, c := range effect.GetConditions() {
 		conditions = append(conditions, c.GetConditionKey())
 	}
-	return withSaveConditions(trapAgainst(effect), conditions)
+	return WithSaveConditions(Trap(effect), conditions)
 }
 
-// spellAgainst is what the saving throw against a spell is against: magic, poison when it deals poison damage, and
+// Spell is what the saving throw against a spell is against: magic, poison when it deals poison damage, and
 // charm or fear when it is one of the spells that charm or frighten.
-func spellAgainst(sp link.Spell) []string {
+func Spell(sp link.Spell) []string {
 	var out []string
 	if !sp.Nonmagical { // a creature's breath or claws is no magic
 		out = withAgainst(out, combat.AgainstMagic)
@@ -99,9 +101,9 @@ func spellAgainst(sp link.Spell) []string {
 	return out
 }
 
-// effectAgainst is what the saving throw an effect that lasts asks is against: magic for a spell's, and what the
+// Effect is what the saving throw an effect that lasts asks is against: magic for a spell's, and what the
 // effect gives (a condition) or its spell imposes.
-func effectAgainst(key string, def *rules.EffectDef) []string {
+func Effect(key string, def *rules.EffectDef) []string {
 	var out []string
 	if strings.HasPrefix(key, "spell:") {
 		out = withAgainst(out, combat.AgainstMagic)
@@ -113,10 +115,10 @@ func effectAgainst(key string, def *rules.EffectDef) []string {
 	return out
 }
 
-// trapAgainst is what the saving throw of a trap is against: poison when it deals poison damage or gives the
+// Trap is what the saving throw of a trap is against: poison when it deals poison damage or gives the
 // poisoned condition, charm or fear when it gives them. A trap carries no mark of being magic, so Gnome Cunning
 // stays a reminder there.
-func trapAgainst(effect *rulesv1.TrapEffect) []string {
+func Trap(effect *rulesv1.TrapEffect) []string {
 	var out []string
 	for _, d := range effect.GetDamage() {
 		if d.GetDamageTypeKey() == poisonDamage {

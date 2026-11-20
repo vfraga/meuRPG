@@ -13,6 +13,8 @@ import (
 	"github.com/PuraFome/meuRPG/backend/internal/play/consumable"
 	"github.com/PuraFome/meuRPG/backend/internal/play/link"
 	"github.com/PuraFome/meuRPG/backend/internal/play/playdb"
+	"github.com/PuraFome/meuRPG/backend/internal/rules"
+	"github.com/PuraFome/meuRPG/backend/internal/rules/combat"
 )
 
 // scrollRun is what the reading leaves for the answer: the event and the spell's name as the reader may read it.
@@ -124,7 +126,7 @@ func (s *Service) scrollFight(ctx context.Context, tx pgx.Tx, q *playdb.Queries,
 		if err := s.mustActNow(ctx, c, cs[i]); err != nil {
 			return nil, err
 		}
-		if ref := consumable.EconomyRefusal(consumable.TurnOf(cs[i]), e, call.m.Role == authz.RoleMaster); ref != nil {
+		if ref := consumable.EconomyRefusal(combat.TurnState{ActionUsed: cs[i].ActionUsed, BonusActionUsed: cs[i].BonusActionUsed, ReactionUsed: cs[i].ReactionUsed, SpellCast: cs[i].SpellCast, BonusSpellCast: cs[i].BonusSpellCast}, e, call.m.Role == authz.RoleMaster); ref != nil {
 			return nil, errEncounter(ref.Reason, ref.Text)
 		}
 	}
@@ -150,7 +152,7 @@ func (s *Service) spendFailedScroll(ctx context.Context, tx pgx.Tx, call chargeC
 	if _, err := s.vitals.RemoveConsumable(ctx, tx, call.m.CampaignID, call.charText, e.EntryID); err != nil {
 		return err
 	}
-	if fight == nil || fight.c.enc.Status != statusActive || !consumable.Spend(fight.giver, e.Economy) {
+	if fight == nil || fight.c.enc.Status != statusActive || !spendEconomy(fight.giver, e.Economy) {
 		return nil
 	}
 	g := fight.giver
@@ -175,4 +177,19 @@ func (s *Service) scrollRetry(ctx context.Context, tx pgx.Tx, h *hints, done pla
 	}
 	h.replay()
 	return nil
+}
+
+// spendEconomy marks on the combatant the economy the spell's casting time costs, and says whether it costs one ("" is a longer time).
+func spendEconomy(c *playdb.Combatant, economy string) bool {
+	switch economy {
+	case rules.EconomyAction:
+		c.ActionUsed = true
+	case rules.EconomyBonusAction:
+		c.BonusActionUsed = true
+	case rules.EconomyReaction:
+		c.ReactionUsed = true
+	default:
+		return false
+	}
+	return true
 }

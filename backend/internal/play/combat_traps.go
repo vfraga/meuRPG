@@ -16,6 +16,7 @@ import (
 	"github.com/PuraFome/meuRPG/backend/internal/platform/conv"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/dice"
 	"github.com/PuraFome/meuRPG/backend/internal/play/advantage"
+	"github.com/PuraFome/meuRPG/backend/internal/play/against"
 	"github.com/PuraFome/meuRPG/backend/internal/play/playdb"
 	"github.com/PuraFome/meuRPG/backend/internal/rules"
 	"github.com/PuraFome/meuRPG/backend/internal/rules/combat"
@@ -193,7 +194,7 @@ func (s *Service) trapTargetsOf(ctx context.Context, tx pgx.Tx, campaignID strin
 // trapTargetOf is what the trap's roll needs of one caught combatant: its modes, its armor class and its save.
 func (s *Service) trapTargetOf(ctx context.Context, tx pgx.Tx, campaignID string, trap maplink.Trap, effect *rulesv1.TrapEffect, c playdb.Combatant, sun sunlight, states map[string][]playdb.CombatantState, ability string, out *trapTarget) error {
 	out.id = c.ID
-	if err := s.trapModesOf(ctx, tx, campaignID, trap, c, sun, states, ability, trapSaveAgainst(effect), out); err != nil {
+	if err := s.trapModesOf(ctx, tx, campaignID, trap, c, sun, states, ability, against.TrapSave(effect), out); err != nil {
 		return err
 	}
 	if trapNeedsAC(effect) {

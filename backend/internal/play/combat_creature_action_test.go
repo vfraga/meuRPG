@@ -9,6 +9,7 @@ import (
 
 	playv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/play/v1"
 	rulesv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/rules/v1"
+	"github.com/PuraFome/meuRPG/backend/internal/play/against"
 	"github.com/PuraFome/meuRPG/backend/internal/play/link"
 	"github.com/PuraFome/meuRPG/backend/internal/rules"
 	"github.com/PuraFome/meuRPG/backend/internal/rules/combat"
@@ -690,10 +691,10 @@ func TestCreatureRider_UndoOfTheDamageTakesTheOfferBack(t *testing.T) {
 func TestCreatureAction_ItsSaveIsNotAgainstMagic(t *testing.T) {
 	t.Parallel()
 	plan := rules.ActionPlan{Key: "monster:x#breath", Save: &rules.ActionSave{Ability: "dex", DC: 12}}
-	if slices.Contains(spellAgainst(spellOfPlan(plan)), combat.AgainstMagic) {
+	if slices.Contains(against.Spell(spellOfPlan(plan)), combat.AgainstMagic) {
 		t.Error("a breath's save is against magic")
 	}
-	if !slices.Contains(spellAgainst(link.Spell{Key: "spell:fireball"}), combat.AgainstMagic) {
+	if !slices.Contains(against.Spell(link.Spell{Key: "spell:fireball"}), combat.AgainstMagic) {
 		t.Error("a spell's save is not against magic")
 	}
 	spell := rules.ActionPlan{Key: "monster:x#bolt", Attack: &rules.ActionAttack{Spell: true}, Save: plan.Save}

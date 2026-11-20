@@ -1,4 +1,4 @@
-package play
+package voice
 
 import (
 	"context"
@@ -11,7 +11,7 @@ import (
 // Readers who ask for the same line together share one making of its voice.
 func TestVoiceFlightsShareOneMaking(t *testing.T) {
 	t.Parallel()
-	var v voiceFlights
+	var v Flights
 	var calls atomic.Int32
 	release := make(chan struct{})
 	work := func(context.Context) error {
@@ -21,7 +21,7 @@ func TestVoiceFlightsShareOneMaking(t *testing.T) {
 	}
 	errs := make(chan error, 2)
 	for range 2 {
-		go func() { errs <- v.wait(t.Context(), "line", time.Minute, work) }()
+		go func() { errs <- v.Wait(t.Context(), "line", time.Minute, work) }()
 	}
 	waitFor(t, "both readers wait", func() bool {
 		v.mu.Lock()
@@ -44,8 +44,8 @@ func TestVoiceFlightsShareOneMaking(t *testing.T) {
 // who waits gets its answer.
 func TestVoiceFlightsTailHasATimeout(t *testing.T) {
 	t.Parallel()
-	var v voiceFlights
-	err := v.wait(t.Context(), "line", 30*time.Millisecond, func(ctx context.Context) error {
+	var v Flights
+	err := v.Wait(t.Context(), "line", 30*time.Millisecond, func(ctx context.Context) error {
 		<-ctx.Done()
 		return ctx.Err()
 	})
@@ -57,7 +57,7 @@ func TestVoiceFlightsTailHasATimeout(t *testing.T) {
 // The making goes on while one reader still waits and is canceled when the last one leaves.
 func TestVoiceFlightsLastReaderCancelsTheTail(t *testing.T) {
 	t.Parallel()
-	var v voiceFlights
+	var v Flights
 	started, stopped := make(chan struct{}), make(chan struct{})
 	work := func(ctx context.Context) error {
 		close(started)
@@ -69,9 +69,9 @@ func TestVoiceFlightsLastReaderCancelsTheTail(t *testing.T) {
 	second, cancelSecond := context.WithCancel(t.Context())
 	defer cancelSecond()
 	firstDone, secondDone := make(chan error, 1), make(chan error, 1)
-	go func() { firstDone <- v.wait(first, "line", time.Minute, work) }()
+	go func() { firstDone <- v.Wait(first, "line", time.Minute, work) }()
 	<-started
-	go func() { secondDone <- v.wait(second, "line", time.Minute, work) }()
+	go func() { secondDone <- v.Wait(second, "line", time.Minute, work) }()
 	waitFor(t, "the second reader joined", func() bool {
 		v.mu.Lock()
 		defer v.mu.Unlock()
@@ -101,7 +101,7 @@ func TestVoiceFlightsLastReaderCancelsTheTail(t *testing.T) {
 // called off.
 func TestVoiceFlightsANewReaderAfterTheCancelStartsAgain(t *testing.T) {
 	t.Parallel()
-	var v voiceFlights
+	var v Flights
 	var calls atomic.Int32
 	hold := make(chan struct{})
 	work := func(ctx context.Context) error {
@@ -114,11 +114,11 @@ func TestVoiceFlightsANewReaderAfterTheCancelStartsAgain(t *testing.T) {
 	}
 	gone, cancel := context.WithCancel(t.Context())
 	done := make(chan error, 1)
-	go func() { done <- v.wait(gone, "line", time.Minute, work) }()
+	go func() { done <- v.Wait(gone, "line", time.Minute, work) }()
 	waitFor(t, "the first making started", func() bool { return calls.Load() == 1 })
 	cancel()
 	<-done
-	if err := v.wait(t.Context(), "line", time.Minute, work); err != nil {
+	if err := v.Wait(t.Context(), "line", time.Minute, work); err != nil {
 		t.Errorf("the new reader's error = %v, want nil", err)
 	}
 	close(hold)
@@ -140,21 +140,21 @@ func waitFor(t *testing.T, what string, ok func() bool) {
 
 func TestVoiceFlightsAPanickingWorkReturnsAnErrorToTheWaiter(t *testing.T) {
 	t.Parallel()
-	var v voiceFlights
+	var v Flights
 	got := make(chan error, 1)
 	go func() {
-		got <- v.wait(context.Background(), "line-1", time.Minute, func(context.Context) error { panic("bad voice") })
+		got <- v.Wait(context.Background(), "line-1", time.Minute, func(context.Context) error { panic("bad voice") })
 	}()
 	select {
 	case err := <-got:
-		if !errors.Is(err, errVoicePanicked) {
-			t.Errorf("err = %v, want errVoicePanicked", err)
+		if !errors.Is(err, ErrPanicked) {
+			t.Errorf("err = %v, want ErrPanicked", err)
 		}
 	case <-time.After(10 * time.Second):
 		t.Fatal("the waiter hangs after the work panicked")
 	}
 	// The flight is forgotten: a new reader starts a new one.
-	if err := v.wait(context.Background(), "line-1", time.Minute, func(context.Context) error { return nil }); err != nil {
+	if err := v.Wait(context.Background(), "line-1", time.Minute, func(context.Context) error { return nil }); err != nil {
 		t.Errorf("next flight err = %v, want nil", err)
 	}
 }

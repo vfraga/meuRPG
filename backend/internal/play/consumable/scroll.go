@@ -6,7 +6,6 @@ import (
 	playv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/play/v1"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/conv"
 	"github.com/PuraFome/meuRPG/backend/internal/play/link"
-	"github.com/PuraFome/meuRPG/backend/internal/play/playdb"
 	"github.com/PuraFome/meuRPG/backend/internal/rules"
 	"github.com/PuraFome/meuRPG/backend/internal/rules/combat"
 )
@@ -147,11 +146,18 @@ type Pass struct {
 	CheckDC, D20, Modifier, Total int32
 }
 
+// Event is the part of a session event that LatestPass reads.
+type Event struct {
+	Kind        string
+	EncounterID *string
+	Payload     []byte
+}
+
 // LatestPass finds the reading of the reader's that stands among the session's latest events (newest first, PassWindow of them): the
 // reader's latest reading of a scroll, if it came to a pass. It lapsed when a reading of the reader's came after it, whatever its
 // result (a failed one is one), and when the turn of the combat it was read in ended or the combat ended. A pass read out of a combat
 // has no turn to end: it stands until the reader reads again.
-func LatestPass(events []playdb.ListRecentSessionEventsRow, reader string) (Pass, bool) {
+func LatestPass(events []Event, reader string) (Pass, bool) {
 	ended := map[string]bool{} // the combats whose turn ended, or that ended, after the event looked at
 	for _, e := range events {
 		switch e.Kind {
@@ -185,26 +191,6 @@ func RollOK(r *playv1.ReadScrollRequest) bool {
 		return r.GetRollInApp()
 	case *playv1.ReadScrollRequest_D20Face:
 		return r.GetD20Face() >= 1 && r.GetD20Face() <= 20
-	}
-	return true
-}
-
-// TurnOf is the turn the combatant has used, as the rules of the casting time read it.
-func TurnOf(c playdb.Combatant) combat.TurnState {
-	return combat.TurnState{ActionUsed: c.ActionUsed, BonusActionUsed: c.BonusActionUsed, ReactionUsed: c.ReactionUsed, SpellCast: c.SpellCast, BonusSpellCast: c.BonusSpellCast}
-}
-
-// Spend marks on the combatant the economy the spell's casting time costs, and says whether it costs one ("" is a longer time).
-func Spend(c *playdb.Combatant, economy string) bool {
-	switch economy {
-	case rules.EconomyAction:
-		c.ActionUsed = true
-	case rules.EconomyBonusAction:
-		c.BonusActionUsed = true
-	case rules.EconomyReaction:
-		c.ReactionUsed = true
-	default:
-		return false
 	}
 	return true
 }

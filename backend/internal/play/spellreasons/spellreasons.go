@@ -1,15 +1,16 @@
-package play
+// Package spellreasons writes the sentence of the reason a spell line of the turn is disabled, over the proto alone.
+package spellreasons
 
 import (
 	rulesv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/rules/v1"
 )
 
-// explainSpellReasons writes, on every disabled spell line of the turn, the sentence of its reason
+// Explain writes, on every disabled spell line of the turn, the sentence of its reason
 // with the spell's name in it. NO_SLOT, REACTION_ONLY_WHEN_HIT and REACTION_ONLY keep the short words of
 // the screen: NO_SLOT repeats on every spell row (the slot rows above the list are the one explanation), and
 // a reaction row already says that the app asks when the trigger happens. The sentence is the same for the
 // master and for a player: nothing in it is a cause a player may not read (RN-20).
-func explainSpellReasons(o *rulesv1.TurnOptions) {
+func Explain(o *rulesv1.TurnOptions) {
 	for _, sp := range o.GetSpells() {
 		if text := spellReasonSentence(sp.GetReason().GetCode(), spellNameOf(sp.GetSpell()), sp.GetEconomy()); text != "" {
 			sp.Reason.TextPt = text

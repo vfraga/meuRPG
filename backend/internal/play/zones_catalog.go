@@ -5,6 +5,7 @@ import (
 
 	playv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/play/v1"
 	"github.com/PuraFome/meuRPG/backend/internal/play/link"
+	"github.com/PuraFome/meuRPG/backend/internal/play/zonewall"
 	"github.com/PuraFome/meuRPG/backend/internal/rules"
 	"github.com/PuraFome/meuRPG/backend/internal/rules/grid"
 )
@@ -184,7 +185,7 @@ var zoneDefs = map[string]zoneDef{
 		placement: playv1.AreaPlacement_AREA_PLACEMENT_POINT, movement: playv1.SpellZoneMovement_SPELL_ZONE_MOVEMENT_FIXED,
 	},
 	"spell:wall-of-fire": {
-		kind: zoneWall, onCast: true, onEnter: true, onTurnEnd: true, shape: grid.ShapeLine, sizeFt: wallLineFt, save: "dex", sight: sightCloud,
+		kind: zoneWall, onCast: true, onEnter: true, onTurnEnd: true, shape: grid.ShapeLine, sizeFt: zonewall.LineFt, save: "dex", sight: sightCloud,
 		placement: playv1.AreaPlacement_AREA_PLACEMENT_POINT, movement: playv1.SpellZoneMovement_SPELL_ZONE_MOVEMENT_FIXED,
 	},
 	"spell:spirit-guardians": {

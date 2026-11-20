@@ -11,6 +11,7 @@ import (
 	"github.com/jackc/pgx/v5"
 
 	"github.com/PuraFome/meuRPG/backend/internal/play/playdb"
+	"github.com/PuraFome/meuRPG/backend/internal/play/zonewall"
 	"github.com/PuraFome/meuRPG/backend/internal/rules/grid"
 )
 
@@ -27,7 +28,7 @@ type zone struct {
 	marks   map[string]string
 	// wall is how a wall zone was laid, nil for any other zone.
 	// reach is the squares within 10 ft of its damaging side, and the wall itself (zones_wall.go).
-	wall  *wallSpec
+	wall  *zonewall.Spec
 	reach map[grid.Square]bool
 }
 
@@ -47,7 +48,7 @@ func readZone(row playdb.SpellZone) (*zone, bool) {
 	if !ok {
 		return nil, false
 	}
-	z := &zone{row: row, def: def, marks: map[string]string{}, wall: wallOfRow(row.WallSide, row.WallDx, row.WallDy, row.WallLengthFt)}
+	z := &zone{row: row, def: def, marks: map[string]string{}, wall: zonewall.FromRow(row.WallSide, row.WallDx, row.WallDy, row.WallLengthFt)}
 	z.setSquares(squaresOfJSON(row.Squares))
 	_ = json.Unmarshal(row.HitMarks, &z.marks) // a value this package wrote
 	return z, true
@@ -82,7 +83,7 @@ func (z *zone) setSquares(sq []grid.Square) {
 		z.in[s] = true
 	}
 	if z.wall != nil {
-		z.reach = z.wall.reach(z.origin(), sq)
+		z.reach = z.wall.Reach(z.origin(), sq)
 	}
 }
 

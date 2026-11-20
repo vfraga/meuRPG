@@ -13,6 +13,7 @@ import (
 	"github.com/PuraFome/meuRPG/backend/internal/authz"
 	"github.com/PuraFome/meuRPG/backend/internal/play/link"
 	"github.com/PuraFome/meuRPG/backend/internal/play/playdb"
+	"github.com/PuraFome/meuRPG/backend/internal/play/zonewall"
 	"github.com/PuraFome/meuRPG/backend/internal/rules"
 	"github.com/PuraFome/meuRPG/backend/internal/rules/grid"
 )
@@ -139,7 +140,7 @@ type areaPlan struct {
 	targets       []areaTarget
 	corners       bool
 	// wall is how a wall was laid (Wall of Fire); nil for any other area.
-	wall *wallSpec
+	wall *zonewall.Spec
 }
 
 // areaCoverFn is the cover a target has against an origin: a combatant standing on
@@ -157,7 +158,7 @@ type areaInput struct {
 	choice  areaChoice
 	cover   areaCoverFn
 	// wall is the wall the caster laid, for a spell that lays one.
-	wall *wallSpec
+	wall *zonewall.Spec
 }
 
 func badArea(msg string) error { return connect.NewError(connect.CodeInvalidArgument, errors.New(msg)) }
@@ -198,7 +199,7 @@ func (p *areaPlan) place(in areaInput, placement playv1.AreaPlacement, from grid
 			return nil, err
 		}
 		if in.wall != nil {
-			return in.wall.laid(in.terrain, p.origin), nil
+			return in.wall.Laid(in.terrain, p.origin), nil
 		}
 		return area.FromPoint(p.origin), nil
 	case playv1.AreaPlacement_AREA_PLACEMENT_DIRECTION:
@@ -457,7 +458,7 @@ func previewResponse(plan areaPlan, sp link.Spell, caster playdb.Combatant, v co
 		RangeFt: placedRangeFt(sp), Moved: plan.origin != plan.asked,
 	}
 	if w := plan.wall; w != nil {
-		out.BurningSquares, out.LengthFt = squaresProto(w.burning(plan.origin, plan.squares)), clamp32(w.LengthFt, 0, math.MaxInt32)
+		out.BurningSquares, out.LengthFt = squaresProto(w.Burning(plan.origin, plan.squares)), clamp32(w.LengthFt, 0, math.MaxInt32)
 	}
 	for _, t := range plan.targets {
 		if v.sees(t.who) { // a hidden creature, or one in the dark, is not named or counted

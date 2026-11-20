@@ -6,7 +6,6 @@ import (
 
 	playv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/play/v1"
 	"github.com/PuraFome/meuRPG/backend/internal/play/link"
-	"github.com/PuraFome/meuRPG/backend/internal/play/playdb"
 	"github.com/PuraFome/meuRPG/backend/internal/rules"
 	"github.com/PuraFome/meuRPG/backend/internal/rules/combat"
 )
@@ -154,12 +153,12 @@ func assertReading(t *testing.T, name string, got, want *playv1.ScrollReading) {
 	}
 }
 
-func event(kind string, encounter string, u Used) playdb.ListRecentSessionEventsRow {
+func event(kind string, encounter string, u Used) Event {
 	body, err := json.Marshal(u)
 	if err != nil {
 		panic(err)
 	}
-	row := playdb.ListRecentSessionEventsRow{Kind: kind, Payload: body}
+	row := Event{Kind: kind, Payload: body}
 	if encounter != "" {
 		row.EncounterID = &encounter
 	}
@@ -179,23 +178,23 @@ func TestLatestPass(t *testing.T) {
 	byOther.Reader = other
 	tests := []struct {
 		name   string
-		events []playdb.ListRecentSessionEventsRow // newest first
-		want   string                              // the entry of the pass, "" for none
+		events []Event // newest first
+		want   string  // the entry of the pass, "" for none
 	}{
 		{"no event", nil, ""},
-		{"a read in a combat", []playdb.ListRecentSessionEventsRow{event(KindScrollRead, fight, read("m1"))}, "m1"},
-		{"a read out of a combat", []playdb.ListRecentSessionEventsRow{event(KindScrollRead, "", read("m1"))}, "m1"},
-		{"the turn ended after it", []playdb.ListRecentSessionEventsRow{{Kind: kindTurnEnded, EncounterID: ptr(fight)}, event(KindScrollRead, fight, read("m1"))}, ""},
-		{"the combat ended after it", []playdb.ListRecentSessionEventsRow{{Kind: kindEncounterEnded, EncounterID: ptr(fight)}, event(KindScrollRead, fight, read("m1"))}, ""},
-		{"the turn of another combat ended", []playdb.ListRecentSessionEventsRow{{Kind: kindTurnEnded, EncounterID: ptr(another)}, event(KindScrollRead, fight, read("m1"))}, "m1"},
-		{"a turn that ended before it", []playdb.ListRecentSessionEventsRow{event(KindScrollRead, fight, read("m1")), {Kind: kindTurnEnded, EncounterID: ptr(fight)}}, "m1"},
-		{"a turn that ends a read out of a combat", []playdb.ListRecentSessionEventsRow{{Kind: kindTurnEnded, EncounterID: ptr(fight)}, event(KindScrollRead, "", read("m1"))}, "m1"},
-		{"another read of the reader's", []playdb.ListRecentSessionEventsRow{event(KindScrollRead, fight, read("m2")), event(KindScrollRead, fight, read("m1"))}, "m2"},
-		{"a failed read after it", []playdb.ListRecentSessionEventsRow{event(kindConsumableUsed, fight, failed), event(KindScrollRead, fight, read("m1"))}, ""},
-		{"a pass after a failed read", []playdb.ListRecentSessionEventsRow{event(KindScrollRead, fight, read("m2")), event(kindConsumableUsed, fight, failed)}, "m2"},
-		{"another reader's read does not lapse it", []playdb.ListRecentSessionEventsRow{event(KindScrollRead, fight, byOther), event(KindScrollRead, fight, read("m1"))}, "m1"},
-		{"a consumable of another kind does not lapse it", []playdb.ListRecentSessionEventsRow{event(kindConsumableUsed, fight, Used{Item: "item:potion-of-healing", Outcome: OutcomeHealed}), event(KindScrollRead, fight, read("m1"))}, "m1"},
-		{"only another reader's pass", []playdb.ListRecentSessionEventsRow{event(KindScrollRead, fight, byOther)}, ""},
+		{"a read in a combat", []Event{event(KindScrollRead, fight, read("m1"))}, "m1"},
+		{"a read out of a combat", []Event{event(KindScrollRead, "", read("m1"))}, "m1"},
+		{"the turn ended after it", []Event{{Kind: kindTurnEnded, EncounterID: ptr(fight)}, event(KindScrollRead, fight, read("m1"))}, ""},
+		{"the combat ended after it", []Event{{Kind: kindEncounterEnded, EncounterID: ptr(fight)}, event(KindScrollRead, fight, read("m1"))}, ""},
+		{"the turn of another combat ended", []Event{{Kind: kindTurnEnded, EncounterID: ptr(another)}, event(KindScrollRead, fight, read("m1"))}, "m1"},
+		{"a turn that ended before it", []Event{event(KindScrollRead, fight, read("m1")), {Kind: kindTurnEnded, EncounterID: ptr(fight)}}, "m1"},
+		{"a turn that ends a read out of a combat", []Event{{Kind: kindTurnEnded, EncounterID: ptr(fight)}, event(KindScrollRead, "", read("m1"))}, "m1"},
+		{"another read of the reader's", []Event{event(KindScrollRead, fight, read("m2")), event(KindScrollRead, fight, read("m1"))}, "m2"},
+		{"a failed read after it", []Event{event(kindConsumableUsed, fight, failed), event(KindScrollRead, fight, read("m1"))}, ""},
+		{"a pass after a failed read", []Event{event(KindScrollRead, fight, read("m2")), event(kindConsumableUsed, fight, failed)}, "m2"},
+		{"another reader's read does not lapse it", []Event{event(KindScrollRead, fight, byOther), event(KindScrollRead, fight, read("m1"))}, "m1"},
+		{"a consumable of another kind does not lapse it", []Event{event(kindConsumableUsed, fight, Used{Item: "item:potion-of-healing", Outcome: OutcomeHealed}), event(KindScrollRead, fight, read("m1"))}, "m1"},
+		{"only another reader's pass", []Event{event(KindScrollRead, fight, byOther)}, ""},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -206,7 +205,7 @@ func TestLatestPass(t *testing.T) {
 			}
 		})
 	}
-	got, _ := LatestPass([]playdb.ListRecentSessionEventsRow{event(KindScrollRead, fight, read("m1"))}, reader)
+	got, _ := LatestPass([]Event{event(KindScrollRead, fight, read("m1"))}, reader)
 	want := Pass{Entry: "m1", Spell: "spell:fireball", Level: 3, Encounter: fight, Checked: true, CheckDC: 13, D20: 12, Modifier: 3, Total: 15}
 	if got != want {
 		t.Errorf("pass %+v, want %+v", got, want)

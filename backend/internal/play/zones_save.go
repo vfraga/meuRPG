@@ -9,6 +9,7 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/PuraFome/meuRPG/backend/internal/play/against"
 	"github.com/PuraFome/meuRPG/backend/internal/play/playdb"
 	"github.com/PuraFome/meuRPG/backend/internal/rules"
 	"github.com/PuraFome/meuRPG/backend/internal/rules/reaction"
@@ -219,7 +220,7 @@ func (wv *windowView) zoneSavePrompt(w playdb.ReactionWindow, reactor *playdb.Co
 	}
 	if reactor != nil {
 		// A zone is a spell's: its save is against magic and what the spell imposes, as an effect's is.
-		if err := wv.reactorSave(p, *reactor, z.row.SaveAbility, effectAgainst(z.row.SpellKey, nil), false); err != nil {
+		if err := wv.reactorSave(p, *reactor, z.row.SaveAbility, against.Effect(z.row.SpellKey, nil), false); err != nil {
 			return err
 		}
 	}

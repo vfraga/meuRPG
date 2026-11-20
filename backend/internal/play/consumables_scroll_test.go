@@ -110,7 +110,11 @@ func (s *stocked) passOf(t *testing.T, who *charactersv1.Character) (consumable.
 	if err != nil {
 		t.Fatalf("read the latest events: %v", err)
 	}
-	return consumable.LatestPass(rows, who.GetId())
+	events := make([]consumable.Event, len(rows))
+	for i, r := range rows {
+		events[i] = consumable.Event{Kind: r.Kind, EncounterID: r.EncounterID, Payload: r.Payload}
+	}
+	return consumable.LatestPass(events, who.GetId())
 }
 
 // nothingSpent says no scroll left the sheet and no reading was written.

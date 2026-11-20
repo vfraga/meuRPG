@@ -366,12 +366,16 @@ func reachable(edges map[string]map[string]string, from string) map[string]bool 
 // with the other play subpackages it may import. A subpackage that is not here, and is not one of
 // playSeamPackages, fails the test, so a new one is added on purpose with its place in the order.
 var playSubpackages = map[string][]string{
-	"advantage":   {}, // the modes, the source kinds of the API and the sentence of each source
-	"consumable":  {}, // the dice, the healing, the resistance and the payload of the use of a consumable
-	"damagesteps": {}, // what a damage lands as after the target's modifiers, the stored steps and their text
-	"effecttext":  {}, // the words of the card of an effect on a character: its title, its whole length and the time left
-	"infusion":    {}, // the session event kinds of an Artificer's infusions, their payload and the characters a change names
-	"steed":       {}, // the rules of Find Steed over plain values: the spells that reach the steed, its notes, the Intelligence floor
+	"advantage":    {}, // the modes, the source kinds of the API and the sentence of each source
+	"against":      {}, // what a saving throw is against: the kinds of source of a spell, of an effect that lasts and of a trap
+	"consumable":   {}, // the dice, the healing, the resistance and the payload of the use of a consumable
+	"damagesteps":  {}, // what a damage lands as after the target's modifiers, the stored steps and their text
+	"effecttext":   {}, // the words of the card of an effect on a character: its title, its whole length and the time left
+	"infusion":     {}, // the session event kinds of an Artificer's infusions, their payload and the characters a change names
+	"screen":       {}, // what the table screen shows: the screen, the pin, its fallbacks and what the master may pin
+	"spellreasons": {}, // the sentence of the reason a spell line of the turn is disabled
+	"steed":        {}, // the rules of Find Steed over plain values: the spells that reach the steed, its notes, the Intelligence floor
+	"zonewall":     {}, // the squares of a wall of fire and the squares its damaging side reaches
 }
 
 // playSeamPackages are the subpackages of play that are not moved logic: the seam to other modules, the live hub, the

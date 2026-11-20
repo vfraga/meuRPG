@@ -13,6 +13,7 @@ import (
 	rulesv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/rules/v1"
 	"github.com/PuraFome/meuRPG/backend/internal/play/link"
 	"github.com/PuraFome/meuRPG/backend/internal/play/playdb"
+	"github.com/PuraFome/meuRPG/backend/internal/play/zonewall"
 	"github.com/PuraFome/meuRPG/backend/internal/rules"
 	"github.com/PuraFome/meuRPG/backend/internal/rules/grid"
 )
@@ -31,62 +32,6 @@ func setOf(squares []grid.Square) map[grid.Square]bool {
 		out[s] = true
 	}
 	return out
-}
-
-func TestWallStraightSquaresFollowTheMapsDistance(t *testing.T) {
-	t.Parallel()
-	for _, tt := range []struct {
-		name   string
-		dir    grid.Direction
-		length int
-		want   int
-	}{
-		{"orthogonal 60 ft", grid.Direction{Dx: 1}, 60, 12},
-		// The map rounds a distance down, so the diagonal wall of 60 ft is 9 squares: fewer than the 12 of a row.
-		{"diagonal 60 ft", grid.Direction{Dx: 1, Dy: 1}, 60, 9},
-		{"25 ft", grid.Direction{Dy: -1}, 25, 5},
-		{"5 ft", grid.Direction{Dx: -1}, 5, 1},
-	} {
-		w := wallSpec{Dir: tt.dir, LengthFt: tt.length, Side: playv1.WallSide_WALL_SIDE_LEFT}
-		got := w.squares(wsq(30, 30))
-		if len(got) != tt.want {
-			t.Errorf("%s: %d squares, want %d", tt.name, len(got), tt.want)
-		}
-		if got[0] != wsq(30, 30) {
-			t.Errorf("%s: first square %v, want the point of origin", tt.name, got[0])
-		}
-	}
-}
-
-func TestWallRingSquares(t *testing.T) {
-	t.Parallel()
-	origin := wsq(10, 10)
-	for _, tt := range []struct {
-		diameter, want, atFt int
-	}{{20, 16, 10}, {10, 8, 5}, {5, 8, 5}} {
-		w := wallSpec{Ring: true, LengthFt: tt.diameter, Side: playv1.WallSide_WALL_SIDE_INNER}
-		got := w.squares(origin)
-		if len(got) != tt.want {
-			t.Errorf("diameter %d: %d squares, want %d", tt.diameter, len(got), tt.want)
-		}
-		for _, s := range got {
-			if grid.RangeFt(origin, s) != tt.atFt {
-				t.Errorf("diameter %d: %v is %d ft out, want %d", tt.diameter, s, grid.RangeFt(origin, s), tt.atFt)
-			}
-		}
-	}
-}
-
-func TestWallIsCutByTheTerrain(t *testing.T) {
-	t.Parallel()
-	g := grid.Grid{Columns: 20, Rows: 20}
-	terrain := grid.Terrain{Grid: g, Walls: grid.NewLayer(g)}
-	terrain.Walls.Set(13, 5, true)
-	w := wallSpec{Dir: grid.Direction{Dx: 1}, LengthFt: 60, Side: playv1.WallSide_WALL_SIDE_LEFT}
-	got := w.laid(terrain, wsq(10, 5))
-	if want := []grid.Square{wsq(10, 5), wsq(11, 5), wsq(12, 5)}; !slices.Equal(got, want) {
-		t.Errorf("laid = %v, want %v: a wall of the map ends the wall", got, want)
-	}
 }
 
 func TestReadWallRefusesWhatIsMalformed(t *testing.T) {
@@ -117,72 +62,6 @@ func TestReadWallRefusesWhatIsMalformed(t *testing.T) {
 	got, err = readWall(&playv1.SpellWall{Ring: true, Side: inner})
 	if err != nil || got.LengthFt != 20 {
 		t.Errorf("full ring: %v, %v, want 20 ft", got, err)
-	}
-}
-
-func wallReachOf(w wallSpec, origin grid.Square) map[grid.Square]bool {
-	return w.reach(origin, w.squares(origin))
-}
-
-// For a wall that runs east the left is north (rows grow downward), within 10 ft, and the wall itself hurts from both.
-func TestWallReachOfAStraightWallIsTheDamagingSide(t *testing.T) {
-	t.Parallel()
-	origin := wsq(10, 10)
-	left := wallReachOf(wallSpec{Dir: grid.Direction{Dx: 1}, LengthFt: 15, Side: playv1.WallSide_WALL_SIDE_LEFT}, origin)
-	right := wallReachOf(wallSpec{Dir: grid.Direction{Dx: 1}, LengthFt: 15, Side: playv1.WallSide_WALL_SIDE_RIGHT}, origin)
-	for _, s := range []grid.Square{wsq(10, 10), wsq(11, 10), wsq(12, 10)} {
-		if !left[s] || !right[s] {
-			t.Errorf("%v is a square of the wall: it hurts from both sides", s)
-		}
-	}
-	for _, c := range []struct {
-		s           grid.Square
-		left, right bool
-	}{
-		{wsq(11, 9), true, false},
-		{wsq(11, 8), true, false},
-		{wsq(11, 7), false, false},
-		{wsq(11, 11), false, true},
-		{wsq(11, 12), false, true},
-		{wsq(11, 13), false, false},
-		{wsq(13, 9), true, false},
-		{wsq(14, 10), false, false},
-		{wsq(9, 10), false, false},
-	} {
-		if left[c.s] != c.left || right[c.s] != c.right {
-			t.Errorf("%v: left %v right %v, want %v and %v", c.s, left[c.s], right[c.s], c.left, c.right)
-		}
-	}
-	north := wallReachOf(wallSpec{Dir: grid.Direction{Dy: -1}, LengthFt: 15, Side: playv1.WallSide_WALL_SIDE_LEFT}, origin)
-	if !north[wsq(9, 9)] || north[wsq(11, 9)] {
-		t.Error("walking north, the left is west")
-	}
-}
-
-func TestWallReachOfARingIsInsideOrOutside(t *testing.T) {
-	t.Parallel()
-	origin := wsq(10, 10)
-	inner := wallReachOf(wallSpec{Ring: true, LengthFt: 20, Side: playv1.WallSide_WALL_SIDE_INNER}, origin)
-	outer := wallReachOf(wallSpec{Ring: true, LengthFt: 20, Side: playv1.WallSide_WALL_SIDE_OUTER}, origin)
-	for _, s := range []grid.Square{wsq(12, 10), wsq(10, 8), wsq(12, 12)} {
-		if !inner[s] || !outer[s] {
-			t.Errorf("%v is a square of the ring: it hurts from both sides", s)
-		}
-	}
-	for _, c := range []struct {
-		s            grid.Square
-		inner, outer bool
-	}{
-		{wsq(10, 10), true, false},
-		{wsq(11, 10), true, false},
-		{wsq(11, 11), true, false},
-		{wsq(13, 10), false, true},
-		{wsq(14, 10), false, true},
-		{wsq(15, 10), false, false},
-	} {
-		if inner[c.s] != c.inner || outer[c.s] != c.outer {
-			t.Errorf("%v: inner %v outer %v, want %v and %v", c.s, inner[c.s], outer[c.s], c.inner, c.outer)
-		}
 	}
 }
 
@@ -412,8 +291,8 @@ func TestAPreviewOfTheWallShowsTheSquaresTheCastLays(t *testing.T) {
 	if got, want := squaresOf(res.Msg.GetBurningSquares()), squaresOf(z.GetBurningSquares()); len(want) == 0 || !slices.Equal(got, want) {
 		t.Errorf("preview burning squares = %v, want the zone's %v", got, want)
 	}
-	if res.Msg.GetLengthFt() != wallLineFt || z.GetWallSide() != playv1.WallSide_WALL_SIDE_LEFT {
-		t.Errorf("length_ft = %d, wall_side = %v, want the full %d and LEFT", res.Msg.GetLengthFt(), z.GetWallSide(), wallLineFt)
+	if res.Msg.GetLengthFt() != zonewall.LineFt || z.GetWallSide() != playv1.WallSide_WALL_SIDE_LEFT {
+		t.Errorf("length_ft = %d, wall_side = %v, want the full %d and LEFT", res.Msg.GetLengthFt(), z.GetWallSide(), zonewall.LineFt)
 	}
 	_, err = c.ana.combat.PreviewSpellArea(t.Context(), connect.NewRequest(&playv1.PreviewSpellAreaRequest{
 		CampaignId: c.campaignID, EncounterId: c.get(t, c.master).GetId(), CasterId: c.id(t, "Pensantus"), SpellKey: wallOfFireKey,
@@ -483,13 +362,6 @@ func TestAPlayerInsideTheWallIsAskedTheSaveAtTheCast(t *testing.T) {
 	var amount int32
 	if err := c.h.pool.QueryRow(t.Context(), `SELECT amount FROM pending_damages WHERE target_id = $1 AND effect_source_key = $2`, c.id(t, "Toren"), wallOfFireKey).Scan(&amount); err != nil || amount != 20 {
 		t.Errorf("pending damage = %d, %v, want 20", amount, err)
-	}
-}
-
-func TestAWallWithNoDirectionLaysNothingInTheGeometry(t *testing.T) {
-	t.Parallel()
-	if got := (wallSpec{LengthFt: 60}).squares(wsq(5, 5)); len(got) != 0 {
-		t.Errorf("squares = %v, want none for a wall that runs nowhere", got)
 	}
 }
 
@@ -927,15 +799,15 @@ func TestTheMasterCannotMoveAWall(t *testing.T) {
 // turn options say so, so the cast sheet asks "Onde fica" before the cast (the cast itself sets ZoneLaid).
 func TestAWallSpellIsPlacedOnAPointInTheTurnOptions(t *testing.T) {
 	t.Parallel()
-	sp := link.Spell{Key: wallOfFireKey, AreaShape: string(grid.ShapeLine), AreaSizeFt: wallLineFt, RangeKind: rules.RangeRanged}
+	sp := link.Spell{Key: wallOfFireKey, AreaShape: string(grid.ShapeLine), AreaSizeFt: zonewall.LineFt, RangeKind: rules.RangeRanged}
 	if got := placementFor(sp, false); got != playv1.AreaPlacement_AREA_PLACEMENT_POINT {
 		t.Errorf("placementFor(Wall of Fire) = %v, want POINT", got)
 	}
 	if got, want := areaShapeProto(sp, false), rulesv1.SpellAreaShape_SPELL_AREA_SHAPE_LINE; got != want {
 		t.Errorf("areaShapeProto = %v, want %v", got, want)
 	}
-	if got := areaSizeFor(sp, false); got != wallLineFt {
-		t.Errorf("areaSizeFor = %d, want %d", got, wallLineFt)
+	if got := areaSizeFor(sp, false); got != zonewall.LineFt {
+		t.Errorf("areaSizeFor = %d, want %d", got, zonewall.LineFt)
 	}
 	if got := placementFor(sp, true); got != playv1.AreaPlacement_AREA_PLACEMENT_UNSPECIFIED {
 		t.Errorf("placementFor(Wall of Fire) in a combat with no map = %v, want UNSPECIFIED", got)

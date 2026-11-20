@@ -16,6 +16,7 @@ import (
 	"github.com/PuraFome/meuRPG/backend/internal/platform/idem"
 	"github.com/PuraFome/meuRPG/backend/internal/play/link"
 	"github.com/PuraFome/meuRPG/backend/internal/play/playdb"
+	"github.com/PuraFome/meuRPG/backend/internal/play/zonewall"
 	"github.com/PuraFome/meuRPG/backend/internal/rules"
 	"github.com/PuraFome/meuRPG/backend/internal/rules/combat"
 	"github.com/PuraFome/meuRPG/backend/internal/rules/grid"
@@ -241,7 +242,7 @@ type castFlow struct {
 	steedTarget bool
 	steedNote   string
 	// wall is the wall the request lays, for a spell that lays one.
-	wall *wallSpec
+	wall *zonewall.Spec
 	// hidden says the cast shows a hidden creature: the caster or a target.
 	hidden bool
 	// landing is the square a teleport puts the caster on (checkTeleport); nil for any other cast.
@@ -519,7 +520,7 @@ func (f *castFlow) placeArea(ctx context.Context) error {
 
 // wallOfRequest reads the wall of the request.
 // A combat without a map lays nothing, so a wall has no place there.
-func (f *castFlow) wallOfRequest() (*wallSpec, error) {
+func (f *castFlow) wallOfRequest() (*zonewall.Spec, error) {
 	if isTheatre(f.c.enc) {
 		if f.req.GetWall() != nil {
 			return nil, badArea("a combat without a map has no wall to place: the master decides who is inside")

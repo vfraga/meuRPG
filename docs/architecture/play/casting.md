@@ -84,7 +84,7 @@ A spell is refused with `BONUS_ACTION_SPELL_LIMIT` when a bonus action spell was
 Reactions (Shield) do not count.
 The disabled spell row carries a `DisabledReason` that says which side blocks it (`castError` turns it into the refusal).
 
-**The sentence of a disabled spell.** `GetTurnOptions` writes `DisabledReason.text_pt` on every disabled spell line and on a spell attack (`explainSpellReasons`, `spell_reasons.go`).
+**The sentence of a disabled spell.** `GetTurnOptions` writes `DisabledReason.text_pt` on every disabled spell line and on a spell attack (`spellreasons.Explain`, in `play/spellreasons`).
 The sentence names the spell and is the same for the master and for a player.
 The reasons that carry it are `CASTING_TIME_TOO_LONG`, `BONUS_ACTION_SPELL_LIMIT` and `ARMOR_NOT_PROFICIENT`.
 `NO_SLOT` has no sentence: it repeats on every spell row, and the screen shows the short word "Sem espaço".

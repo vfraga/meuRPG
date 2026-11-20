@@ -310,6 +310,8 @@ func (s *Service) immuneToRetching(ctx context.Context, c *combatTx, who playdb.
 // poisonProbe is an amount of poison damage large enough that only an immunity takes all of it away.
 const poisonProbe = 100
 
+const poisonDamage = "damage-type:poison"
+
 // retchOnTheTurn uses up the action of the creature's turn: it spends it retching.
 func (s *Service) retchOnTheTurn(ctx context.Context, c *combatTx, who playdb.Combatant) error {
 	if err := c.q.SetCombatantEconomy(ctx, playdb.SetCombatantEconomyParams{

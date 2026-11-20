@@ -89,13 +89,17 @@ The package `play` itself is capped in size (`.github/play-cap`, [CI](../../ci.m
 | `play/link` | The plain types that cross to other modules (the seam below) |
 | `play/live` | The live stream's hub |
 | `play/playdb` | The sqlc queries (generated) |
-| `play/voice` | The voice generator and its fake |
+| `play/voice` | The voice generator, its fake and the flights that make one voice for the readers who ask together |
 | `play/damagesteps` | What a damage comes to after resistance, vulnerability, immunity and flat reductions, the steps as the store keeps them (JSON), and the Portuguese text of each step with the hiding of an effect the master does not show |
 | `play/advantage` | The roll modes as the database and the API spell them, the API's source kinds, and the sentence of each advantage source with the hiding of the ones a viewer may not know |
+| `play/against` | What a saving throw is against (magic, poison, charm, fear), from the source of a spell, of an effect that lasts and of a trap |
 | `play/consumable` | The dice and the healing of a potion, the resistance it gives, the text of a consumable with no effect and the payload and the answer of the use of a consumable |
 | `play/effecttext` | The words of the card of an effect on a character: its own title, the whole length it was given (told only when the catalog gave it) and the time it has left |
 | `play/infusion` | The session event kinds of an Artificer's infusions, their payload and the characters a set of changes names |
+| `play/screen` | What the table screen shows: the screen, the pin and its fallbacks, and what the master may pin |
+| `play/spellreasons` | The sentence of the reason a spell line of the turn is disabled |
 | `play/steed` | The rules of Find Steed over plain values: the spells that reach the steed with the caster, the notes of such a cast, and the Intelligence floor read by Hideous Laughter |
+| `play/zonewall` | The squares a wall of fire takes from its point of origin and the squares its damaging side reaches |
 
 A function of `play` that takes no `context.Context`, reads no query and is no `Service` method (a rule, a text builder, a calculation over plain values) moves with its tests when a change edits it, or the PR says why it cannot. The candidates are advantage, the log's text, the contests' calculations and the pure part of the undo kinds. A move lowers the cap by the lines that left `play`.
 

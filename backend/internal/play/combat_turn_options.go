@@ -12,6 +12,7 @@ import (
 	"github.com/PuraFome/meuRPG/backend/internal/platform/conv"
 	"github.com/PuraFome/meuRPG/backend/internal/play/link"
 	"github.com/PuraFome/meuRPG/backend/internal/play/playdb"
+	"github.com/PuraFome/meuRPG/backend/internal/play/spellreasons"
 	"github.com/PuraFome/meuRPG/backend/internal/rules"
 	"github.com/PuraFome/meuRPG/backend/internal/rules/grid"
 )
@@ -193,7 +194,7 @@ func (s *Service) workOutOptions(ctx context.Context, m authz.Membership, d *enc
 		disableAll(opts, code)
 		s.explainEffectReason(d, who, v, opts, code, s.namesFor(ctx, m.CampaignID))
 	} else {
-		explainSpellReasons(opts)
+		spellreasons.Explain(opts)
 	}
 	return opts, code, nil
 }

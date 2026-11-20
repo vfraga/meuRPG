@@ -16,6 +16,7 @@ import (
 	"github.com/PuraFome/meuRPG/backend/internal/platform/conv"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/dice"
 	"github.com/PuraFome/meuRPG/backend/internal/play/advantage"
+	"github.com/PuraFome/meuRPG/backend/internal/play/against"
 	"github.com/PuraFome/meuRPG/backend/internal/play/link"
 	"github.com/PuraFome/meuRPG/backend/internal/play/playdb"
 	"github.com/PuraFome/meuRPG/backend/internal/rules"
@@ -777,16 +778,16 @@ func (s *Service) spellSaveScene(ctx context.Context, c *combatTx, campaignID st
 	return targetSheet, modes.in.sun.facts(creatureFacts(target, modes.in.states, targetSheet.Traits), target), against, err
 }
 
-// spellSaveAgainst is what the saving throw against a spell is against: its own kinds (spellAgainst) and the
+// spellSaveAgainst is what the saving throw against a spell is against: its own kinds (against.Spell) and the
 // conditions its lasting effect puts on a target that fails, which a roll mode against a condition reads.
 func (s *Service) spellSaveAgainst(ctx context.Context, c *combatTx, sp link.Spell) ([]string, error) {
-	against := spellAgainst(sp)
+	kinds := against.Spell(sp)
 	content, err := s.contentOf(ctx, c)
 	if err != nil {
 		return nil, err
 	}
 	if def, ok := content.CombatSpellEffect(sp.Key); ok {
-		against = withSaveConditions(against, def.Conditions)
+		kinds = against.WithSaveConditions(kinds, def.Conditions)
 	}
-	return against, nil
+	return kinds, nil
 }

@@ -139,6 +139,7 @@ The Perception check that lets a creature see the camouflaged ground is not rule
 ## Wall of Fire
 
 Wall of Fire (`zoneWall`, `zones_wall.go`) is a wall of fire laid from a point, concentration up to 1 minute (10 rounds).
+Its squares and the squares its damaging side reaches come from `play/zonewall`.
 The caster says the wall in `CastSpellRequest.wall` and `PreviewSpellAreaRequest.wall` (`SpellWall`), with the point in `origin`.
 
 - **The request.** A straight wall has a `direction` (one of the eight) and the side `LEFT` or `RIGHT`; a ring has no direction and the side `INNER` or `OUTER`.
@@ -238,7 +239,7 @@ The caster's own player and the master read the whole zone, and a map without th
 
 ## Tests
 
-`zones_silence_test.go` (Silence: the gate, the immunity, the deafened state, the overlap and the hidden caster), `zones_grease_test.go` (Grease: the shape, the cast, entering, the end of the turn, the end of the zone and the undo; Entangle: the shape, the cast only, the end with the concentration and the undo) and `zones_test.go` (Spirit Guardians, Moonbeam, Cloudkill, Web, the push, the forced move, the undo, the player's character, the permissions and the retry) and `zones_hidden_test.go` (the viewer matrix for a hidden caster, a revealed one and a hidden creature, and the stream hint), `zones_spikes_test.go` (Spike Growth: the area, the damage for every square, what counts as movement) and `zones_wall_test.go` (Wall of Fire: the geometry, the request, the cast, the later hits, the fog, the placement in the turn options and the refusal of a cast without a wall); `internal/leaktest` classifies `MoveSpellZone`.
+`zones_silence_test.go` (Silence: the gate, the immunity, the deafened state, the overlap and the hidden caster), `zones_grease_test.go` (Grease: the shape, the cast, entering, the end of the turn, the end of the zone and the undo; Entangle: the shape, the cast only, the end with the concentration and the undo) and `zones_test.go` (Spirit Guardians, Moonbeam, Cloudkill, Web, the push, the forced move, the undo, the player's character, the permissions and the retry) and `zones_hidden_test.go` (the viewer matrix for a hidden caster, a revealed one and a hidden creature, and the stream hint), `zones_spikes_test.go` (Spike Growth: the area, the damage for every square, what counts as movement) and `zones_wall_test.go` (Wall of Fire: the request, the cast, the later hits, the fog, the placement in the turn options and the refusal of a cast without a wall); `internal/leaktest` classifies `MoveSpellZone`.
 `internal/leaktest` reads the map as a player (`mapzones_test.go`): a Darkness takes a creature off a darkvision player's map while a Devil's Sight player and the master keep it, a hidden caster's Fog Cloud or Wall of Fire reaches no player but the unseen squares, a revealed caster's wall reaches a player only where they see (the master reads the burning side behind it), the damage a hidden caster's wall leaves names no caster to a player, a hidden caster's Silence deafens in the view of the master and the creature's own player alone, and a cloud that ends leaves nothing new in the streams.
 The grid cube is in `rules/grid/area_test.go`.
 

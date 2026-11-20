@@ -13,6 +13,7 @@ import (
 	"github.com/PuraFome/meuRPG/backend/internal/play/damagesteps"
 	"github.com/PuraFome/meuRPG/backend/internal/play/live"
 	"github.com/PuraFome/meuRPG/backend/internal/play/playdb"
+	"github.com/PuraFome/meuRPG/backend/internal/play/zonewall"
 	"github.com/PuraFome/meuRPG/backend/internal/rules"
 )
 
@@ -430,7 +431,7 @@ type actionEvent struct {
 	Dx      int32 `json:"dx,omitempty"`
 	Dy      int32 `json:"dy,omitempty"`
 	// Wall is the wall a Wall of Fire cast laid, for the same redrawing.
-	Wall *wallSpec `json:"wall,omitempty"`
+	Wall *zonewall.Spec `json:"wall,omitempty"`
 	// RevealedHits says the cast made appear the hidden creatures its hits name
 	// (HiddenAtCast), without listing them again: a cast of forty hits would carry their ids
 	// twice and pass the table's 16 KiB. Revealed is the list of an answer to the master's

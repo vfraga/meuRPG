@@ -185,7 +185,7 @@ func (s *Service) openVoice(ctx context.Context, row playdb.SessionMessage) (*bl
 	}
 	// The voice is made for the line, not for the request that asked: the others who wait for it
 	// still want it. It has a timeout of its own and stops when the last of them leaves.
-	err := s.msgs.flights.wait(ctx, row.ID, voiceTailTimeout, func(runCtx context.Context) error {
+	err := s.msgs.flights.Wait(ctx, row.ID, voice.TailTimeout, func(runCtx context.Context) error {
 		return s.makeVoice(runCtx, row)
 	})
 	if err != nil {

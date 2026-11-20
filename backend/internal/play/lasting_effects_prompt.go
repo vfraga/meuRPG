@@ -6,6 +6,7 @@ import (
 	playv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/play/v1"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/conv"
 	"github.com/PuraFome/meuRPG/backend/internal/play/advantage"
+	"github.com/PuraFome/meuRPG/backend/internal/play/against"
 	"github.com/PuraFome/meuRPG/backend/internal/play/playdb"
 	"github.com/PuraFome/meuRPG/backend/internal/rules"
 	"github.com/PuraFome/meuRPG/backend/internal/rules/combat"
@@ -58,7 +59,7 @@ func (wv *windowView) effectSavePrompt(w playdb.ReactionWindow, reactor *playdb.
 	def, _ := wv.s.effectDef(content, key)
 	p.TextPt = effectSaveText(def, t.Phase, wv.names, st)
 	if reactor != nil {
-		if err := wv.reactorSave(p, *reactor, ability, effectSaveAgainst(key, def), t.OnDamage); err != nil {
+		if err := wv.reactorSave(p, *reactor, ability, against.EffectSave(key, def), t.OnDamage); err != nil {
 			return err
 		}
 	}

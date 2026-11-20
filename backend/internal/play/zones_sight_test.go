@@ -9,6 +9,7 @@ import (
 
 	playv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/play/v1"
 	"github.com/PuraFome/meuRPG/backend/internal/play/playdb"
+	"github.com/PuraFome/meuRPG/backend/internal/play/zonewall"
 	"github.com/PuraFome/meuRPG/backend/internal/rules/grid"
 )
 
@@ -16,7 +17,7 @@ import (
 // or never saw, is not in the answer. These tests need no database: the roster and the sight are the small fakes
 // of combat_reaction_counterspell_sight_test.go.
 
-func zoneRowOf(t *testing.T, key string, squares []grid.Square, wall *wallSpec) playdb.SpellZone {
+func zoneRowOf(t *testing.T, key string, squares []grid.Square, wall *zonewall.Spec) playdb.SpellZone {
 	t.Helper()
 	raw := make([][2]int, len(squares))
 	for i, sq := range squares {
@@ -113,9 +114,9 @@ func TestAMapWithoutFogSendsTheWholeZone(t *testing.T) {
 // The burning side of a wall reaches the master whole and a player only where they see now.
 func TestTheBurningSideIsReadWhereTheViewerMay(t *testing.T) {
 	t.Parallel()
-	w := &wallSpec{Dir: grid.Direction{Dx: 1}, LengthFt: 15, Side: playv1.WallSide_WALL_SIDE_RIGHT}
+	w := &zonewall.Spec{Dir: grid.Direction{Dx: 1}, LengthFt: 15, Side: playv1.WallSide_WALL_SIDE_RIGHT}
 	origin := grid.Square{Col: 5, Row: 5}
-	wall := w.squares(origin)
+	wall := w.Squares(origin)
 	d := sightData(t, zoneRowOf(t, wallOfFireKey, wall, w))
 
 	master := d.zonesView(combatViewer{master: true}, nil)
@@ -150,8 +151,8 @@ func TestTheBurningSideIsReadWhereTheViewerMay(t *testing.T) {
 // that face them: the ones next to a square they see now. The squares behind stay unread.
 func TestAPlayerReadsTheFaceOfAWallThatBlocksTheirSight(t *testing.T) {
 	t.Parallel()
-	w := &wallSpec{Dir: grid.Direction{Dx: 1}, LengthFt: 25, Side: playv1.WallSide_WALL_SIDE_RIGHT}
-	wall := w.squares(grid.Square{Col: 5, Row: 5}) // (5,5) to (9,5)
+	w := &zonewall.Spec{Dir: grid.Direction{Dx: 1}, LengthFt: 25, Side: playv1.WallSide_WALL_SIDE_RIGHT}
+	wall := w.Squares(grid.Square{Col: 5, Row: 5}) // (5,5) to (9,5)
 	d := sightData(t, zoneRowOf(t, wallOfFireKey, wall, w))
 
 	zs := d.zonesView(playerSeeing(grid.Square{Col: 4, Row: 5}), nil) // the player stands west of its end
@@ -211,8 +212,8 @@ func TestAZoneHalfInSightReadsLikeOneWhollyInSight(t *testing.T) {
 // wall as long as the squares they read, and no side until they see a burning square (RN-10).
 func TestAWallSeenByItsEndTellsNeitherItsLengthNorItsSide(t *testing.T) {
 	t.Parallel()
-	w := &wallSpec{Dir: grid.Direction{Dx: 1}, LengthFt: 60, Side: playv1.WallSide_WALL_SIDE_RIGHT}
-	wall := w.squares(grid.Square{Col: 5, Row: 5})
+	w := &zonewall.Spec{Dir: grid.Direction{Dx: 1}, LengthFt: 60, Side: playv1.WallSide_WALL_SIDE_RIGHT}
+	wall := w.Squares(grid.Square{Col: 5, Row: 5})
 	d := sightData(t, zoneRowOf(t, wallOfFireKey, wall, w))
 
 	zs := d.zonesView(playerSeeing(grid.Square{Col: 4, Row: 5}), nil) // sees the end: only (5,5)

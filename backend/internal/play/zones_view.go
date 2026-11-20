@@ -100,7 +100,7 @@ func (z *zone) occupantsFor(cs []playdb.Combatant, v combatViewer) []string {
 func (z *zone) view(owner playdb.Combatant, round int32, names func(string) string) *playv1.SpellZone {
 	shape, size := z.def.shape, z.sizeFt()
 	if z.wall != nil {
-		shape, size = z.wall.shape() // the wall the caster laid, not the spell's largest
+		shape, size = z.wall.Shape() // the wall the caster laid, not the spell's largest
 	}
 	out := &playv1.SpellZone{
 		Id: z.row.ID, SpellKey: z.row.SpellKey, OwnerCombatantId: owner.ID, OwnerLabel: owner.Label,

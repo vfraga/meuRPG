@@ -78,7 +78,7 @@ A key used for another call is refused.
 
 ### The pass
 
-`consumable.LatestPass` finds the pass in the session's latest events.
+`consumable.LatestPass` finds the pass in the session's latest events (`consumable.Event` carries the kind, the combat and the payload of each).
 It is the reader's latest read, when that read passed.
 It lapses when:
 
