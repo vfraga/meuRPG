@@ -129,7 +129,7 @@ func (s *Service) sheetForChoices(ctx context.Context, m authz.Membership, conte
 	fresh := newKeptOutPicks(viewContent(content, m), func() *charactersv1.FullSheet { return full }, over)
 	over.FeatureChoiceKeys = slices.DeleteFunc(over.FeatureChoiceKeys, func(k string) bool { return slices.Contains(fresh, k) })
 	// A pick is new when the stored sheet lacks it: what the master archived or switched off is not a new choice.
-	if err := refuseNewChoices(content, m, row.ID, full, over); err != nil {
+	if err := refuseNewChoicesFor(content, m, row.ID, full, over, false); err != nil {
 		return nil, nil, err
 	}
 	return &charactersv1.CharacterSheet{Content: &charactersv1.CharacterSheet_Full{Full: over}}, fresh, nil

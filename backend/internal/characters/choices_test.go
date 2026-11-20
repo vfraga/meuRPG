@@ -650,9 +650,10 @@ func TestPreviewChoicesAnswersTheListsOfADraftWhoseOldPicksNoLongerFit(t *testin
 		c := tb.ana.create(t, tb.campaign, charactersv1.CharacterKind_CHARACTER_KIND_PLAYER, "Mutante", draft("class:fighter", []string{"skill:perception", "skill:survival"}, "feature:fighter-fighting-style-defense"))
 		res, err := tb.preview(tb.ana, c.GetId(), draft("class:wizard", ticked))
 		check(t, res, err)
-		_, err = tb.ana.update(t, c, "Mutante", draft("class:wizard", ticked))
-		if err == nil {
-			t.Error("the save of the picks that no longer fit is accepted, want it refused")
+		if res.GetDone() != 3 || res.GetTotal() != 3 {
+			t.Errorf("done %d of %d, want 3 of 3 for the wizard draft", res.GetDone(), res.GetTotal())
 		}
+		_, err = tb.ana.update(t, c, "Mutante", draft("class:wizard", ticked))
+		wantUnfit(t, err, "sheet.full.skill_proficiency_keys[0]", "Atletismo")
 	})
 }

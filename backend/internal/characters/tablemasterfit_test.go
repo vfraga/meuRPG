@@ -1,7 +1,6 @@
 package characters
 
 import (
-	"strings"
 	"testing"
 
 	"connectrpc.com/connect"
@@ -150,8 +149,8 @@ func TestTheMastersUnknownKeyAnswersHoldWhateverOtherPicksTheSheetHas(t *testing
 			}
 		}
 		pick := rules.ScopedChoice(rules.ToolPickKey(absentOwner), "skill:nature")
-		if err := refuseUnfitPickIn(view, true, held, withPick(pick, unlisted...)); err != nil && !strings.Contains(err.Error(), "skill_proficiency_keys") {
-			t.Errorf("with an unlisted skill beside it = %v, want no answer about the tool pick", err)
+		if err := refuseUnfitPickIn(view, true, held, withPick(pick, unlisted...)); err != nil {
+			t.Errorf("with an unlisted skill beside it = %v, want no answer for the master", err)
 		}
 	})
 }
@@ -205,5 +204,21 @@ func TestTheMasterLevelsUpAPlayersCharacterWithAPickNoListPlaces(t *testing.T) {
 		if is.GetCode() == rules.IssuePickFit {
 			t.Errorf("the player reads the fit issue: %v", is)
 		}
+	}
+}
+
+// The preview of the choices of a locked sheet refuses no pick that no list places: the save of the pick is what refuses it.
+func TestThePreviewOfALockedSheetRefusesNoPickNoListPlaces(t *testing.T) {
+	t.Parallel()
+	u := newUnfitTable(t, "skill:nature")
+	bg := u.master.addEntry(t, u.campaign, toolRace(toolEffect(1, smithsTools)))
+	pc := u.player.create(t, u.campaign, charactersv1.CharacterKind_CHARACTER_KIND_PLAYER, "Ferreira", u.toolSheet(t, bg, thievesTools, smithsTools))
+	if h := u.h.lockSheets(u.campaign); h != 1 {
+		t.Fatalf("locked %d sheets", h)
+	}
+	tb := &choiceTable{h: u.h, campaign: u.campaign}
+	// A tool the race's choice does not offer: the preview answers the lists.
+	if _, err := tb.preview(u.player, pc.GetId(), u.toolSheet(t, bg, thievesTools, smithsTools, herbalismKit)); err != nil {
+		t.Errorf("the preview of a locked sheet with a pick no list places = %v, want it answered", err)
 	}
 }
