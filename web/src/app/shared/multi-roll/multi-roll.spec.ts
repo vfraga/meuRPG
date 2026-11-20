@@ -195,4 +195,28 @@ describe('MultiRoll formula line', () => {
     expect(el.querySelector('.type__formula')!.textContent).toContain('Dano: 4 + 3 = 7');
     expect(button('Confirmar')).toBeTruthy();
   });
+
+  describe('the way back of a step that can be left (#938)', () => {
+    it('puts "Voltar" before the confirm button in the typed form, and sends nothing when it is pressed', () => {
+      const { el, button, typed, type, fixture } = setup({ canApp: false, backLabel: 'Voltar' });
+      const backs: string[] = [];
+      fixture.componentInstance.back.subscribe(() => backs.push('back'));
+      type(0, '4');
+      type(1, '17');
+      const names = Array.from(el.querySelectorAll('.actions button'), (b) =>
+        b.textContent?.trim(),
+      );
+      expect(names).toEqual(['arrow_backVoltar', 'Confirmar']);
+      expect(el.querySelector('.actions')!.classList).toContain('actions--pair');
+      button('Voltar').click();
+      expect(backs).toEqual(['back']);
+      expect(typed).toEqual([]);
+    });
+
+    it('puts "Voltar" under the two buttons before the way is chosen', () => {
+      const { el } = setup({ backLabel: 'Voltar' });
+      const names = Array.from(el.querySelectorAll('button'), (b) => b.textContent?.trim());
+      expect(names).toEqual(['casinoRolar no app', 'Digitar o resultado', 'arrow_backVoltar']);
+    });
+  });
 });

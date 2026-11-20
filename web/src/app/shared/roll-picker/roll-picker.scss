@@ -30,7 +30,19 @@
 
 .pick__main {
   --mat-button-filled-container-height: 48px;
+  --mat-button-outlined-container-height: 48px;
   width: 100%;
+}
+
+// "Voltar" before the confirm button: the two the same size in one row, the way back to the app's roll under them.
+.actions--pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+
+  .type__back,
+  .type__err {
+    grid-column: 1 / -1;
+  }
 }
 
 .pick__main--quiet {

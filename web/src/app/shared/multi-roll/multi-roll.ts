@@ -67,10 +67,14 @@ export class MultiRoll {
   /** Fields that fill the row side by side (a phone stacks them) and the buttons side by side, for fields with a hint. */
   readonly wide = input(false);
   readonly busy = input(false);
+  /** A step that can be left (the window's roll step, #938): "Voltar", under the two buttons and before the confirm button. Empty: no way back drawn. */
+  readonly backLabel = input('');
   readonly typing = model(false);
 
   readonly app = output<void>();
   readonly typed = output<number[]>();
+  /** "Voltar" was pressed: nothing was sent. */
+  readonly back = output<void>();
 
   private readonly injector = inject(Injector);
   private readonly inputs = viewChildren<ElementRef<HTMLInputElement>>('field');

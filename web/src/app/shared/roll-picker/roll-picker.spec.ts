@@ -193,4 +193,31 @@ describe('RollPicker', () => {
     expect(button('Confirmar')!.textContent?.trim()).toBe('Confirmar 18');
     expect(el.querySelector('.type__num')?.textContent?.trim()).toBe('18');
   });
+
+  describe('the way back of a step that can be left (#938)', () => {
+    it('puts "Voltar" before the confirm button, the two in one row, and says back without sending', () => {
+      const { el, type, button, rolled, fixture } = setup({ canApp: false, backLabel: 'Voltar' });
+      const backs: string[] = [];
+      fixture.componentInstance.back.subscribe(() => backs.push('back'));
+      type('14');
+      const row = el.querySelector('.actions')!;
+      expect(row.classList).toContain('actions--pair');
+      const names = Array.from(row.querySelectorAll('button'), (b) => b.textContent?.trim());
+      expect(names).toEqual(['arrow_backVoltar', 'Confirmar 14']);
+      button('Voltar')!.click();
+      expect(backs).toEqual(['back']);
+      expect(rolled).toEqual([]);
+    });
+
+    it('puts "Voltar" under the two buttons while the player has not chosen how to roll', () => {
+      const { el } = setup({ backLabel: 'Voltar' });
+      const names = Array.from(el.querySelectorAll('button'), (b) => b.textContent?.trim());
+      expect(names).toEqual(['casinoRolar no app', 'Digitar o resultado', 'arrow_backVoltar']);
+    });
+
+    it('draws no way back unless it is asked for', () => {
+      const { el } = setup({ canApp: false });
+      expect(el.textContent).not.toContain('Voltar');
+    });
+  });
 });

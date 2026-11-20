@@ -24,6 +24,11 @@
         Digitar o resultado
       </button>
     }
+    @if (backLabel()) {
+      <button matButton="outlined" type="button" class="pick__main pick__back" (click)="back.emit()">
+        <mat-icon aria-hidden="true">arrow_back</mat-icon>{{ backLabel() }}
+      </button>
+    }
   </div>
 } @else {
   <form class="type" aria-label="Resultado dos dados físicos" (submit)="$event.preventDefault(); confirm()">
@@ -74,7 +79,12 @@
         }
       </div>
     }
-    <div class="actions" [class.actions--row]="wide()">
+    <div class="actions" [class.actions--row]="wide()" [class.actions--pair]="!!backLabel()">
+      @if (backLabel()) {
+        <button matButton="outlined" type="button" class="pick__main pick__back" (click)="back.emit()">
+          <mat-icon aria-hidden="true">arrow_back</mat-icon>{{ backLabel() }}
+        </button>
+      }
       <button
         matButton="filled"
         type="submit"

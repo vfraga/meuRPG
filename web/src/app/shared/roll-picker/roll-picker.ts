@@ -89,11 +89,15 @@ export class RollPicker {
   readonly hideTotal = input(false);
   /** No empty result box while the number is not typed: only the status text for a screen reader. */
   readonly hideWait = input(false);
+  /** A step that can be left (the window's roll step, #938): "Voltar", under the two buttons and before the confirm button. Empty: no way back drawn. */
+  readonly backLabel = input('');
   /** Typing mode, two-way: the sheet reads it to change its title. */
   readonly typing = model(false);
 
   readonly app = output<void>();
   readonly typed = output<number>();
+  /** "Voltar" was pressed: nothing was sent. */
+  readonly back = output<void>();
 
   private readonly injector = inject(Injector);
   private readonly field = viewChild<ElementRef<HTMLInputElement>>('field');

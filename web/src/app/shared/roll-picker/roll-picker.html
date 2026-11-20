@@ -25,6 +25,9 @@
         {{ typeLabel() }}
       </button>
     }
+    @if (backLabel()) {
+      <ng-container *ngTemplateOutlet="backTpl" />
+    }
   </div>
 } @else {
   <div class="type" [class.type--compact]="compact()">
@@ -71,9 +74,12 @@
         <span class="mr-visually-hidden">{{ waitText() }}</span>
       }
     </div>
-    <div class="actions" [class.foot]="sticky()">
+    <div class="actions" [class.actions--pair]="!!backLabel()" [class.foot]="sticky()">
     @if (sticky() && !inlineError()) {
       <ng-container *ngTemplateOutlet="alertTpl" />
+    }
+    @if (backLabel()) {
+      <ng-container *ngTemplateOutlet="backTpl" />
     }
     <button
       matButton="filled"
@@ -103,4 +109,10 @@
         <mat-icon aria-hidden="true">error</mat-icon>{{ errorText() }}
       </p>
     }
+</ng-template>
+
+<ng-template #backTpl>
+  <button matButton="outlined" type="button" class="pick__main pick__back" (click)="back.emit()">
+    <mat-icon aria-hidden="true">arrow_back</mat-icon>{{ backLabel() }}
+  </button>
 </ng-template>
