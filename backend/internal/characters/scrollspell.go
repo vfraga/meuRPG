@@ -2,6 +2,7 @@ package characters
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"slices"
 
@@ -86,7 +87,7 @@ func (s *Service) scrollSpellIn(ctx context.Context, tx pgx.Tx, m authz.Membersh
 	if in.revision != 0 && in.revision != current.Revision {
 		return current, nil, false, errStaleRevision()
 	}
-	// The content is read in this transaction, so the write is ordered against a switch or an archive of the spell.
+	// The content is read in the transaction, so the spell is checked against the table as it stands now.
 	content, err := s.contentFor(ctx, tx, m.CampaignID)
 	if err != nil {
 		return current, nil, false, wrap("read rules content", err)
@@ -109,7 +110,7 @@ func (s *Service) scrollSpellIn(ctx context.Context, tx pgx.Tx, m authz.Membersh
 	if !ok {
 		return current, content, false, invalidArgument(fieldErr("entry_id", "is not a Spell Scroll"))
 	}
-	if err := checkScrollSpell(content, scroll, in.spellKey); err != nil {
+	if err := checkScrollSpell(content, scroll, in.spellKey, isMaster(m)); err != nil {
 		return current, content, false, err
 	}
 	if entry.GetSpellKey() == in.spellKey {
@@ -122,17 +123,20 @@ func (s *Service) scrollSpellIn(ctx context.Context, tx pgx.Tx, m authz.Membersh
 
 // checkScrollSpell refuses a spell that cannot be on the scroll: one that does not exist, one that is not of the scroll's level
 // (a cantrip is 0), and one the table has switched off or archived. An empty key takes the spell off and is never refused.
-func checkScrollSpell(content *rules.Content, scroll rules.SpellScrollNumbers, spellKey string) error {
+// RN-23: to anyone but the master a spell that is switched off or archived is refused as a key that is no spell, and before
+// the level is looked at, so the refusal tells it apart from none; the master is told it is not on.
+func checkScrollSpell(content *rules.Content, scroll rules.SpellScrollNumbers, spellKey string, master bool) error {
 	if spellKey == "" {
 		return nil
 	}
 	det, ok := content.SpellDetails(spellKey)
+	hidden := ok && content.Hidden(spellKey)
 	switch {
-	case !ok:
+	case !ok, hidden && !master:
 		return invalidArgument(fieldErr("spell_key", "is not a spell"))
 	case det.Spell.Level != scroll.Level:
 		return invalidArgument(fieldErr("spell_key", "is not a spell of the scroll's level"))
-	case content.Hidden(spellKey):
+	case hidden:
 		return invalidArgument(fieldErr("spell_key", "is not on at the table"))
 	}
 	return nil
@@ -147,6 +151,9 @@ func (s *Service) writeScrollSpell(ctx context.Context, q *charactersdb.Queries,
 	row, err := q.UpdateCharacterSheet(ctx, charactersdb.UpdateCharacterSheetParams{
 		CampaignID: m.CampaignID, ID: current.ID, Revision: current.Revision, Name: current.Name, Sheet: doc, Now: s.now(),
 	})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return current, errStaleRevision()
+	}
 	if err != nil {
 		return current, wrap("update sheet", err)
 	}
@@ -163,11 +170,16 @@ func fillScrollSpells(content *rules.Content, f *charactersv1.FullSheet, derived
 		if key == "" {
 			continue
 		}
-		if _, ok := content.SpellScrollNumbers(it.GetKey()); !ok {
+		scroll, ok := content.SpellScrollNumbers(it.GetKey())
+		if !ok {
 			it.SpellKey = "" // a spell stored on what is no scroll says nothing
 			continue
 		}
 		it.Consumable = sheetConsumableOf(content, it.GetKey())
+		if det, exists := content.SpellDetails(key); exists && det.Spell.Level != scroll.Level {
+			it.SpellKey = "" // the spell is no longer of the scroll's level: the scroll reads as having none
+			continue
+		}
 		if _, exists := content.SpellDetails(key); !exists || content.Hidden(key) {
 			if !master {
 				it.SpellKey, it.SpellGonePt = "", scrollSpellGonePT

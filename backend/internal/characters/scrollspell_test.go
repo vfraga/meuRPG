@@ -7,10 +7,12 @@ import (
 	"testing"
 
 	"connectrpc.com/connect"
+	"github.com/jackc/pgx/v5"
 	"google.golang.org/protobuf/proto"
 
 	charactersv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/characters/v1"
 	rulesv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/rules/v1"
+	"github.com/PuraFome/meuRPG/backend/internal/characters/charactersdb"
 )
 
 const (
@@ -115,9 +117,8 @@ func TestSetScrollSpellWhoMayAsk(t *testing.T) {
 	wantEditorRefusal(t, "another player", err, `not_found: character not found`)
 	_, err = et.setScroll(et.caio, pc, "m99", "")
 	wantEditorRefusal(t, "another player, an entry that is not there", err, `not_found: character not found`)
-	if _, err = et.setScroll(et.visitor, pc, id, "spell:fireball"); err == nil {
-		t.Error("a stranger to the campaign put a spell on the scroll")
-	}
+	_, err = et.setScroll(et.visitor, pc, id, "spell:fireball")
+	wantCode(t, "a stranger to the campaign", err, connect.CodeNotFound)
 	pc, err = et.setScroll(et.dona, pc, id, "spell:fireball")
 	if err != nil {
 		t.Fatalf("the owner on an open sheet: %v", err)
@@ -151,6 +152,10 @@ func TestSetScrollSpellRefusals(t *testing.T) {
 	}
 	for _, u := range []*user{et.master, et.dona} {
 		who := map[*user]string{et.master: "the master", et.dona: "the owner"}[u]
+		hiddenRefusal := invalidArg("spell_key", "is not on at the table")
+		if u != et.master {
+			hiddenRefusal = invalidArg("spell_key", "is not a spell") // RN-23: no word that tells it from a key that is none
+		}
 		for _, c := range []struct {
 			name  string
 			entry string
@@ -166,8 +171,8 @@ func TestSetScrollSpellRefusals(t *testing.T) {
 			{"a spell of another level", third, "spell:magic-missile", 0, invalidArg("spell_key", "is not a spell of the scroll's level")},
 			{"a cantrip on a scroll of the 3rd level", third, "spell:fire-bolt", 0, invalidArg("spell_key", "is not a spell of the scroll's level")},
 			{"a spell on a cantrip scroll", cantrip, "spell:magic-missile", 0, invalidArg("spell_key", "is not a spell of the scroll's level")},
-			{"a spell the master switched off", third, "spell:lightning-bolt", 0, invalidArg("spell_key", "is not on at the table")},
-			{"a spell of the table the master archived", third, off, 0, invalidArg("spell_key", "is not on at the table")},
+			{"a spell the master switched off", third, "spell:lightning-bolt", 0, hiddenRefusal},
+			{"a spell of the table the master archived", third, off, 0, hiddenRefusal},
 		} {
 			_, err := et.setScrollAt(u, pc, c.entry, c.spell, c.rev)
 			wantEditorRefusal(t, who+": "+c.name, err, c.want)
@@ -430,4 +435,95 @@ func TestSheetConsumableOfAReaderWhoDoesNotCast(t *testing.T) {
 	wantScrollFields(t, "the fighter", et.read(t, et.master, pc.GetId()), scrollFirst, scroll(func(c *charactersv1.SheetConsumable) {
 		c.ScrollSpellLevel, c.ScrollUnreadablePt = 1, "Não conjura magias."
 	}))
+}
+
+// RN-23: to the owner a spell the master switched off or archived is refused exactly as a key that is no spell, whatever its level,
+// so the refusal names nothing the owner may not read; the master is told it is not on.
+func TestSetScrollSpellNeverTellsTheOwnerAHiddenSpellFromAMissingOne(t *testing.T) {
+	t.Parallel()
+	et, pc := scrollTable(t, scrollThird)
+	id := entryOf(t, pc, scrollThird).GetId()
+	tableSpell := et.master.addEntry(t, et.campaign, choiceTableSpell(3, false, "class:wizard")).GetKey()
+	if _, err := et.master.table.ArchiveTableEntry(t.Context(), connect.NewRequest(&rulesv1.ArchiveTableEntryRequest{CampaignId: et.campaign, Key: tableSpell})); err != nil {
+		t.Fatalf("ArchiveTableEntry: %v", err)
+	}
+	et.master.setOff(t, et.campaign, true, "spell:lightning-bolt", "spell:magic-missile")
+	_, missing := et.setScroll(et.dona, pc, id, "spell:nope")
+	want := editorRefusal(missing)
+	if want != invalidArg("spell_key", "is not a spell") {
+		t.Fatalf("a missing key reads %q", want)
+	}
+	for name, spell := range map[string]string{
+		"switched off, of the scroll's level": "spell:lightning-bolt",
+		"switched off, of another level":      "spell:magic-missile",
+		"archived, of the scroll's level":     tableSpell,
+	} {
+		_, err := et.setScroll(et.dona, pc, id, spell)
+		if got := editorRefusal(err); got != want || connect.CodeOf(err) != connect.CodeOf(missing) {
+			t.Errorf("the owner, a spell %s: %q (%v), want the refusal of a missing key %q", name, got, connect.CodeOf(err), want)
+		}
+	}
+	// The positive control: the master is told which.
+	_, err := et.setScroll(et.master, pc, id, "spell:lightning-bolt")
+	wantEditorRefusal(t, "the master", err, invalidArg("spell_key", "is not on at the table"))
+}
+
+// A save that gives an entry another key (the same id) drops the spell the entry held.
+func TestSaveThatChangesTheKeyOfAScrollDropsItsSpell(t *testing.T) {
+	t.Parallel()
+	et, pc := scrollTable(t, scrollThird)
+	id := entryOf(t, pc, scrollThird).GetId()
+	pc, err := et.setScroll(et.master, pc, id, "spell:fireball")
+	if err != nil {
+		t.Fatal(err)
+	}
+	req := editorSaveOf(pc)
+	req.Sheet = editorClone(pc.GetSheet(), func(f *charactersv1.FullSheet) { f.MagicItems[0].Key = scrollSecond })
+	saved, err := editorUpdate(et.master, req)
+	if err != nil {
+		t.Fatalf("the save: %v", err)
+	}
+	if it := entryOf(t, saved, scrollSecond); it.GetSpellKey() != "" || it.GetSpellNamePt() != "" || it.GetConsumable().GetReadsScrollSpell() {
+		t.Errorf("the re-keyed entry reads %q/%q", it.GetSpellKey(), it.GetSpellNamePt())
+	}
+}
+
+// A stored spell whose level is no longer the scroll's reads as no spell, with no scroll field.
+func TestAStoredScrollSpellOfAnotherLevelReadsAsNone(t *testing.T) {
+	t.Parallel()
+	et, pc := scrollTable(t, scrollThird)
+	id := entryOf(t, pc, scrollThird).GetId()
+	pc, err := et.setScroll(et.master, pc, id, "spell:fireball")
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = et.inTx(t, func(tx pgx.Tx) error {
+		q := et.h.svc.queries.WithTx(tx)
+		row, err := q.GetCharacterForUpdate(t.Context(), charactersdb.GetCharacterForUpdateParams{CampaignID: et.campaign, ID: pc.GetId()})
+		if err != nil {
+			return err
+		}
+		sheet, err := loadSheet(row.ID, row.Sheet)
+		if err != nil {
+			return err
+		}
+		sheet.GetFull().GetMagicItems()[0].SpellKey = "spell:magic-missile" // a level 1 spell on the scroll of the 3rd
+		doc, err := storeJSON.Marshal(sheet)
+		if err != nil {
+			return err
+		}
+		_, err = q.UpdateCharacterSheet(t.Context(), charactersdb.UpdateCharacterSheetParams{CampaignID: et.campaign, ID: row.ID, Revision: row.Revision, Name: row.Name, Sheet: doc, Now: et.h.clock.Now()})
+		return err
+	})
+	if err != nil {
+		t.Fatalf("store the spell: %v", err)
+	}
+	for who, u := range map[string]*user{"the owner": et.dona, "the master": et.master} {
+		read := et.read(t, u, pc.GetId())
+		it := entryOf(t, read, scrollThird)
+		if it.GetSpellKey() != "" || it.GetSpellNamePt() != "" || it.GetSpellGonePt() != "" || it.GetSpellOff() {
+			t.Errorf("%s reads %q/%q/%q", who, it.GetSpellKey(), it.GetSpellNamePt(), it.GetSpellGonePt())
+		}
+		wantScrollFields(t, who, read, scrollThird, scroll(func(*charactersv1.SheetConsumable) {}))
+	}
 }

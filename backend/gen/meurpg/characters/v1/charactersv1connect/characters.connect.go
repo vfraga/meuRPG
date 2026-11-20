@@ -465,11 +465,16 @@ type CharacterServiceClient interface {
 	// must exist, be of the scroll's level (a cantrip is 0) and be on and not archived at the table. The spell is stored
 	// on the entry (SheetMagicItem.spell_key); a plain save keeps it. The checks run in this order: who may (a caller
 	// who may not see the character is told it does not exist), the sheet's lock, the stale revision, the entry, the
-	// spell, its level, the table.
-	// Errors: `not_found` (the character is not the caller's to see), `failed_precondition` with CharacterBlocked:
-	// SHEET_LOCKED or CHARACTER_DEAD (the owner of a locked sheet), `aborted` (stale revision), `invalid_argument` with
-	// InvalidField: entry_id (not an entry of the sheet, or not a Spell Scroll) or spell_key (not a spell, not of the
-	// scroll's level, or not on at the table).
+	// spell, its level, the table. To anyone but the master a spell the table switched off or archived is refused as a
+	// key that is no spell, before its level is looked at (RN-23); the master is told it is not on.
+	// Errors:
+	//   - `not_found`: the character is not the caller's to see.
+	//   - `failed_precondition` with CharacterBlocked: SHEET_LOCKED or CHARACTER_DEAD (the owner of a locked sheet or of
+	//     a dead character).
+	//   - `aborted`: stale revision.
+	//   - `invalid_argument` with InvalidField: entry_id (empty, not an entry of the sheet, or not a Spell Scroll),
+	//     character_id (a character with a basic sheet, which has no items) or spell_key (not a spell, not of the
+	//     scroll's level, or, for the master, not on at the table).
 	SetScrollSpell(context.Context, *connect.Request[v1.SetScrollSpellRequest]) (*connect.Response[v1.SetScrollSpellResponse], error)
 	// MarkCharacterDead records that a player character died (RN-03). Only
 	// the campaign's master may call it.
@@ -1865,11 +1870,16 @@ type CharacterServiceHandler interface {
 	// must exist, be of the scroll's level (a cantrip is 0) and be on and not archived at the table. The spell is stored
 	// on the entry (SheetMagicItem.spell_key); a plain save keeps it. The checks run in this order: who may (a caller
 	// who may not see the character is told it does not exist), the sheet's lock, the stale revision, the entry, the
-	// spell, its level, the table.
-	// Errors: `not_found` (the character is not the caller's to see), `failed_precondition` with CharacterBlocked:
-	// SHEET_LOCKED or CHARACTER_DEAD (the owner of a locked sheet), `aborted` (stale revision), `invalid_argument` with
-	// InvalidField: entry_id (not an entry of the sheet, or not a Spell Scroll) or spell_key (not a spell, not of the
-	// scroll's level, or not on at the table).
+	// spell, its level, the table. To anyone but the master a spell the table switched off or archived is refused as a
+	// key that is no spell, before its level is looked at (RN-23); the master is told it is not on.
+	// Errors:
+	//   - `not_found`: the character is not the caller's to see.
+	//   - `failed_precondition` with CharacterBlocked: SHEET_LOCKED or CHARACTER_DEAD (the owner of a locked sheet or of
+	//     a dead character).
+	//   - `aborted`: stale revision.
+	//   - `invalid_argument` with InvalidField: entry_id (empty, not an entry of the sheet, or not a Spell Scroll),
+	//     character_id (a character with a basic sheet, which has no items) or spell_key (not a spell, not of the
+	//     scroll's level, or, for the master, not on at the table).
 	SetScrollSpell(context.Context, *connect.Request[v1.SetScrollSpellRequest]) (*connect.Response[v1.SetScrollSpellResponse], error)
 	// MarkCharacterDead records that a player character died (RN-03). Only
 	// the campaign's master may call it.

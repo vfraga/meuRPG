@@ -95,3 +95,17 @@ func TestScrollSpellReadingRefusesAKeyThatIsNoSpell(t *testing.T) {
 		}
 	}
 }
+
+// The part of the turn a casting time spends: an action, a bonus action and a reaction spend theirs, and every longer or unparsed
+// casting spends none.
+func TestCastingTimeEconomy(t *testing.T) {
+	t.Parallel()
+	for unit, want := range map[string]string{
+		CastAction: EconomyAction, CastBonusAction: EconomyBonusAction, CastReaction: EconomyReaction,
+		CastMinute: "", CastHour: "", "": "", "fortnight": "",
+	} {
+		if got := (CastingTime{Amount: 1, Unit: unit}).Economy(); got != want {
+			t.Errorf("unit %q: economy %q, want %q", unit, got, want)
+		}
+	}
+}

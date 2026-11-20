@@ -4426,7 +4426,7 @@ type SheetConsumable struct {
 	// The level of the scroll's spell: 0 for a cantrip. Meaningful only while the entry's spell_key is set.
 	ScrollSpellLevel int32 `protobuf:"varint,8,opt,name=scroll_spell_level,json=scrollSpellLevel,proto3" json:"scroll_spell_level,omitempty"`
 	// The character reads the spell: it is on the spell list of a class the character casts from. False for a character with no
-	// spellcasting. A scroll the character does not read is refused by the read, and nothing is spent.
+	// spellcasting.
 	ReadsScrollSpell bool `protobuf:"varint,9,opt,name=reads_scroll_spell,json=readsScrollSpell,proto3" json:"reads_scroll_spell,omitempty"`
 	// Why the character does not read the spell, in words ("Não é da lista de Mago."). Empty when reads_scroll_spell is true.
 	ScrollUnreadablePt string `protobuf:"bytes,10,opt,name=scroll_unreadable_pt,json=scrollUnreadablePt,proto3" json:"scroll_unreadable_pt,omitempty"`
