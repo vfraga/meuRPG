@@ -115,8 +115,8 @@
           }
         </div>
         @for (option of choice.options; track option.key) {
-          @if (isPicked(choice, option) && problems().get(option.key); as problem) {
-            <mat-error class="choice__error" role="alert">{{ problem }}</mat-error>
+          @if (refusalOf(choice, option); as problem) {
+            <mat-error class="choice__error" role="alert" [id]="optionId(choice, option) + '-e'">{{ problem }}</mat-error>
           }
         }
         @for (line of repeatLines(choice); track line) {
@@ -147,7 +147,10 @@
     [attr.role]="isRadio(choice) ? 'radio' : 'checkbox'"
     [attr.aria-checked]="isPicked(choice, option)"
     [attr.aria-disabled]="isOff(choice, option) ? 'true' : null"
-    [attr.aria-describedby]="optionId(choice, option) + '-d'"
+    [attr.aria-describedby]="
+      optionId(choice, option) + '-d' + (refusalOf(choice, option) ? ' ' + optionId(choice, option) + '-e' : '')
+    "
+    [attr.aria-invalid]="refusalOf(choice, option) ? 'true' : null"
     [id]="optionId(choice, option)"
     [attr.tabindex]="tabIndex(choice, option)"
     (click)="toggle(choice, option)"

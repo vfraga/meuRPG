@@ -917,7 +917,7 @@ describe('CharacterEditor', () => {
       expect(boxes().map((b) => b.checked)).toEqual([false, true]);
     });
 
-    it('clears the refusal on the step when a skill or an expertise is toggled or the class changes', async () => {
+    it('clears the refusal on the step when a pick, a tool pick or the class, race or background changes', async () => {
       const { cmp, fixture } = await openCut();
       const refuse = () => {
         cmp.saving.pickProblems.set(new Map([['skill:stealth', 'Uma frase do servidor.']]));
@@ -927,6 +927,9 @@ describe('CharacterEditor', () => {
         () => cmp.picks.toggleSkill('skill:arcana'),
         () => cmp.picks.toggleExpertise('skill:arcana'),
         () => cmp.fullForm.patchValue({ className: 'class:rogue' }),
+        () => cmp.picks.featureChoiceKeys.set(['trait:x@mesa#tool=proficiency:lute']),
+        () => cmp.fullForm.patchValue({ race: '', subrace: '' }),
+        () => cmp.fullForm.patchValue({ background: 'background:acolyte' }),
       ]) {
         refuse();
         act();
