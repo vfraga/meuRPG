@@ -151,13 +151,15 @@ describe('CastSheet: "Estrela também", a self-only spell that reaches the steed
       mount: 'other',
     });
     expect(el.querySelector('app-steed-also')).toBeNull();
+    expect(el.querySelector('.steed-off')).toBeNull();
     await cast();
     expect(castSpell.mock.calls[0][12]).not.toHaveProperty('alsoSteed');
   });
 
-  it('has no check when the bonded steed is not known', async () => {
+  it('has no check when the bonded steed is not known, and does not say the caster got off while still mounted', async () => {
     const { el } = await open(true, undefined, { bonded: '', mount: '' });
     expect(el.querySelector('app-steed-also')).toBeNull();
+    expect(el.querySelector('.steed-off')).toBeNull();
   });
 
   it('a dismount while the sheet is open takes the check away and says why; the cast reaches the caster alone', async () => {

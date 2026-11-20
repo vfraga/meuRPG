@@ -188,11 +188,20 @@ export class CombatSheets {
       this.openCastSheet(data, resume);
       return;
     }
-    // "Estrela também" names the caster's bonded steed only: the sheet opens once the bond is read.
-    void this.bondedSteedId().then((bondedSteedId) =>
-      this.openCastSheet({ ...data, bondedSteedId }, resume),
-    );
+    // "Estrela também" names the caster's bonded steed only: the sheet opens once the bond is read, once for however many taps.
+    if (this.castOpening) {
+      return;
+    }
+    this.castOpening = true;
+    void this.bondedSteedId()
+      .then((bondedSteedId) => this.openCastSheet({ ...data, bondedSteedId }, resume))
+      .finally(() => {
+        this.castOpening = false;
+      });
   }
+
+  /** A cast sheet waits for the bond to be read: another tap meanwhile opens nothing. */
+  private castOpening = false;
 
   private openCastSheet(data: CastSheetData, resume?: readonly PendingDamage[]): void {
     openSheet<CastSheet, CastSheetData, boolean>(this.ctx.dialog, this.ctx.bottomSheet, CastSheet, {

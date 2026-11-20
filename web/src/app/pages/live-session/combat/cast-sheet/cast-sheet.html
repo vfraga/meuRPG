@@ -53,7 +53,7 @@
       }
       <!-- The live region is on the page before its text, so a screen reader announces the text when it comes. -->
       <div class="steed-status" role="status">
-        @if (s.data.alsoSteed && !s.steedName()) {
+        @if (s.steedOff()) {
           <!-- The caster got off (or was thrown) while the sheet was open: the spell is the caster's alone again. -->
           <p class="steed-off">Você desmontou: a magia vale só para você.</p>
         }

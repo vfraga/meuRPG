@@ -1802,6 +1802,24 @@ describe('CombatView sheets: casting', () => {
     expect(data(m)['bondedSteedId']).toBe('');
   });
 
+  it('opens one sheet only when the button is tapped again while the summon options are read', async () => {
+    const summonOptions = vi.fn(async () => ({ spells: [], bondedSteed: { id: 'bond-1' } }));
+    const m = await mount(
+      { spells: [missile({ alsoSteed: true })] },
+      {},
+      { creatures: { summonOptions } },
+    );
+    m.view.sheets.castSheet('spell:magic-missile');
+    m.view.sheets.castSheet('spell:magic-missile');
+    await settle(m.fixture);
+    expect(m.opened).toHaveLength(1);
+    expect(summonOptions).toHaveBeenCalledTimes(1);
+    // Once it opened, the next tap opens a sheet again.
+    m.view.sheets.castSheet('spell:magic-missile');
+    await settle(m.fixture);
+    expect(m.opened).toHaveLength(2);
+  });
+
   it('does not read the summon options for a spell that cannot reach a steed', async () => {
     const summonOptions = vi.fn(async () => ({ spells: [] }));
     const m = await mount({ spells: [missile()] }, {}, { creatures: { summonOptions } });

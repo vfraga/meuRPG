@@ -40,6 +40,11 @@ export class CastState {
     const bonded = this.data.bondedSteedId ?? '';
     return mount && bonded !== '' && mount.creatureId === bonded ? mount.label : '';
   });
+  /** The caster got off (or was thrown) while the sheet was open: the spell is the caster's alone again. */
+  readonly steedOff = computed(() => {
+    const all = this.data.state.encounter()?.combatants ?? [];
+    return !!this.data.alsoSteed && !all.find((c) => c.id === this.data.casterId)?.mountedOnId;
+  });
   /** The picked damage type; the first of the spell's choices until the caster picks another. */
   readonly pickedType = signal('');
   readonly sculpted = signal<string[]>([]);
