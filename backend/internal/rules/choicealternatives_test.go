@@ -497,3 +497,23 @@ func TestAHeldPickStaysAfterTheMasterGivesTheSameSkill(t *testing.T) {
 		t.Error("a new pick of the same skill is not refused")
 	}
 }
+
+// With a count of 2 over two keys where one is held apart, the choice asks 1; the sheet and the choice agree.
+func TestAChoiceOverTwoKeysWithOneHeldApartAsksOne(t *testing.T) {
+	t.Parallel()
+	alt := Effect{Type: "choice", Choice: choiceAlternatives, Count: 2, Alternatives: []ChoiceAlternative{
+		{Kind: altSkill, From: []string{"skill:stealth"}},
+		{Kind: altLanguage, From: []string{"language:elvish"}},
+	}}
+	c, b, _ := altSheet(t, alt, []Effect{{Type: "proficiency", Proficiency: "skill:stealth"}}, nil)
+	if got := choiceOf(t, c.Choices(b), altKey(alt)).Picks; got != 1 {
+		t.Errorf("the choice asks %d, want 1", got)
+	}
+	if got := missingIssues(Derive(b, c)); got != 1 {
+		t.Errorf("the sheet says missing %d times, want once", got)
+	}
+	b.FeatureChoices = []string{altStored(alt, "language:elvish")}
+	if m := choiceOf(t, c.Choices(b), altKey(alt)).Missing(); m != 0 || missingIssues(Derive(b, c)) != 0 {
+		t.Errorf("with the language picked: the choice misses %d, the sheet %d; want none", m, missingIssues(Derive(b, c)))
+	}
+}
