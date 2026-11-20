@@ -505,3 +505,57 @@ func TestLevelUpExpertiseIsMatchedToTheLevelsSources(t *testing.T) {
 		}
 	}
 }
+
+// TestUnplacedNewListNamesAPickTheRefusalIsTrueFor: with more new picks than room the named pick is one the sentence is
+// true for. A pick no source lists is named before a pick that only competes for room, and with one pick over the room
+// the named pick is one whose removal makes the rest fit.
+func TestUnplacedNewListNamesAPickTheRefusalIsTrueFor(t *testing.T) {
+	t.Parallel()
+	known := func(string) bool { return true }
+	t.Run("a pick on no list is named before one that competes for room", func(t *testing.T) {
+		t.Parallel()
+		sources := []pickSource{{Owner: "x", Count: 1, From: []string{"skill:a", "skill:b"}}}
+		_, key, found := unplacedNewList("full.skill_proficiency_keys", sources, []string{"skill:a", "skill:b", "skill:z"}, nil, nil, known)
+		if !found || key != "skill:z" {
+			t.Errorf("named %q (found %v), want skill:z: no placement takes it and removing a or b leaves it out", key, found)
+		}
+	})
+	t.Run("one pick over the room: the named pick's removal makes the rest fit", func(t *testing.T) {
+		t.Parallel()
+		sources := []pickSource{{Owner: "x", Count: 1, From: []string{"skill:a", "skill:b"}}, {Owner: "y", Count: 1, From: []string{"skill:c"}}}
+		list := []string{"skill:a", "skill:b", "skill:c"}
+		field, key, found := unplacedNewList("full.skill_proficiency_keys", sources, list, nil, nil, known)
+		if !found {
+			t.Fatal("no pick named")
+		}
+		rest := slices.DeleteFunc(slices.Clone(list), func(k string) bool { return k == key })
+		if left := unplacedPicks(sources, rest); len(left) != 0 {
+			t.Errorf("named %q at %q: the rest %v still leaves %v out", key, field, rest, left)
+		}
+	})
+	t.Run("a held pick that fits is never the one named", func(t *testing.T) {
+		t.Parallel()
+		sources := []pickSource{{Owner: "x", Count: 1, From: []string{"skill:a", "skill:b", "skill:c"}}}
+		_, key, found := unplacedNewList("full.skill_proficiency_keys", sources, []string{"skill:a", "skill:b", "skill:c"}, []string{"skill:a"}, nil, known)
+		if !found || key == "skill:a" {
+			t.Errorf("named %q (found %v), want a new pick", key, found)
+		}
+	})
+}
+
+// TestUnplacedNewToolNamesAPickTheRefusalIsTrueFor is the tool case: the tool no choice of its owner lists is named
+// before one that only competes for room, wherever it stands in the sheet.
+func TestUnplacedNewToolNamesAPickTheRefusalIsTrueFor(t *testing.T) {
+	t.Parallel()
+	const thieves, herbs, smith = "proficiency:thieves-tools", "proficiency:herbalism-kit", "proficiency:smiths-tools"
+	o := filterBackgroundWith(Effect{Type: "choice", Choice: "tool", Count: 1, From: []string{thieves, herbs}})
+	c := withOverlay(t, o)
+	key := filterPickKey()
+	held := filterBuild()
+	now := held.clone()
+	now.FeatureChoices = []string{ScopedChoice(key, thieves), ScopedChoice(key, herbs), ScopedChoice(key, smith)}
+	field, k, found := c.UnplacedNewPick(&held, now)
+	if !found || k != smith || field != "full.feature_choice_keys[2]" {
+		t.Errorf("got %q %q %v, want the smith's tools at [2]: thieves and herbs compete for one place, smith's is on no list", field, k, found)
+	}
+}

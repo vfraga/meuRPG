@@ -278,3 +278,79 @@ func TestAMulticlassListOverlappingTheLevelsFeatureAsksForWhatCanBePicked(t *tes
 		t.Fatalf("the level with arcana is refused: %v", err)
 	}
 }
+
+// TestAListCoveredByAutomaticSkillsLetsThePlayerChooseAnother: SRD 5.1, a character who would gain the same proficiency
+// from two sources chooses a different proficiency of the same kind. A trait whose whole list is given automatically (the
+// acolyte's Insight) is a free choice of any other skill, in the asked number, in the lists and in the refusal.
+func TestAListCoveredByAutomaticSkillsLetsThePlayerChooseAnother(t *testing.T) {
+	t.Parallel()
+	traits := []TableFeature{capTrait("trait:faro@mesa", "skill", 1, "skill:insight")}
+	c, none := capSheet(t, traits, nil, nil)
+	if got := missingOf(Derive(none, c), OpenChoiceSkills); got != 1 {
+		t.Errorf("open skills before the extra pick = %d, want 1: the trait's Insight comes from the background", got)
+	}
+	_, held := capSheet(t, traits, []string{"skill:stealth"}, nil)
+	for name, view := range map[string]*Content{"master": c, "player": c.ForPlayer()} {
+		if d := Derive(held, view); missingOf(d, OpenChoiceSkills) != 0 || len(countIssues(d)) != 0 || len(fitIssues(d)) != 0 {
+			t.Errorf("%s: open = %d, issues = %v, fit = %v", name, missingOf(d, OpenChoiceSkills), countIssues(d), fitIssues(d))
+		}
+		if field, key, found := view.UnplacedNewPick(&none, held); found {
+			t.Errorf("%s: refused %q at %q: the covered list gives a free choice", name, key, field)
+		}
+	}
+	if allowed, _ := c.PickLists(held); !allowed.Any {
+		t.Errorf("skills allowed = %+v, want any skill: the covered list's choice takes one", allowed)
+	}
+	_, over := capSheet(t, traits, []string{"skill:stealth", "skill:arcana"}, nil)
+	if _, key, found := c.ForPlayer().UnplacedNewPick(&none, over); !found || key == "" {
+		t.Error("a pick past the covered list's one choice is refused")
+	}
+}
+
+// TestALevelAsksForTheSkillOfAFeatItMakesValid: a sheet holds a feat whose level the character has not reached; the feat
+// gives nothing yet (it is lost), so the level that reaches it asks for the skill the feat then lets the player choose, as
+// the sheet after the level reads it.
+func TestALevelAsksForTheSkillOfAFeatItMakesValid(t *testing.T) {
+	t.Parallel()
+	feat := TableFeat{
+		TableEntry: TableEntry{Key: "feat:estudioso" + tableSuffix, NamePT: "Estudioso"}, DescPT: []string{"Texto."},
+		Prerequisite: FeatPrerequisite{Level: 3},
+		Effects:      []Effect{{Type: "choice", Choice: "skill", Count: 1}},
+	}
+	c := withOverlay(t, Overlay{Revision: 1, Feats: []TableFeat{feat}})
+	b := sweepUp(t, c, sweepBase(t, c, "class:fighter", ""), "class:fighter", "", 2)
+	b.Feats = []string{feat.Key}
+	if is := Derive(b, c).Issues; !slices.ContainsFunc(is, func(i Issue) bool { return i.Code == IssueFeatPrerequisite }) {
+		t.Fatalf("the feat is not lost at level 2: %v", is)
+	}
+	o, err := LevelUpOptions(b, "class:fighter", c)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if o.SkillChoices != 1 {
+		t.Errorf("the level asks %d skills, want 1: the feat is valid at level 3 and gives a choice", o.SkillChoices)
+	}
+}
+
+// TestAStoredAutomaticSkillThatBecomesAPickIsNew: the stored sheet holds a skill its background gives; a save that changes
+// the background to one that does not give it makes that skill a pick, a new one the lists must have room for.
+func TestAStoredAutomaticSkillThatBecomesAPickIsNew(t *testing.T) {
+	t.Parallel()
+	c := loadForTest(t)
+	stored := sweepBase(t, c, "class:fighter", "")
+	stored.SkillProficiencies = append(stored.SkillProficiencies, "skill:religion") // the acolyte gives it; it is no pick of the stored sheet
+	if _, _, found := c.UnplacedNewPick(&stored, stored); found {
+		t.Fatal("the stored sheet is refused against itself")
+	}
+	now := stored.clone()
+	now.Background = "background:soldier"
+	field, key, found := c.UnplacedNewPick(&stored, now)
+	if !found || key != "skill:religion" || field != "full.skill_proficiency_keys[2]" {
+		t.Errorf("got %q %q %v, want religion refused at [2]: it is a pick now and no list has room for it", field, key, found)
+	}
+	later := now.clone()
+	later.Background = "background:acolyte"
+	if field, key, found := c.UnplacedNewPick(&stored, later); found {
+		t.Errorf("the background that still gives it refused %q at %q", key, field)
+	}
+}

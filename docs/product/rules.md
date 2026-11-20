@@ -1291,6 +1291,9 @@ The choices cover the SRD 5.1 sections Fighting Style, Draconic Ancestry and Bre
   A stored sheet whose picks do not fit still saves, levels up and plays, and its picks still count and give what they give.
   The master alone reads an issue about it.
   A new pick that no list allows is refused for a player, and the sentence names only that pick.
+  When several new picks have no room, the sentence names a pick that no list has before one that only competes for room.
+  A skill the stored sheet had automatically (from a background, say) is a new pick when a save makes it one.
+  A list whose skills the character already has automatically lets the player choose any other skill in its place (SRD 5.1: the same proficiency from two sources is replaced by a different one of the same kind).
   The master is never refused for it: the pick is saved, and the master reads the issue.
   A level up asks for as many new skills as the sheet after the level may pick, held picks counted, and refuses a player a new skill that no list of the sheet after the level has room for.
   The master's preview of a level up is not refused for it.

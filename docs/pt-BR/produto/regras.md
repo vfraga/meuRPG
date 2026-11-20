@@ -1291,6 +1291,9 @@ As escolhas cobrem as seções do SRD 5.1 Fighting Style, Draconic Ancestry e Br
   Uma ficha guardada cujas escolhas não cabem continua salvando, subindo de nível e jogando, e as escolhas dela continuam contando e dando o que dão.
   Só o mestre lê um aviso sobre isso.
   Uma escolha nova que nenhuma lista permite é recusada para um jogador, e a frase nomeia só essa escolha.
+  Quando várias escolhas novas ficam sem vaga, a frase nomeia uma escolha que nenhuma lista tem antes de uma que só disputa vaga.
+  Uma perícia que a ficha guardada tinha automaticamente (de um antecedente, por exemplo) é uma escolha nova quando um salvamento a torna escolha.
+  Uma lista cujas perícias o personagem já tem automaticamente deixa o jogador escolher qualquer outra perícia no lugar (SRD 5.1: a mesma proficiência de duas fontes é trocada por outra do mesmo tipo).
   O mestre nunca é recusado por isso: a escolha é salva, e o mestre lê o aviso.
   A subida de nível pede tantas perícias novas quanto a ficha depois do nível pode escolher, contando as que já tem, e recusa a um jogador uma perícia nova para a qual nenhuma lista da ficha depois do nível tem vaga.
   A prévia de subida de nível do mestre não é recusada por isso.

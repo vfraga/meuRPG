@@ -202,7 +202,35 @@ func (x *deriver) skillSources() []pickSource {
 			out = append(out, traitSkillSource(f.Key, t))
 		}
 	}
-	return append(out, x.effectSources("skill")...)
+	return x.withSubstitutes(append(out, x.effectSources("skill")...))
+}
+
+// withSubstitutes adds, for each list the sheet already holds some of by another means, the free choice the SRD gives
+// (SRD 5.1, "Proficiencies": a character who would gain the same proficiency from two sources chooses a different
+// proficiency of the same kind): one source of any skill for each place of the list that its automatic skills take.
+func (x *deriver) withSubstitutes(sources []pickSource) []pickSource {
+	out := slices.Clone(sources)
+	for _, s := range sources {
+		if s.Any {
+			continue
+		}
+		var listed, open int
+		seen := map[string]bool{}
+		for _, k := range s.From {
+			if _, ok := x.c.skills[k]; !ok || seen[k] {
+				continue
+			}
+			seen[k] = true
+			listed++
+			if !x.automaticSkills[k] {
+				open++
+			}
+		}
+		if n := min(s.Count, listed) - min(s.Count, open); n > 0 {
+			out = append(out, pickSource{Owner: s.Owner, Count: n, Any: true})
+		}
+	}
+	return out
 }
 
 // choiceSource is a "choose N of these" of the data as a pick source.

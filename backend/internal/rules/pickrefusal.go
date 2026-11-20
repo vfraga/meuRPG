@@ -40,12 +40,14 @@ func (c *content) unplacedNewSkillPick(x, xs *deriver, held, now Build) (field, 
 		return func(k string) bool { _, ok := c.skills[k]; return ok && !d.automaticSkills[k] }
 	}
 	expertise := func(k string) bool { _, ok := c.skills[k]; return ok }
-	var stuckSkills, stuckExpertise []string
+	var stuckSkills, stuckExpertise, heldSkills []string
 	if xs != nil {
-		stuckSkills = unplacedPicks(xs.skillSources(), pickList(held.SkillProficiencies, skill(xs)))
+		// A skill the stored sheet has automatically is no pick of it: when the save makes it one, it is new.
+		heldSkills = pickList(held.SkillProficiencies, skill(xs))
+		stuckSkills = unplacedPicks(xs.skillSources(), heldSkills)
 		stuckExpertise = unplacedPicks(xs.expertiseSources(), pickList(held.Expertise, expertise))
 	}
-	if f, k, ok := unplacedNewList(skillsField, x.skillSources(), now.SkillProficiencies, held.SkillProficiencies, stuckSkills, skill(x)); ok {
+	if f, k, ok := unplacedNewList(skillsField, x.skillSources(), now.SkillProficiencies, heldSkills, stuckSkills, skill(x)); ok {
 		return f, k, true
 	}
 	return unplacedNewList(expertiseField, x.expertiseSources(), now.Expertise, held.Expertise, stuckExpertise, expertise)
@@ -74,15 +76,34 @@ func pickList(list []string, counted func(string) bool) []string {
 // the held picks the stored sheet could not place.
 func unplacedNewList(field string, sources []pickSource, list, held, stuck []string, counted func(string) bool) (string, string, bool) {
 	picks := pickList(list, counted)
+	var first namedPick
 	for i, k := range list {
 		if slices.Contains(held, k) || !slices.Contains(picks, k) {
 			continue
 		}
 		if !placesAlone(sources, competing(picks, held, stuck), k) {
-			return fmt.Sprintf("%s[%d]", field, i), k, true
+			first.note(sources, fmt.Sprintf("%s[%d]", field, i), k)
 		}
 	}
-	return "", "", false
+	return first.field, first.key, first.found
+}
+
+// namedPick is the new pick a refusal names, among the new picks the sources cannot take.
+// A pick that no source lists is named before one that only competes for room: its sentence is true whatever the other picks are.
+// Of the others the first in sheet order is named.
+type namedPick struct {
+	field, key string
+	found      bool
+	listed     bool // the pick named is on some source's list
+}
+
+// note offers a pick that adds nothing to the placement; it is named when no pick before it is better.
+func (r *namedPick) note(sources []pickSource, field, key string) {
+	listed := placedCount(sources, []string{key}) > 0
+	if r.found && (!r.listed || listed) {
+		return
+	}
+	*r = namedPick{field: field, key: key, found: true, listed: listed}
 }
 
 // competing are the picks that take part in the placement of a new pick: the new ones and the held ones the stored sheet could place.
@@ -126,6 +147,7 @@ func (x *deriver) unplacedNewTool(held Build, xs *deriver) (string, string, bool
 			stuck[owner] = unplacedPicks(xs.c.toolSources(owner), values)
 		}
 	}
+	var first namedPick
 	for i, stored := range x.b.FeatureChoices {
 		choiceKey, value, ok := SplitScopedChoice(stored)
 		if !ok || slices.Contains(held.FeatureChoices, stored) {
@@ -138,10 +160,10 @@ func (x *deriver) unplacedNewTool(held Build, xs *deriver) (string, string, bool
 		heldValues := slices.DeleteFunc(slices.Clone(byOwner[owner]), func(k string) bool { return !slices.Contains(held.FeatureChoices, ScopedChoice(choiceKey, k)) })
 		sources := x.c.toolSources(owner)
 		if !placesAlone(sources, competing(byOwner[owner], heldValues, stuck[owner]), value) {
-			return fmt.Sprintf("full.feature_choice_keys[%d]", i), value, true
+			first.note(sources, fmt.Sprintf("full.feature_choice_keys[%d]", i), value)
 		}
 	}
-	return "", "", false
+	return first.field, first.key, first.found
 }
 
 // IsToolProficiency says the key is a proficiency a tool choice may offer: a tool, a vehicle, a kit or a weapon.
