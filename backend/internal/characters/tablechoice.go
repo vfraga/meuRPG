@@ -106,6 +106,19 @@ func refuseUnfitPick(content *rules.Content, m authz.Membership, before func() *
 // refuseUnfitPickIn is refuseUnfitPick on the content view the caller has chosen. The master is never refused for a pick no
 // list allows (the fit issue tells it on the sheet); a tool pick that is no tool stays a key the content does not have.
 func refuseUnfitPickIn(view *rules.Content, master bool, before func() *charactersv1.FullSheet, after *charactersv1.FullSheet) error {
+	return refusePickIn(view, master, before, after, true)
+}
+
+// refuseUnknownPick is refuseUnfitPick without the refusal of a pick that does not fit: what it keeps is the answer of a key
+// the content does not have (a tool pick that is no tool, or of an owner the reader may not read). The preview of a draft
+// takes it, so a pick the class changed under still shows in the pickers; the save is the refusal of the fit.
+func refuseUnknownPick(content *rules.Content, m authz.Membership, before func() *charactersv1.FullSheet, after *charactersv1.FullSheet) error {
+	return refusePickIn(viewContent(content, m), isMaster(m), before, after, false)
+}
+
+// refusePickIn is the check of a new pick on the content view the caller has chosen; fit says whether a pick no list places
+// is refused with its sentence too.
+func refusePickIn(view *rules.Content, master bool, before func() *charactersv1.FullSheet, after *charactersv1.FullSheet, fit bool) error {
 	if after == nil {
 		return nil
 	}
@@ -121,7 +134,7 @@ func refuseUnfitPickIn(view *rules.Content, master bool, before func() *characte
 	if master {
 		return refuseUnknownNewTools(view, stored, after)
 	}
-	if !found {
+	if !found || !fit {
 		return nil
 	}
 	return invalidArgument(&fieldError{field: "sheet." + field, err: errors.New(unfitSentence(view, buildOf(after), field, key))})

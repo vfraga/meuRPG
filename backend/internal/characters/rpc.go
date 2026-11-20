@@ -468,16 +468,16 @@ func checkCreatorKind(m authz.Membership, kind string) error {
 // PreviewCharacter share it, so a preview never shows a sheet the save
 // refuses.
 func checkNewSheet(content *rules.Content, m authz.Membership, kind string, raw *charactersv1.CharacterSheet) (*charactersv1.CharacterSheet, error) {
-	return checkNewSheetOf(content, m, kind, raw, false)
+	return checkNewSheetOf(content, m, kind, raw, false, true)
 }
 
 // checkImportedSheet is checkNewSheet for a sheet a package brings: its picks are not made now, so they count as held
 // when the fit of the picks to their lists is checked.
 func checkImportedSheet(content *rules.Content, m authz.Membership, kind string, raw *charactersv1.CharacterSheet) (*charactersv1.CharacterSheet, error) {
-	return checkNewSheetOf(content, m, kind, raw, true)
+	return checkNewSheetOf(content, m, kind, raw, true, true)
 }
 
-func checkNewSheetOf(content *rules.Content, m authz.Membership, kind string, raw *charactersv1.CharacterSheet, imported bool) (*charactersv1.CharacterSheet, error) {
+func checkNewSheetOf(content *rules.Content, m authz.Membership, kind string, raw *charactersv1.CharacterSheet, imported, fit bool) (*charactersv1.CharacterSheet, error) {
 	sheet, err := checkSheet(content, raw)
 	if err != nil {
 		return nil, invalidArgument(err)
@@ -501,7 +501,11 @@ func checkNewSheetOf(content *rules.Content, m authz.Membership, kind string, ra
 	if imported {
 		held = func() *charactersv1.FullSheet { return sheet.GetFull() }
 	}
-	if err := refuseUnfitPick(content, m, held, sheet.GetFull()); err != nil {
+	refuse := refuseUnfitPick
+	if !fit {
+		refuse = refuseUnknownPick
+	}
+	if err := refuse(content, m, held, sheet.GetFull()); err != nil {
 		return nil, err
 	}
 	return sheet, nil
@@ -517,11 +521,20 @@ func checkNewSheetOf(content *rules.Content, m authz.Membership, kind string, ra
 //  3. refuseUnfitPick: a new pick that no live source places, or whose owner
 //     the player's view does not show, answered as a key that does not exist.
 func refuseNewChoices(content *rules.Content, m authz.Membership, characterID string, stored, sheet *charactersv1.FullSheet) error {
+	return refuseNewChoicesFor(content, m, characterID, stored, sheet, true)
+}
+
+// refuseNewChoicesFor is refuseNewChoices where fit says whether step 3 refuses a pick no list places; the preview of the
+// choices passes false, and the save refuses it.
+func refuseNewChoicesFor(content *rules.Content, m authz.Membership, characterID string, stored, sheet *charactersv1.FullSheet, fit bool) error {
 	if err := refuseKeptOutPick(content, m, func() *charactersv1.FullSheet { return stored }, sheet); err != nil {
 		return err
 	}
 	if err := refuseClosedChoices(content, m, characterID, stored, sheet); err != nil {
 		return err
+	}
+	if !fit {
+		return refuseUnknownPick(content, m, func() *charactersv1.FullSheet { return stored }, sheet)
 	}
 	return refuseUnfitPick(content, m, func() *charactersv1.FullSheet { return stored }, sheet)
 }

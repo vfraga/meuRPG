@@ -65,7 +65,7 @@ func (s *Service) PreviewChoices(
 		if err := checkCreatorKind(m, kind); err != nil {
 			return nil, err
 		}
-		if sheet, err = checkNewSheet(content, m, kind, req.Msg.GetSheet()); err != nil {
+		if sheet, err = checkNewSheetOf(content, m, kind, req.Msg.GetSheet(), false, false); err != nil {
 			return nil, err
 		}
 	} else if sheet, notOffered, err = s.sheetForChoices(ctx, m, content, req.Msg.GetCharacterId(), req.Msg.GetSheet()); err != nil {
@@ -110,7 +110,7 @@ func (s *Service) sheetForChoices(ctx context.Context, m authz.Membership, conte
 		return stored, nil, nil
 	}
 	if mayEditSheet(m, row) && row.Status != statusDead {
-		sheet, _, err := s.checkEditedSheet(ctx, m, content, characterID, raw)
+		sheet, _, err := s.checkEditedSheetFor(ctx, m, content, characterID, raw, false)
 		return sheet, nil, err
 	}
 	full := stored.GetFull()

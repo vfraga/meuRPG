@@ -80,6 +80,12 @@ func (s *Service) previewDerived(ctx context.Context, content *rules.Content, ch
 // sheet. The permission answers come first and the stored sheet is read once.
 // It returns the checked sheet.
 func (s *Service) checkEditedSheet(ctx context.Context, m authz.Membership, content *rules.Content, characterID string, raw *charactersv1.CharacterSheet) (*charactersv1.CharacterSheet, string, error) {
+	return s.checkEditedSheetFor(ctx, m, content, characterID, raw, true)
+}
+
+// checkEditedSheetFor is checkEditedSheet where fit says whether a new pick no list places is refused. PreviewChoices passes
+// false: it answers the lists of the draft, and the save refuses the pick.
+func (s *Service) checkEditedSheetFor(ctx context.Context, m authz.Membership, content *rules.Content, characterID string, raw *charactersv1.CharacterSheet, fit bool) (*charactersv1.CharacterSheet, string, error) {
 	id, ok := uid.Canonical(characterID)
 	if !ok {
 		return nil, "", errCharacterNotFound()
@@ -112,10 +118,14 @@ func (s *Service) checkEditedSheet(ctx context.Context, m authz.Membership, cont
 	if err := refuseClosedPick(content, m, id, storedOf, sheet.GetFull()); err != nil {
 		return nil, "", err
 	}
-	if err := refuseUnfitPick(content, m, storedOf, sheet.GetFull()); err != nil {
+	refuse := refuseUnfitPick
+	if !fit {
+		refuse = refuseUnknownPick
+	}
+	if err := refuse(content, m, storedOf, sheet.GetFull()); err != nil {
 		return nil, "", err
 	}
-	if err := refuseNewChoices(content, m, row.ID, stored.GetFull(), sheet.GetFull()); err != nil {
+	if err := refuseNewChoicesFor(content, m, row.ID, stored.GetFull(), sheet.GetFull(), fit); err != nil {
 		return nil, "", err
 	}
 	return sheet, row.Name, nil
