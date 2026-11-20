@@ -66,8 +66,22 @@
 }
 
 .cast__why {
-  display: block;
-  color: var(--mr-warning-ink);
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 0;
+  font-size: var(--mr-font-14);
+  font-weight: 400;
+  line-height: 19px;
+  color: var(--mr-ink);
+
+  .mat-icon {
+    flex: none;
+    width: 18px;
+    height: 18px;
+    font-size: var(--mr-font-18);
+    color: var(--mr-ink-muted);
+  }
 }
 
 .retry {

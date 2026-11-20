@@ -104,10 +104,16 @@ describe('CreaturesPanel, a bonded steed that is away: the dashed "Fora" row', (
     expect(el.querySelector('.empty')).toBeNull();
     const row = away()!;
     expect(flat(row.querySelector('h3'))).toBe('Estrela');
-    expect(flat(row.querySelector('.mr-tag'))).toBe('Fora');
-    expect(flat(row.querySelector('.away__sub'))).toBe(
-      'Cavalo de guerra · celestial · fora da mesa',
-    );
+    // "Fora" is the one visible word that says it is away; "da mesa" is for a screen reader, and the line does not repeat it.
+    expect(flat(row.querySelector('.mr-tag'))).toBe('Fora da mesa');
+    expect(row.querySelector('.mr-tag .mr-visually-hidden')?.textContent).toBe(' da mesa');
+    expect(flat(row.querySelector('.away__sub'))).toBe('Cavalo de guerra · celestial');
+    // The name is 15 px bold sans and the line under it is one line.
+    const name = getComputedStyle(row.querySelector('h3')!);
+    expect(name.fontSize).toBe('var(--mr-font-15)');
+    expect(name.fontFamily).toBe('var(--mr-font-sans)');
+    expect(name.fontWeight).toBe('700');
+    expect(getComputedStyle(row.querySelector('.away__sub')!).whiteSpace).toBe('nowrap');
     // the muted silhouette, no line in the row; how it comes back is under the cast button.
     expect(row.querySelector('app-creature-art')).not.toBeNull();
     expect(row.querySelector('.away__line')).toBeNull();

@@ -34,19 +34,24 @@
 
 .away__name {
   margin: 0;
-  font-family: var(--mr-font-display);
   outline: none;
-  font-size: var(--mr-font-20);
-  font-weight: 800;
-  line-height: 26px;
+  font-family: var(--mr-font-sans);
+  font-size: var(--mr-font-15);
+  font-weight: 700;
+  line-height: 21px;
+  color: var(--mr-ink-muted);
   overflow-wrap: anywhere;
 }
 
+// One line: a long form is cut with an ellipsis, never wrapped under the tag.
 .away__sub {
+  overflow: hidden;
   margin: 0;
   font-size: var(--mr-font-14);
   line-height: 20px;
   color: var(--mr-ink-muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .away__tag {

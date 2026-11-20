@@ -110,10 +110,11 @@ describe('CreatureCard, a bonded steed', () => {
     const tag = el.querySelector('.head .mr-tag');
     expect(flat(tag)).toBe('Montaria vinculada');
     expect(tag?.querySelector('mat-icon')?.textContent?.trim()).toBe('link');
+    expect(tag?.classList).toContain('mr-tag--accent');
     expect(flat(el.querySelector('.sub'))).toBe('Cavalo de guerra · Grande · celestial');
     // On a phone the tag sits under the subtitle; from the tablet up the grid puts it beside the name.
     const order = Array.from(el.querySelector('.head__text')!.children).map((n) => n.className);
-    expect(order).toEqual(['name', 'sub', 'mr-tag']);
+    expect(order).toEqual(['name', 'sub', 'mr-tag mr-tag--accent']);
     expect(el.querySelector('.head__text')?.classList).toContain('head__text');
   });
 
@@ -308,6 +309,8 @@ describe('CreatureCard, a bonded steed', () => {
     const off = el.querySelector<HTMLButtonElement>('.js-dismiss')!;
     expect(off.getAttribute('aria-disabled')).toBe('true');
     expect(off.classList).toContain('act--off');
+    // The dashed border is the cue, and it is on the button whether or not it has the focus.
+    expect(getComputedStyle(off).borderTopStyle).toBe('dashed');
     expect(off.querySelector('mat-icon')?.textContent?.trim()).toBe('block');
     // "⊘ Dispensar · desligado", and the reason with the block icon.
     expect(flat(off)).toBe('Dispensar · desligado');

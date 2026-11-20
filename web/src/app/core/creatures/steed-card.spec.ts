@@ -135,7 +135,7 @@ describe("the bonded steed's card, in words", () => {
 
   it('writes the row of a steed that is away, and what the cast button says under it', () => {
     expect(steedAwaySubtitle('Cavalo de guerra', 'celestial')).toBe(
-      'Cavalo de guerra\u00a0· celestial\u00a0· fora da mesa',
+      'Cavalo de guerra\u00a0· celestial',
     );
     expect(steedCastHint('Estrela', true)).toBe(
       'Traz Estrela de volta, com a mesma forma, o mesmo tipo e os PV cheios.',

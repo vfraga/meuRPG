@@ -231,6 +231,10 @@
 
 // Off after the combat refused: muted, with the block icon and the word; the reason is the line under the actions.
 .act--off {
+  // The dashed border is the visible cue and stays when the button has no focus.
+  border-width: 1px;
+  border-style: dashed;
+  border-color: var(--mr-control-line);
   color: var(--mr-ink-muted);
   cursor: default;
 }

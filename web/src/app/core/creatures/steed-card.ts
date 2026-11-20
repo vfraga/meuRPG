@@ -116,9 +116,9 @@ export function steedActionsHint(name: string, master: boolean): string {
   return master ? keeps : `${keeps} Fora de combate, não gasta nada.`;
 }
 
-/** The dashed "Fora" row's line: "Cavalo de guerra · celestial · fora da mesa". */
+/** The dashed "Fora" row's line: "Cavalo de guerra · celestial". The tag "Fora" says it is away, once. */
 export function steedAwaySubtitle(form: string, type: string): string {
-  return joinDots([form, steedTypeWord(type), 'fora da mesa'].filter((part) => part !== ''));
+  return joinDots([form, steedTypeWord(type)].filter((part) => part !== ''));
 }
 
 /** Under the cast button of Convocar Montaria: what the cast does for a steed that is away, or for one that is here. */

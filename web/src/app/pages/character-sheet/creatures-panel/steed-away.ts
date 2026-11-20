@@ -22,7 +22,7 @@ import { SteedAsk } from '../../../shared/creatures/steed-ask';
 /**
  * A bonded steed that is away: dismissed, or gone at 0 hit points. `ListCharacterCreatures` does
  * not list it, so the panel draws it from `SummonSpellOptions.bonded_steed`: a dashed row with the muted silhouette, the name, the
- * form and the type ("… · fora da mesa") and the dashed tag "Fora". It has no numbers and no page; how it comes back is
+ * form and the type and the dashed tag "Fora" (a screen reader hears "Fora da mesa"; the line does not say it again). It has no numbers and no page; how it comes back is
  * said under the cast button. Its one action is "⋮" › "Libertar Estrela", asked
  * in the row (`SteedAsk`); out of a combat it spends nothing.
  */
@@ -39,7 +39,7 @@ import { SteedAsk } from '../../../shared/creatures/steed-ask';
           <h3 class="away__name" tabindex="-1" [id]="'steed-away-' + s.id">{{ s.name }}</h3>
           <p class="away__sub">{{ subtitle() }}</p>
         </div>
-        <span class="mr-tag away__tag">Fora</span>
+        <span class="mr-tag away__tag">Fora<span class="mr-visually-hidden"> da mesa</span></span>
         @if (!asking()) {
           <button type="button" class="away__more js-more" [matMenuTriggerFor]="more" [attr.aria-label]="'Mais ações de ' + s.name">
             <mat-icon aria-hidden="true">more_vert</mat-icon>

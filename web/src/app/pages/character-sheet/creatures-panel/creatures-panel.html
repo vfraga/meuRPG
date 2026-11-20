@@ -72,17 +72,16 @@
           [class.mr-button--off]="!!steedCast.why(c, live())"
           [disabled]="!!steedCast.why(c, live())"
           disabledInteractive
-          [attr.aria-describedby]="'cast-cost-' + $index"
+          [attr.aria-describedby]="steedCast.why(c, live()) ? 'cast-cost-' + $index + ' cast-why-' + $index : 'cast-cost-' + $index"
           (click)="cast(c)"
         >
           <mat-icon aria-hidden="true">auto_awesome</mat-icon>{{ c.namePt }}
         </button>
-        <p class="cast__cost" [id]="'cast-cost-' + $index">
-          {{ steedCast.cost(c, creatures()) }}
-          @if (steedCast.why(c, live()); as why) {
-            <strong class="cast__why">{{ why }}</strong>
-          }
-        </p>
+        <p class="cast__cost" [id]="'cast-cost-' + $index">{{ steedCast.cost(c, creatures()) }}</p>
+        @if (steedCast.why(c, live()); as why) {
+          <!-- Why the button is off: the block mark and the words in regular weight, right under the dashed button's cost. -->
+          <p class="cast__why"><mat-icon aria-hidden="true">block</mat-icon><span [id]="'cast-why-' + $index">{{ why }}</span></p>
+        }
       </div>
     }
     @if (wildShape() && !isMaster()) {
