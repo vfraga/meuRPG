@@ -11,7 +11,10 @@ import (
 
 // A pick of a choice of alternatives stored under the key of an entry the table keeps out of a player's view (switched off,
 // or retired) is answered to a player as a pick stored under a key no entry has, in every call that takes the sheet's
-// picks. The master reads what is switched off or retired, and keeps the answer she gets today.
+// picks. The master reads what is switched off or retired, and keeps the answer she gets today. A player's own PreviewCharacter
+// is refused with 403 whatever the table switches (only the master makes a character for a player, and the master's preview
+// with ForPlayer judges the pick in the master's view), so that call cannot show whether the switch decides: the row pins the
+// same answer for the player and for a key that does not exist, and the other three calls are the ones the switch decides.
 func TestAnAlternativePickStoredUnderAnEntryTheTableKeepsOutIsAnsweredAsAKeyThatDoesNotExist(t *testing.T) {
 	const (
 		name  = "Zorvak4321"
