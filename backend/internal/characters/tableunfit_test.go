@@ -10,6 +10,8 @@ import (
 
 	charactersv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/characters/v1"
 	rulesv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/rules/v1"
+	"github.com/PuraFome/meuRPG/backend/internal/authz"
+	"github.com/PuraFome/meuRPG/backend/internal/rules"
 )
 
 // A table race whose trait lets the player choose one skill from a list: the sheets below pick it, and the master later
@@ -116,5 +118,123 @@ func TestAPickThatFitsByMovingAHeldPickIsAccepted(t *testing.T) {
 	pc := u.player.create(t, u.campaign, charactersv1.CharacterKind_CHARACTER_KIND_PLAYER, "Pensantus", u.sheet("skill:investigation", "skill:insight"))
 	if _, err := u.player.update(t, pc, "Pensantus", u.sheet("skill:investigation", "skill:insight", "skill:medicine")); err != nil {
 		t.Fatalf("a pick that fits when a held one moves is refused: %v", err)
+	}
+}
+
+const (
+	thievesTools = "proficiency:thieves-tools"
+	herbalismKit = "proficiency:herbalism-kit"
+	smithsTools  = "proficiency:smiths-tools"
+	glassTools   = "proficiency:glassblowers-tools"
+)
+
+func toolEffect(count int32, from ...string) *rulesv1.TableEffect {
+	return &rulesv1.TableEffect{Type: "choice", Choice: "tool", Count: count, From: from}
+}
+
+// toolRace has a trait with two tool choices, each with its own list.
+func toolRace(second *rulesv1.TableEffect) *rulesv1.TableRace {
+	return &rulesv1.TableRace{
+		NamePt: "Marujo", Size: "Medium", SpeedFt: 30, AbilityBonuses: &rulesv1.AbilityScores{Constitution: 1},
+		Traits: []*rulesv1.TableFeature{{NamePt: "Rede do cais", DescPt: []string{"Texto de teste."}, Effects: []*rulesv1.TableEffect{toolEffect(1, thievesTools, herbalismKit), second}}},
+	}
+}
+
+func (u *unfitTable) traitOf(t *testing.T, race *rulesv1.TableEntry) string {
+	t.Helper()
+	return u.master.entries(t, u.campaign)[race.GetKey()].GetTableRace().GetTraits()[0].GetKey()
+}
+
+func (u *unfitTable) toolSheet(t *testing.T, race *rulesv1.TableEntry, picks ...string) *charactersv1.CharacterSheet {
+	t.Helper()
+	s := pensantusSheet()
+	f := s.GetFull()
+	f.RaceKey, f.SubraceKey = race.GetKey(), ""
+	owner := u.traitOf(t, race)
+	f.FeatureChoiceKeys = nil
+	for _, p := range picks {
+		f.FeatureChoiceKeys = append(f.FeatureChoiceKeys, rules.ScopedChoice(rules.ToolPickKey(owner), p))
+	}
+	return s
+}
+
+func TestAnExpertiseNoListAllowsIsRefusedWithItsOwnSentence(t *testing.T) {
+	t.Parallel()
+	u := newUnfitTable(t, "skill:nature")
+	pc := u.player.create(t, u.campaign, charactersv1.CharacterKind_CHARACTER_KIND_PLAYER, "Pensantus", u.sheet("skill:investigation", "skill:insight", "skill:nature"))
+	u.race = u.master.updateEntry(t, u.campaign, u.race, expertiseTraitRace("skill:athletics"))
+	withExpertise := u.sheet("skill:investigation", "skill:insight", "skill:nature")
+	withExpertise.GetFull().ExpertiseSkillKeys = []string{"skill:investigation"}
+	_, err := u.player.update(t, pc, "Pensantus", withExpertise)
+	wantUnfitSentence(t, err, "sheet.full.expertise_skill_keys[0]", "A especialização em Investigação não está em nenhuma das listas")
+}
+
+func TestAToolNoChoiceOffersIsRefusedWithItsOwnSentence(t *testing.T) {
+	t.Parallel()
+	u := newUnfitTable(t, "skill:nature")
+	bg := u.master.addEntry(t, u.campaign, toolRace(toolEffect(1, smithsTools)))
+	tool := u.player.create(t, u.campaign, charactersv1.CharacterKind_CHARACTER_KIND_PLAYER, "Ferreira", u.toolSheet(t, bg, thievesTools, smithsTools))
+	_, err := u.player.update(t, tool, "Ferreira", u.toolSheet(t, bg, thievesTools, glassTools))
+	wantUnfitSentence(t, err, "sheet.full.feature_choice_keys[1]", "não está em nenhuma das escolhas de ferramenta do personagem")
+}
+
+func expertiseTraitRace(from ...string) *rulesv1.TableRace {
+	r := skillTraitRace("skill:nature")
+	r.Traits = append(r.Traits, &rulesv1.TableFeature{NamePt: "Estudo", Effects: []*rulesv1.TableEffect{{Type: "choice", Choice: "expertise", Count: 1, From: from}}})
+	return r
+}
+
+func wantUnfitSentence(t *testing.T, err error, field, sentence string) {
+	t.Helper()
+	ce, ok := errors.AsType[*connect.Error](err)
+	if !ok || ce.Code() != connect.CodeInvalidArgument || !strings.Contains(ce.Message(), field) || !strings.Contains(ce.Message(), sentence) {
+		t.Errorf("error = %v, want invalid_argument at %s with %q", err, field, sentence)
+	}
+}
+
+// A pick made when completing the choices is refused as it is on a save: the choice offers the tool, but no source takes it
+// together with the picks the sheet holds.
+func TestCompletingChoicesRefusesAToolNoSourceTakesWithTheHeldPicks(t *testing.T) {
+	t.Parallel()
+	u := newUnfitTable(t, "skill:nature")
+	bg := u.master.addEntry(t, u.campaign, toolRace(toolEffect(1, smithsTools)))
+	pc := u.player.create(t, u.campaign, charactersv1.CharacterKind_CHARACTER_KIND_PLAYER, "Ferreira", u.toolSheet(t, bg, thievesTools, smithsTools))
+	if h := u.h.lockSheets(u.campaign); h != 1 {
+		t.Fatalf("locked %d sheets", h)
+	}
+	// The master adds a pick to the second choice: the sheet has one open.
+	u.master.updateEntry(t, u.campaign, bg, toolRace(toolEffect(2, smithsTools, glassTools)))
+	owner := u.traitOf(t, bg)
+	_, err := (&choiceTable{h: u.h, campaign: u.campaign}).complete(u.player, u.player.get(t, u.campaign, pc.GetId()), pick(rules.ToolPickKey(owner), herbalismKit))
+	var ce *connect.Error
+	if !errors.As(err, &ce) || ce.Code() != connect.CodeInvalidArgument || !strings.Contains(ce.Message(), "não está em nenhuma das escolhas de ferramenta") {
+		t.Errorf("error = %v, want the refusal of a tool no choice takes", err)
+	}
+}
+
+// A sheet a package brings holds its picks: it imports though no list of its table takes one of them, where the same sheet
+// made now is refused, and the master reads the issue about it.
+func TestAnImportedSheetThatDoesNotFitImportsAndTheMasterReadsTheIssue(t *testing.T) {
+	t.Parallel()
+	u := newUnfitTable(t, "skill:survival")
+	content, err := u.h.svc.contentFor(t.Context(), nil, u.campaign)
+	if err != nil {
+		t.Fatal(err)
+	}
+	master := authz.Membership{CampaignID: u.campaign, Role: authz.RoleMaster}
+	sheet := u.sheet("skill:investigation", "skill:insight", "skill:nature")
+	if _, err := checkNewSheet(content, master, kindPlayer, proto.CloneOf(sheet)); err == nil {
+		t.Fatal("a sheet made now with a pick no list allows is accepted")
+	}
+	checked, err := checkImportedSheet(content, master, kindPlayer, proto.CloneOf(sheet))
+	if err != nil {
+		t.Fatalf("the imported sheet is refused: %v", err)
+	}
+	var found bool
+	for _, is := range rules.Derive(buildOf(checked.GetFull()), content).Issues {
+		found = found || is.Code == rules.IssuePickFit
+	}
+	if !found {
+		t.Error("the master's derivation of the imported sheet has no fit issue")
 	}
 }
