@@ -12,6 +12,7 @@ import {
   type TurnBlock,
   useNotice,
 } from '../../core/characters/consumables';
+import type { UseConsumableResponse } from '../../../gen/meurpg/play/v1/charges_pb';
 import { effectivePreference } from '../../core/campaigns/dice-labels';
 import {
   type ChargesClient,
@@ -68,6 +69,8 @@ export interface ConsumableUseHost {
 /** The unit a sheet is open on: it changes when the unit is gone and another one of the same item is left. */
 interface Session {
   entry: AttunementEntryVm;
+  /** The refusal of a gone unit whose sheet was not read again: a later read of it closes the sheet with the same words. */
+  unread?: ConsumableRefusal;
 }
 
 /** A refusal as the notice of the page, for a sheet that closes under it. */
@@ -121,6 +124,7 @@ export class ConsumableUse {
             canType: dice.mode !== DiceMode.APP,
             preferApp: effectivePreference(dice.mode, dice.preference) === DicePreference.APP,
             loadTargets: () => this.loadTargets(session, vm, kind),
+            reread: () => this.reread(session, kind),
             use: (request, key) => this.use(session, vm, kind, request, key),
           })
           .subscribe({
@@ -146,11 +150,17 @@ export class ConsumableUse {
     kind: ConsumableKind,
     refusal: ConsumableRefusal,
   ): Promise<Aftermath> {
-    const onScreen = await this.host.reload();
+    const onScreen = await this.host.reload().catch(() => false);
     const vm = this.host.owner();
     if (!onScreen || !vm) {
+      // The unit is gone and the sheet still holds it: the sheet may not offer it until a read lands.
+      if (refusal.cause === 'item-gone') {
+        session.unread = refusal;
+        return { unread: true };
+      }
       return {};
     }
+    session.unread = undefined;
     const units = vm.entries.filter((e) => e.key === session.entry.key);
     if (units.length === 0) {
       this.result.set(refusal.cause === 'item-gone' ? goneNotice(kind) : refusalNotice(refusal));
@@ -161,6 +171,11 @@ export class ConsumableUse {
     }
     session.entry = units[0];
     return { left: units.length, rebound: true };
+  }
+
+  /** Reads the sheet again for a unit that is gone and was not read: where it stands now, or still unread. */
+  private async reread(session: Session, kind: ConsumableKind): Promise<Aftermath> {
+    return session.unread ? this.aftermath(session, kind, session.unread) : {};
   }
 
   private context(
@@ -214,8 +229,9 @@ export class ConsumableUse {
   ): Promise<UseAnswer> {
     const target: ConsumableTargetVm | null = request.target;
     const roll: ConsumableRoll = request.roll;
+    let res: UseConsumableResponse;
     try {
-      const res = await this.host
+      res = await this.host
         .client()
         .useConsumable(
           this.host.campaignId(),
@@ -225,30 +241,32 @@ export class ConsumableUse {
           roll,
           key,
         );
-      // The notice follows what the page holds once it has read the character again, never a count made up here.
-      const onScreen = await this.host.reload();
-      const now = this.host.owner();
-      const entry = session.entry;
-      this.result.set(
-        useNotice(res, {
-          itemName: entry.namePt,
-          kind,
-          effectPt: entry.effectPt ?? '',
-          heal: entry.consumable?.heal ?? null,
-          userName: vm.name,
-          receiverName: target?.name ?? vm.name,
-          gift: target !== null,
-          woke: target?.down === true,
-          left: onScreen && now ? this.unitsOf(now, entry.key) : null,
-        }),
-      );
-      return { refusal: null };
     } catch (err) {
+      // Only the call's own failure may say nothing was spent.
       const refusal = consumableRefusal(err, this.context(vm, kind, target, 'faces' in roll));
       if (!consumableNeedsReload(err)) {
         return { refusal };
       }
       return { refusal, ...(await this.aftermath(session, kind, refusal)) };
     }
+    // The unit was spent. The notice follows what the page holds once it has read the character again, never a count made up
+    // here; a read that fails leaves the count out and the unit still used.
+    const onScreen = await this.host.reload().catch(() => false);
+    const now = this.host.owner();
+    const entry = session.entry;
+    this.result.set(
+      useNotice(res, {
+        itemName: entry.namePt,
+        kind,
+        effectPt: entry.effectPt ?? '',
+        heal: entry.consumable?.heal ?? null,
+        userName: vm.name,
+        receiverName: target?.name ?? vm.name,
+        gift: target !== null,
+        woke: target?.down === true,
+        left: onScreen && now ? this.unitsOf(now, entry.key) : null,
+      }),
+    );
+    return { refusal: null };
   }
 }

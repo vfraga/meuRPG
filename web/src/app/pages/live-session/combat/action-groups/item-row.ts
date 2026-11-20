@@ -47,11 +47,10 @@ const USE_ICON = 'science';
       </span>
       <span class="row__line">
         @if (economy(); as e) {
-          <span class="row__lead"><span class="row__econ" [class.row__econ--spent]="off()"><app-economy-mark [kind]="e" [spent]="off()" />Ação</span>{{ ' ' }}<span aria-hidden="true">·</span></span>{{ ' ' }}
-        }
-        <span class="row__detail">{{ detail() }}</span>
+          <span class="row__lead"><span class="row__econ" [class.row__econ--spent]="off()"><app-economy-mark [kind]="e" [spent]="off()" />Ação</span>{{ ' ' }}<span class="row__dot" aria-hidden="true">·</span></span>
+        }<span class="row__detail">{{ detailText() }}</span>
       </span>
-      @if (off() && reason()) {
+      @if (off() && reason() && !reasonId()) {
         <span class="row__why" [id]="whyId"><mat-icon aria-hidden="true">block</mat-icon>{{ reason() }}</span>
       }
     </div>
@@ -88,13 +87,19 @@ export class ItemRow {
   readonly off = input(false);
   readonly reason = input('');
   readonly busy = input(false);
+  /** The id of a line that says the reason for the whole group the row is in (said once there, not on each row); empty when the row says its own. */
+  readonly reasonId = input('');
 
   readonly press = output<void>();
 
   protected readonly useIcon = USE_ICON;
+  /** What the item does; after the cost's dot it starts with a no-break space, so the cost and the dot stay with its first word. */
+  protected readonly detailText = computed(() =>
+    this.economy() ? `\u00a0${this.detail()}` : this.detail(),
+  );
   protected readonly whyId = `item-why-${nextId++}`;
   protected readonly describedBy = computed(() =>
-    this.off() && this.reason() ? this.whyId : null,
+    this.off() && this.reason() ? this.reasonId() || this.whyId : null,
   );
 
   /** A disabled row keeps its focus stop but does nothing. */

@@ -46,24 +46,27 @@
 }
 
 .row__line {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0 var(--mr-space-1);
+  display: block;
   font-size: var(--mr-font-15);
   line-height: 20px;
   color: var(--mr-ink-muted);
 }
 
-// The mark and the separator stay together: on a wrap the detail goes to the next line, never the dot alone.
+// The mark, the word and the dot stay together, and the dot's no-break space keeps them with the first word of the detail: a wrap
+// never leaves "Ação ·" alone at the end of a line.
 .row__lead {
   white-space: nowrap;
+}
+
+.row__dot {
+  font-weight: 700;
 }
 
 // The mark of the Ação in the economy row's ink; its spent look (dashed, muted) only when the row is spent.
 .row__econ {
   display: inline-flex;
   align-items: center;
+  vertical-align: middle;
   gap: var(--mr-space-1);
   font-weight: 700;
   color: var(--mr-ink);

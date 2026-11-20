@@ -238,8 +238,12 @@
           <app-fold appearance="row" chevron="start" [aligned]="true" [muted]="true" [title]="g.title" [level]="3">
             <app-economy-mark foldMark class="items__mark" kind="action" [spent]="true" />
             <span foldNote>{{ g.rows.length }} {{ g.rows.length === 1 ? 'item' : 'itens' }}</span>
+            <!-- The reason is the group's, said once above its rows; each button points to it. -->
+            @if (itemWhy(g.rows[0]); as why) {
+              <p class="group__why group__why--group" [id]="'items-why-' + g.group"><mat-icon aria-hidden="true">block</mat-icon><span>{{ why }}</span></p>
+            }
             @for (r of g.rows; track r.id) {
-              <ng-container *ngTemplateOutlet="itemRow; context: { $implicit: r }" />
+              <ng-container *ngTemplateOutlet="itemRow; context: { $implicit: r, group: g.group }" />
             }
           </app-fold>
         }
@@ -474,7 +478,7 @@
   </div>
 </ng-template>
 
-<ng-template #itemRow let-r>
+<ng-template #itemRow let-r let-group="group">
   <app-item-row
     [name]="r.namePt"
     [times]="r.count"
@@ -485,6 +489,7 @@
     [attr.data-item-row]="r.key"
     [off]="!!itemWhy(r)"
     [reason]="itemWhy(r)"
+    [reasonId]="group ? 'items-why-' + group : ''"
     [busy]="busy()"
     (press)="useItem.emit(r.first)"
   />

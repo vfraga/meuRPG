@@ -235,7 +235,7 @@ export function subtitleOf(input: {
   return parts.join(' · ');
 }
 
-/** What the cost line of the "Usar" sheet says: the mark of the Ação and a bold lead where it spends it, an info icon where not. */
+/** What the line under the buttons of the "Usar" sheet says: an info icon, a lead where there is one (bold with the mark of the Ação where the item spends it) and the rest. */
 export interface UseCost {
   readonly mark: boolean;
   readonly lead: string;
@@ -243,8 +243,10 @@ export interface UseCost {
 }
 
 /**
- * The cost line under the buttons of the "Usar" sheet. One line for one case: in a combat the action is spent, out of one
- * the turn is not, and a use that does not cost the action says so whatever the case. `inCombat` is `null` while the page does
+ * The cost line under the buttons of the "Usar" sheet. One line for one case.
+ * In a combat the subtitle says the action is spent, so the line says only who the item acts on, and only in the give phase.
+ * Out of a combat it says the turn is not spent, in words that differ by phase.
+ * A use that does not cost the action says so whatever the case. `inCombat` is `null` while the page does
  * not know (the targets are not read yet, or could not be): the line then says nothing of the action. `acts` is
  * who the item acts on once a receiver is chosen ("A poção age em Brisa.").
  */
@@ -275,8 +277,9 @@ export function useCost(input: {
     return null;
   }
   if (input.inCombat) {
-    // The subtitle already says it costs the action; the first choice adds only the reason a button is dashed.
-    return input.phase === 'give' ? { mark: true, lead: 'Gasta a sua ação.', rest: acts } : null;
+    // The cost is said once, in the subtitle ("em combate, gasta a ação"): the line under the list says only what the item does to the
+    // receiver, and the first choice adds only the reason a button is dashed.
+    return input.phase === 'give' && acts ? { mark: false, lead: '', rest: acts.trim() } : null;
   }
   return input.phase === 'give'
     ? { mark: false, lead: 'Fora de combate, não gasta a vez.', rest: acts }
@@ -369,8 +372,8 @@ function lowerFirst(text: string): string {
 
 /**
  * How the sheet and the log speak of an item by its name: "a Poção de cura", "uma Poção de cura", "bebeu". The catalog carries no
- * gender, so the article follows the name ("Poção…" is feminine). The verb follows the kind where it is known (the sheet: a
- * potion is drunk, any other item is used), and the name where it is not (the log line only has the name: "Poção…" is drunk).
+ * gender, so the article follows the name ("Poção…" is feminine). The verb follows the kind the server sent (a potion is drunk,
+ * any other item is used); with no kind it is "usou", never a guess from the name.
  */
 export function itemWords(
   name: string,
@@ -382,7 +385,7 @@ export function itemWords(
 } {
   const potion = /^poç(ão|ões)/i.test(name);
   const feminine = potion || article(name) === 'a';
-  const drunk = kind ? kind === 'potion' : potion;
+  const drunk = kind === 'potion';
   return {
     definite: `${feminine ? 'a' : 'o'} ${name}`,
     indefinite: `${feminine ? 'uma' : 'um'} ${name}`,

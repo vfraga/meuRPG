@@ -88,23 +88,24 @@ export class CombatItems {
 
   /** Reads the items of the screen's character; `true` when the newest read of them is on screen. */
   private read(): Promise<boolean> {
-    return this.reads.start((seq) => this.fetch(seq));
+    const characterId = this.ctx.characterId();
+    return characterId
+      ? this.reads.start(characterId, (seq) => this.fetch(characterId, seq))
+      : Promise.resolve(false);
   }
 
-  private async fetch(seq: number): Promise<boolean> {
-    const characterId = this.ctx.characterId();
-    if (!characterId) {
-      return false;
-    }
+  private async fetch(characterId: string, seq: number): Promise<boolean> {
     if (this.loadedFor !== characterId) {
       this.loadedFor = characterId;
       this.entries.set([]);
     }
     try {
       const sheet = await this.ctx.client().sheetOf(this.ctx.campaignId(), characterId);
-      if (!this.reads.holds(seq) || characterId !== this.ctx.characterId()) {
-        // A newer read owns the screen: the answer is its own, not a refusal to say "on screen".
-        return characterId === this.ctx.characterId() ? this.reads.overtaken(seq) : false;
+      if (!this.reads.holds(characterId, seq) || characterId !== this.ctx.characterId()) {
+        // A newer read of this character owns the screen: the answer is its own, not a refusal to say "on screen".
+        return characterId === this.ctx.characterId()
+          ? this.reads.overtaken(characterId, seq)
+          : false;
       }
       this.entries.set(sheet.magicItems.map(magicEntryOf));
       return true;

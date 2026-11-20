@@ -205,6 +205,26 @@ func TestTheLineOfAGiftTellsTheTableTheItemAndTheOwnersTheNumbers(t *testing.T) 
 	if l.GetHealed() != 0 || l.GetDiceText() != "" || len(l.GetFaces()) != 0 || l.GetRollTotal() != 0 {
 		t.Errorf("another player reads numbers: %v", l)
 	}
+	if l.GetKind() != charactersv1.ConsumableKind_CONSUMABLE_KIND_POTION || l.GetEffectDurationTextPt() != "" {
+		t.Errorf("another player reads kind %v and length %q of a heal, want the potion and no length", l.GetKind(), l.GetEffectDurationTextPt())
+	}
+}
+
+// The line of a resistance potion says the kind and the length of the effect to the whole table, from the catalog; an oil says its kind.
+func TestTheLineOfAResistancePotionSaysItsKindAndLengthToTheTable(t *testing.T) {
+	t.Parallel()
+	f := newPotionFight(t, potionFire, oilSharpness)
+	f.mustUse(t, f.caio, f.toren, potionFire, giveTo(f.pens))
+	for name, u := range map[string]*user{"the master": f.master, "another player": f.bia} {
+		l := f.line(t, u).GetConsumableUse()
+		if l.GetKind() != charactersv1.ConsumableKind_CONSUMABLE_KIND_POTION || l.GetEffectDurationTextPt() != "por 1 hora" {
+			t.Errorf("%s reads kind %v and length %q, want the potion and %q", name, l.GetKind(), l.GetEffectDurationTextPt(), "por 1 hora")
+		}
+	}
+	f.mustUse(t, f.caio, f.toren, oilSharpness)
+	if l := f.line(t, f.bia).GetConsumableUse(); l.GetKind() != charactersv1.ConsumableKind_CONSUMABLE_KIND_OIL || l.GetEffectDurationTextPt() != "" {
+		t.Errorf("the oil's line reads kind %v and length %q, want the oil and none", l.GetKind(), l.GetEffectDurationTextPt())
+	}
 }
 
 func TestTheTargetsOfAGiftAreTheAdjacentCharacters(t *testing.T) {

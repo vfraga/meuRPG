@@ -294,6 +294,21 @@ app-item-row + app-item-row {
   border-top: 1px solid var(--mr-rule);
 }
 
+// The hint under the list is a paragraph: its icon sits by the middle of the first line, whatever the lines that follow.
+.items__rule {
+  align-items: flex-start;
+
+  .mat-icon {
+    margin-top: 1px;
+  }
+}
+
+// A folded group says its reason once, above its rows, with the row's own gutter.
+.group__why--group {
+  padding: var(--mr-space-2) 0 var(--mr-space-1);
+  margin: 0;
+}
+
 .items__mark {
   flex: none;
   font-size: var(--mr-font-20);

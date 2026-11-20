@@ -1822,6 +1822,12 @@ message SheetConsumable {
   int32 heal_dice_count = 3;
   int32 heal_dice_sides = 4;
   int32 heal_bonus = 5;
+  // The title of the lasting effect a use leaves on the receiver ("Resistência a fogo"), as CharacterEffect.title_pt gives it for
+  // the same potion drunk. Empty when the use starts no lasting effect (a healing potion, an oil, a scroll, an item that is only text).
+  string effect_title_pt = 6;
+  // The whole length of that effect as a sentence part ("por 1 hora"), as CharacterEffect.total_duration_text_pt gives it for the
+  // same potion drunk. Empty when the use starts no lasting effect.
+  string effect_duration_text_pt = 7;
   // The scroll fields (8 to 14) are filled for a Spell Scroll that holds a spell the character's player may read, from the sheet's
   // build and the table's content. They are empty or zero on every entry that is not a scroll, on a scroll with no spell, and on a
   // scroll whose spell the master switched off or archived (RN-23: the player reads spell_gone_pt on the entry instead).

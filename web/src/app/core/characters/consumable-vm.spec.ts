@@ -51,6 +51,25 @@ describe('consumableOf', () => {
   });
 });
 
+describe('the lasting effect of a use', () => {
+  it('reads the title and the length the server sent, and says nothing of its own', () => {
+    const c = consumableOf(
+      create(SheetConsumableSchema, {
+        kind: ConsumableKind.POTION,
+        costsAction: true,
+        effectTitlePt: 'Resistência a fogo',
+        effectDurationTextPt: 'por 1 hora',
+      }),
+    );
+    expect(c?.lasting).toEqual({ title: 'Resistência a fogo', length: 'por 1 hora' });
+  });
+
+  it('has none when the server sent no title: a healing potion, an oil, a scroll', () => {
+    const c = consumableOf(create(SheetConsumableSchema, { kind: ConsumableKind.POTION }));
+    expect(c?.lasting).toBeUndefined();
+  });
+});
+
 describe('signedText', () => {
   it('writes a number added with a plus and one taken off with a minus sign', () => {
     expect(signedText(2)).toBe('+ 2');

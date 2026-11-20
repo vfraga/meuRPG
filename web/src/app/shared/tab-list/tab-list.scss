@@ -71,8 +71,10 @@
     font-size: var(--mr-font-20);
   }
 
-  &:focus-visible {
+  &:focus-visible,
+  &[data-ring]:focus {
     outline: 2px solid var(--mr-focus);
+    // Inside the tab: the list scrolls, so a ring outside it would be clipped at the top (the global ring of a moved focus is outside).
     outline-offset: -2px;
   }
 }

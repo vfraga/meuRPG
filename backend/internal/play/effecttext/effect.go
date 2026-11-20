@@ -30,11 +30,11 @@ func TotalDuration(content *rules.Content, key, sourceKind string, hasCaster, ti
 	if !timed {
 		return ""
 	}
+	if sourceKind == sourceItem {
+		return content.PotionLengthPT(key)
+	}
 	seconds := 0
-	switch {
-	case sourceKind == sourceItem:
-		seconds, _ = content.PotionSeconds(key)
-	case sourceKind == sourceSpell && hasCaster:
+	if sourceKind == sourceSpell && hasCaster {
 		seconds, _ = content.SpellEffectSeconds(key)
 	}
 	if seconds <= 0 {

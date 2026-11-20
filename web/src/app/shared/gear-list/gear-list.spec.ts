@@ -44,6 +44,14 @@ describe('GearList', () => {
     expect(el.querySelector('button')!.getAttribute('aria-label')).toContain('2 iguais');
   });
 
+  it('draws the button of a row ("Guardar", "Usar") as an ink button, never the crimson of the primary action', () => {
+    const fixture = setup([sword]);
+    fixture.componentRef.setInput('canChange', true);
+    fixture.detectChanges();
+    const button = (fixture.nativeElement as HTMLElement).querySelector('.gear-row__button')!;
+    expect(button.classList).toContain('mr-button--ink');
+  });
+
   it('gives every row a "⋮" when asked, named like the sheet it opens', () => {
     const armor: GearVm = {
       ...sword,

@@ -19,6 +19,7 @@ import (
 	"github.com/PuraFome/meuRPG/backend/internal/platform/db"
 	"github.com/PuraFome/meuRPG/backend/internal/play/consumable"
 	"github.com/PuraFome/meuRPG/backend/internal/play/damagesteps"
+	"github.com/PuraFome/meuRPG/backend/internal/play/effecttext"
 	"github.com/PuraFome/meuRPG/backend/internal/play/link"
 	"github.com/PuraFome/meuRPG/backend/internal/play/playdb"
 	"github.com/PuraFome/meuRPG/backend/internal/rules"
@@ -1338,8 +1339,14 @@ func (e *logEntry) fillItemUse(_ *logViewing, out *playv1.CombatLogEntry) bool {
 // dice, the roll and the hit points regained are the master's and the owners' of the user and of the receiver (RN-10). A line whose
 // user or receiver is hidden never reaches another player (visibleToTable), so the receiver is never named past the fog.
 func (e *logEntry) fillConsumableUse(c *logViewing, out *playv1.CombatLogEntry) bool {
+	var kind charactersv1.ConsumableKind
+	var length string
+	if content := c.names.rulesContent(c.ctx); content != nil {
+		consumed, ok := content.ConsumableOf(e.consumable.Item)
+		kind, length = consumable.KindOf(consumed, ok), effecttext.TotalDuration(content, e.consumable.Item, "item", false, true)
+	}
 	numbers := c.v.master || c.v.owns(c.actor) || c.v.owns(c.target)
-	out.ConsumableUse = consumable.Line(e.consumable, c.names.contentName(c.ctx, e.consumable.DamageType), c.target.Label, numbers)
+	out.ConsumableUse = consumable.Line(e.consumable, kind, c.names.contentName(c.ctx, e.consumable.DamageType), length, c.target.Label, numbers)
 	if numbers {
 		out.ConsumableUse.Scroll = consumable.ScrollLine(e.consumable, c.names.spellName(c.ctx, c.v.master, e.consumable.Spell))
 	}
@@ -1911,6 +1918,20 @@ type keyNames struct {
 	traps       map[string]string       // the names of the traps that fired, by point
 	content     func(key string) string // the names of the content, from the campaign's content
 	source      func(key string) string // the same without what the master switched off or retired
+	rules       *rules.Content          // the campaign's rules, read once when a line needs them
+	rulesFailed bool                    // the read failed: the lines of this call do not try again
+}
+
+// rulesContent is the campaign's rules, nil when they cannot be read (the line then says what it can).
+func (n *keyNames) rulesContent(ctx context.Context) *rules.Content {
+	if n.rules == nil && !n.rulesFailed {
+		var err error
+		if n.rules, err = n.s.roster.RulesContent(ctx, nil, n.campaignID); err != nil {
+			n.rulesFailed = true
+			n.s.logger.WarnContext(ctx, "play: cannot read the rules for the log", "error", err)
+		}
+	}
+	return n.rules
 }
 
 // of returns the name of the key on the combatant's sheet, or "" when the

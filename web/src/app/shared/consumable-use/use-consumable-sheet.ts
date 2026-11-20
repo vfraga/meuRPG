@@ -35,10 +35,30 @@ import {
 import { ActionKey } from '../../core/connect/idempotency';
 import { focusWithRing } from '../../core/creatures/focus-ring';
 import type { ConsumableRoll } from '../../core/play/charges-client';
-import { type ConsumableRefusal, turnBlockParts } from '../../core/play/charges-errors';
+import {
+  type ConsumableRefusal,
+  goneSheetRefusal,
+  turnBlockParts,
+  unreadSheetRefusal,
+} from '../../core/play/charges-errors';
 import { EconomyMark } from '../economy-shapes/economy-shapes';
 import { SheetFrame } from '../sheet/sheet-frame/sheet-frame';
 import { injectSheet, openSheet } from '../sheet/sheet-host';
+
+const NBSP = '\u00a0';
+
+/** The sentence under the effect line of an item with no dice: what a lasting effect is called and how long it lasts, as the server says it. */
+function explainOf(effectPt: string, consumable: ConsumableVm): string {
+  if (effectPt === '') {
+    return 'O app só gasta o item e mostra o texto dele: o mestre e você seguem o texto.';
+  }
+  const lasting = consumable.lasting;
+  if (!lasting) {
+    return '';
+  }
+  const length = lasting.length ? ` ${lasting.length}` : '';
+  return `Quem bebe ganha o efeito “${lasting.title}”${length}: aparece em “Seus efeitos” e acaba sozinho.`;
+}
 
 /** What the page holds once a refusal made it read the character again: the unit the sheet is open on, and its count. */
 export interface Aftermath {
@@ -48,6 +68,8 @@ export interface Aftermath {
   readonly rebound?: boolean;
   /** No unit is left: the sheet closes, and the page shows the notice. */
   readonly close?: boolean;
+  /** The unit is gone and the page could not read the sheet again: the sheet offers nothing until a read lands. */
+  readonly unread?: boolean;
 }
 
 /** Who may receive the consumable, or why the list could not be read. */
@@ -93,6 +115,8 @@ export interface UseConsumableData {
   readonly preferApp: boolean;
   /** Reads who the item may be given to; never rejects. */
   readonly loadTargets: () => Promise<TargetsOutcome>;
+  /** Reads the sheet again after an `unread` answer; never rejects. */
+  readonly reread: () => Promise<Aftermath>;
   /** Uses the item under `key`; answers the refusal in words, or none when it was used. */
   readonly use: (request: UseConsumableRequest, key: string) => Promise<UseAnswer>;
 }
@@ -165,15 +189,12 @@ export class UseConsumableSheet {
   /** The dice of a healing potion, as the server sent them; `null` for every other consumable, which rolls nothing. */
   protected readonly dice = this.data.consumable.heal;
   protected readonly numbers = Array.from({ length: this.dice?.count ?? 0 }, (_, i) => i);
-  protected readonly signedModifier = signedText(this.dice?.modifier ?? 0);
+  /** "+ 2" with a no-break space: the sign never stays alone at the end of a line. */
+  protected readonly signedModifier = signedText(this.dice?.modifier ?? 0).replace(' ', NBSP);
   protected readonly drinkWord = this.words.use;
   protected readonly itemIcon = this.words.icon;
-  /** What the item does in words, for the items whose effect line says it only in short. */
-  protected readonly explain = this.dice
-    ? ''
-    : this.data.effectPt === ''
-      ? 'O app só gasta o item e mostra o texto dele: o mestre e você seguem o texto.'
-      : 'Quem bebe fica com um efeito que dura 1 hora: aparece em “Seus efeitos” e acaba sozinho.';
+  /** What the item does in words, for the items whose effect line says it only in short; the lasting effect's title and length are the server's. */
+  protected readonly explain = this.dice ? '' : explainOf(this.data.effectPt, this.data.consumable);
 
   protected readonly phase = signal<'choose' | 'give'>('choose');
   /** `null` while the list is being read. */
@@ -195,6 +216,8 @@ export class UseConsumableSheet {
   /** The server lists only who is within reach for what costs the action in a running combat; any other use lists the party. */
   private readonly byReach = computed(() => this.inCombat() === true && this.costs);
   protected readonly whyId = 'use-consumable-why';
+  /** The line of the refusal under the effect: what "Dar a…" points to while the sheet is not read again. */
+  protected readonly refusalId = 'use-consumable-refusal';
   protected readonly targetsErrorId = 'use-consumable-targets-error';
   /** A potion and an oil are given: a scroll and the rest have no "Dar a…", so nobody is listed for them. */
   protected readonly gives = canGive(this.data.kind);
@@ -203,16 +226,19 @@ export class UseConsumableSheet {
   );
   /** "Dar a…" is dashed: the turn does not allow it, or the list is read and has nobody (or could not be read). */
   protected readonly giveOff = computed(
-    () => !!this.blocked() || (this.targets() !== null && !this.canGive()),
+    () => !!this.blocked() || this.unread() || (this.targets() !== null && !this.canGive()),
   );
-  /** The block icon says there is nobody to give to; a use the turn does not allow keeps the open hand, like the item's own button. */
+  /** The block icon says there is nobody to give to; a use the turn does not allow, or a sheet not read again, keeps the open hand, like the item's own button. */
   protected readonly giveIcon = computed(() =>
-    this.giveOff() && !this.blocked() ? 'block' : 'volunteer_activism',
+    this.giveOff() && !this.blocked() && !this.unread() ? 'block' : 'volunteer_activism',
   );
   /** What says why "Dar a…" is dashed: the line of the turn or of the empty list, or the error of the read. */
   protected readonly giveWhyId = computed(() => {
     if (!this.giveOff()) {
       return null;
+    }
+    if (this.unread()) {
+      return this.refusalId;
     }
     if (this.reasonText() || this.blockedLine()) {
       return this.whyId;
@@ -246,16 +272,22 @@ export class UseConsumableSheet {
 
   protected readonly busy = signal(false);
   protected readonly error = signal<ConsumableRefusal | null>(null);
-  protected readonly canSend = computed(() => !this.blocked() && !this.busy() && this.rolled());
+  /** The unit is gone and the page could not read the sheet again: nothing is offered until a read lands. */
+  protected readonly unread = signal(false);
+  protected readonly canSend = computed(
+    () => !this.blocked() && !this.unread() && !this.busy() && this.rolled(),
+  );
   /** A request in the air: Esc and the backdrop do not close the sheet under it. */
   protected readonly lockWhileBusy = effect(() => this.sheet.lock(this.busy()));
   private key = new ActionKey();
-  /** The receiver of the last call, for "Tente de novo". */
+  /** The receiver of the last call, for "Tentar de novo". */
   private lastTarget: ConsumableTargetVm | null = null;
+  /** What the gone unit's refusal said, for when a later read lands: the unit was used, and the sheet is up to date now. */
+  private goneRefusal: ConsumableRefusal | null = null;
 
   /** Why the first state offers less than two buttons: the turn does not allow it, or the list is read and has nobody. */
   protected readonly reasonText = computed(() => {
-    if (this.blocked() || !this.gives || this.targets() === null) {
+    if (this.blocked() || this.unread() || !this.gives || this.targets() === null) {
       return '';
     }
     if (this.canGive() || this.targetsError()) {
@@ -297,6 +329,12 @@ export class UseConsumableSheet {
       this.inCombat.set(out.inCombat);
     }
     this.follow(out);
+    if (out.unread) {
+      // The unit is gone and the sheet was not read: one message, with the way to read it again.
+      this.targetsError.set(null);
+      this.goneRefusal = goneSheetRefusal(this.data.kind);
+      this.error.set(unreadSheetRefusal(this.data.kind));
+    }
     const still = this.targets()?.find((t) => t.id === this.chosen());
     this.chosen.set(still?.id ?? this.targets()?.[0]?.id ?? '');
     if (this.phase() === 'give' && (this.targets()?.length ?? 0) === 0) {
@@ -306,6 +344,11 @@ export class UseConsumableSheet {
 
   /** What the page holds now of the unit: its count, the unit that takes the place of a gone one, or the sheet closing. */
   private follow(after: Aftermath): void {
+    if (after.unread) {
+      this.unread.set(true);
+    } else if (after.left !== undefined || after.rebound || after.close) {
+      this.unread.set(false);
+    }
     if (after.left !== undefined) {
       this.left.set(Math.max(1, after.left));
     }
@@ -355,6 +398,14 @@ export class UseConsumableSheet {
     this.faces.update((all) => all.map((old, i) => (i === index ? text : old)));
   }
 
+  /** "Dar a X": the receiver is chosen; with nobody chosen nothing is sent (a call with no receiver would be the user's own). */
+  protected give(): void {
+    const receiver = this.receiver();
+    if (receiver) {
+      void this.send(receiver);
+    }
+  }
+
   protected async send(target: ConsumableTargetVm | null): Promise<void> {
     if (!this.canSend()) {
       return;
@@ -376,6 +427,9 @@ export class UseConsumableSheet {
       const why = answer.refusal;
       if (!why) {
         this.sheet.close(true);
+      } else if (answer.unread) {
+        this.goneRefusal = why;
+        this.error.set(unreadSheetRefusal(this.data.kind));
       } else if (why.block) {
         // The turn or the action: the sheet is blocked and its ban line says why, so the refusal is not said twice.
         this.blocked.set(why.block);
@@ -391,12 +445,31 @@ export class UseConsumableSheet {
     }
   }
 
-  /** "Tente de novo" under a call that never reached the server: the same call again, with the same key. */
+  /** "Tentar de novo" under a call that never reached the server: the same call again, with the same key; under a sheet that was not read, the read. */
   protected retry(): void {
+    if (this.unread()) {
+      void this.reread();
+      return;
+    }
     void this.send(this.lastTarget);
   }
 
-  /** "Tente de novo" under a list that could not be read. */
+  /** Reads the sheet again after a gone unit: once it lands the sheet says what the refusal said, and now it is true. */
+  private async reread(): Promise<void> {
+    this.busy.set(true);
+    try {
+      const after = await this.data.reread();
+      this.follow(after);
+      this.error.set(after.unread ? unreadSheetRefusal(this.data.kind) : this.goneRefusal);
+      if (!after.unread && !after.close) {
+        await this.refreshTargets();
+      }
+    } finally {
+      this.busy.set(false);
+    }
+  }
+
+  /** "Tentar de novo" under a list that could not be read. */
   protected retryTargets(): void {
     this.targetsError.set(null);
     void this.refreshTargets();

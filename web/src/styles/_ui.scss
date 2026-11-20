@@ -404,8 +404,18 @@ a.mr-list__row:hover .mr-list__name {
   --mat-button-outlined-hover-state-layer-opacity: 0;
   --mat-button-filled-pressed-state-layer-opacity: 0;
   --mat-button-outlined-pressed-state-layer-opacity: 0;
+  // A ring is the look of a focused button that does nothing, not a grey fill.
+  --mat-button-filled-focus-state-layer-opacity: 0;
+  --mat-button-outlined-focus-state-layer-opacity: 0;
   border: 1px dashed var(--mr-control-line);
   cursor: default;
+}
+
+// A supporting button: the label, the outline and the icon are the ink, not the accent; crimson stays for the one primary action.
+.mr-button--ink.mat-mdc-button-base {
+  --mat-button-outlined-label-text-color: var(--mr-ink);
+  --mat-button-outlined-outline-color: var(--mr-control-line);
+  --mat-button-outlined-icon-color: var(--mr-ink);
 }
 
 // The ring of an element the app moved the focus to (core/creatures/focus-ring.ts): 2 px, like the global one.

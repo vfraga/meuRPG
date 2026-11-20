@@ -142,12 +142,12 @@ export interface TurnBlockParts {
   readonly text: string;
 }
 
-/** The line of a turn that does not allow the use, the one the server's refusals say too: "Só na sua vez: beber ou dar gasta a ação.", "Ação já usada. Você já usou a ação desta vez.". */
+/** The line of a turn that does not allow the use, the one the server's refusals say too: "Só na sua vez. Beber ou dar gasta a ação.", "Ação já usada. Você já usou a ação desta vez.". */
 export function turnBlockParts(block: TurnBlock, actingFor: string | null): TurnBlockParts {
   return block === 'turn'
     ? {
-        lead: `Só na ${actingFor ? `vez de ${actingFor}` : 'sua vez'}:`,
-        text: 'beber ou dar gasta a ação.',
+        lead: `Só na ${actingFor ? `vez de ${actingFor}` : 'sua vez'}.`,
+        text: 'Beber ou dar gasta a ação.',
       }
     : { lead: 'Ação já usada.', text: `${actingFor ?? 'Você'} já usou a ação desta vez.` };
 }
@@ -188,11 +188,25 @@ function combatRefusal(
         { cause: 'target-away' },
       );
     case EncounterBlockedReason.ITEM_GONE:
-      return refusal(words.goneLead, `${words.goneUsed}. A ficha foi atualizada.`, {
-        cause: 'item-gone',
-      });
+      return goneSheetRefusal(ctx.kind);
   }
   return refusal('Não foi possível.', blockedMessage(encounter));
+}
+
+/** The refusal of an item that is gone and whose sheet was read again: it was used, and the sheet is up to date. */
+export function goneSheetRefusal(kind: ConsumableKind): ConsumableRefusal {
+  return refusal(`${kindWords(kind).goneUsed}.`, 'A ficha foi atualizada.', { cause: 'item-gone' });
+}
+
+/**
+ * The refusal of an item that is gone while the page could not read the sheet again (or the read was overtaken): the lead says
+ * the item was used, and the rest does not say the sheet was updated, because it was not. It offers to read it again.
+ */
+export function unreadSheetRefusal(kind: ConsumableKind): ConsumableRefusal {
+  return refusal(`${kindWords(kind).goneUsed}.`, 'Não conseguimos reler a ficha.', {
+    retry: true,
+    cause: 'item-gone',
+  });
 }
 
 /** Whether the sheet must be read again after a failed use: everything but a call that never reached the server. */
@@ -281,9 +295,7 @@ export function consumableTargetsRefusal(
 ): ConsumableRefusal {
   const words = kindWords(ctx.kind);
   if (encounterBlocked(err)?.reason === EncounterBlockedReason.ITEM_GONE) {
-    return refusal(words.goneLead, `${words.goneUsed}. A ficha foi atualizada.`, {
-      cause: 'item-gone',
-    });
+    return goneSheetRefusal(ctx.kind);
   }
   const connectErr = ConnectError.from(err, Code.Unavailable);
   if (

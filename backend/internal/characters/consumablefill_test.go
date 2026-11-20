@@ -19,7 +19,7 @@ func TestSheetReadsWhatTheUseOfAConsumableIsAndCosts(t *testing.T) {
 	sheet := et.read(t, et.master, pc.GetId())
 	for key, want := range map[string]*charactersv1.SheetConsumable{
 		potionKey:                        {Kind: charactersv1.ConsumableKind_CONSUMABLE_KIND_POTION, CostsAction: true, HealDiceCount: 2, HealDiceSides: 4, HealBonus: 2},
-		"item:potion-of-resistance-fire": {Kind: charactersv1.ConsumableKind_CONSUMABLE_KIND_POTION, CostsAction: true},
+		"item:potion-of-resistance-fire": {Kind: charactersv1.ConsumableKind_CONSUMABLE_KIND_POTION, CostsAction: true, EffectTitlePt: "Resistência a fogo", EffectDurationTextPt: "por 1 hora"},
 		"item:potion-of-climbing":        {Kind: charactersv1.ConsumableKind_CONSUMABLE_KIND_POTION, CostsAction: true},
 		"item:oil-of-sharpness":          {Kind: charactersv1.ConsumableKind_CONSUMABLE_KIND_OIL},
 		"item:spell-scroll-1st":          {Kind: charactersv1.ConsumableKind_CONSUMABLE_KIND_SCROLL},

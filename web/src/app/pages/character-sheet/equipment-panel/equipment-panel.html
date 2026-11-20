@@ -153,7 +153,7 @@
                   <button
                     matButton="outlined"
                     type="button"
-                    class="magic-row__use"
+                    class="magic-row__use mr-button--ink"
                     [attr.data-consumable-action]="c.key"
                     [attr.aria-label]="'Usar ' + c.namePt"
                     (click)="consumableUsed.emit(c.first)"
@@ -211,7 +211,7 @@
                   <button
                     matButton="outlined"
                     type="button"
-                    class="magic-row__use"
+                    class="magic-row__use mr-button--ink"
                     [attr.data-charges-action]="e.id"
                     [attr.aria-label]="'Rolar o d20 da última carga · ' + e.namePt"
                     (click)="lastChargeRolled.emit(e)"
@@ -220,7 +220,7 @@
                   <button
                     matButton="outlined"
                     type="button"
-                    class="magic-row__use"
+                    class="magic-row__use mr-button--ink"
                     [attr.data-charges-action]="e.id"
                     [class.magic-row__use--off]="c.state !== 'ready'"
                     [disabled]="c.state !== 'ready'"

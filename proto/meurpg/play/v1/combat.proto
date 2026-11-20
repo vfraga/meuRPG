@@ -6698,6 +6698,11 @@ message ConsumableUseLogLine {
   string damage_type_name_pt = 8;
   // The name of the receiver when it is not the user (a potion given to another creature); empty for the user.
   string target_label = 9;
+  // The item's kind, which the line's verb follows (a potion is drunk or given, an oil applied, a scroll read).
+  // UNSPECIFIED when the item is no longer in the catalog or the campaign's rules cannot be read.
+  meurpg.characters.v1.ConsumableKind kind = 10;
+  // RESISTANCE: the whole length of the effect as a sentence part ("por 1 hora"); empty on the other outcomes.
+  string effect_duration_text_pt = 12;
   // SCROLL_FAILED: the spell and the check, for the master and the user's owner only. Any other player reads the outcome and the
   // scroll's own name, and nothing of what was on it.
   ScrollReadLogLine scroll = 11;

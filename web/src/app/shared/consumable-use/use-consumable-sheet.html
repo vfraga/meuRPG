@@ -13,13 +13,13 @@
   }
   <div class="mr-live" role="alert">
     @if (error(); as e) {
-      <p class="mr-notice mr-notice--danger refusal">
+      <p class="mr-notice mr-notice--danger refusal" [id]="refusalId">
         <span class="mr-notice__said">
           <mat-icon aria-hidden="true">error</mat-icon>
           <span><strong>{{ e.lead }}</strong> {{ e.text }}</span>
         </span>
         @if (e.retry) {
-          <button matButton="outlined" type="button" class="refusal__retry" [disabled]="busy()" (click)="retry()">Tente de novo</button>
+          <button matButton="outlined" type="button" class="refusal__retry" [disabled]="busy()" (click)="retry()">Tentar de novo</button>
         }
       </p>
     }
@@ -32,7 +32,7 @@
           <span><strong>{{ e.lead }}</strong> {{ e.text }}</span>
         </span>
         @if (e.retry) {
-          <button matButton="outlined" type="button" class="refusal__retry" (click)="retryTargets()">Tente de novo</button>
+          <button matButton="outlined" type="button" class="refusal__retry" (click)="retryTargets()">Tentar de novo</button>
         }
       </p>
     }
@@ -142,20 +142,21 @@
       </span>
     </p>
   }
-  <div foot class="foot" [class.foot--phone]="inSheet" [class.foot--wide]="phase() === 'give' && inCombat() === true">
+  <!-- Two equal halves on the phone, in every case (board 565-07-3a); a receiver in a combat has two ways to use it: the self-use button first and the receiver's button last, at the right edge, in the order they are shown and read. -->
+  <div foot class="foot" [class.foot--phone]="inSheet">
     @if (phase() === 'choose') {
       @if (gives) {
         <button
           #give
           matButton="outlined"
           type="button"
-          class="give go--half"
+          class="give go--half mr-button--ink"
           [class.give--off]="giveOff()"
           [class.mr-button--off]="giveOff()"
-          [disabled]="busy() || !canGive()"
+          [disabled]="busy() || !canGive() || unread()"
           disabledInteractive
           [attr.aria-describedby]="giveWhyId()"
-          (click)="canGive() && openGive()"
+          (click)="canGive() && !unread() && openGive()"
         >
           <mat-icon aria-hidden="true">{{ giveIcon() }}</mat-icon>Dar a…
         </button>
@@ -166,39 +167,29 @@
         class="go"
         [class.go--half]="gives"
         [class.go--wide]="!gives"
-        [class.go--off]="!canSend()"
+        [class.go--off]="!canSend() && !busy()"
+        [class.go--busy]="busy()"
         [class.mr-button--off]="!!blocked()"
         [disabled]="!canSend()"
         disabledInteractive
         [attr.aria-describedby]="blocked() ? whyId : null"
         (click)="send(null)"
       >
-        <mat-icon aria-hidden="true">{{ itemIcon }}</mat-icon>{{ busy() ? 'Usando...' : drinkWord }}
+        @if (busy()) {
+          <span class="go__spin" aria-hidden="true"></span>
+        } @else {
+          <mat-icon aria-hidden="true">{{ itemIcon }}</mat-icon>
+        }{{ busy() ? 'Usando…' : drinkWord }}
       </button>
     } @else {
       @if (inCombat() !== true) {
-        <button matButton="outlined" type="button" class="go--half" [disabled]="busy()" disabledInteractive (click)="back()">Voltar</button>
+        <button matButton="outlined" type="button" class="go--half mr-button--ink" [disabled]="busy()" disabledInteractive (click)="back()">Voltar</button>
       }
-      <button
-        matButton="filled"
-        type="button"
-        class="go"
-        [class.go--wide]="inCombat() === true"
-        [class.go--half]="inCombat() !== true"
-        [class.go--off]="!canSend()"
-        [class.mr-button--off]="!!blocked()"
-        [disabled]="!canSend()"
-        disabledInteractive
-        [attr.aria-describedby]="blocked() ? whyId : null"
-        (click)="send(receiver())"
-      >
-        <mat-icon aria-hidden="true">volunteer_activism</mat-icon>{{ busy() ? 'Usando...' : 'Dar a ' + receiverName() }}
-      </button>
       @if (inCombat() === true) {
         <button
           matButton="outlined"
           type="button"
-          class="go--wide"
+          class="go--half mr-button--ink"
           [class.mr-button--off]="!!blocked()"
           [disabled]="!canSend()"
           disabledInteractive
@@ -208,6 +199,24 @@
           <mat-icon aria-hidden="true">{{ itemIcon }}</mat-icon>{{ selfWord() }}
         </button>
       }
+      <button
+        matButton="filled"
+        type="button"
+        class="go go--half"
+        [class.go--off]="(!canSend() || !receiver()) && !busy()"
+        [class.go--busy]="busy()"
+        [class.mr-button--off]="!!blocked()"
+        [disabled]="!canSend() || !receiver()"
+        disabledInteractive
+        [attr.aria-describedby]="blocked() ? whyId : null"
+        (click)="give()"
+      >
+        @if (busy()) {
+          <span class="go__spin" aria-hidden="true"></span>
+        } @else {
+          <mat-icon aria-hidden="true">volunteer_activism</mat-icon>
+        }{{ busy() ? 'Usando…' : 'Dar a ' + receiverName() }}
+      </button>
     }
   </div>
 </app-sheet-frame>

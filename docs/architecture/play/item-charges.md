@@ -275,8 +275,12 @@ The notice of the last unit therefore keeps its heading and the line "Nenhum ite
 The notice of a use sits at the top of the section, as in the combat.
 "Usar" works on a locked sheet, and the lock line names what the sheet holds: potions, oils, scrolls, other items and charges.
 A sheet with potions and charges reads "Travada: usar poções e cargas continua valendo; o resto, só o mestre muda."
-`ConsumableUse` (`shared/consumable-use/consumable-use.ts`) opens `UseConsumableSheet` with the character the dialog acts for (the master's title reads "Usar por <personagem>"), reads the character after a use and words the result as a notice.
+`ConsumableUse` (`shared/consumable-use/consumable-use.ts`) opens `UseConsumableSheet` with the character the dialog acts for.
+The master's title reads "Usar por <personagem>".
+It reads the character after a use and words the result as a notice.
 A read of the character that a newer one overtakes answers with the newer read's result once it has landed (`NewestRead`), so the notice never counts from an old sheet.
+`NewestRead` is keyed by the character it read, so a read of another character never satisfies or overtakes this one's.
+A call and what follows it are separate steps: only the call's own failure may say that nothing was spent, and a failed re-read after an answer says the unit was used.
 The sheet's magic items and the combat's "Itens" both build one, with the owner's items and what the page knows of the combat.
 An entry without `consumable` is no consumable row, whatever its name or its effect line says.
 The web keeps no list of oils, no category read and no parsing of `effect_pt` for dice: the verb, the icon, the noun, the Ação mark, the pre-block and the dice read `consumable`.
@@ -285,7 +289,7 @@ The sheet learns the combat from `ListConsumableTargetsResponse.in_combat` and s
 A scroll or another item that is not given has no targets read, so the sheet uses what the page knows, and `costs_action` is false for it anyway.
 `turnBlock` is `null` on the sheet; in the combat it is `turn` when the turn is not the character's and `action` when the Action is spent (`turnBlockOf`).
 Only an item whose `consumable.costs_action` is true opens blocked.
-A sheet blocked by the turn or the Action dashes both buttons and says it in the ban line, with a bold lead: "Só na sua vez:" or "Ação já usada.".
+A sheet blocked by the turn or the Action dashes both buttons and says it in the ban line, with a bold lead: "Só na sua vez." or "Ação já usada.".
 It reads no list and sends nothing.
 A refusal of the turn or of the Action that comes from the server blocks the open sheet the same way.
 `UseConsumableSheet` opens on "Dar a…" outlined and "Beber" filled; an oil reads "Usar" and "Usar eu mesmo".
@@ -294,9 +298,11 @@ A scroll or another item that is no potion or oil has no "Dar a…": the sheet r
 A blocked sheet keeps the open hand on its dashed "Dar a…".
 The dashed button is described by the line that says why, or by the error of the read.
 The line that comes after the read sits in a polite live region that is already on the page, so it is announced.
-The list of receivers is a group of radio rows, and its buttons follow the combat: "Dar a <nome>" and "Beber eu mesmo" in a running combat, "Voltar" and "Dar a <nome>" everywhere else.
-The sheet shows one cost line, never both cases: in a combat "Gasta a sua ação" (with the mark of the Ação), out of one "Fora de combate: não gasta a vez".
-The subtitle says "em combate, gasta a ação" only for an item that costs the action when the server says there is a combat.
+The list of receivers is a group of radio rows, and its buttons follow the combat: "Beber eu mesmo" and "Dar a <nome>" in a running combat, "Voltar" and "Dar a <nome>" everywhere else.
+The sheet says what the action costs once: the subtitle reads "em combate, gasta a ação" only for an item that costs the action when the server says there is a combat.
+In a combat the cost line under the list says only what the potion does to the receiver ("A poção age em Brisa."), with an info icon and no mark.
+Out of a combat the first choice reads "Fora de combate: não gasta a vez." and, when someone may receive it, "“Dar a…” lista o grupo todo.".
+Once a receiver is chosen it reads "Fora de combate, não gasta a vez." and then what the potion does.
 An item that costs no action says "Não gasta a ação: o mestre decide o tempo que isso leva." and, in the list of receivers, "O óleo age em <nome>.".
 `ConsumableNoticeCard` draws the notice in the sheet's live region and in the tab of the combat.
 `itemWords` words an item by its kind: a potion is "uma Poção" and drunk, anything else (an oil, a scroll) is used.
@@ -306,15 +312,28 @@ The receivers are the server's list.
 In a running combat a potion lists the adjacent characters with their distance and how they stand (`stateWord`), and the sheet says "Dar a quem está ao seu lado".
 Any other case lists the party's names with no distance, and the sheet says "Dar a alguém do grupo".
 An empty list says "Ninguém a 1,5 m de <nome> para receber…" in a combat, with the name of the character the master acts for, and "Ninguém mais no grupo para receber…" out of one.
-`consumableRefusal` (`core/play/charges-errors.ts`) words the refusals of a use by the typed reason, each with a bold lead ("Brisa morreu.", "A poção acabou.", "Longe demais.").
-The refusals that spend nothing say so: the receiver gone or dead, the character dead or no longer at the table, no open session, dice that do not fit the die and a call that never left ("Tente de novo" sends the same call under the same key).
+`consumableRefusal` (`core/play/charges-errors.ts`) words the refusals of a use by the typed reason, each with a bold lead ("Brisa morreu.", "Essa poção já foi usada.", "Longe demais.").
+The refusals that spend nothing say so.
+They are the receiver gone or dead, the character dead or no longer at the table, no open session and dice that do not fit the die.
+A call that never left says so too, and "Tentar de novo" sends the same call under the same key.
 `Unknown`, `Internal` and `DeadlineExceeded` may have spent the unit, so they say "Não sabemos se a unidade foi usada: confira a ficha."
 `CHARACTER_DEAD` names the character that died, and `InvalidArgument` speaks of dice only when the player typed them.
 The refusals of the turn, of the action and of an item already used say what blocks the use and not that nothing was spent.
+An item already used leads with "Essa poção já foi usada." and says "A ficha foi atualizada." only when the page read the sheet again.
+When that read fails or a newer one overtakes it, the sheet says "Não conseguimos reler a ficha." with "Tentar de novo".
+It keeps both buttons off and says nothing of who may receive the item.
+It offers the unit again only once a read lands (`Aftermath.unread`, `UseConsumableData.reread`).
+Then it says "Essa poção já foi usada. A ficha foi atualizada.", whether the gone unit came from the use or from the list of receivers.
+A give with no receiver chosen sends nothing, so it never becomes the user's own use.
+The sentence of a lasting effect ("Quem bebe ganha o efeito “Resistência a fogo” por 1 hora") is the server's.
+It comes from `SheetConsumable.effect_title_pt` and `effect_duration_text_pt`, from the same helper as the effect card.
+The log line of a use reads `ConsumableUseLogLine.kind` for the verb and `effect_duration_text_pt` for the length of a resistance, and the web writes no rule text of its own.
 The generic sentences of `combat-errors-limits.ts` for the same reasons stay for the other callers.
 `consumableTargetsRefusal` words a failed read of the list, and never speaks of typed dice or of a receiver who left.
 The page reads the character again after a use and after every failure but `Unavailable`, and the sheet follows the answer.
-A dead or far receiver is dropped and the list is read again, a unit that is gone is replaced by another of the same item under a new key, and the sheet closes with the page's notice when none is left.
+A dead or far receiver is dropped and the list is read again.
+A unit that is gone is replaced by another of the same item under a new key.
+The sheet closes with the page's notice when none is left.
 The notice of a use counts the units from that read, and says nothing of the count when the read is not on screen.
 A potion that heals nothing since the receiver is at full hit points is a neutral notice ("<nome> já estava com os PV cheios."), not a success.
 A receiver at three failed death saves reads as down in the list of a player, and the server refuses it (`TARGET_DEAD`): the dialog says nothing was spent.
@@ -322,18 +341,23 @@ A resistance lands in "Seus efeitos" through the effect cards the server sends.
 
 ### Consumables in a combat
 
-`CombatItems` (`pages/live-session/combat/combat-items.ts`) reads the magic items of the character on turn (the player's own, or the one the master acts for) through `ChargesClient.sheetOf`, and groups the consumables into rows (`combatItemRows`).
+`CombatItems` (`pages/live-session/combat/combat-items.ts`) reads the magic items of the character on turn through `ChargesClient.sheetOf`.
+That is the player's own, or the one the master acts for.
+It groups the consumables into rows (`combatItemRows`).
 It reads them when the turn is the character's, when the turn or the Action changes, and after a use.
 A read that fails keeps what is shown.
 `ActionGroups` draws the "Itens" tab after the class's tab and before "Outras", with the row count, and no tab without a consumable.
 Each row has "×N" for a group, the mark of its cost (the Ação when `consumable.costs_action`, none for an oil or a scroll) and "Usar", which opens `UseConsumableSheet` with a combat running.
 A spent Action (`actionUsed`, also after the first attack of Extra Attack) folds the rows that cost it to "Ação · Usada", and the oils stay open.
 A folded row opens the sheet blocked: both buttons are dashed and the sheet says the Action is spent.
-A character that cannot act (stunned, paralyzed and the like) folds them to "Ação · Indisponível", and the row of an item that costs the action is off with the reason ("Atordoado: não pode agir.").
+A character that cannot act (stunned, paralyzed and the like) folds them to "Ação · Indisponível".
+The row of an item that costs the action is off, and the reason is said once for the group ("Atordoado: não pode agir.").
 The hint of the tab says what the server does: a potion costs the action, and an oil or a scroll is spent and shows its text, with no turn and no action, and the master judges the time.
 The notice of a use shows at the top of the tab, which stays while the notice is on screen even after the last unit is gone, and is forgotten when the turn passes.
 A scroll is a plain "Usar" row that is spent as text.
-`CONSUMABLE_USED` log lines (`combat-log-consumable.ts`) say who drank or gave which item; the heal's dice and hit points come only to the master and the owners of the user and the receiver, and any other player reads who and what.
+`CONSUMABLE_USED` log lines (`combat-log-consumable.ts`) say who drank or gave which item.
+The heal's dice and hit points come only to the master and the owners of the user and the receiver.
+Any other player reads who and what.
 
 ## The master's panel
 

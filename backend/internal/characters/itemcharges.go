@@ -54,6 +54,7 @@ func sheetConsumableOf(content *rules.Content, key string) *charactersv1.SheetCo
 	}
 	out := &charactersv1.SheetConsumable{
 		CostsAction:   c.CostsAction,
+		EffectTitlePt: content.PotionTitlePT(key), EffectDurationTextPt: content.PotionLengthPT(key),
 		HealDiceCount: conv.Int32(c.Heal.Count), HealDiceSides: conv.Int32(c.Heal.Sides), HealBonus: conv.Int32(c.Heal.Bonus),
 	}
 	switch c.Kind {

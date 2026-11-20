@@ -798,6 +798,8 @@ describe('EquipmentPanel, the potions and the scrolls', () => {
     const use = row.querySelector<HTMLButtonElement>('.magic-row__use')!;
     expect(plain(use)).toBe('Usar');
     expect(use.getAttribute('aria-label')).toBe('Usar Poção de cura');
+    // A supporting button is ink, not crimson: crimson is the one primary action.
+    expect(use.classList).toContain('mr-button--ink');
   });
 
   it('draws a page for a scroll', () => {

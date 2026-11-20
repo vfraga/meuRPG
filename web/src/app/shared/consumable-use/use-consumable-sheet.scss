@@ -2,6 +2,8 @@
 // is that rhythm here, and the parts carry no margin of their own.
 :host {
   --mr-sheet-gap: var(--mr-space-4);
+  // The toggle of the dice row is a 44px target on a 20px line: the body keeps the room it reaches below the line (`sheet-frame`).
+  --mr-sheet-body-end: var(--mr-space-3);
   display: block;
 }
 .effect {
@@ -158,11 +160,15 @@
   height: var(--mr-font-14);
   font-size: var(--mr-font-14);
 }
-// The live regions are always there, so the line that comes after the read is announced; empty, they take no room: a negative
-// margin cancels the frame's gap beside them.
-.why:empty,
-.mr-live:empty {
-  margin-bottom: calc(var(--mr-sheet-gap) * -1);
+// The live regions are always there, so the line that comes after the read is announced (`mr-live` is out of the flow while empty); the
+// ban line's is too, and out of the body's scroll height: a zero-height box at the end of it would count as more to scroll to.
+.why:empty {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
 }
 .none {
   display: flex;
@@ -203,7 +209,7 @@
   color: var(--mr-ink);
 }
 // One footer for each breakpoint. A dialog (768px up) right-aligns its buttons at their own width, as board 565-05 draws it. The phone's
-// sheet (`foot--phone`) gives them the width: two equal halves, or one a line when a receiver is chosen in a combat (board 565-02).
+// sheet (`foot--phone`) gives them the width: two equal halves in every case (board 565-07-3a), one button alone a line.
 .foot {
   display: flex;
   flex-wrap: wrap;
@@ -213,28 +219,55 @@
 .foot button {
   min-height: 48px;
 }
-// The receiver's button is the first in the reading order, so the dialog sets it last: the primary action at the right edge.
-.foot--wide:not(.foot--phone) {
-  flex-direction: row-reverse;
-  justify-content: flex-start;
-}
-.foot--phone .go--half {
-  flex: 1 1 0;
-  min-width: 0;
+// A grid, so the halves are equal whatever each button's own padding and border are (a flex basis would add them to the share).
+.foot--phone {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 .foot--phone .go--wide {
-  flex: 1 1 100%;
+  grid-column: 1 / -1;
 }
 .give--off {
   cursor: default;
 }
-.go--off {
+.go--off:not(.go--busy) {
   opacity: 0.6;
   cursor: default;
 }
 // A dashed button (`mr-button--off`) says its reason in a line near it and keeps its own muted colours.
-.mr-button--off.go--off {
+.mr-button--off.go--off:not(.go--busy) {
   opacity: 1;
+}
+// Using: a plain muted button with a ring in place of the icon, never the dashed "cannot" one (the same as "Salvando…").
+.go--busy {
+  --mat-button-filled-disabled-container-color: var(--mr-ground);
+  --mat-button-filled-disabled-label-text-color: var(--mr-ink);
+  gap: var(--mr-space-2);
+}
+// A ring that turns: a plain element, since a spinner component in a button is an interactive control inside a control.
+.go__spin {
+  // The label of a button is an inline box: without this the ring has no width and reads as a hairline.
+  display: inline-block;
+  flex: none;
+  vertical-align: middle;
+  margin-inline-end: var(--mr-space-2);
+  width: 18px;
+  height: 18px;
+  box-sizing: border-box;
+  border: 2px solid currentColor;
+  border-inline-end-color: transparent;
+  border-radius: 50%;
+  animation: go-spin 0.8s linear infinite;
+}
+@keyframes go-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .go__spin {
+    animation-duration: 3s;
+  }
 }
 // A refusal that can be tried again has its button beside the words, and under them when the sheet is narrow.
 .refusal {

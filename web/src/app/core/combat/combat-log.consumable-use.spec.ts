@@ -1,5 +1,6 @@
 import { type MessageInitShape, create } from '@bufbuild/protobuf';
 
+import { ConsumableKind } from '../../../gen/meurpg/characters/v1/characters_pb';
 import {
   type CombatLogEntry,
   CombatLogEntrySchema,
@@ -30,6 +31,7 @@ const said = (e: CombatLogEntry) => {
 
 const healed = {
   itemNamePt: 'Poção de cura',
+  kind: ConsumableKind.POTION,
   outcome: ConsumableUseOutcome.HEALED,
   diceText: '2d4+2',
   faces: [3, 2],
@@ -40,6 +42,7 @@ const healed = {
 /** What the server sends to every reader but the master and the owners of the user and of the receiver: no number. */
 const withoutNumbers = {
   itemNamePt: 'Poção de cura',
+  kind: ConsumableKind.POTION,
   outcome: ConsumableUseOutcome.HEALED,
 };
 
@@ -102,9 +105,11 @@ describe('CONSUMABLE_USED in the log', () => {
   describe('a resistance', () => {
     const resistance = {
       itemNamePt: 'Poção de resistência',
+      kind: ConsumableKind.POTION,
       outcome: ConsumableUseOutcome.RESISTANCE,
       damageTypeKey: 'damage-type:fire',
       damageTypeNamePt: 'Fogo',
+      effectDurationTextPt: 'por 1 hora',
     };
 
     it('says the damage type, which every reader may know', () => {
@@ -116,6 +121,15 @@ describe('CONSUMABLE_USED in the log', () => {
       );
     });
 
+    it('writes the length the server sent and no other: none sent, none said', () => {
+      expect(said(entry('Tor', { ...resistance, effectDurationTextPt: 'por 10 minutos' }))).toBe(
+        'Tor bebeu uma Poção de resistência: resistência a fogo por 10 minutos',
+      );
+      expect(said(entry('Tor', { ...resistance, effectDurationTextPt: '' }))).toBe(
+        'Tor bebeu uma Poção de resistência: resistência a fogo',
+      );
+    });
+
     it('leaves the damage type out when the server did not name it', () => {
       expect(said(entry('Tor', { ...resistance, damageTypeNamePt: '' }))).toBe(
         'Tor bebeu uma Poção de resistência',
@@ -124,7 +138,11 @@ describe('CONSUMABLE_USED in the log', () => {
   });
 
   describe('an item the app applies nothing of', () => {
-    const text = { itemNamePt: 'Poção de escalada', outcome: ConsumableUseOutcome.TEXT_ONLY };
+    const text = {
+      itemNamePt: 'Poção de escalada',
+      kind: ConsumableKind.POTION,
+      outcome: ConsumableUseOutcome.TEXT_ONLY,
+    };
 
     it('says only who drank or gave it', () => {
       expect(said(entry('Tor', text))).toBe('Tor bebeu uma Poção de escalada');
@@ -138,24 +156,50 @@ describe('CONSUMABLE_USED in the log', () => {
         said(
           entry('Tor', {
             itemNamePt: 'Pergaminho de magia',
+            kind: ConsumableKind.SCROLL,
             outcome: ConsumableUseOutcome.TEXT_ONLY,
           }),
         ),
       ).toBe('Tor usou um Pergaminho de magia');
       expect(
         said(
-          entry('Tor', { itemNamePt: 'Óleo de afiar', outcome: ConsumableUseOutcome.TEXT_ONLY }),
+          entry('Tor', {
+            itemNamePt: 'Óleo de afiar',
+            kind: ConsumableKind.OIL,
+            outcome: ConsumableUseOutcome.TEXT_ONLY,
+          }),
         ),
       ).toBe('Tor usou um Óleo de afiar');
       expect(
         said(
           entry('Tor', {
             itemNamePt: 'Conta de força',
+            kind: ConsumableKind.OTHER,
             outcome: ConsumableUseOutcome.TEXT_ONLY,
             targetLabel: 'Brisa',
           }),
         ),
       ).toBe('Tor deu uma Conta de força a Brisa');
+    });
+
+    it('takes the verb from the kind the server sent, never from the name: a potion with a strange name is drunk, a line with no kind is "usou"', () => {
+      expect(
+        said(
+          entry('Tor', {
+            itemNamePt: 'Elixir azul',
+            kind: ConsumableKind.POTION,
+            outcome: ConsumableUseOutcome.TEXT_ONLY,
+          }),
+        ),
+      ).toBe('Tor bebeu um Elixir azul');
+      expect(
+        said(
+          entry('Tor', {
+            itemNamePt: 'Poção de escalada',
+            outcome: ConsumableUseOutcome.TEXT_ONLY,
+          }),
+        ),
+      ).toBe('Tor usou uma Poção de escalada');
     });
   });
 
@@ -165,6 +209,7 @@ describe('CONSUMABLE_USED in the log', () => {
       logLine(
         entry('Tor', {
           itemNamePt: 'Pergaminho de magia',
+          kind: ConsumableKind.SCROLL,
           outcome: ConsumableUseOutcome.TEXT_ONLY,
         }),
       )?.icon,

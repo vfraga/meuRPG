@@ -328,13 +328,14 @@ describe('useCost', () => {
     expect(`${cost?.lead}${cost?.rest}`).not.toMatch(/gasta a (sua )?ação/);
   });
 
-  it('says one case: in a combat the first choice leaves the cost to the subtitle, and the list says the action is spent', () => {
+  it('says the action once, in the subtitle: in a combat the first choice has no cost line, and the list says only what the potion does', () => {
     expect(useCost({ ...base, inCombat: true })).toBeNull();
     expect(useCost({ ...base, inCombat: true, phase: 'give', receiverName: 'Brisa' })).toEqual({
-      mark: true,
-      lead: 'Gasta a sua ação.',
-      rest: ' A poção age em Brisa.',
+      mark: false,
+      lead: '',
+      rest: 'A poção age em Brisa.',
     });
+    expect(useCost({ ...base, inCombat: true, phase: 'give', receiverName: '' })).toBeNull();
   });
 
   it('says nothing of the cost while it is not known whether there is a combat', () => {
@@ -603,12 +604,16 @@ describe('goneNotice', () => {
 });
 
 describe('itemWords', () => {
-  it('says a potion is "uma" and drunk, whatever the kind the sheet filed it under', () => {
-    expect(itemWords('Poção de cura')).toEqual({
+  it('says a potion is "uma", and drunk when the server says it is a potion', () => {
+    expect(itemWords('Poção de cura', 'potion')).toEqual({
       definite: 'a Poção de cura',
       indefinite: 'uma Poção de cura',
       verb: 'bebeu',
     });
+  });
+
+  it('writes no rule of its own: a name that sounds like a potion is used, not drunk, when the kind is not said', () => {
+    expect(itemWords('Poção de cura').verb).toBe('usou');
   });
 
   it('says a potion the sheet names after its kind is drunk, and an oil or a scroll is used, whatever the name', () => {

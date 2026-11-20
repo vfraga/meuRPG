@@ -238,6 +238,8 @@ export class CharacterSheetPage {
       const characterId = params.get('characterId');
       if (campaignId && characterId) {
         this.campaignId.set(campaignId);
+        // The reads still in flight for the character the page leaves no longer hold.
+        this.reads.next(this.characterId);
         this.characterId = characterId;
         this.load(campaignId, characterId);
       }
@@ -317,7 +319,7 @@ export class CharacterSheetPage {
     if (this.destroyed || characterId !== this.characterId) {
       return false;
     }
-    this.reads.next();
+    this.reads.next(characterId);
     this.state.set({ status: 'ready', vm });
     return true;
   }
@@ -330,7 +332,7 @@ export class CharacterSheetPage {
     }
     this.source.getPendingChoiceCount(campaignId, vm.id).then(
       (n) => {
-        if (this.reads.holds(seq) && !this.destroyed) {
+        if (this.reads.holds(vm.id, seq) && !this.destroyed) {
           this.pendingChoices.set(n);
         }
       },
@@ -380,18 +382,17 @@ export class CharacterSheetPage {
 
   /** Reads the character again without the loading state, so the page does not blink; `true` when the newest sheet is on screen. */
   private reloadQuietly(): Promise<boolean> {
-    return this.reads.start(async (seq) => {
+    const characterId = this.characterId;
+    return this.reads.start(characterId, async (seq) => {
       const campaignId = this.campaignId();
-      if (!campaignId || !this.characterId) {
+      if (!campaignId || !characterId) {
         return false;
       }
       // A read that fails keeps what is on screen: the next change reads again.
-      const vm = await this.source
-        .getCharacterSheet(campaignId, this.characterId)
-        .catch(() => null);
-      if (!this.reads.holds(seq)) {
-        // A newer read owns the screen: the answer is its own, once it has landed (a page load that took over has its own state).
-        return this.reads.overtaken(seq);
+      const vm = await this.source.getCharacterSheet(campaignId, characterId).catch(() => null);
+      if (!this.reads.holds(characterId, seq)) {
+        // A newer read of this character owns the screen: the answer is its own, once it has landed (a page load that took over has its own state).
+        return this.reads.overtaken(characterId, seq);
       }
       if (vm === null || this.state().status !== 'ready') {
         return false;
@@ -403,7 +404,7 @@ export class CharacterSheetPage {
   }
 
   private load(campaignId: string, characterId: string): void {
-    const seq = this.reads.next();
+    const seq = this.reads.next(characterId);
     this.wasLive = null;
     this.state.set({ status: 'loading' });
     this.vitals.set(null);
@@ -413,13 +414,13 @@ export class CharacterSheetPage {
     this.pendingChoices.set(0);
     this.source.getCharacterSheet(campaignId, characterId).then(
       (vm) => {
-        if (this.reads.holds(seq)) {
+        if (this.reads.holds(characterId, seq)) {
           this.state.set({ status: 'ready', vm });
           this.refreshPendingChoices(campaignId, vm, seq);
         }
       },
       (err: unknown) => {
-        if (!this.reads.holds(seq)) {
+        if (!this.reads.holds(characterId, seq)) {
           return;
         }
         if (ConnectError.from(err, Code.Unavailable).code === Code.NotFound) {

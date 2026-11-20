@@ -226,6 +226,15 @@ func (c *Content) PotionSeconds(key string) (int, bool) {
 	return e.Rounds * SecondsPerRound, ok && e.Kind == PotionResistance
 }
 
+// PotionLengthPT is the whole length the effect of a resistance potion lasts, as a sentence part ("por 1 hora"), and "" for any other key.
+func (c *Content) PotionLengthPT(key string) string {
+	seconds, ok := c.PotionSeconds(key)
+	if !ok || seconds <= 0 {
+		return ""
+	}
+	return "por " + durationPT(seconds)
+}
+
 // DurationPT is a length of game time in seconds as a sentence says it: whole hours, else whole minutes, else seconds ("1 hora").
 func DurationPT(seconds int) string { return durationPT(seconds) }
 

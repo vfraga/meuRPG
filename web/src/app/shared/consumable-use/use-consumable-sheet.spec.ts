@@ -18,7 +18,12 @@ const POTION: ConsumableVm = {
   costsAction: true,
   heal: { count: 2, sides: 4, modifier: 2, text: '2d4 + 2' },
 };
-const RESISTANCE: ConsumableVm = { kind: 'potion', costsAction: true, heal: null };
+const RESISTANCE: ConsumableVm = {
+  kind: 'potion',
+  costsAction: true,
+  heal: null,
+  lasting: { title: 'Resistência a fogo', length: 'por 1 hora' },
+};
 const OIL: ConsumableVm = { kind: 'oil', costsAction: false, heal: null };
 const SCROLL: ConsumableVm = { kind: 'scroll', costsAction: false, heal: null };
 
@@ -59,6 +64,7 @@ describe('UseConsumableSheet', () => {
   const use = vi.fn();
   const loadTargets = vi.fn();
   const close = vi.fn();
+  const reread = vi.fn();
   /** What the server's targets read says of the combat, unless a spec reads its own list. */
   let serverCombat = true;
 
@@ -69,6 +75,7 @@ describe('UseConsumableSheet', () => {
       .mockReset()
       .mockImplementation(() => Promise.resolve(read([BRISA, JABUTI], serverCombat)));
     close.mockReset();
+    reread.mockReset().mockResolvedValue({});
   });
 
   function render(over: Partial<UseConsumableData> = {}, phone = false) {
@@ -88,6 +95,7 @@ describe('UseConsumableSheet', () => {
       canType: true,
       preferApp: true,
       loadTargets,
+      reread,
       use,
       ...over,
       consumable,
@@ -116,7 +124,11 @@ describe('UseConsumableSheet', () => {
   /** The text of a button without the ligature of its icon. */
   const label = (b: HTMLButtonElement | undefined) =>
     Array.from(b?.childNodes ?? [])
-      .filter((n) => n.nodeType === Node.TEXT_NODE || (n as Element).tagName !== 'MAT-ICON')
+      .filter(
+        (n) =>
+          n.nodeType === Node.TEXT_NODE ||
+          (n.nodeType === Node.ELEMENT_NODE && (n as Element).tagName !== 'MAT-ICON'),
+      )
       .map((n) => n.textContent)
       .join('')
       .replace(/\s+/g, ' ')
@@ -191,7 +203,7 @@ describe('UseConsumableSheet', () => {
     const radios = Array.from(el.querySelectorAll<HTMLInputElement>('input[type=radio]'));
     expect(radios.map((r) => r.checked)).toEqual([true, false]);
     expect(flat(el.querySelector('.dice'))).toContain('O app rola 2d4 + 2 para Brisa.');
-    expect(flat(el.querySelector('.cost'))).toBe('Gasta a sua ação. A poção age em Brisa.');
+    expect(flat(el.querySelector('.cost'))).toBe('A poção age em Brisa.');
     const buttons = Array.from(el.querySelectorAll('button')).map(label);
     expect(buttons).toContain('Dar a Brisa');
     expect(buttons).toContain('Beber eu mesmo');
@@ -266,7 +278,7 @@ describe('UseConsumableSheet', () => {
     expect(flat(el.querySelector('.none'))).toBe('Ninguém mais no grupo para receber a poção.');
   });
 
-  it('says a potion the app applies nothing of costs the action as well, in a combat', async () => {
+  it('says the action once, in the subtitle, for a potion the app applies nothing of', async () => {
     const { el, settle } = render({
       effectPt: '',
       itemName: 'Poção de escalada',
@@ -279,7 +291,8 @@ describe('UseConsumableSheet', () => {
       .find((b) => label(b) === 'Dar a…')!
       .click();
     await settle();
-    expect(flat(el.querySelector('.cost'))).toBe('Gasta a sua ação. A poção age em Brisa.');
+    expect(flat(el.querySelector('.cost'))).toBe('A poção age em Brisa.');
+    expect(flat(el.querySelector('.frame__sub'))).toContain('gasta a ação');
   });
 
   it('says an oil costs no action: the master judges the time', async () => {
@@ -452,7 +465,7 @@ describe('UseConsumableSheet', () => {
       const foot = Array.from(el.querySelectorAll('.foot button')).map((b) =>
         label(b as HTMLButtonElement),
       );
-      expect(foot).toEqual(['Dar a Brisa', 'Beber eu mesmo']);
+      expect(foot).toEqual(['Beber eu mesmo', 'Dar a Brisa']);
       expect(buttons(el)).not.toContain('Voltar');
     });
 
@@ -501,7 +514,7 @@ describe('UseConsumableSheet', () => {
       expect(el.querySelector('app-economy-mark')).toBeNull();
     });
 
-    it('leads with the mark of the Ação and "Gasta a sua ação." in bold, in a combat', async () => {
+    it('says the action once, in the subtitle: the give phase of a combat has no mark and no bold lead', async () => {
       const { el, settle } = render();
       await settle();
       Array.from(el.querySelectorAll('button'))
@@ -509,21 +522,11 @@ describe('UseConsumableSheet', () => {
         .click();
       await settle();
       const cost = el.querySelector('.cost')!;
-      expect(cost.querySelector('app-economy-mark')).not.toBeNull();
-      expect(flat(cost.querySelector('strong'))).toBe('Gasta a sua ação.');
-      expect(cost.querySelector('mat-icon')).toBeNull();
-    });
-
-    it('says what the potion does to the receiver after the bold lead', async () => {
-      const { el, settle } = render();
-      await settle();
-      Array.from(el.querySelectorAll('button'))
-        .find((b) => label(b) === 'Dar a…')!
-        .click();
-      await settle();
-      const cost = el.querySelector('.cost')!;
-      expect(flat(cost.querySelector('strong'))).toBe('Gasta a sua ação.');
-      expect(flat(cost)).toBe('Gasta a sua ação. A poção age em Brisa.');
+      expect(cost.querySelector('app-economy-mark')).toBeNull();
+      expect(cost.querySelector('strong')).toBeNull();
+      expect(cost.querySelector('mat-icon')?.textContent?.trim()).toBe('info');
+      expect(flat(cost)).toBe('A poção age em Brisa.');
+      expect(flat(el.querySelector('.frame__sub'))).toBe('Restam 2 · em combate, gasta a ação');
     });
 
     it('has an info icon and no bold lead for what costs nothing or says "Fora de combate"', async () => {
@@ -604,7 +607,7 @@ describe('UseConsumableSheet', () => {
     it('says it is not their turn', async () => {
       const { el, settle } = render({ blockedBy: 'turn' });
       await settle();
-      expect(flat(el.querySelector('.none'))).toBe('Só na sua vez: beber ou dar gasta a ação.');
+      expect(flat(el.querySelector('.none'))).toBe('Só na sua vez. Beber ou dar gasta a ação.');
       expect(dashed(el).every((b) => b.getAttribute('aria-disabled') === 'true')).toBe(true);
     });
 
@@ -651,6 +654,8 @@ describe('UseConsumableSheet', () => {
         'Dado 2 (d4)',
       ]);
       expect(flat(el.querySelector('.dice'))).toContain('O app soma + 2.');
+      // The sign and the number never part at the end of a line.
+      expect(el.querySelector('.dice__text')?.textContent).toContain('soma +\u00a02.');
       for (const [i, v] of ['3', '2'].entries()) {
         fields[i].value = v;
         fields[i].dispatchEvent(new Event('input'));
@@ -832,7 +837,7 @@ describe('UseConsumableSheet', () => {
     expect(use.mock.calls[1][1]).not.toBe(use.mock.calls[0][1]);
   });
 
-  it('says "Usando..." while the call is on its way and does not send twice', async () => {
+  it('says "Usando…" with a ring in place of the icon while the call is on its way and does not send twice', async () => {
     let done: (v: UseAnswer) => void = () => undefined;
     use.mockReturnValue(new Promise<UseAnswer>((r) => (done = r)));
     const { el, settle } = render();
@@ -841,8 +846,12 @@ describe('UseConsumableSheet', () => {
       .find((b) => label(b) === 'Beber')!
       .click();
     await settle();
-    const busy = Array.from(el.querySelectorAll('button')).find((b) => label(b) === 'Usando...')!;
+    const busy = Array.from(el.querySelectorAll('button')).find((b) => label(b) === 'Usando…')!;
     expect(busy.getAttribute('aria-disabled')).toBe('true');
+    expect(busy.querySelector('.go__spin')).not.toBeNull();
+    expect(busy.querySelector('mat-icon')).toBeNull();
+    expect(busy.classList).toContain('go--busy');
+    expect(busy.classList).not.toContain('mr-button--off');
     busy.click();
     expect(use).toHaveBeenCalledTimes(1);
     done(USED);
@@ -884,7 +893,7 @@ describe('UseConsumableSheet', () => {
       const { el, settle } = render(oil);
       await settle();
       await press(el, settle, 'Dar a…');
-      expect(names(el)).toEqual(['Dar a Brisa', 'Usar eu mesmo']);
+      expect(names(el)).toEqual(['Usar eu mesmo', 'Dar a Brisa']);
       expect(flat(el.querySelector('.cost'))).toBe(
         'Não gasta a ação: o mestre decide o tempo que isso leva. O óleo age em Brisa.',
       );
@@ -897,7 +906,7 @@ describe('UseConsumableSheet', () => {
       await settle();
       expect(names(el)).toEqual(['Dar a…', 'Beber']);
       await press(el, settle, 'Dar a…');
-      expect(names(el)).toEqual(['Dar a Brisa', 'Beber eu mesmo']);
+      expect(names(el)).toEqual(['Beber eu mesmo', 'Dar a Brisa']);
     });
 
     it('uses it on its user with "Usar eu mesmo"', async () => {
@@ -1037,7 +1046,7 @@ describe('UseConsumableSheet', () => {
       const names = Array.from(el.querySelectorAll('.foot button')).map((b) =>
         label(b as HTMLButtonElement),
       );
-      expect(names).toEqual(['Dar a Jabuti', 'Beber eu mesmo']);
+      expect(names).toEqual(['Beber eu mesmo', 'Dar a Jabuti']);
       expect(names).not.toContain('Dar a Brisa');
     });
 
@@ -1081,7 +1090,7 @@ describe('UseConsumableSheet', () => {
 
     it('closes the sheet when the item is gone and none is left', async () => {
       use.mockResolvedValueOnce({
-        ...refused('A poção acabou.', 'Essa poção já foi usada. A ficha foi atualizada.', {
+        ...refused('Essa poção já foi usada.', 'A ficha foi atualizada.', {
           cause: 'item-gone',
         }),
         left: 0,
@@ -1098,7 +1107,7 @@ describe('UseConsumableSheet', () => {
 
     it('sends the next call under a new key when the unit was replaced by another', async () => {
       use.mockResolvedValueOnce({
-        ...refused('A poção acabou.', 'x', { cause: 'item-gone' }),
+        ...refused('Essa poção já foi usada.', 'x', { cause: 'item-gone' }),
         left: 1,
         rebound: true,
       });
@@ -1145,7 +1154,7 @@ describe('UseConsumableSheet', () => {
       expect(close).not.toHaveBeenCalled();
     });
 
-    it('offers "Tente de novo" for a call that never left, and sends the same call again under the same key', async () => {
+    it('offers "Tentar de novo" for a call that never left, and sends the same call again under the same key', async () => {
       use.mockResolvedValueOnce(
         refused('Sem conexão.', 'Não deu para usar a poção. Nada foi gasto.', { retry: true }),
       );
@@ -1156,7 +1165,7 @@ describe('UseConsumableSheet', () => {
         .click();
       await settle();
       const again = Array.from(el.querySelectorAll('[role=alert] button')).find(
-        (b) => label(b as HTMLButtonElement) === 'Tente de novo',
+        (b) => label(b as HTMLButtonElement) === 'Tentar de novo',
       ) as HTMLButtonElement;
       expect(again).toBeDefined();
       again.click();
@@ -1167,7 +1176,7 @@ describe('UseConsumableSheet', () => {
       expect(close).toHaveBeenCalledWith(true);
     });
 
-    it('has no "Tente de novo" for a refusal that is not a lost call', async () => {
+    it('has no "Tentar de novo" for a refusal that is not a lost call', async () => {
       use.mockResolvedValueOnce(refused('Longe demais.', 'Nada foi gasto.'));
       const { el, settle } = render();
       await settle();
@@ -1178,7 +1187,7 @@ describe('UseConsumableSheet', () => {
       expect(el.querySelector('[role=alert] button')).toBeNull();
     });
 
-    it('reads the list again with "Tente de novo" when it could not be read', async () => {
+    it('reads the list again with "Tentar de novo" when it could not be read', async () => {
       loadTargets.mockResolvedValueOnce(
         read([], null, {
           error: {
@@ -1193,7 +1202,7 @@ describe('UseConsumableSheet', () => {
       const { el, settle } = render();
       await settle();
       const again = Array.from(el.querySelectorAll('#use-consumable-targets-error button')).find(
-        (b) => label(b as HTMLButtonElement) === 'Tente de novo',
+        (b) => label(b as HTMLButtonElement) === 'Tentar de novo',
       ) as HTMLButtonElement;
       again.click();
       await settle();
@@ -1205,7 +1214,7 @@ describe('UseConsumableSheet', () => {
 
     it('blocks the sheet and shows the turn as a ban line, not as a red notice, when the server says it is not the turn', async () => {
       use.mockResolvedValueOnce(
-        refused('Só na sua vez:', 'beber ou dar gasta a ação.', { look: 'ban', block: 'turn' }),
+        refused('Só na sua vez.', 'Beber ou dar gasta a ação.', { look: 'ban', block: 'turn' }),
       );
       const { el, settle } = render();
       await settle();
@@ -1214,8 +1223,8 @@ describe('UseConsumableSheet', () => {
         .click();
       await settle();
       expect(el.querySelector('.refusal')).toBeNull();
-      expect(flat(el.querySelector('.none'))).toBe('Só na sua vez: beber ou dar gasta a ação.');
-      expect(flat(el.querySelector('.none strong'))).toBe('Só na sua vez:');
+      expect(flat(el.querySelector('.none'))).toBe('Só na sua vez. Beber ou dar gasta a ação.');
+      expect(flat(el.querySelector('.none strong'))).toBe('Só na sua vez.');
       const buttons = Array.from(el.querySelectorAll<HTMLButtonElement>('.foot button'));
       expect(buttons.every((b) => b.getAttribute('aria-disabled') === 'true')).toBe(true);
       buttons.forEach((b) => b.click());
@@ -1261,12 +1270,13 @@ describe('UseConsumableSheet', () => {
       return r;
     };
     const foot = (el: HTMLElement) => el.querySelector<HTMLElement>('.foot')!;
+    const halves = (el: HTMLElement) =>
+      Array.from(foot(el).querySelectorAll('button')).map((b) => b.classList.contains('go--half'));
 
     it('gives the phone sheet the widths: two halves, whichever buttons the first choice has', async () => {
       const { el } = await giveIn({}, true);
       expect(foot(el).classList).toContain('foot--phone');
-      const buttons = Array.from(foot(el).querySelectorAll('button'));
-      expect(buttons.map((b) => b.classList.contains('go--half'))).toEqual([true, true]);
+      expect(halves(el)).toEqual([true, true]);
     });
 
     it('gives the one button of an item that is not given the whole width of the phone sheet', async () => {
@@ -1281,28 +1291,271 @@ describe('UseConsumableSheet', () => {
     it("right-aligns the dialog's buttons at their own width, with or without a receiver chosen", async () => {
       const { el, settle } = await giveIn({}, false);
       expect(foot(el).classList).not.toContain('foot--phone');
-      expect(foot(el).classList).not.toContain('foot--wide');
       Array.from(el.querySelectorAll('button'))
         .find((b) => label(b) === 'Dar a…')!
         .click();
       await settle();
-      // In a combat the receiver's button sets the last at the right edge of the dialog.
-      expect(foot(el).classList).toContain('foot--wide');
+      // The dialog right-aligns the buttons at their own width; the footer is no phone grid.
       expect(foot(el).classList).not.toContain('foot--phone');
     });
 
-    it('stacks the two buttons of a receiver chosen in a combat on the phone, and halves them out of one', async () => {
-      const phone = await giveIn({}, true);
-      Array.from(phone.el.querySelectorAll('button'))
+    it('has the footer buttons of the give phase in a combat in the order they are shown: self-use first, the receiver last', async () => {
+      const { el, settle } = await giveIn({}, true);
+      Array.from(el.querySelectorAll('button'))
         .find((b) => label(b) === 'Dar a…')!
         .click();
-      await phone.settle();
-      expect(foot(phone.el).classList).toContain('foot--phone');
+      await settle();
+      const order = Array.from(foot(el).querySelectorAll('button')).map((b) => label(b));
+      expect(order).toEqual(['Beber eu mesmo', 'Dar a Brisa']);
+    });
+
+    it('halves the two buttons of a receiver chosen in a combat on the phone, as it does out of one', async () => {
+      const inCombat = await giveIn({}, true);
+      Array.from(inCombat.el.querySelectorAll('button'))
+        .find((b) => label(b) === 'Dar a…')!
+        .click();
+      await inCombat.settle();
+      expect(foot(inCombat.el).classList).toContain('foot--phone');
+      expect(halves(inCombat.el)).toEqual([true, true]);
       expect(
-        Array.from(foot(phone.el).querySelectorAll('button')).map((b) =>
+        Array.from(foot(inCombat.el).querySelectorAll('button')).some((b) =>
           b.classList.contains('go--wide'),
         ),
-      ).toEqual([true, true]);
+      ).toBe(false);
+      TestBed.resetTestingModule();
+      const out = await giveIn({ inCombat: false }, true);
+      Array.from(out.el.querySelectorAll('button'))
+        .find((b) => label(b) === 'Dar a…')!
+        .click();
+      await out.settle();
+      expect(halves(out.el)).toEqual([true, true]);
+    });
+  });
+
+  describe('the supporting buttons', () => {
+    it('are the ink: "Dar a…", "Voltar" and "Beber eu mesmo" carry the ink class, the primary action does not', async () => {
+      const { el, settle } = render();
+      await settle();
+      const ink = () =>
+        Array.from(el.querySelectorAll<HTMLButtonElement>('.foot button')).map((b) => [
+          label(b),
+          b.classList.contains('mr-button--ink'),
+        ]);
+      expect(ink()).toEqual([
+        ['Dar a…', true],
+        ['Beber', false],
+      ]);
+      Array.from(el.querySelectorAll('button'))
+        .find((b) => label(b) === 'Dar a…')!
+        .click();
+      await settle();
+      expect(ink()).toEqual([
+        ['Beber eu mesmo', true],
+        ['Dar a Brisa', false],
+      ]);
+    });
+
+    it('has "Voltar" in the ink out of a combat', async () => {
+      const { el, settle } = render({ inCombat: false });
+      await settle();
+      Array.from(el.querySelectorAll('button'))
+        .find((b) => label(b) === 'Dar a…')!
+        .click();
+      await settle();
+      const back = Array.from(el.querySelectorAll('button')).find((b) => label(b) === 'Voltar')!;
+      expect(back.classList).toContain('mr-button--ink');
+    });
+  });
+
+  describe('a give with nobody left to receive', () => {
+    it('sends nothing more once the list is read again with nobody in it', async () => {
+      loadTargets
+        .mockReset()
+        .mockResolvedValueOnce(read([BRISA], true))
+        .mockResolvedValue(read([], true));
+      use.mockResolvedValueOnce(
+        refused('Brisa morreu.', 'Nada foi gasto.', { cause: 'target-dead' }),
+      );
+      const { el, settle } = render();
+      await settle();
+      const press = async (name: string) => {
+        Array.from(el.querySelectorAll('button'))
+          .find((b) => label(b).startsWith(name))!
+          .click();
+        await settle();
+      };
+      await press('Dar a…');
+      await press('Dar a Brisa');
+      expect(use).toHaveBeenCalledTimes(1);
+      // Nobody is left: the sheet is back to the first choice, and "Dar a…" is off.
+      const dar = Array.from(el.querySelectorAll('button')).find((b) => label(b) === 'Dar a…')!;
+      expect(dar.getAttribute('aria-disabled')).toBe('true');
+      dar.click();
+      await settle();
+      expect(use).toHaveBeenCalledTimes(1);
+      expect(close).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('what the lasting effect says', () => {
+    it("says the effect's title and length as the server sends them", async () => {
+      const { el, settle } = render({
+        effectPt: 'Resistência a fogo por 1 hora',
+        itemName: 'Poção de resistência',
+        consumable: RESISTANCE,
+        left: 1,
+      });
+      await settle();
+      expect(flat(el.querySelector('.explain'))).toBe(
+        'Quem bebe ganha o efeito “Resistência a fogo” por 1 hora: aparece em “Seus efeitos” e acaba sozinho.',
+      );
+    });
+
+    it('writes no length of its own when the server sends none', async () => {
+      const { el, settle } = render({
+        effectPt: 'x',
+        itemName: 'Poção de resistência',
+        consumable: { ...RESISTANCE, lasting: { title: 'Resistência a fogo', length: '' } },
+        left: 1,
+      });
+      await settle();
+      expect(flat(el.querySelector('.explain'))).toBe(
+        'Quem bebe ganha o efeito “Resistência a fogo”: aparece em “Seus efeitos” e acaba sozinho.',
+      );
+    });
+
+    it('says nothing of a lasting effect for an item that starts none', async () => {
+      const { el, settle } = render({
+        effectPt: 'Conjura bola de fogo',
+        itemName: 'Pergaminho',
+        kind: 'scroll',
+        consumable: SCROLL,
+        left: 1,
+        inCombat: false,
+      });
+      await settle();
+      expect(el.querySelector('.explain')).toBeNull();
+    });
+  });
+
+  describe('a unit that is gone while the sheet could not be read again', () => {
+    const gone = {
+      ...refused('Essa poção já foi usada.', 'A ficha foi atualizada.', { cause: 'item-gone' }),
+      unread: true,
+    };
+    const press = async (
+      el: HTMLElement,
+      settle: () => Promise<void>,
+      name: string,
+    ): Promise<void> => {
+      Array.from(el.querySelectorAll('button'))
+        .find((b) => label(b) === name)!
+        .click();
+      await settle();
+    };
+
+    it('says what is true, offers to read again, and keeps both buttons off', async () => {
+      use.mockResolvedValueOnce(gone);
+      const { el, settle } = render();
+      await settle();
+      await press(el, settle, 'Beber');
+      expect(flat(el.querySelector('.refusal .mr-notice__said'))).toBe(
+        'Essa poção já foi usada. Não conseguimos reler a ficha.',
+      );
+      expect(flat(el.querySelector('.refusal__retry'))).toBe('Tentar de novo');
+      const foot = Array.from(el.querySelectorAll<HTMLButtonElement>('.foot button'));
+      expect(foot.map((b) => b.getAttribute('aria-disabled'))).toEqual(['true', 'true']);
+      expect(close).not.toHaveBeenCalled();
+      await press(el, settle, 'Beber');
+      expect(use).toHaveBeenCalledTimes(1);
+    });
+
+    it('reads again with "Tentar de novo", and offers the unit again once a read lands', async () => {
+      use.mockResolvedValueOnce(gone);
+      reread.mockResolvedValueOnce({ left: 1, rebound: true });
+      const { el, settle } = render();
+      await settle();
+      await press(el, settle, 'Beber');
+      await press(el, settle, 'Tentar de novo');
+      expect(reread).toHaveBeenCalledTimes(1);
+      expect(use).toHaveBeenCalledTimes(1);
+      // The refusal now says what is true: the unit was used and the sheet is up to date.
+      expect(flat(el.querySelector('.refusal'))).toBe(
+        'Essa poção já foi usada. A ficha foi atualizada.',
+      );
+      expect(el.querySelector('.refusal__retry')).toBeNull();
+      expect(flat(el.querySelector('.frame__sub'))).toBe('Resta 1 · em combate, gasta a ação');
+      const foot = Array.from(el.querySelectorAll<HTMLButtonElement>('.foot button'));
+      expect(foot.map((b) => b.getAttribute('aria-disabled'))).toEqual([null, null]);
+      await press(el, settle, 'Beber');
+      expect(use).toHaveBeenCalledTimes(2);
+    });
+
+    it('stays off and says so again while the read fails', async () => {
+      use.mockResolvedValueOnce(gone);
+      reread.mockResolvedValueOnce({ unread: true });
+      const { el, settle } = render();
+      await settle();
+      await press(el, settle, 'Beber');
+      await press(el, settle, 'Tentar de novo');
+      expect(reread).toHaveBeenCalledTimes(1);
+      expect(flat(el.querySelector('.refusal'))).toContain('Não conseguimos reler a ficha.');
+      expect(
+        Array.from(el.querySelectorAll<HTMLButtonElement>('.foot button')).map((b) =>
+          b.getAttribute('aria-disabled'),
+        ),
+      ).toEqual(['true', 'true']);
+    });
+
+    it('closes the sheet when the read lands and no unit is left', async () => {
+      use.mockResolvedValueOnce(gone);
+      reread.mockResolvedValueOnce({ left: 0, close: true });
+      const { el, settle } = render();
+      await settle();
+      await press(el, settle, 'Beber');
+      await press(el, settle, 'Tentar de novo');
+      expect(close).toHaveBeenCalledWith(true);
+    });
+  });
+  describe('a unit that is gone at open, with a sheet that cannot be read again', () => {
+    const unreadTargets = { targets: [], inCombat: null, error: null, unread: true };
+    const press = async (
+      el: HTMLElement,
+      settle: () => Promise<void>,
+      name: string,
+    ): Promise<void> => {
+      Array.from(el.querySelectorAll('button'))
+        .find((b) => label(b) === name)!
+        .click();
+      await settle();
+    };
+
+    it('says only that the sheet was not read: no reason about nobody to give to, and "Dar a…" points to the refusal', async () => {
+      loadTargets.mockReset().mockResolvedValue(unreadTargets);
+      const { el, settle } = render();
+      await settle();
+      expect(flat(el.querySelector('.refusal'))).toContain('Não conseguimos reler a ficha.');
+      expect(el.querySelector('.why .none')).toBeNull();
+      const give = Array.from(el.querySelectorAll<HTMLButtonElement>('.foot button')).find(
+        (b) => label(b) === 'Dar a…',
+      )!;
+      expect(give.getAttribute('aria-disabled')).toBe('true');
+      expect(give.getAttribute('aria-describedby')).toBe(el.querySelector('.refusal')?.id);
+      expect(give.querySelector('mat-icon')?.textContent?.trim()).toBe('volunteer_activism');
+    });
+
+    it('says the unit was used when a read lands, as the send path does', async () => {
+      loadTargets
+        .mockReset()
+        .mockResolvedValueOnce(unreadTargets)
+        .mockResolvedValue(read([BRISA]));
+      reread.mockResolvedValueOnce({ left: 1, rebound: true });
+      const { el, settle } = render();
+      await settle();
+      await press(el, settle, 'Tentar de novo');
+      expect(flat(el.querySelector('.refusal'))).toBe(
+        'Essa poção já foi usada. A ficha foi atualizada.',
+      );
     });
   });
 });

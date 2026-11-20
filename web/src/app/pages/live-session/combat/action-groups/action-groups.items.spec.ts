@@ -244,7 +244,7 @@ describe('ActionGroups: the Itens tab', () => {
     expect(text(panel()!.querySelector('.mr-fold__note'))).toBe('1 item');
   });
 
-  it('looks spent inside the fold: the dashed button and the reason on the row, and "Usar" opens no sheet', () => {
+  it('looks spent inside the fold: the dashed button, the reason said once for the group, and "Usar" opens no sheet', () => {
     const { panel, open, fixture, used } = setup({ items: [HEAL] }, { actionUsed: true });
     open();
     panel()!.querySelector<HTMLButtonElement>('.mr-fold__button')!.click();
@@ -255,8 +255,10 @@ describe('ActionGroups: the Itens tab', () => {
     expect(button.getAttribute('aria-disabled')).toBe('true');
     expect(row.querySelector('.row__econ')?.classList).toContain('row__econ--spent');
     expect(row.querySelector('app-economy-mark svg')?.classList).toContain('mark--spent');
-    expect(text(row.querySelector('.row__why'))).toBe('blockA ação desta vez já foi usada.');
-    expect(button.getAttribute('aria-describedby')).toBe(row.querySelector('.row__why')!.id);
+    expect(row.querySelector('.row__why')).toBeNull();
+    const why = panel()!.querySelector('.group__why--group')!;
+    expect(text(why)).toBe('blockA ação desta vez já foi usada.');
+    expect(button.getAttribute('aria-describedby')).toBe(why.id);
     button.click();
     expect(used).toEqual([]);
   });
@@ -302,7 +304,9 @@ describe('ActionGroups: the Itens tab', () => {
     const rows = [...panel()!.querySelectorAll('app-item-row')];
     const heal = rows.find((r) => text(r).includes('Poção de cura'))!;
     const oil = rows.find((r) => text(r).includes('Óleo de afiar'))!;
-    expect(text(heal)).toContain('Atordoado: não pode agir.');
+    expect(text(panel()!.querySelector('.group__why--group'))).toContain(
+      'Atordoado: não pode agir.',
+    );
     const button = heal.querySelector<HTMLButtonElement>('.row__btn')!;
     expect(button.getAttribute('aria-disabled')).toBe('true');
     button.click();
@@ -310,6 +314,28 @@ describe('ActionGroups: the Itens tab', () => {
     expect(text(oil)).not.toContain('não pode agir');
     oil.querySelector<HTMLButtonElement>('.row__btn')!.click();
     expect(used).toEqual([OIL.first]);
+  });
+
+  it('says the reason once for a group of folded rows, not on every row', () => {
+    const { panel, open, fixture } = setup({ items: [HEAL, FIRE] }, { actionUsed: true });
+    open();
+    panel()!.querySelector<HTMLButtonElement>('.mr-fold__button')!.click();
+    fixture.detectChanges();
+    const rows = [...panel()!.querySelectorAll('app-item-row')];
+    expect(rows).toHaveLength(2);
+    expect(panel()!.querySelectorAll('.group__why--group')).toHaveLength(1);
+    expect(panel()!.querySelectorAll('.row__why')).toHaveLength(0);
+    const why = panel()!.querySelector('.group__why--group')!.id;
+    expect(rows.map((r) => r.querySelector('.row__btn')?.getAttribute('aria-describedby'))).toEqual(
+      [why, why],
+    );
+  });
+
+  it('keeps the cost and the dot with the first word of what the item does', () => {
+    const { panel, open } = setup({ items: [HEAL] });
+    open();
+    const line = panel()!.querySelector('.row__line')!;
+    expect(line.textContent).toContain('·\u00a0cura 2d4 + 2');
   });
 
   it('turns every "Usar" off while an answer is awaited, and says why', () => {

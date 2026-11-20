@@ -19,6 +19,12 @@ export interface HealingDice {
   readonly text: string;
 }
 
+/** The lasting effect a use leaves, in the words the server sent: its title ("Resistência a fogo") and its whole length ("por 1 hora"). */
+export interface LastingEffectVm {
+  readonly title: string;
+  readonly length: string;
+}
+
 /** An entry of the sheet that "Usar" accepts. */
 export interface ConsumableVm {
   readonly kind: ConsumableKind;
@@ -26,13 +32,21 @@ export interface ConsumableVm {
   readonly costsAction: boolean;
   /** The healing roll of the use; `null` when the use rolls nothing. */
   readonly heal: HealingDice | null;
+  /** The effect the use leaves on the receiver, when it leaves one that lasts (the server sends its title and length). */
+  readonly lasting?: LastingEffectVm;
 }
 
 const KINDS: Record<number, ConsumableKind> = {
   [ServerKind.POTION]: 'potion',
   [ServerKind.OIL]: 'oil',
   [ServerKind.SCROLL]: 'scroll',
+  [ServerKind.OTHER]: 'other',
 };
+
+/** The kind the server named, or `undefined` when it named none (a line of an item that left the catalog). */
+export function kindOf(kind: ServerKind): ConsumableKind | undefined {
+  return KINDS[kind];
+}
 
 /** The text a number added to the dice is said with: "+ 2", "− 1". */
 export function signedText(modifier: number): string {
@@ -53,5 +67,13 @@ export function consumableOf(c: SheetConsumable | undefined): ConsumableVm | und
           text: `${c.healDiceCount}d${c.healDiceSides}${c.healBonus === 0 ? '' : ` ${signedText(c.healBonus)}`}`,
         }
       : null;
-  return { kind: KINDS[c.kind] ?? 'other', costsAction: c.costsAction, heal };
+  const lasting = c.effectTitlePt
+    ? { title: c.effectTitlePt, length: c.effectDurationTextPt }
+    : undefined;
+  return {
+    kind: kindOf(c.kind) ?? 'other',
+    costsAction: c.costsAction,
+    heal,
+    ...(lasting && { lasting }),
+  };
 }

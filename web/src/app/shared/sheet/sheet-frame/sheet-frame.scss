@@ -110,6 +110,9 @@
   // A sheet that keeps its own rhythm between the parts of the body names it (`--mr-sheet-gap`).
   gap: var(--mr-sheet-gap, 14px);
   min-height: 0;
+  // A sheet whose last part has a target that reaches past it names the room it needs (`--mr-sheet-body-end`): it is taken from the gap
+  // above the footer, so the body does not count the target as more to scroll to and the footer keeps its place.
+  padding-bottom: var(--mr-sheet-body-end, 0);
   overflow-y: auto;
 
   // Shadows at the top and the bottom edge, only where there is more to scroll to
@@ -144,6 +147,7 @@
   flex-direction: column;
   gap: 10px;
   padding-top: 10px;
+  margin-top: calc(var(--mr-sheet-body-end, 0px) * -1);
   border-top: 1px solid var(--mr-rule);
   background: var(--mr-surface);
 

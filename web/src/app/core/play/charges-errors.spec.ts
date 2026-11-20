@@ -25,6 +25,7 @@ import {
   consumableTargetsRefusal,
   turnBlockMessage,
   turnBlockParts,
+  unreadSheetRefusal,
 } from './charges-errors';
 
 describe('charges errors', () => {
@@ -152,18 +153,20 @@ describe('consumableRefusal', () => {
     );
   });
 
-  it('leads with "A poção acabou." for an item that is already used, by the noun of its kind', () => {
+  it('leads with "Essa poção já foi usada." for an item that is already used, by the noun of its kind', () => {
     const gone = encounter(EncounterBlockedReason.ITEM_GONE);
     expect(consumableRefusal(gone, potion)).toMatchObject({
-      lead: 'A poção acabou.',
-      text: 'Essa poção já foi usada. A ficha foi atualizada.',
+      lead: 'Essa poção já foi usada.',
+      text: 'A ficha foi atualizada.',
       cause: 'item-gone',
     });
     expect(consumableRefusal(gone, { ...potion, kind: 'scroll' })).toMatchObject({
-      lead: 'O pergaminho acabou.',
-      text: 'Esse pergaminho já foi usado. A ficha foi atualizada.',
+      lead: 'Esse pergaminho já foi usado.',
+      text: 'A ficha foi atualizada.',
     });
-    expect(consumableRefusal(gone, { ...potion, kind: 'oil' }).lead).toBe('O óleo acabou.');
+    expect(consumableRefusal(gone, { ...potion, kind: 'oil' }).lead).toBe(
+      'Esse óleo já foi usado.',
+    );
   });
 
   it('leads with the name of a creature at three failed death saves, still listed as down: "Brisa morreu."', () => {
@@ -185,9 +188,9 @@ describe('consumableRefusal', () => {
     const turn = encounter(EncounterBlockedReason.NOT_YOUR_TURN);
     const r = consumableRefusal(turn, potion);
     expect(r).toMatchObject({ look: 'ban', block: 'turn' });
-    expect(said(r)).toBe('Só na sua vez: beber ou dar gasta a ação.');
+    expect(said(r)).toBe('Só na sua vez. Beber ou dar gasta a ação.');
     expect(said(consumableRefusal(turn, { ...potion, actingFor: 'Tor' }))).toBe(
-      'Só na vez de Tor: beber ou dar gasta a ação.',
+      'Só na vez de Tor. Beber ou dar gasta a ação.',
     );
   });
 
@@ -296,8 +299,8 @@ describe('consumableRefusal', () => {
 
 describe('turnBlockMessage', () => {
   it('says the turn is not theirs, for the player and for the master', () => {
-    expect(turnBlockMessage('turn', null)).toBe('Só na sua vez: beber ou dar gasta a ação.');
-    expect(turnBlockMessage('turn', 'Tor')).toBe('Só na vez de Tor: beber ou dar gasta a ação.');
+    expect(turnBlockMessage('turn', null)).toBe('Só na sua vez. Beber ou dar gasta a ação.');
+    expect(turnBlockMessage('turn', 'Tor')).toBe('Só na vez de Tor. Beber ou dar gasta a ação.');
   });
 
   it('says the action of the turn is spent, for the player and for the master', () => {
@@ -307,8 +310,8 @@ describe('turnBlockMessage', () => {
 
   it('has a bold lead and the rest apart', () => {
     expect(turnBlockParts('turn', 'Tor')).toEqual({
-      lead: 'Só na vez de Tor:',
-      text: 'beber ou dar gasta a ação.',
+      lead: 'Só na vez de Tor.',
+      text: 'Beber ou dar gasta a ação.',
     });
   });
 });
@@ -347,8 +350,8 @@ describe('consumableTargetsRefusal', () => {
     expect(
       consumableTargetsRefusal(encounter(EncounterBlockedReason.ITEM_GONE), potion),
     ).toMatchObject({
-      lead: 'A poção acabou.',
-      text: 'Essa poção já foi usada. A ficha foi atualizada.',
+      lead: 'Essa poção já foi usada.',
+      text: 'A ficha foi atualizada.',
       cause: 'item-gone',
     });
   });
@@ -369,3 +372,15 @@ describe('consumableTargetsRefusal', () => {
 function said(r: { lead: string; text: string }): string {
   return `${r.lead} ${r.text}`;
 }
+
+describe('unreadSheetRefusal', () => {
+  it('says the unit was used and the sheet was not read, and offers to try again', () => {
+    expect(unreadSheetRefusal('potion')).toMatchObject({
+      lead: 'Essa poção já foi usada.',
+      text: 'Não conseguimos reler a ficha.',
+      retry: true,
+      cause: 'item-gone',
+    });
+    expect(unreadSheetRefusal('oil').lead).toBe('Esse óleo já foi usado.');
+  });
+});

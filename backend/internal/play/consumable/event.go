@@ -1,7 +1,9 @@
 package consumable
 
 import (
+	charactersv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/characters/v1"
 	playv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/play/v1"
+	"github.com/PuraFome/meuRPG/backend/internal/rules"
 )
 
 // What a use left behind, as the payload says it.
@@ -75,15 +77,35 @@ func OutcomeOf(outcome string) playv1.ConsumableUseOutcome {
 	return playv1.ConsumableUseOutcome_CONSUMABLE_USE_OUTCOME_TEXT_ONLY
 }
 
-// Line is the line of a use in the combat's log: the item, the outcome, the damage type (with its name) and the receiver's label are
-// the table's; the dice, the faces, the total and the hit points regained only when numbers is true (the master and the owners of
-// the user and of the receiver, RN-10).
-func Line(use Used, damageTypeName, targetLabel string, numbers bool) *playv1.ConsumableUseLogLine {
+// Line is the line of a use in the combat's log.
+// The item, its kind, the outcome, the damage type with its name and the receiver's label are the table's.
+// So is the length of the effect a resistance leaves ("por 1 hora", from lengthText).
+// The dice, the faces, the total and the hit points regained go only when numbers is true.
+// That is the master and the owners of the user and of the receiver (RN-10).
+func Line(use Used, kind charactersv1.ConsumableKind, damageTypeName, lengthText, targetLabel string, numbers bool) *playv1.ConsumableUseLogLine {
 	line := &playv1.ConsumableUseLogLine{
-		ItemNamePt: use.Name, Outcome: OutcomeOf(use.Outcome), DamageTypeKey: use.DamageType, DamageTypeNamePt: damageTypeName, TargetLabel: targetLabel,
+		ItemNamePt: use.Name, Kind: kind, Outcome: OutcomeOf(use.Outcome), DamageTypeKey: use.DamageType, DamageTypeNamePt: damageTypeName, TargetLabel: targetLabel,
+	}
+	if line.Outcome == playv1.ConsumableUseOutcome_CONSUMABLE_USE_OUTCOME_RESISTANCE {
+		line.EffectDurationTextPt = lengthText
 	}
 	if numbers {
 		line.DiceText, line.Faces, line.RollTotal, line.Healed = use.Dice, use.Faces, use.Total, use.Healed
 	}
 	return line
+}
+
+// KindOf is the kind of consumable the API names for the catalog's, UNSPECIFIED for an item that is no consumable of the catalog.
+func KindOf(c rules.Consumable, ok bool) charactersv1.ConsumableKind {
+	switch {
+	case !ok:
+		return charactersv1.ConsumableKind_CONSUMABLE_KIND_UNSPECIFIED
+	case c.Kind == rules.ConsumablePotion:
+		return charactersv1.ConsumableKind_CONSUMABLE_KIND_POTION
+	case c.Kind == rules.ConsumableOil:
+		return charactersv1.ConsumableKind_CONSUMABLE_KIND_OIL
+	case c.Kind == rules.ConsumableScroll:
+		return charactersv1.ConsumableKind_CONSUMABLE_KIND_SCROLL
+	}
+	return charactersv1.ConsumableKind_CONSUMABLE_KIND_OTHER
 }

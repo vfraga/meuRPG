@@ -231,8 +231,8 @@ describe('ConsumableUse', () => {
       const out = await data.loadTargets();
       expect(out).toMatchObject({ targets: [], inCombat: null });
       expect(out.error).toMatchObject({
-        lead: 'A poção acabou.',
-        text: 'Essa poção já foi usada. A ficha foi atualizada.',
+        lead: 'Essa poção já foi usada.',
+        text: 'A ficha foi atualizada.',
       });
       expect(reload).toHaveBeenCalled();
     });
@@ -464,7 +464,7 @@ describe('ConsumableUse', () => {
     it.each([
       ['the receiver died', EncounterBlockedReason.TARGET_DEAD, 'Brisa morreu.'],
       ['the receiver went away', EncounterBlockedReason.TARGET_NOT_ADJACENT, 'Longe demais.'],
-      ['the item is gone', EncounterBlockedReason.ITEM_GONE, 'A poção acabou.'],
+      ['the item is gone', EncounterBlockedReason.ITEM_GONE, 'Essa poção já foi usada.'],
     ])('reads the sheet again and leads in bold when %s', async (_name, reason, lead) => {
       client.useConsumable.mockRejectedValue(gone(reason));
       const data = await open();
@@ -489,7 +489,7 @@ describe('ConsumableUse', () => {
       expect(answer.refusal).toMatchObject({
         look: 'ban',
         block: 'turn',
-        lead: 'Só na vez de Tor:',
+        lead: 'Só na vez de Tor.',
       });
     });
 
@@ -561,6 +561,46 @@ describe('ConsumableUse', () => {
       });
     });
 
+    it('does not say the sheet was updated when the item is gone and the read after it is not on screen: it says it is unread, and rereads on demand', async () => {
+      client.useConsumable.mockRejectedValue(gone(EncounterBlockedReason.ITEM_GONE));
+      reload.mockResolvedValue(false);
+      const data = await open();
+      const answer = await data.use(apply, 'k1');
+      expect(answer).toMatchObject({ unread: true });
+      expect(answer.close).toBeUndefined();
+      expect(consumables.result()).toBeNull();
+      // The read lands this time and the unit the sheet was open on is gone: another takes its place.
+      reload.mockResolvedValue(true);
+      entries = [entry('p2'), entry('p3')];
+      expect(await data.reread()).toEqual({ left: 2, rebound: true });
+    });
+
+    it('closes the sheet with the notice when the reread finds no unit left', async () => {
+      client.useConsumable.mockRejectedValue(gone(EncounterBlockedReason.ITEM_GONE));
+      reload.mockResolvedValue(false);
+      const data = await open();
+      await data.use(apply, 'k1');
+      reload.mockResolvedValue(true);
+      entries = [];
+      expect(await data.reread()).toEqual({ left: 0, close: true });
+      expect(consumables.result()).toMatchObject({ headline: 'A poção acabou.' });
+    });
+
+    it('keeps saying it is unread while the reread is not on screen either', async () => {
+      client.useConsumable.mockRejectedValue(gone(EncounterBlockedReason.ITEM_GONE));
+      reload.mockResolvedValue(false);
+      const data = await open();
+      await data.use(apply, 'k1');
+      expect(await data.reread()).toEqual({ unread: true });
+    });
+
+    it('is unread too when the receivers read finds the item gone and the page cannot read the sheet', async () => {
+      client.listConsumableTargets.mockRejectedValue(gone(EncounterBlockedReason.ITEM_GONE));
+      reload.mockResolvedValue(false);
+      const data = await open();
+      expect(await data.loadTargets()).toMatchObject({ unread: true, targets: [] });
+    });
+
     it('says nothing of the count when the new read is not on screen', async () => {
       client.useConsumable.mockRejectedValue(gone(EncounterBlockedReason.TARGET_DEAD));
       reload.mockResolvedValue(false);
@@ -568,6 +608,21 @@ describe('ConsumableUse', () => {
       const answer = await data.use({ target: brisa, roll: { inApp: true } }, 'k');
       expect(answer.left).toBeUndefined();
       expect(answer.close).toBeUndefined();
+    });
+  });
+
+  describe('what follows an answer', () => {
+    it('says the unit was used when the read of the sheet after the answer throws: only the call itself may say nothing was spent', async () => {
+      client.useConsumable.mockResolvedValue(heal());
+      reload.mockRejectedValue(new ConnectError('x', Code.Unavailable));
+      const data = await open();
+      const answer = await data.use(apply, 'k1');
+      expect(answer).toEqual({ refusal: null });
+      expect(consumables.result()).toMatchObject({
+        tone: 'good',
+        headline: 'Tor recebeu 7 PV.',
+        detail: '2d4 + 2: 3 + 2 + 2 = 7.',
+      });
     });
   });
 
