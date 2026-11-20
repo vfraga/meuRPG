@@ -549,6 +549,7 @@
   "protected_by": [
     "x"
   ],
+  "cut_group": "x",
   "parried": {
     "event": "x"
   },
@@ -1190,6 +1191,7 @@
   "reaction": {
     "hold": true,
     "group": "x",
+    "asked": true,
     "kind": "x",
     "window": "x",
     "held": "x",

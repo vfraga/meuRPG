@@ -777,6 +777,10 @@ func (f *attackFlow) record(ctx context.Context) error {
 		}
 	}
 	f.out.made = f.attackEvent(run)
+	var err error
+	if f.out.made.CutGroup, err = f.s.cutGroupOfAnswer(ctx, f.c); err != nil {
+		return err
+	}
 	return f.s.afterAttack(ctx, f.c, f.attacker, f.target, f.cs, &f.out.made)
 }
 

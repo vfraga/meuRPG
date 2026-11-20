@@ -91,10 +91,10 @@ var reactionLiners = map[reaction.Kind]reactionLiner{
 
 // reactionLine is the line for the viewer, and whether it names the reactor.
 func (e *logEntry) reactionLine(ctx context.Context, v combatViewer, byID map[string]playdb.Combatant, names *keyNames) (string, bool) {
-	re := e.ev.Reaction
-	if re == nil {
+	if e.ev.Reaction == nil {
 		return "", false
 	}
+	re := e.reactionFor(v)
 	f := e.reactionFacts(ctx, re, v, byID, names)
 	if re.Kind == reactionHeldDropped {
 		return f.heldDropped()
@@ -241,20 +241,35 @@ func (f *reactionFacts) cuttingWords() (string, bool) {
 		actorText = " de " + f.other.Label
 	}
 	if f.v.master {
-		tail := ""
-		if re.Roll == "attack" || re.Roll == "" {
-			tail = fmt.Sprintf(" contra CA %d: %s", re.AC, outcomeWord(re.Outcome))
-		}
-		return fmt.Sprintf("%s usou Palavras de Interrupção: d%d (%d) subtraído %s%s: %d → %d%s.%s", f.who, re.DieSides, re.Die, kindText, actorText, re.Before, re.After, tail, f.by), true
+		return f.cuttingWordsMaster(kindText, actorText), true
 	}
-	verb := "diminuiu"
+	return f.cuttingWordsPlayers(target, actorText), true
+}
+
+// cuttingWordsMaster is the master's line: the numbers the roll became, or, while its roller's answer is awaited, none of them.
+func (f *reactionFacts) cuttingWordsMaster(kindText, actorText string) string {
+	re := f.re
+	if re.Asked { // the roll waits for its roller's answer: nothing of it is known yet
+		return fmt.Sprintf("%s usou Palavras de Interrupção: d%d (%d) subtraído %s%s (aguardando a rolagem).%s", f.who, re.DieSides, re.Die, kindText, actorText, f.by)
+	}
+	tail := ""
 	if re.Roll == "attack" || re.Roll == "" {
+		tail = fmt.Sprintf(" contra CA %d: %s", re.AC, outcomeWord(re.Outcome))
+	}
+	return fmt.Sprintf("%s usou Palavras de Interrupção: d%d (%d) subtraído %s%s: %d → %d%s.%s", f.who, re.DieSides, re.Die, kindText, actorText, re.Before, re.After, tail, f.by)
+}
+
+// cuttingWordsPlayers is the players' line: the outcome in a word, or, while the roll's roller is asked, no more than "diminuiu".
+func (f *reactionFacts) cuttingWordsPlayers(target, actorText string) string {
+	re := f.re
+	verb := "diminuiu"
+	if !re.Asked && (re.Roll == "attack" || re.Roll == "") {
 		verb = "errou"
 		if re.Outcome == outcomeHit || re.Outcome == outcomeCrit {
 			verb = "ainda acertou"
 		}
 	}
-	return fmt.Sprintf("%s usou Palavras de Interrupção: %s%s %s.%s", f.who, target, actorText, verb, f.by), true
+	return fmt.Sprintf("%s usou Palavras de Interrupção: %s%s %s.%s", f.who, target, actorText, verb, f.by)
 }
 
 // cuttingWordsIneffective is the line of a Cutting Words that did nothing: the master reads

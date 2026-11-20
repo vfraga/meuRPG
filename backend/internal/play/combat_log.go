@@ -96,6 +96,8 @@ type logEntry struct {
 	// partHidden says the part is one the other players read as "Outra fonte".
 	partHidden bool
 	rolls      *logRolls
+	// cut is the roll that settled the question a Cutting Words line waited for, with the line as it reads then (combat_cut_pending.go).
+	cut *cutJoin
 }
 
 // damageLog is what became of one pending damage of a spell: where it is, the
@@ -528,6 +530,7 @@ func buildLog(events []playdb.ListEncounterEventsRow) []*logEntry {
 		byFiring:  map[string]*logEntry{},
 		byMove:    map[string]*logEntry{},
 		moveOf:    map[string]string{},
+		byCut:     map[string][]*logEntry{},
 	}
 	var out []*logEntry
 	for _, e := range events {
@@ -565,6 +568,8 @@ type logBuilder struct {
 	// the move that made the offer, so that entry is the one to undo.
 	byMove map[string]*logEntry
 	moveOf map[string]string // offer id -> move id
+	// byCut are the lines of the Cutting Words that wait for the roll of their hold's group (combat_cut_pending.go).
+	byCut map[string][]*logEntry
 }
 
 // logHandler fills the entry of an event of one kind and says whether the event is a line
@@ -656,6 +661,9 @@ func (b *logBuilder) entry(e playdb.ListEncounterEventsRow) *logEntry {
 		return nil // the event of a held action stands for nothing yet: its replay is the line
 	}
 	entry := &logEntry{id: e.ID, at: e.CreatedAt, ev: ev, hosts: []string{e.ID}, actorUser: e.ActorUserID}
+	if ev.CutGroup != "" {
+		b.joinCut(e.ID, ev)
+	}
 	handle, ok := logHandlers[e.Kind]
 	if !ok || !handle(b, e, entry) {
 		return nil
@@ -967,6 +975,7 @@ func (b *logBuilder) reactionAnswered(e playdb.ListEncounterEventsRow, entry *lo
 		return false
 	}
 	entry.kind = playv1.CombatLogKind_COMBAT_LOG_KIND_REACTION_WINDOW
+	b.registerCut(entry)
 	return true
 }
 

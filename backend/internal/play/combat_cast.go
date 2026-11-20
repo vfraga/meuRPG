@@ -769,6 +769,9 @@ func (f *castFlow) spend(ctx context.Context) error {
 		ActionBefore: f.caster.ActionUsed, BonusBefore: f.caster.BonusActionUsed, ReactionBefore: f.caster.ReactionUsed, DashedBefore: f.caster.Dashed,
 		SpellCastBefore: f.caster.SpellCast, BonusSpellBefore: f.caster.BonusSpellCast,
 	}
+	if f.out.made.CutGroup, err = f.s.cutGroupOfAnswer(ctx, f.c); err != nil {
+		return err
+	}
 	for _, phase := range []func(context.Context) error{f.spendCastSlot, f.spendGrantUse, f.spendPoints, f.spendTableOptions, f.spendEconomy, f.noteSpellCast} {
 		if err := phase(ctx); err != nil {
 			return err

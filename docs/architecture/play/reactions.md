@@ -166,6 +166,8 @@ The Help action rolls nothing.
 A damage roll opens its window in `damageWindows`, for every damage that is not healing: a weapon's, a cantrip's and a spell's.
 The window is the same for a player's creature and for an NPC.
 The log line of the cut names the die, what it came off (the attack, the test or the damage) and the roll before and after; a player's line says only whether the attack still hit.
+When the replay asks its roller (a Bardic die or Lucky), the line waits for that roll: the master reads the die and "(aguardando a rolagem)", every player reads "diminuiu", and the final `attack_rolled` or `spell_cast` completes it ([Combat log](combat-log.md#a-reaction-line-that-waits-for-a-roll)).
+Only Cutting Words on an attack or a spell attack waits this way; a held check (a contest, Hide) is not completed this way: its line keeps what the answer wrote when the replay asked, which has no total yet.
 
 ## The feature window
 
@@ -267,6 +269,7 @@ Hellish Rebuke's second-step prompt carries the aggressor's modifier only for th
 
 Each reaction is one line (`COMBAT_LOG_KIND_REACTION_WINDOW`) with the master's and the players' text; `reaction_answered` and `concentration_save_rolled` are the session event kinds.
 A used Shield keeps `reaction_used` (undoable), and so does a used Parry (the automatic one is undone with the attack).
+The event of a Cutting Words answer cannot be undone; undoing the roll that completed its line puts the line back to waiting.
 A spent reaction records its kind and the round in `combatants.reaction_kind` and `reaction_round`.
 The kind is the reaction window's key, `opportunity` for an opportunity attack, or the key of the feature whose action is a reaction.
 A feature that declares a use and spends the reaction is used with `UseFeature` on any turn, also while an opportunity offer waits for its user: spending the reaction passes the offer over (`pruneOffers`). Its turn options list it enabled off turn while the reaction is free and the combatant can act.

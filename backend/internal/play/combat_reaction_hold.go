@@ -274,6 +274,7 @@ func (s *Service) settleReplay(ctx context.Context, c *combatTx, h playdb.Reacti
 	var done *ambientDoneError
 	switch {
 	case errors.As(err, &done) && done.asking:
+		markAsked(c, h, windows, st)
 		return nil
 	case errors.As(err, &done):
 		c.tellActorVitals(done.event)
@@ -326,10 +327,7 @@ func (c *combatTx) tellActorVitals(ev actionEvent) {
 // attack roll's outcome, total and armor class (the master's log reads "17 → 13 contra CA
 // 15"), and a damage's final amount.
 func (s *Service) completeAnswers(c *combatTx, windows []playdb.ReactionWindow, st *replayState, done actionEvent) {
-	for _, ref := range c.answered {
-		if !slices.ContainsFunc(windows, func(w playdb.ReactionWindow) bool { return w.ID == ref.window }) {
-			continue
-		}
+	for _, ref := range answersOf(c, windows) {
 		switch st.hold.Kind {
 		case "attack":
 			ref.ev.Outcome, ref.ev.AC = done.Outcome, done.TargetAC
