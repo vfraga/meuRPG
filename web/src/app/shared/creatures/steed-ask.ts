@@ -57,7 +57,7 @@ let nextId = 0;
       </div>
       <div class="pair">
         <button #first type="button" matButton="outlined" class="big" [disabled]="busy()" (click)="closed.emit(false)">Voltar</button>
-        <button type="button" matButton="outlined" class="big big--danger" data-confirm [disabled]="busy()" (click)="confirm()"><mat-icon aria-hidden="true">{{ mode() === 'release' ? 'link_off' : 'close' }}</mat-icon><span class="lbl">{{ verb() }}&nbsp;<span class="nm">{{ c.name }}</span></span></button>
+        <button type="button" matButton="outlined" class="big big--danger" data-confirm [disabled]="busy()" (click)="confirm()"><mat-icon aria-hidden="true">{{ mode() === 'release' ? 'link_off' : 'close' }}</mat-icon>{{ verb() }} {{ c.name }}</button>
       </div>
     </div>
   `,

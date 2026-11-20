@@ -80,7 +80,7 @@
   }
 }
 
-// Two equal buttons, side by side at every width; a long name is cut with an ellipsis inside its button.
+// Two equal buttons, side by side at every width; a long name wraps inside its button, which grows.
 .pair {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
@@ -88,26 +88,18 @@
 }
 
 .big {
-  --mat-button-outlined-container-height: 48px;
+  --mat-button-outlined-container-height: auto;
   width: 100%;
   min-width: 0;
-  white-space: nowrap;
+  min-height: 48px;
+  padding-block: 6px;
+  line-height: 1.25;
+  white-space: normal;
+  overflow-wrap: anywhere;
   background: var(--mr-surface);
 }
 
 .big--danger {
   --mat-button-outlined-label-text-color: var(--mr-danger-ink);
   --mat-button-outlined-outline-color: var(--mr-danger-ink);
-}
-
-.lbl {
-  display: inline-flex;
-  min-width: 0;
-  max-width: 100%;
-}
-
-.nm {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }

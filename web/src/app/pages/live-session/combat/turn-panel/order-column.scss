@@ -104,9 +104,12 @@
   color: var(--mr-danger-ink);
 }
 
-.mat-icon {
+.row__word .mat-icon {
   flex: none;
   margin-top: 2px;
+}
+
+.mat-icon {
   width: 14px;
   height: 14px;
   font-size: var(--mr-font-14);

@@ -62,6 +62,8 @@ describe('SteedAsk: "Dispensar Estrela?" and "Libertar Estrela?", asked in place
     const pair = el.querySelector('.pair')!;
     expect(Array.from(pair.children)).toEqual(buttons());
     expect(getComputedStyle(pair).gridTemplateColumns).toBe('minmax(0, 1fr) minmax(0, 1fr)');
+    // A long name wraps inside its button instead of leaving it.
+    expect(getComputedStyle(el.querySelector('.big--danger')!).whiteSpace).toBe('normal');
   });
 
   it('asks the dismissal as an alertdialog: the title, what it does, "Voltar" first with the focus, the confirm marked', async () => {
