@@ -98,3 +98,13 @@ func TestTheMasterAndAPlayerReadTheSameLists(t *testing.T) {
 		t.Errorf("player %v, master %v", p.GetSkillsAllowed(), m.GetSkillsAllowed())
 	}
 }
+
+func TestABardsListHoldsEverySkill(t *testing.T) {
+	t.Parallel()
+	u := newUnfitTable(t)
+	s := pensantusSheet()
+	s.GetFull().Classes = []*charactersv1.ClassLevel{{ClassKey: "class:bard", Level: 1}}
+	if got := u.player.allowed(t, u.campaign, s).GetSkillsAllowed(); len(got.GetKeys()) != 18 {
+		t.Errorf("skills_allowed = %v, want the 18 skills: the bard chooses any", got)
+	}
+}

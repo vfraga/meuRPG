@@ -90,6 +90,7 @@ import { setSwitchesRPC } from './content-options-support';
 import { effectRow, effectsTable, openPanel, setExhaustionRPC } from './effects-support';
 import { castZoneRPC, enterZoneRPC, expectOnMap, expectWallCalculated, moreZonesTable, nextStep, openWallSheet, openZoneMenu, tapWallSquare, WALL_SPELL, wallTable, zoneAction, zoneBadges, zoneCard, zoneLayer, zoneOf, zoneTable, zonesPanel } from './zones-support';
 import {
+  changeGuardianSkillListRPC,
   changeGuardianSkillsRPC,
   createGuardianRPC,
   createInkBladeSubclassRPC,
@@ -99,6 +100,7 @@ import {
   emptyTable,
   icaroSheetBody,
   lockAndMilestone,
+  skillTraitRaceBody,
 } from './table-sheet-support';
 import { masterLog, openCombatPanel, openMap, openOrderRow, openTurn } from './combat-layout';
 import { waitForEncounterRevision } from './revision-support';
@@ -7626,6 +7628,92 @@ for (const [scheme, theme] of [['light', 'claro'], ['dark', 'escuro']] as const)
   for (const width of [390, 768, 1280]) {
     test(`o aviso de uma entrada que carrega com uma parte de fora passa no axe e nas conferências de layout no tema ${theme}, em ${width}px`, { tag: ['@a11y', '@574', '@MR-025', '@RN-33'] }, async ({ browser }) => {
       await scanLoadedNotice(browser, scheme, width);
+    });
+  }
+}
+
+/**
+ * The skill step with the lists of its sources (#574, part D): the wizard's step with the list cut to what the sheet's sources allow,
+ * the server's refusal of a pick no source can hold with the others (a class that takes two of its list and a trait that takes one skill
+ * only), and the sheet editor on a stored sheet that holds a skill no list allows any more (the master narrowed the lists after it was
+ * saved): the skill stays on, with nothing to say of it, and can be taken off. Real server throughout.
+ */
+async function scanPickLists(browser: Browser, colorScheme: 'light' | 'dark', width: number): Promise<void> {
+  test.setTimeout(240_000);
+  const masterContext = await newSignedInContext(browser, 'Mestre Teste');
+  const context = await browser.newContext({ storageState: authStatePath('Jogador Teste'), colorScheme, viewport: { width, height: 900 } });
+  const m = await masterContext.newPage();
+  const page = await context.newPage();
+  page.setDefaultTimeout(20_000);
+  const where = `(${colorScheme}, ${width}px)`;
+  try {
+    await m.goto('/');
+    await page.goto('/');
+    const { campaignId } = await emptyTable(m, page, `Acessibilidade listas de perícias ${Date.now()}`);
+    const guardian = await createGuardianRPC(m, campaignId);
+    const raceKey = await createEntryRPC(m, campaignId, 'tableRace', skillTraitRaceBody(['skill:stealth']));
+    const pick = async (label: string, option: string | RegExp) => {
+      const control = page.getByRole('combobox', { name: label, exact: true });
+      await control.focus();
+      await control.press('Enter');
+      await page.getByRole('option', { name: option }).click();
+    };
+    const openSkills = async () => {
+      await expect(async () => {
+        await page.getByRole('tab', { name: 'Perícias' }).click();
+        await expect(page.getByRole('tab', { name: 'Perícias' })).toHaveAttribute('aria-selected', 'true', { timeout: 2000 });
+      }).toPass();
+      return page.getByRole('group', { name: 'Perícias', exact: true });
+    };
+
+    // The wizard: the list is the guardian's six skills (the trait's one is among them), not the eighteen.
+    await open(page, `/campaigns/${campaignId}/characters/new`);
+    await page.getByLabel('Nome do personagem', { exact: true }).fill('Davi');
+    await pick('Raça', /^Rastreador/);
+    await pick('Classe', /^Guardião do Vale/);
+    let skills = await openSkills();
+    await expect(skills.getByRole('checkbox', { name: 'Acrobacia', exact: true })).toHaveCount(0);
+    await expect(skills.getByRole('checkbox', { name: 'Furtividade', exact: true })).toHaveCount(1);
+    await expect(skills.getByRole('checkbox', { name: 'Adestrar Animais', exact: true })).toHaveCount(1);
+    await expectScreenPasses(page, `Editor, a etapa de perícias com a lista cortada pelas fontes ${where}`);
+
+    // The sheet editor: the class takes athletics and nature, the trait takes stealth. Taking stealth off and picking animal handling
+    // leaves a pick the sources cannot hold together: the server's sentence is on the step.
+    const body = icaroSheetBody(guardian);
+    (body.sheet as any).full.raceKey = raceKey;
+    (body.sheet as any).full.skillProficiencyKeys = ['skill:athletics', 'skill:nature', 'skill:stealth'];
+    const characterId = await createSheetRPC(page, campaignId, body);
+    const edit = `/campaigns/${campaignId}/characters/${characterId}/edit`;
+    await open(page, edit);
+    skills = await openSkills();
+    await skills.getByRole('checkbox', { name: 'Furtividade', exact: true }).uncheck();
+    await skills.getByRole('checkbox', { name: 'Adestrar Animais', exact: true }).check();
+    await page.getByRole('button', { name: 'Salvar ficha' }).click();
+    const refusal = page.getByRole('alert').filter({ hasText: 'A perícia Adestrar Animais não está em nenhuma das listas de onde o personagem escolhe perícias.' });
+    await expect(refusal.first()).toBeVisible();
+    await expect(page.getByRole('tab', { name: 'Perícias' })).toContainText('(com erro)');
+    await expectScreenPasses(page, `Editor, a recusa de uma perícia que as fontes não seguram juntas ${where}`);
+
+    // The master narrows the lists: stealth is in none, and the stored sheet still holds it.
+    await changeGuardianSkillListRPC(m, campaignId, guardian, ['skill:athletics', 'skill:nature']);
+    await updateEntryRPC(m, campaignId, raceKey, 'tableRace', skillTraitRaceBody(['skill:animal-handling']));
+    await open(page, edit);
+    skills = await openSkills();
+    await expect(skills.getByRole('checkbox', { name: 'Acrobacia', exact: true })).toHaveCount(0);
+    await expect(skills.getByRole('checkbox', { name: 'Furtividade', exact: true })).toBeChecked();
+    await expect(skills.getByRole('checkbox', { name: 'Furtividade', exact: true })).toBeEnabled();
+    await expect(page.getByText(/fora das listas/)).toHaveCount(0);
+    await expectScreenPasses(page, `Editor, uma ficha guardada com uma perícia que nenhuma lista permite ${where}`);
+  } finally {
+    await masterContext.close();
+    await context.close();
+  }
+}
+
+for (const [scheme, theme] of [['light', 'claro'], ['dark', 'escuro']] as const) {
+  for (const width of [390, 768, 1280]) {
+    test(`a etapa de perícias com as listas das fontes passa no axe e nas conferências de layout no tema ${theme}, em ${width}px`, { tag: ['@a11y', '@574', '@MR-025', '@RN-23'] }, async ({ browser }) => {
+      await scanPickLists(browser, scheme, width);
     });
   }
 }
