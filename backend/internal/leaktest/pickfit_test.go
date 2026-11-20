@@ -1,6 +1,7 @@
 package leaktest
 
 import (
+	"net/http"
 	"strings"
 	"testing"
 
@@ -199,6 +200,7 @@ func TestAPickOfAnEntryKeyIsAnsweredAsAKeyThatDoesNotExist(t *testing.T) {
 	off, archived := feat(canary+" dádiva"), feat(canary+" bênção")
 	must(w.master.table.SetOptionSwitches(ctx, rq(&rulesv1.SetOptionSwitchesRequest{CampaignId: w.campaign, Switches: []*rulesv1.OptionSwitch{{Key: off.GetKey(), Off: true}}})))
 	must(w.master.table.ArchiveTableEntry(ctx, rq(&rulesv1.ArchiveTableEntryRequest{CampaignId: w.campaign, Key: archived.GetKey()})))
+	live := feat("Dádiva aberta")
 	const absent = "feat:nao-existe-zz@mesa"
 
 	base := func() *charactersv1.CharacterSheet {
@@ -245,16 +247,23 @@ func TestAPickOfAnEntryKeyIsAnsweredAsAKeyThatDoesNotExist(t *testing.T) {
 			},
 		}
 		for call, send := range calls {
-			for _, closed := range []*rulesv1.TableEntry{off, archived} {
+			for _, closed := range []*rulesv1.TableEntry{off, archived, live} {
 				who := w.ana
 				if call == "create" {
 					who = w.caio
 				}
 				named, none := send(who, closed.GetKey()), send(who, absent)
+				if what == "a tool pick" && closed != live {
+					// A pick of a closed entry's key is a new choice of that entry, which the closed-choice answer refuses first.
+					if named.status != http.StatusBadRequest || !strings.Contains(string(named.body), "failed_precondition") {
+						t.Errorf("%s, %s: the closed entry's key: HTTP %d %s", what, call, named.status, shorten(named.body))
+					}
+					continue
+				}
 				if !sameAnswer(named, closed.GetKey(), none, absent) {
 					t.Errorf("%s, %s: the entry's key: HTTP %d %s\na key that does not exist: HTTP %d %s", what, call, named.status, shorten(named.body), none.status, shorten(none.body))
 				}
-				if strings.Contains(string(named.body), canary) {
+				if strings.Contains(string(named.body), canary) || strings.Contains(string(named.body), "Dádiva aberta") {
 					t.Errorf("%s, %s: the answer names the entry: %s", what, call, shorten(named.body))
 				}
 			}

@@ -90,6 +90,9 @@ func (s *Service) checkEditedSheet(ctx context.Context, m authz.Membership, cont
 	if err := refuseKeptOutPick(content, m, s.storedSheetOf(ctx, m, id), sheet.GetFull()); err != nil {
 		return nil, "", err
 	}
+	if err := s.refuseClosedPick(ctx, content, m, id, sheet.GetFull()); err != nil {
+		return nil, "", err
+	}
 	if err := refuseUnfitPick(content, m, s.storedSheetOf(ctx, m, id), sheet.GetFull()); err != nil {
 		return nil, "", err
 	}
