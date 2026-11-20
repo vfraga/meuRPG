@@ -650,6 +650,11 @@ Montar exige a montaria a até 1,5 m e custa metade do deslocamento do cavaleiro
 Um movimento comporta uma montada ou uma desmontada.
 O jogador monta as próprias criaturas e as montarias que o mestre marcou como "Montaria" do lado do grupo, e o mestre monta qualquer criatura.
 Uma criatura sem marca do mestre age por conta própria.
+A marca ("adestrada" ou "independente") de uma criatura que ninguém cavalga é lida pelo mestre e pelo dono dela.
+Enquanto a criatura é cavalgada, todo jogador que vê o cavaleiro e a montaria lê a marca, e cada tela mostra a ordem do par como ela é.
+Um jogador que não vê o cavaleiro, um membro pendente e um estranho não leem a marca.
+Que uma criatura é uma montaria disposta é lido por qualquer jogador que a vê: o painel "Montaria" dele a lista.
+Uma montaria que o jogador não vê não é listada e não mostra distância.
 O par ocupa um só lugar, o quadrado da montaria, e o turno da montaria continua sendo dela.
 
 - **Montaria adestrada** (a montaria de Convocar Montaria, ou uma marcada como "adestrada") toma a iniciativa do cavaleiro e age logo depois dele, num turno conjunto que termina quando as duas partes terminam.
@@ -669,7 +674,7 @@ O par ocupa um só lugar, o quadrado da montaria, e o turno da montaria continua
   A Inteligência da montaria é no mínimo 6, e nenhum efeito lê um valor menor.
   O conjurador escolhe celestial, fada ou ínfero; só o dono e o mestre leem a escolha.
   Uma magia que mira só o conjurador também pode alcançar a montaria (`also_steed`) enquanto ele a cavalga: um efeito duradouro cai nos dois, e qualquer outra magia deixa uma nota de texto.
-- O jogador lê o vínculo entre duas criaturas só quando vê as duas; uma montaria escondida deixa o cavaleiro como se estivesse sozinho, e a marca "adestrada" ou "independente" que o mestre põe numa montaria só o mestre, o dono da criatura e o jogador do cavaleiro que está sobre ela leem; nenhum outro jogador lê a marca nem a rolagem de outro.
+- O jogador lê o vínculo entre duas criaturas só quando vê as duas; uma montaria escondida deixa o cavaleiro como se estivesse sozinho, e a marca "adestrada" ou "independente" de uma montaria que ninguém cavalga só o mestre e o dono da criatura leem; nenhum jogador lê a rolagem de outro.
 
 **Esculpir Magias** (SRD 5.1, Escola de Evocação).
 Um mago de evocação a partir do nível 2, ao conjurar uma magia de evocação que afeta outras criaturas que ele vê, poupa até 1 + o nível da magia delas (o nível em que é conjurada). Uma criatura poupada passa no teste de resistência sem rolar e não sofre dano quando a magia causaria metade; a linha do teste diz "Esculpir Magias".

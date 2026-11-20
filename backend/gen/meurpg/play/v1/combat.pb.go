@@ -7065,7 +7065,8 @@ type Combatant struct {
 	// The combatant that rides this one, a UUID, empty when it carries nobody. Same audience as `mounted_on_id`.
 	RiderId string `protobuf:"bytes,121,opt,name=rider_id,json=riderId,proto3" json:"rider_id,omitempty"`
 	// How a willing mount obeys, "controlled" or "independent"; empty for a combatant that is not a marked mount
-	// (SetCombatantMount). Only the master and the player who controls the combatant: never another player's.
+	// (SetCombatantMount). The master and the player who controls the combatant read it; while the combatant is ridden, every
+	// player who sees both the rider and the mount reads it too (RN-10). Another player never reads the mark of a mount nobody rides.
 	MountKind string `protobuf:"bytes,122,opt,name=mount_kind,json=mountKind,proto3" json:"mount_kind,omitempty"`
 	// The rider already mounted or dismounted in this move (once per move; the start of its turn clears it). Same audience as
 	// the economy fields (`action_used`).

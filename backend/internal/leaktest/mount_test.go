@@ -1,10 +1,12 @@
 package leaktest
 
 import (
+	"bytes"
 	"strings"
 	"testing"
 
 	playv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/play/v1"
+	"github.com/PuraFome/meuRPG/backend/gen/meurpg/play/v1/playv1connect"
 	rulesv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/rules/v1"
 )
 
@@ -40,7 +42,7 @@ func TestHiddenMountLeavesItsRiderPlain(t *testing.T) {
 			}
 		}
 	}
-	// The reveal is the second positive control: a player who sees both rows reads the link and the mount, and still not the mark.
+	// The reveal is the second positive control: a player who sees both rows reads the link and the mount, and the mark too, since the mount is ridden.
 	must(w.master.combat.SetCombatantHidden(ctx, rq(&playv1.SetCombatantHiddenRequest{CampaignId: w.campaign, EncounterId: e.GetId(), CombatantId: mount.GetId(), IdempotencyKey: newKey(), Hidden: false})))
 	got := read(w.ana)
 	for _, needle := range []string{mount.GetId(), mount.GetLabel(), "mountedOnId", "riderId"} {
@@ -48,8 +50,8 @@ func TestHiddenMountLeavesItsRiderPlain(t *testing.T) {
 			t.Errorf("the positive control failed: Ana reads no %q after the mount is revealed", needle)
 		}
 	}
-	if strings.Contains(got, "mountKind") {
-		t.Errorf("Ana reads the master's mark of a mount that is not hers")
+	if !strings.Contains(got, "mountKind") {
+		t.Errorf("Ana reads no mark of a mount she sees with its rider")
 	}
 }
 
@@ -158,6 +160,10 @@ func TestMountOptionsNeverNameAHiddenCreature(t *testing.T) {
 	if m := listed(mountOf(w.caio), hidden.GetId()); m != nil {
 		t.Errorf("Caio's options list the hidden mount: %v", m)
 	}
+	// A player who sees a willing mount reads it in the list, with its distance; the hidden one adds no entry and no distance.
+	if m := listed(mountOf(w.caio), seen.GetId()); m.GetDistanceFt() != 5 || len(mountOf(w.caio).GetMounts()) != 1 {
+		t.Errorf("Caio's options list %v, want only the visible mount, 5 ft away", mountOf(w.caio).GetMounts())
+	}
 
 	// A hidden creature rides the visible mount: the master lists the mount as taken, Caio's options do not list it at all.
 	if _, err := w.pool.Exec(ctx, `UPDATE combatants SET mounted_on_id = $1, grid_col = 12, grid_row = 8 WHERE id = $2`, seen.GetId(), hidden.GetId()); err != nil {
@@ -191,36 +197,77 @@ func TestMountOptionsNeverNameAHiddenCreature(t *testing.T) {
 	}
 }
 
-// The mark the master puts on a mount is read by the master and by the player of the rider that sits on it: that player has to know
-// whether the mount obeys (RN-21). Another player never reads it, and it stays out of the player's copy when the mount is not ridden.
-func TestTheMountMarkReachesOnlyTheRidersPlayer(t *testing.T) {
+// The mark the master puts on a mount ("controlled" or "independent") is read by the master and by the creature's owner while nobody
+// rides it. While it is ridden, every player who sees both the rider and the mount reads it too (RN-10): the rider's player and
+// another player who sees the pair. A player who does not see the rider, a pending member and a stranger never read it.
+func TestTheMountMarkIsReadByWhoSeesThePairWhileItIsRidden(t *testing.T) {
 	w := newWorld(t)
 	ctx := t.Context()
 	e := w.encounter
-	mount, rider := w.combatant(w.seenNPC), w.combatant(w.pens)
-	must(w.master.combat.SetCombatantMount(ctx, rq(&playv1.SetCombatantMountRequest{CampaignId: w.campaign, EncounterId: e.GetId(), CombatantId: mount.GetId(), IdempotencyKey: newKey(), Kind: "controlled"})))
-	markOf := func(p *person) string {
-		enc := must(p.combat.GetEncounter(ctx, rq(&playv1.GetEncounterRequest{CampaignId: w.campaign}))).GetEncounter()
-		for _, c := range enc.GetCombatants() {
-			if c.GetId() == mount.GetId() {
-				return c.GetMountKind()
-			}
+	mount, rider, hiddenRider := w.combatant(w.seenNPC), w.combatant(w.pens), w.combatant(w.hiddenNPC)
+	// Both players stand near the mount, so the fog hides nothing of it from either.
+	w.placeForced(w.master, e.GetId(), placement{mount.GetId(), 12, 8}, placement{rider.GetId(), 13, 8}, placement{w.combatant(w.toren).GetId(), 11, 8})
+	must(w.master.combat.SetCombatantMount(ctx, rq(&playv1.SetCombatantMountRequest{CampaignId: w.campaign, EncounterId: e.GetId(), CombatantId: mount.GetId(), IdempotencyKey: newKey(), Kind: "independent"})))
+	exec := func(q string, args ...any) {
+		t.Helper()
+		if _, err := w.pool.Exec(ctx, q, args...); err != nil {
+			t.Fatalf("%s: %v", q, err)
 		}
-		return "" // the player does not see the mount at all: nothing of it to read
 	}
-	if got := markOf(w.master); got != "controlled" {
+	// markOf is what the person reads of the mark; an answer that is refused has no mark to read.
+	markOf := func(p *person) string {
+		res := p.call(playv1connect.CombatServiceGetEncounterProcedure, &playv1.GetEncounterRequest{CampaignId: w.campaign})
+		if !res.ok() {
+			return ""
+		}
+		if bytes.Contains(res.body, []byte("independent")) {
+			return "independent"
+		}
+		return ""
+	}
+	// The unridden creature: the master reads it; Ana and Caio do not, and it belongs to neither.
+	if got := markOf(w.master); got != "independent" {
 		t.Fatalf("the positive control failed: the master reads the mark %q", got)
 	}
-	if got := markOf(w.ana); got != "" {
-		t.Errorf("Ana reads the mark %q of a mount nobody of hers rides", got)
+	for _, p := range []*person{w.ana, w.caio, w.pending, w.stranger} {
+		if got := markOf(p); got != "" {
+			t.Errorf("%s reads the mark %q of a creature nobody rides and that is not theirs", p.name, got)
+		}
 	}
-	if _, err := w.pool.Exec(ctx, `UPDATE combatants SET mounted_on_id = $1 WHERE id = $2`, mount.GetId(), rider.GetId()); err != nil {
-		t.Fatalf("put Pensantus on the mount: %v", err)
+	// Its owner reads it while nobody rides it.
+	exec(`UPDATE combatants SET user_id = $1 WHERE id = $2`, w.caio.id, mount.GetId())
+	if got := markOf(w.caio); got != "independent" {
+		t.Errorf("the owner reads the mark %q of their unridden creature, want independent", got)
 	}
-	if got := markOf(w.ana); got != "controlled" {
-		t.Errorf("Pensantus's player reads the mark %q of the mount he rides, want controlled", got)
+	for _, p := range []*person{w.ana, w.pending, w.stranger} {
+		if got := markOf(p); got != "" {
+			t.Errorf("%s reads the mark %q of a creature nobody rides and that is not theirs", p.name, got)
+		}
 	}
-	if got := markOf(w.caio); got != "" {
-		t.Errorf("Caio reads the mark %q of a mount he does not ride", got)
+	exec(`UPDATE combatants SET user_id = NULL WHERE id = $1`, mount.GetId())
+
+	// Pensantus rides it: the rider's player and the player who sees the pair read it, who does not see the rider and who is not a member do not.
+	exec(`UPDATE combatants SET mounted_on_id = $1 WHERE id = $2`, mount.GetId(), rider.GetId())
+	for _, p := range []*person{w.master, w.ana, w.caio} {
+		if got := markOf(p); got != "independent" {
+			t.Errorf("%s reads the mark %q of a ridden creature they see with its rider, want independent", p.name, got)
+		}
+	}
+	for _, p := range []*person{w.pending, w.stranger} {
+		if got := markOf(p); got != "" {
+			t.Errorf("%s reads the mark %q of a ridden creature", p.name, got)
+		}
+	}
+
+	// A hidden creature rides it: the players do not see the rider, so the mount's mark stays out of their copies.
+	exec(`UPDATE combatants SET mounted_on_id = NULL WHERE id = $1`, rider.GetId())
+	exec(`UPDATE combatants SET mounted_on_id = $1 WHERE id = $2`, mount.GetId(), hiddenRider.GetId())
+	if got := markOf(w.master); got != "independent" {
+		t.Fatalf("the positive control failed: the master reads the mark %q of the mount a hidden creature rides", got)
+	}
+	for _, p := range []*person{w.ana, w.caio, w.pending, w.stranger} {
+		if got := markOf(p); got != "" {
+			t.Errorf("%s reads the mark %q of a mount whose rider they do not see", p.name, got)
+		}
 	}
 }

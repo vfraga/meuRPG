@@ -106,13 +106,18 @@ func TestMountedCombat_SetCombatantMount(t *testing.T) {
 func dropEncounter(_ *playv1.Encounter, err error) error { return err }
 
 // TestMountedCombat_ViewLinks: the links and the mark are read by who may read them (RN-10, RN-20). A visible pair shows its links to
-// every player; the mark and the used move stay with the master and the owner; a hidden mount leaves its rider plain, with nothing
+// every player; the mark of a ridden mount is read by every player who sees the pair, the mark of an unridden one and the used move stay with the master and the owner; a hidden mount leaves its rider plain, with nothing
 // of the mount in the player's copy, and the same copy of the master and of the player before the mount hid are the positive controls.
 func TestMountedCombat_ViewLinks(t *testing.T) {
 	t.Parallel()
 	c := newCave(t)
 	c.fight(t)
 	c.mustMark(t, "Escudeiro", "independent")
+	for who, u := range map[string]*user{"Toren's player": c.caio, "another player": c.ana} {
+		if got := c.who(t, u, "Escudeiro").GetMountKind(); got != "" {
+			t.Errorf("the squire's mount_kind for %s while nobody rides it = %q, want empty", who, got)
+		}
+	}
 	c.ride(t, "Toren", "Escudeiro")
 	if _, err := c.h.pool.Exec(t.Context(), `UPDATE combatants SET mount_move_used = true WHERE id = $1`, c.id(t, "Toren")); err != nil {
 		t.Fatalf("mark the move used: %v", err)
@@ -130,7 +135,7 @@ func TestMountedCombat_ViewLinks(t *testing.T) {
 			t.Errorf("Toren's rider_id for %s = %q, want empty (he carries nobody)", who, got)
 		}
 	}
-	wantMark := map[string]string{"the master": "independent", "Toren's player": "independent", "another player": ""} // the rider's player reads the mark of the mount it rides
+	wantMark := map[string]string{"the master": "independent", "Toren's player": "independent", "another player": "independent"} // every player who sees the pair reads the mark of a ridden mount
 	wantUsed := map[string]bool{"the master": true, "Toren's player": true, "another player": false}
 	for who, u := range map[string]*user{"the master": c.master, "Toren's player": c.caio, "another player": c.ana} {
 		if got := c.who(t, u, "Escudeiro").GetMountKind(); got != wantMark[who] {
@@ -182,7 +187,7 @@ func TestMountedCombat_ViewLinks(t *testing.T) {
 }
 
 // TestMountedCombat_ViewOfAnOwnedSteed: the player who controls the mount reads its mark and its link, and a rider that is theirs reads
-// its own used move; another player reads the link and none of the rest. The view functions are the ones every copy is built with.
+// its own used move; another player who sees the pair reads the link and the mark, and none of the rest. The view functions are the ones every copy is built with.
 func TestMountedCombat_ViewOfAnOwnedSteed(t *testing.T) {
 	t.Parallel()
 	owner, other := "user-owner", "user-other"
@@ -200,8 +205,11 @@ func TestMountedCombat_ViewOfAnOwnedSteed(t *testing.T) {
 	if got := read(combatViewer{userID: owner}, steed, cs); got.GetMountKind() != "controlled" || got.GetRiderId() != "rider" {
 		t.Errorf("the steed's owner reads kind %q and rider %q, want controlled and rider", got.GetMountKind(), got.GetRiderId())
 	}
-	if got := read(combatViewer{userID: other}, steed, cs); got.GetMountKind() != "" || got.GetRiderId() != "rider" {
-		t.Errorf("another player reads kind %q and rider %q, want empty and rider", got.GetMountKind(), got.GetRiderId())
+	if got := read(combatViewer{userID: other}, steed, cs); got.GetMountKind() != "controlled" || got.GetRiderId() != "rider" {
+		t.Errorf("another player who sees the pair reads kind %q and rider %q, want controlled and rider", got.GetMountKind(), got.GetRiderId())
+	}
+	if got := read(combatViewer{userID: other}, steed, []playdb.Combatant{steed}); got.GetMountKind() != "" {
+		t.Errorf("another player reads kind %q of a mount nobody rides, want empty", got.GetMountKind())
 	}
 	if got := read(combatViewer{userID: other}, rider, cs); got.GetMountedOnId() != "steed" {
 		t.Errorf("another player reads the rider's mounted_on_id %q, want steed", got.GetMountedOnId())
@@ -212,19 +220,22 @@ func TestMountedCombat_ViewOfAnOwnedSteed(t *testing.T) {
 	}
 	hiddenRider := rider
 	hiddenRider.Hidden = true
-	// The player of the rider reads the mark of the mount it rides, and nobody else does (RN-10, RN-21).
+	// Every player who sees the rider and the mount reads the mark while it is ridden (RN-10, RN-21).
 	riderOwned := rider
 	riderOwned.UserID = &other
 	if got := read(combatViewer{userID: other}, steed, []playdb.Combatant{steed, riderOwned}); got.GetMountKind() != "controlled" {
 		t.Errorf("the rider's player reads kind %q of its mount, want controlled", got.GetMountKind())
 	}
-	if got := read(combatViewer{userID: "user-third"}, steed, []playdb.Combatant{steed, riderOwned}); got.GetMountKind() != "" {
-		t.Errorf("a third player reads kind %q of the mount, want empty", got.GetMountKind())
+	if got := read(combatViewer{userID: "user-third"}, steed, []playdb.Combatant{steed, riderOwned}); got.GetMountKind() != "controlled" {
+		t.Errorf("a third player who sees the pair reads kind %q of the mount, want controlled", got.GetMountKind())
 	}
 	hiddenOwned := riderOwned
 	hiddenOwned.Hidden = true
-	if got := read(combatViewer{userID: other}, steed, []playdb.Combatant{steed, hiddenOwned}); got.GetMountKind() != "" {
-		t.Errorf("the player of a hidden rider reads kind %q, want empty", got.GetMountKind())
+	if got := read(combatViewer{userID: "user-third", unseen: map[string]bool{"rider": true}}, steed, []playdb.Combatant{steed, riderOwned}); got.GetMountKind() != "" {
+		t.Errorf("a player who does not see the rider reads kind %q, want empty", got.GetMountKind())
+	}
+	if got := read(combatViewer{userID: "user-third"}, steed, []playdb.Combatant{steed, hiddenOwned}); got.GetMountKind() != "" {
+		t.Errorf("a player reads kind %q of a mount a hidden rider sits on, want empty", got.GetMountKind())
 	}
 	if got := read(combatViewer{userID: owner}, steed, []playdb.Combatant{steed, hiddenRider}); got.GetRiderId() != "" {
 		t.Errorf("a player reads a hidden rider's id %q on the mount, want empty", got.GetRiderId())

@@ -2444,7 +2444,8 @@ export type Combatant = Message<"meurpg.play.v1.Combatant"> & {
 
   /**
    * How a willing mount obeys, "controlled" or "independent"; empty for a combatant that is not a marked mount
-   * (SetCombatantMount). Only the master and the player who controls the combatant: never another player's.
+   * (SetCombatantMount). The master and the player who controls the combatant read it; while the combatant is ridden, every
+   * player who sees both the rider and the mount reads it too (RN-10). Another player never reads the mark of a mount nobody rides.
    *
    * @generated from field: string mount_kind = 122;
    */
@@ -19733,7 +19734,7 @@ export const CombatService: GenService<{
    * SetCombatantMount marks an NPC or a creature as a willing mount (SRD 5.1, "Mounted Combat": a willing
    * creature that is at least one size larger than its rider), or takes the mark off. `kind` is "controlled" (it
    * obeys its rider), "independent" (it keeps its own turn) or "" (not a mount). A player's character is never a mount. The mark is the
-   * master's: the players never read `mount_kind` of a combatant that is not theirs. Only the master may call it. It is a
+   * master's: a player reads `mount_kind` of a combatant that is not theirs only while it is ridden by a combatant they see. Only the master may call it. It is a
    * session event, `mount_kind_set`, and, like SetCombatantSide, the undo does not take it back (the master marks it
    * again).
    *

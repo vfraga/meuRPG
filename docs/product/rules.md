@@ -650,7 +650,11 @@ Mounting needs the mount within 1.5 m and costs half the rider's speed on the su
 A move holds one mount or one dismount.
 A player mounts their own creatures and the mounts the master marked "Montaria" on the party's side, and the master mounts any creature.
 A creature the master marked nothing acts on its own.
-The mark ("adestrada" or "independente") is read by the master, by the owner of the creature and by the player of the rider that sits on it, so that player knows whether the mount obeys; no other player reads it.
+The mark ("adestrada" or "independente") of a creature nobody rides is read by the master and by its owner.
+While a creature is ridden, every player who sees both the rider and the mount reads its mark, so each screen shows the order of the pair as it is.
+A player who does not see the rider, a pending member and a stranger do not read it.
+That a creature is a willing mount is read by any player who sees it: their "Montaria" panel lists it.
+A mount the player cannot see is not listed and has no distance.
 The pair is one occupant of the mount's square, and the mount's turn is its own.
 
 - **A controlled mount** (the Find Steed steed, or a mount marked "adestrada") takes the rider's initiative and acts right after the rider, in one joint turn that ends when both parts have ended.
@@ -670,7 +674,7 @@ The pair is one occupant of the mount's square, and the mount's turn is its own.
   The steed's Intelligence is at least 6, and no effect reads a lower one.
   The caster picks celestial, fey or fiend; only the owner and the master read the choice.
   A spell that targets only the caster can also reach the steed (`also_steed`) while the caster rides it: a lasting effect lands on both, and any other spell leaves a text note.
-- A player reads the link between two creatures only when they see both of them; a hidden mount leaves its rider plain, and no player reads the master's mark or another player's save roll.
+- A player reads the link between two creatures only when they see both of them; a hidden mount leaves its rider plain, and no player reads the mark of a mount nobody rides (RN-21) or another player's save roll.
 
 **Sculpt Spells** (SRD 5.1, School of Evocation).
 An evocation wizard from level 2, casting an evocation spell that affects other creatures it can see, spares up to 1 + the spell's level of them (the level it is cast at). A spared creature succeeds on its saving throw with no roll and takes no damage when the spell would deal half; the save line says "Esculpir Magias".
