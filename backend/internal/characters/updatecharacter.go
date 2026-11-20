@@ -65,14 +65,9 @@ func (s *Service) readSheetSave(ctx context.Context, m authz.Membership, msg *ch
 	if err != nil {
 		return nil, invalidArgument(err)
 	}
-	stored := s.storedSheetOf(ctx, m, id)
-	if err := refuseKeptOutPick(content, m, stored, sheet.GetFull()); err != nil {
-		return nil, err
-	}
-	if err := refuseClosedPick(content, m, id, stored, sheet.GetFull()); err != nil {
-		return nil, err
-	}
-	if err := refuseUnfitPick(content, m, stored, sheet.GetFull()); err != nil {
+	// Only the kept-out pick is answered here; the closed and the unfit picks are refused inside the transaction
+	// (refuseNewChoices), after the portrait and the revision, in the order of the refusals of a save.
+	if err := refuseKeptOutPick(content, m, s.storedSheetOf(ctx, m, id), sheet.GetFull()); err != nil {
 		return nil, err
 	}
 	return &sheetSave{m: m, id: id, revision: revision, name: name, content: content, sheet: sheet}, nil
