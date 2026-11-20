@@ -330,8 +330,8 @@ func TestFindSteedSendingAwayWritesNoLineWhenItIsNotASteedOrNotARunningCombat(t 
 	}
 }
 
-// TestFindSteedDismissByTheMasterIsMarkedAsHisAct: the master sends the owner's steed away and every reader of the line is told it was his hand.
-func TestFindSteedDismissByTheMasterIsMarkedAsHisAct(t *testing.T) {
+// TestFindSteedDismissByTheMasterIsMarkedAsTheMastersAct: the master sends the owner's steed away and every reader of the line is told it was the master's act.
+func TestFindSteedDismissByTheMasterIsMarkedAsTheMastersAct(t *testing.T) {
 	t.Parallel()
 	a, e := riderInFight(t)
 	if err := a.dismissSteedAs(t, a.master, a.steedCreatureID(t), charactersv1.CreatureDismissal_CREATURE_DISMISSAL_DISMISS); err != nil {
