@@ -241,7 +241,7 @@ Para jogar outra campanha, ao mesmo tempo ou numa continuação anos depois, o j
 - **Um personagem morto não recebe cura** (uma magia de cura dirigida a um é recusada antes de gastar o espaço ou a ação), e o jogador dele continua lendo o combate.
 - **Reviver (o mestre).** Um personagem morto pode voltar a viver com 1 PV e nenhum teste contra a morte contado, mantendo o estado que tinha antes (rascunho ou travado). Não gasta nada e não tem limite de tempo. É recusado enquanto o jogador tem outro personagem vivo. Num combate em andamento o personagem mantém o lugar dele na ordem, e o registro diz "O mestre reviveu <nome>".
 - **Revivificar** ("Revivificar", SRD 5.1: 3º nível, toque, diamantes que valem 300 po) devolve com 1 PV uma criatura que morreu no último minuto, mas não uma que morreu de velhice ou perdeu uma parte do corpo. Num combate o app conta o minuto como 10 rodadas a partir da rodada da morte. Fora do combate o mestre responde se foi há menos de um minuto. Uma Contramágica responde a ela como a qualquer conjuração (RN-31), e um Revivificar anulado ainda gasta o espaço e a ação. A lista de um jogador tem só as criaturas que a magia alcança agora, e nenhuma recusa diz por que outra está faltando (RN-10). O interruptor do mestre "Revivificar não funciona nesta morte" tira uma criatura da lista.
-- **Na tela**, o turno de quem está caído diz "Brisa está caída", com as marcas e "Rolar teste contra a morte".
+- **Na tela**, o turno de quem está caído diz "Brisa está com 0 PV", com as marcas e "Rolar teste contra a morte".
 
 Veja [Morte e reviver](../../architecture/play/death-and-revival.md).
 
@@ -650,7 +650,7 @@ Montar exige a montaria a até 1,5 m e custa metade do deslocamento do cavaleiro
 Um movimento comporta uma montada ou uma desmontada.
 O jogador monta as próprias criaturas e as montarias que o mestre marcou como "Montaria" do lado do grupo, e o mestre monta qualquer criatura.
 Uma criatura sem marca do mestre age por conta própria.
-A marca ("adestrada" ou "independente") de uma criatura que ninguém cavalga é lida pelo mestre e pelo dono dela.
+A marca ("adestrada" ou "independente") de uma criatura que ninguém cavalga é lida pelo mestre e pelo dono da criatura.
 Enquanto a criatura é cavalgada, todo jogador que vê o cavaleiro e a montaria lê a marca, e cada tela mostra a ordem do par como ela é.
 Um jogador que não vê o cavaleiro, um membro pendente e um estranho não leem a marca.
 Que uma criatura é uma montaria disposta é lido por qualquer jogador que a vê.

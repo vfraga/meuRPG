@@ -241,7 +241,7 @@ To play another campaign, at the same time or in a continuation years later, the
 - **A dead character takes no healing** (a healing spell aimed at one is refused before the slot or action is spent), and its player keeps reading the combat.
 - **Reviver (the master).** A dead character can live again with 1 hit point and no death save counted, keeping the state it had before (draft or locked). It spends nothing and has no time limit. It is refused while the player has another living character. In a running combat the character keeps its place in the order, and the log says "O mestre reviveu <name>".
 - **Revivify** ("Revivificar", SRD 5.1: 3rd level, touch, diamonds worth 300 gp) returns a creature that died in the last minute with 1 hit point, but not one that died of old age or lost a body part. In a combat the app counts the minute as 10 rounds from the round of the death. Out of combat the master answers whether it was less than a minute. A Counterspell answers it like any cast (RN-31), and a countered Revivify still spends the slot and the action. A player's list holds only the creatures the spell reaches now, and no refusal says why another is missing (RN-10). The master's switch "Revivificar não funciona nesta morte" takes a creature off the list.
-- **On the screen**, the turn of someone who is down says "Brisa está caída", with the marks and "Rolar teste contra a morte".
+- **On the screen**, the turn of someone who is down says "Brisa está com 0 PV", with the marks and "Rolar teste contra a morte".
 
 See [Death and revival](../architecture/play/death-and-revival.md).
 
@@ -654,7 +654,7 @@ The mark ("adestrada" or "independente") of a creature nobody rides is read by t
 While a creature is ridden, every player who sees both the rider and the mount reads its mark, so each screen shows the order of the pair as it is.
 A player who does not see the rider, a pending member and a stranger do not read it.
 That a creature is a willing mount is read by any player who sees it.
-Their "Montaria" panel lists the creatures of their own and the party-side creatures the master marked, and no other.
+Their "Montaria" panel lists their own creatures and the party-side creatures the master marked, and no other.
 A mount the player cannot see is not listed and has no distance.
 The pair is one occupant of the mount's square, and the mount's turn is its own.
 
