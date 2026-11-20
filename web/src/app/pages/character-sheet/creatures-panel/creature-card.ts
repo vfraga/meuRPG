@@ -115,7 +115,12 @@ export class CreatureCard {
   protected readonly subtitle = computed(() => {
     const c = this.creature();
     if (c.bonded) {
-      return steedSubtitle(c.monsterNamePt, this.block()?.summary?.sizePt ?? '', c.creatureType);
+      // The form is left out when it is the name already shown above it.
+      return steedSubtitle(
+        c.monsterNamePt === c.name ? '' : c.monsterNamePt,
+        this.block()?.summary?.sizePt ?? '',
+        c.creatureType,
+      );
     }
     return joinDots(
       [

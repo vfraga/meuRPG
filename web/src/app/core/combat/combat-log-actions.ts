@@ -193,7 +193,7 @@ export function spentText(e: CombatLogEntry): string {
   return ` gastou ${length} de movimento`;
 }
 
-/** A move: "anda 3,0 m", "saltou 4,5 m" or "saltou 1,8 m para cima". A long jump that landed in
+/** A move: "andou 3,0 m", "saltou 4,5 m" or "saltou 1,8 m para cima". A long jump that landed in
  * difficult terrain reminds the master (only he gets the flag) of the SRD's Acrobacia check: the app rolls nothing. */
 export function movedText(e: CombatLogEntry): string {
   if (e.jump === JumpKind.HIGH) {
@@ -203,7 +203,7 @@ export function movedText(e: CombatLogEntry): string {
   if (e.jump === JumpKind.LONG) {
     return ` saltou ${length}${e.jumpRunningStart ? ', com corrida' : ''}${e.landingDifficult ? ' e caiu em terreno difícil. Acrobacia CD 10 ou cai Derrubado' : ''}`;
   }
-  return ` anda ${length}${spentNote(e)}`;
+  return ` andou ${length}${spentNote(e)}`;
 }
 
 /** What a walk spent when it is not the distance: ", gasta 6,2 m de movimento (terreno)". The reasons come from

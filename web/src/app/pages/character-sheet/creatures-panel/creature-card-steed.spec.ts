@@ -105,6 +105,14 @@ describe('CreatureCard, a bonded steed', () => {
       { desc: EncounterBlockedSchema, value: create(EncounterBlockedSchema, { reason }) },
     ]);
 
+  it('leaves the form out of the subtitle when the steed has no name of its own', async () => {
+    const { el } = await setup({
+      creature: { ...estrela(), name: 'Cavalo de guerra' },
+    });
+    expect(flat(el.querySelector('.name'))).toBe('Cavalo de guerra');
+    expect(flat(el.querySelector('.sub'))).toBe('Grande · celestial');
+  });
+
   it('carries the tag "Montaria vinculada" with the link icon, and the type\'s word in the subtitle', async () => {
     const { el } = await setup();
     const tag = el.querySelector('.head .mr-tag');

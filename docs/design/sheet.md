@@ -102,8 +102,10 @@ The browser draws what the server sends and computes no rule: multiclass prerequ
 - **Creatures** (`creatures-panel`, `creature-card`, `creature-page`): a "Criaturas" panel after "Combate" and "Magias", only for whoever can have a creature; HP numbers reach the owner and the master only (RN-20), and for others the panel does not exist.
   Renaming, dismissing and fixing HP are questions in place (`creature-edit`), never dialogs; a dismissal is a warning `alertdialog` with focus on "Voltar" that states what it costs.
 - **The bonded steed** (`creature-card`, `shared/creatures/steed-ask`, `creatures-panel/steed-away`, `core/creatures/steed-card.ts`): its card has the tag "Montaria vinculada" (link icon, accent outline and text) and the subtitle "Cavalo de guerra · Grande · celestial".
+  A steed that carries no name of its own shows "Grande · celestial": the form is not said twice.
   The tag sits under the subtitle on a phone and beside the name from 768 px.
   Its text actions are 44 px targets: "Renomear", the master's "Corrigir PV", "Dispensar" in danger, and "⋮" (a bordered square at the far right) › "Libertar Estrela" in danger (the `link_off` icon) with "Acaba o vínculo: a próxima é outra montaria." under it at 13 px.
+  The menu item's icon sits on the title line, not between the two lines.
   Both questions are asked in place as an `alertdialog`, "Voltar" first and with the focus, the confirm marked `data-confirm`; both call `DismissCreature`, with DISMISS or RELEASE.
   During a session the card reads the combat when a question opens (`steedWhere`): the chip "● Gasta a sua ação" shows to the owner's player when the combat holds the steed, and the master never spends an action.
   The dismissal reads "Estrela some do mapa e da sua ficha, e você desce de pé no quadrado onde Estrela estava. O vínculo fica: Convocar Montaria traz Estrela de volta."; the landing is said only with the owner on the steed.

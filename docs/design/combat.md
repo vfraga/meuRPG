@@ -75,7 +75,7 @@ The browser draws what the server sends (reach from `GetMoveOptions`, totals, ve
 - **The pair card:** on the rider's turn, the rider's player gets one turn, theirs ("Sua vez, Tor", "Cavalgando o Cavalo de guerra"), not a joint one: a card in the `accent` frame with three outlined buttons, "Disparada", "Desengajar", "Esquivar" (`TakeAction` with the mount's id; each is named as the mount's, "Disparada do Cavalo de guerra"), then one line.
   The three sit in one row, each as wide as its words and sharing what is left, with a 13 px label, so "Desengajar" is whole at 390 px and in the 368 px rail.
   From 768 px the card comes first in the actions and has its head ("Tor e Cavalo de guerra · turno conjunto"), the rider's line with its Ação, Bônus and Reação, and the mount's line (its Ação and metres, from the mount's own options, "Carregando…" until they are read); the economy row is gone ("Mover" is in the turn bar from 1024 px), and the last line is "Montaria adestrada: só estas três ações; a reação fica livre…".
-  On a phone the card is inside the one action card, under the row of the rider's shapes and "Mover" and above the tabs, with the mount's line alone and "Adestrada: só estas três. \"Mover\" leva os dois.".
+  On a phone the card is inside the one action card, under the row of the rider's shapes and "Mover" and above the tabs, with the mount's line alone and "Adestrada: só estas três. “Mover” leva os dois.".
   There the economy row has no divider and no room of its own under it: the column's 12 px gap is all that separates the two (`paired` on `app-action-groups`).
   The three are equal thirds on one edge, and the mount's line ends on the same right edge.
   Under about 360 px the three buttons wrap to a second row, and no label is cut.

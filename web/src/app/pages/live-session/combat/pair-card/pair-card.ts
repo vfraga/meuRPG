@@ -88,7 +88,7 @@ import { EconomyShapes, economyShapes } from '../../../../shared/economy-shapes/
         <p class="pair__note">Montaria adestrada: só a ação e o movimento dela. Próximo turno encerra a vez dos dois.</p>
       } @else if (!why()) {
         @if (phone()) {
-          <p class="pair__note"><mat-icon aria-hidden="true">link</mat-icon>Adestrada: só estas três. "Mover" leva os dois.</p>
+          <p class="pair__note"><mat-icon aria-hidden="true">link</mat-icon>Adestrada: só estas três. “Mover” leva os dois.</p>
         } @else {
           <p class="pair__note">
             Montaria adestrada: só estas três ações; a reação fica livre. Encerrar turno encerra a vez dos dois.

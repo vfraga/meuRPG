@@ -101,7 +101,7 @@ describe('CombatView: the rider and the mount it directs', () => {
     await settle(phone.fixture);
     const note = phone.el.querySelector('.pair__note');
     expect(note?.textContent?.replace(/\s+/g, ' ').trim()).toBe(
-      'linkAdestrada: só estas três. "Mover" leva os dois.',
+      'linkAdestrada: só estas três. “Mover” leva os dois.',
     );
     expect(note?.querySelector('mat-icon')?.getAttribute('aria-hidden')).toBe('true');
   });

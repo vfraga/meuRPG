@@ -327,7 +327,7 @@ describe('the combat log sentences (timeline.md, Rodadas 1 and 2)', () => {
           }),
         )?.text,
       ),
-    ).toBe(' anda 3,0 m');
+    ).toBe(' andou 3,0 m');
   });
 
   it('says what a walk spent when it is not the distance', () => {
@@ -339,19 +339,19 @@ describe('the combat log sentences (timeline.md, Rodadas 1 and 2)', () => {
         )?.text,
       );
     // Positive control: a plain walk and an old event say only the distance.
-    expect(walk({ spentDft: 157 })).toBe(' anda 4,7 m');
-    expect(walk({})).toBe(' anda 4,7 m');
+    expect(walk({ spentDft: 157 })).toBe(' andou 4,7 m');
+    expect(walk({})).toBe(' andou 4,7 m');
     // Through allies, rubble, water or a climb (SRD 5.1): the panel's number is in the line.
-    expect(walk({ spentDft: 207 })).toBe(' anda 4,7 m, gasta 6,2 m de movimento (terreno)');
-    expect(walk({ spentDft: 314 })).toBe(' anda 4,7 m, gasta 9,4 m de movimento (terreno)');
+    expect(walk({ spentDft: 207 })).toBe(' andou 4,7 m, gasta 6,2 m de movimento (terreno)');
+    expect(walk({ spentDft: 314 })).toBe(' andou 4,7 m, gasta 9,4 m de movimento (terreno)');
     expect(walk({ spentDft: 314, moveDragging: true })).toBe(
-      ' anda 4,7 m, gasta 9,4 m de movimento (arrastando)',
+      ' andou 4,7 m, gasta 9,4 m de movimento (arrastando)',
     );
     expect(walk({ spentDft: 314, moveCrawling: true })).toBe(
-      ' anda 4,7 m, gasta 9,4 m de movimento (rastejando)',
+      ' andou 4,7 m, gasta 9,4 m de movimento (rastejando)',
     );
     expect(walk({ spentDft: 728, moveDragging: true, moveCrawling: true })).toBe(
-      ' anda 4,7 m, gasta 21,8 m de movimento (terreno, arrastando, rastejando)',
+      ' andou 4,7 m, gasta 21,8 m de movimento (terreno, arrastando, rastejando)',
     );
     // A jump keeps its own line.
     expect(walk({ spentDft: 207, jump: JumpKind.LONG })).toBe(' saltou 4,7 m');
@@ -360,7 +360,7 @@ describe('the combat log sentences (timeline.md, Rodadas 1 and 2)', () => {
   it('writes moves, standard actions, hit point changes, reveals, start and end', () => {
     expect(
       logLine(entry({ kind: CombatLogKind.MOVED, actorLabel: 'Pensantus', distanceFt: 10 }))?.text,
-    ).toBe(' anda 3\u00a0m');
+    ).toBe(' andou 3\u00a0m');
     expect(
       logLine(
         entry({
@@ -1401,7 +1401,7 @@ describe('the log of a combat without a map (RN-25) and of hidden death saves (R
       logLine(
         entry({ kind: CombatLogKind.MOVED, actorLabel: 'Toren', distanceDft: 200, distanceFt: 20 }),
       )?.text,
-    ).toBe(' anda 6,0\u00a0m');
+    ).toBe(' andou 6,0\u00a0m');
   });
 
   it('says the combat began without a map', () => {
