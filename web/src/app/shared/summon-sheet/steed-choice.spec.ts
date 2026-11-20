@@ -98,7 +98,7 @@ describe('SteedChoice: the steed part of the summon sheet', () => {
       'Cavalo de guerra · celestial · Grande · 18 m · CA 11 · PV 19',
     );
     expect(el.querySelector('.same__line')?.textContent?.trim()).toBe(
-      'Estrela volta como era: a mesma forma, o mesmo tipo, e os PV cheios. Para outra forma ou outro tipo, liberte Estrela antes, no bloco Criaturas.',
+      'Estrela volta como era: a mesma forma, o mesmo tipo e os PV cheios. Para outra forma ou outro tipo, liberte Estrela antes, no bloco Criaturas.',
     );
   });
 

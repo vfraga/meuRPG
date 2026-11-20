@@ -96,7 +96,7 @@ test('com as leituras do combate lentas, o turno que chega ao personagem caído 
     enc = await combatRPC(m, 'EndTurn', { campaignId, encounterId: enc.id, expectedCombatantId: enc.currentCombatantId });
     enc = await passTurnsTo(m, campaignId, 'Pensantus');
     expect(enc.combatants.find((c) => c.label === 'Pensantus')?.deathSaveDue).toBe(true);
-    await expect(m.getByRole('heading', { name: 'Pensantus está caído: teste contra a morte' })).toBeVisible();
+    await expect(m.getByRole('heading', { name: 'Pensantus está com 0 PV: teste contra a morte' })).toBeVisible();
     await expect(m.getByRole('button', { name: 'Agir por Pensantus' })).toHaveCount(0);
   } finally {
     await done();
@@ -115,7 +115,7 @@ test('o turno de um personagem caído começa pelo teste contra a morte e o mest
     enc = await passTurnsToAndWait(m, campaignId, 'Pensantus', m);
     expect(enc.combatants.find((c) => c.label === 'Pensantus')?.deathSaveDue).toBe(true);
 
-    await expect(m.getByRole('heading', { name: 'Pensantus está caído: teste contra a morte' })).toBeVisible();
+    await expect(m.getByRole('heading', { name: 'Pensantus está com 0 PV: teste contra a morte' })).toBeVisible();
     await expect(m.getByText('O turno de Pensantus só passa depois do teste.')).toBeVisible();
     await expect(m.getByRole('button', { name: 'Agir por Pensantus' })).toHaveCount(0);
     await expect(m.getByRole('button', { name: 'Passar sem rolar' })).toHaveCount(0);
@@ -130,7 +130,7 @@ test('o turno de um personagem caído começa pelo teste contra a morte e o mest
     await expect(m.getByRole('status').filter({ hasText: 'Teste contra a morte' }).first()).toBeVisible();
     await expect(m.getByRole('button', { name: 'Próximo turno' })).not.toHaveAttribute('aria-disabled', 'true');
     await m.getByRole('button', { name: 'Próximo turno' }).click();
-    await expect(m.getByRole('heading', { name: 'Pensantus está caído: teste contra a morte' })).toHaveCount(0);
+    await expect(m.getByRole('heading', { name: 'Pensantus está com 0 PV: teste contra a morte' })).toHaveCount(0);
   } finally {
     await done();
   }

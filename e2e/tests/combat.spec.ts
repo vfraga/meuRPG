@@ -719,12 +719,12 @@ test('caído: o teste contra a morte (sucesso), e com três falhas só o mestre 
     expect(enc.combatants.find((c) => c.label === 'Pensantus')?.deathSaveDue).toBe(true);
 
     // Round 2: the hero says so, the marks are empty, and he can't end the turn before rolling.
-    await expect(p.getByRole('heading', { name: 'Pensantus está caído' })).toBeVisible();
+    await expect(p.getByRole('heading', { name: 'Pensantus está com 0 PV' })).toBeVisible();
     await expect(p.getByText('É a sua vez, mas com 0 de 23 pontos de vida você não age. Role o teste contra a morte.')).toBeVisible();
     await expect(p.getByText('0 de 3')).toHaveCount(2);
     await expect(p.getByRole('button', { name: 'Encerrar turno' })).toHaveCount(0);
     await expect(p.getByRole('button', { name: 'Atacar com Raio de Fogo' })).toHaveCount(0);
-    await expect(p.getByText('Enquanto estiver caído')).toBeVisible();
+    await expect(p.getByText('Enquanto estiver com 0 PV')).toBeVisible();
     await p.getByRole('button', { name: 'Digitar o resultado' }).click();
     await p.getByLabel(/Role 1d20 para o teste contra a morte/).fill('14');
     await p.getByRole('button', { name: 'Confirmar 14' }).click();
@@ -752,7 +752,7 @@ test('caído: o teste contra a morte (sucesso), e com três falhas só o mestre 
     await expect(p.getByText('Morrendo')).toHaveCount(0);
     await p.getByRole('button', { name: 'Encerrar turno' }).click();
     // Off turn, with three failures: the master decides (never "Morrendo").
-    await expect(p.getByText('Pensantus está caído, com três falhas: o mestre decide.')).toBeVisible();
+    await expect(p.getByText('Pensantus está com 0 PV, com três falhas: o mestre decide.')).toBeVisible();
 
     // The master is asked, in place, with the focus on the safe button.
     const row = m.getByRole('listitem').filter({ hasText: 'Pensantus' }).filter({ hasText: 'Morrendo' });
@@ -1099,7 +1099,7 @@ test('a vez de quem está caído não passa sem o teste contra a morte, nem para
     await openSessionPage(p, campaignId);
     let enc = await getEncounterRPC(m, campaignId);
     // Dropping to 0 on his own turn owes nothing yet: the master's correction raised the revision, so "Caído" is already there.
-    await expect(p.getByRole('heading', { name: 'Pensantus está caído' })).toBeVisible();
+    await expect(p.getByRole('heading', { name: 'Pensantus está com 0 PV' })).toBeVisible();
     enc = await combatRPC(m, 'EndTurn', { campaignId, encounterId: enc.id, expectedCombatantId: enc.currentCombatantId });
     enc = await passTurnsTo(m, campaignId, 'Pensantus');
     expect(enc.combatants.find((c) => c.label === 'Pensantus')?.deathSaveDue).toBe(true);

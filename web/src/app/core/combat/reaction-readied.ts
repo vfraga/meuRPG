@@ -161,7 +161,7 @@ export function readiedTargetRows(
     if (namedId !== '' && t.combatantId === namedId) {
       parts.push('O alvo que você disse');
     }
-    const word = stateWord(t.state, t.label);
+    const word = stateWord(t.state);
     if (word) {
       parts.push(word);
     }

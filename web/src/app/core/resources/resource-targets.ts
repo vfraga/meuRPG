@@ -31,7 +31,7 @@ export function resourceRows(
     }
     const self = c.combatantId === selfId;
     const parts: string[] = [];
-    const word = stateWord(c.state, c.label);
+    const word = stateWord(c.state);
     if (word) {
       parts.push(word);
     }

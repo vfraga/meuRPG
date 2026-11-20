@@ -270,7 +270,7 @@ async function rideScreens(t: MountedTable, l: Look): Promise<void> {
   await save.getByLabel('Face do d20 (1 a 20)').fill('4');
   await see(p, 'teste-digitado', l);
   await save.getByRole('button', { name: /^Confirmar/ }).click();
-  await expect(save.locator('.res')).toContainText('4: você caiu Derrubado');
+  await expect(save.locator('.res')).toContainText('4: você caiu da montaria (Derrubado)');
   await see(p, 'teste-resultado', l);
   await closeSheet(save);
   // From a tablet up the shove's own sheet is under it (the horse is the player's); a phone holds one sheet at a time.

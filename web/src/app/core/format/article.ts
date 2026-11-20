@@ -16,6 +16,6 @@ const FORMS = {
 
 /** The name after its article, for a creature or an item: "o Cavalo de guerra", "da Aranha" (`'de'`), "no" (`'em'`), "ao"/"à"
  * (`'a'`), "pelo"/"pela" (`'por'`). A character is named with no article: never pass one here. */
-export function theName(name: string, preposition: keyof typeof FORMS = ''): string {
+export function withArticle(name: string, preposition: keyof typeof FORMS = ''): string {
   return `${FORMS[preposition][article(name) === 'a' ? 1 : 0]} ${name}`;
 }

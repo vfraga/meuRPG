@@ -57,7 +57,7 @@
 }
 
 // Three in a row at 390 px and in the 368 px rail: each button as wide as its words, sharing what is left.
-// Equal columns would cut "Desengajar"; the label is one step smaller and the padding tight, as the boards draw them.
+// Equal columns would cut "Desengajar"; the label is one step smaller and the padding tight.
 // Under about 360 px (320 is supported) the three do not fit on one row: the row wraps, and no label is cut.
 .pair__actions {
   display: flex;

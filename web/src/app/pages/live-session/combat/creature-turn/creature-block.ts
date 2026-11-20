@@ -20,6 +20,7 @@ import {
 import type { ActionOption, AttackOption } from '../../../../../gen/meurpg/rules/v1/rules_pb';
 import { attackDetail, attackName, reasonText } from '../../../../core/combat/combat-options';
 import { article } from '../../../../core/combat/combat-log';
+import { withArticle } from '../../../../core/format/article';
 import { stateWord } from '../../../../core/combat/combat-view';
 import { CreaturesClient } from '../../../../core/creatures/creatures-client';
 import { standUpRow } from '../../../../core/combat/stand-up';
@@ -102,7 +103,7 @@ export class CreatureBlock {
     if (!this.acting()) {
       return this.ended()
         ? 'Esta parte do turno já foi encerrada.'
-        : `Ainda não é a vez ${article(this.creature().label) === 'a' ? 'dela' : 'dele'}.`;
+        : `Ainda não é a vez ${withArticle(this.creature().label, 'de')}.`;
     }
     return '';
   });

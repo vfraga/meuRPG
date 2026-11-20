@@ -267,7 +267,7 @@ describe('summon views: the list, the keys and the dice', () => {
     });
     expect(rowsOf({ ...none, option: steeds }).map((r) => [r.title, r.warning])).toEqual([
       ['Cavalo de guerra', undefined],
-      ['Pônei', 'Tamanho pequeno demais para você montar'],
+      ['Pônei', 'Tamanho menor que o necessário para você montar'],
     ]);
     const beasts = create(SummonOptionSchema, { type: 'beast', maxCr: '1' });
     expect(rowsOf({ ...none, option: beasts })).toEqual([]);
@@ -395,19 +395,19 @@ describe('summon views: the result of a casting in a combat', () => {
       ...over,
     });
 
-  it('titles the group in its gender: one creature, a kind, or a mix', () => {
-    expect(resultTitleOf([creature()])).toBe('Lobo atroz 1 conjurado');
+  it('titles the group without a word that agrees with a gender: one creature, a kind, or a mix', () => {
+    expect(resultTitleOf([creature()])).toBe('Lobo atroz 1 chegou');
     expect(resultTitleOf([creature({ label: 'Águia 1', monsterNamePt: 'Águia' })])).toBe(
-      'Águia 1 conjurada',
+      'Águia 1 chegou',
     );
     expect(resultTitleOf([creature(), creature({ label: 'Lobo atroz 2' })])).toBe(
-      'Lobos atrozes conjurados',
+      'Lobos atrozes chegaram',
     );
     expect(resultTitleOf([creature(), creature({ monsterKey: 'monster:cat' })])).toBe(
-      'Criaturas conjuradas',
+      'Criaturas chegaram',
     );
     expect(resultTitleOf([creature({ monsterNamePt: '' }), creature({ monsterNamePt: '' })])).toBe(
-      'Criaturas conjurados',
+      'Criaturas chegaram',
     );
   });
 

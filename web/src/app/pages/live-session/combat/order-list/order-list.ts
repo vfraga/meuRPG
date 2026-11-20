@@ -95,7 +95,7 @@ function concentrationOf(c: Combatant): string {
  * "Remover do combate" asks in place, with the focus on "Voltar". The ⋮ menu of
  * every row has "Condições…" (E6-29); under the name stand the condition tags
  * and the spell it concentrates on, and a character at 0 hit points shows its
- * word ("Caída", "Estável", "Morrendo · 3 falhas" on the danger surface, "✕
+ * word ("Caído", "Estável", "Morrendo · 3 falhas" on the danger surface, "✕
  * Morta") and the marks of its death saves (E6-30).
  */
 @Component({

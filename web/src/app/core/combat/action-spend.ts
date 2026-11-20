@@ -160,5 +160,5 @@ export function allyRows(combatants: readonly Combatant[], ownId: string): AllyR
         c.state !== CombatantState.DEAD &&
         c.state !== CombatantState.DEFEATED,
     )
-    .map((c) => ({ id: c.id, label: c.label, sub: stateWord(c.state, c.label) }));
+    .map((c) => ({ id: c.id, label: c.label, sub: stateWord(c.state) }));
 }

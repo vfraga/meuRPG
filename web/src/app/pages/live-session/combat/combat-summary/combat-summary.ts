@@ -95,11 +95,11 @@ export class CombatSummary {
           ),
         )
         .join(' · ');
-      // A dead character needs no healing: it is not "caída" either.
+      // A dead character needs no healing: it is not "Caído" either.
       const dead = c.state === CombatantState.DEAD;
       const down =
         v && v.hitPointsCurrent === 0 && !dead
-          ? `Caída: ${c.deathSuccesses} ${c.deathSuccesses === 1 ? 'sucesso' : 'sucessos'}, ${c.deathFailures} ${c.deathFailures === 1 ? 'falha' : 'falhas'}. Precisa de cura.`
+          ? `Caído: ${c.deathSuccesses} ${c.deathSuccesses === 1 ? 'sucesso' : 'sucessos'}, ${c.deathFailures} ${c.deathFailures === 1 ? 'falha' : 'falhas'}. Precisa de cura.`
           : '';
       return {
         c,
@@ -121,9 +121,7 @@ export class CombatSummary {
     return formatXp(c.xpValue);
   }
 
-  protected deadWord(c: Combatant): string {
-    return stateWord(CombatantState.DEAD, c.label);
-  }
+  protected readonly deadWord = stateWord(CombatantState.DEAD);
 
   protected creature(c: Combatant): boolean {
     return isCreature(c);

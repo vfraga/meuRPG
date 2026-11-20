@@ -86,13 +86,13 @@ describe('Convocar Montaria, the words of the summon sheet', () => {
       'Gasta um espaço de 2º\u00a0nível ou maior. Só durante uma sessão, fora de combate.',
     );
     expect(steedSameLine('Estrela')).toBe(
-      'Estrela volta como era: a mesma forma, o mesmo tipo, e os PV cheios. Para outra forma ou outro tipo, liberte Estrela antes, no bloco Criaturas.',
+      'Estrela volta como era: a mesma forma, o mesmo tipo e os PV cheios. Para outra forma ou outro tipo, liberte Estrela antes, no bloco Criaturas.',
     );
     expect(steedSubtitleTail(false)).toBe('um corcel vinculado');
     expect(steedSubtitleTail(true)).toBe('o seu corcel vinculado');
     expect(steedSetupLine(2, 2)).toBe('Espaço de 2º\u00a0nível\u00a0· 2 livres');
     expect(steedSetupLine(3, 1)).toBe('Espaço de 3º\u00a0nível\u00a0· 1 livre');
-    expect(STEED_TOO_SMALL).toBe('Tamanho pequeno demais para você montar');
+    expect(STEED_TOO_SMALL).toBe('Tamanho menor que o necessário para você montar');
   });
 
   it('reads the two refusals of a ten-minute casting in its own words, and the rest as any summon', () => {

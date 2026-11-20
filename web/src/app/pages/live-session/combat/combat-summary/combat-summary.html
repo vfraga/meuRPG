@@ -54,7 +54,7 @@
               <span class="mr-list__sub">{{ sub(c) }}</span>
             </span>
             <span class="line__right">
-              <span class="line__out"><mat-icon aria-hidden="true">close</mat-icon>{{ deadWord(c) }}</span>
+              <span class="line__out"><mat-icon aria-hidden="true">close</mat-icon>{{ deadWord }}</span>
             </span>
           </li>
         }
@@ -102,7 +102,7 @@
       @for (g of downNotice(); track g.c.id) {
         <div class="mr-notice mr-notice--danger down">
           <mat-icon aria-hidden="true">warning</mat-icon>
-          <p><strong>{{ g.c.label }} está caída:</strong> {{ g.down.replace('Caída: ', '') }}</p>
+          <p><strong>{{ g.c.label }} está com 0 PV:</strong> {{ g.down.replace('Caído: ', '') }}</p>
         </div>
       }
       <p class="mr-muted note">

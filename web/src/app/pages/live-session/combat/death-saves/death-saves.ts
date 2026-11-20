@@ -9,7 +9,6 @@ import {
 } from '../../../../../gen/meurpg/play/v1/combat_pb';
 import { effectivePreference } from '../../../../core/campaigns/dice-labels';
 import type { AttackDie } from '../../../../core/combat/combat-client-types';
-import { article } from '../../../../core/combat/combat-log';
 import { countText } from '../../../../core/combat/death-saves';
 import type { HeldAnswer } from '../../../../core/held-rolls/held-roll-offer';
 import { HeldRollPrompt } from '../../../../shared/held-roll-prompt/held-roll-prompt';
@@ -22,7 +21,7 @@ import { DeathMarks } from './death-marks';
  * "Testes contra a morte" has the two rows of marks ("Sucessos 0 de 3",
  * "Falhas 1 de 3"), the one filled button "Rolar teste contra a morte" (the
  * d20 in the app or typed, RN-18) with "10 ou mais é um sucesso" under it, and
- * the small print; "Enquanto estiver caída" lists what they cannot do and the
+ * the small print; "Enquanto estiver com 0 PV" lists what they cannot do and the
  * one thing that brings them back. Once the save of the turn is rolled the
  * button gives way to the result, announced in a live region ("Teste contra a
  * morte: 1d20 (14) = 14. Sucesso."), and "Encerrar turno" stands in its place;
@@ -79,7 +78,7 @@ import { DeathMarks } from './death-marks';
           <p class="result" role="status" aria-live="polite">{{ result() }}</p>
         }
         @if (stable()) {
-          <p class="result">Estável: não rola mais testes contra a morte. Fica {{ down() }} até receber cura.</p>
+          <p class="result">Estável: não rola mais testes contra a morte. Fica com 0 PV até receber cura.</p>
         }
         <app-end-turn [own]="spent" [busy]="busy()" [block]="true" (endTurn)="endTurn.emit()" />
       }
@@ -88,12 +87,12 @@ import { DeathMarks } from './death-marks';
         <li>3 sucessos: você se estabiliza.</li>
         <li>3 falhas: o mestre confirma a morte.</li>
         <li>20 no dado: você volta com 1 PV. 1 no dado: conta duas falhas.</li>
-        <li>Dano em quem está {{ down() }} conta como uma falha.</li>
+        <li>Dano em quem está com 0 PV conta como uma falha.</li>
       </ul>
     </section>
 
     <section class="card" aria-labelledby="ds-down">
-      <h3 class="card__title" id="ds-down">Enquanto estiver {{ down() }}</h3>
+      <h3 class="card__title" id="ds-down">Enquanto estiver com 0 PV</h3>
       <ul class="cannot">
         @for (t of cannot; track t) {
           <li>
@@ -136,8 +135,6 @@ export class DeathSaves {
     () => effectivePreference(this.diceMode(), this.dicePreference()) === DicePreference.APP,
   );
   protected readonly stable = computed(() => this.own().state === CombatantState.STABLE);
-  /** "caída" or "caído", by the name (as the order's word is). */
-  protected readonly down = computed(() => (article(this.own().label) === 'a' ? 'caída' : 'caído'));
 
   protected count(n: number): string {
     return countText(n);

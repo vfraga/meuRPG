@@ -24,7 +24,6 @@ import type { ContestTurnState } from '../../../../../gen/meurpg/play/v1/contest
 import type { EffectNote } from '../../../../../gen/meurpg/play/v1/lasting_effects_pb';
 import { contestNotes } from '../../../../core/combat/contest-view';
 import { noteParts } from '../../../../core/effects/effects';
-import { article } from '../../../../core/combat/combat-log';
 import {
   combatantInitial,
   isDead,
@@ -73,7 +72,7 @@ import { isMasterWait } from '../../../../core/combat/reactions';
  * On the player's own turn ("Sua vez") the banner is the hero, with the
  * movement left and, from 1024px, "Encerrar turno" (`EndTurn`). A character at
  * 0 hit points gets the same hero in the danger frame instead ("Brisa está
- * caída", E6-13; the death saves are the page's `DeathSaves`). Off turn it
+ * com 0 PV", E6-13; the death saves are the page's `DeathSaves`). Off turn it
  * offers the opportunity attack under "Sua reação" (E6-28). The groups
  * of actions (`ActionGroups`) come right after it, with "Mover" in the
  * Movimento group. Focus goes to the hero when the turn arrives, so the next
@@ -209,9 +208,6 @@ export class TurnPanel {
   });
   /** It is their turn and they are down: the hero is the danger one. */
   protected readonly down = computed(() => this.isDown() && this.banner().mine);
-  protected readonly downWord = computed(() =>
-    article(this.own()?.label ?? '') === 'a' ? 'caída' : 'caído',
-  );
   /** The line of a fallen character off turn: what is owed, or that the master decides. */
   protected readonly offTurnDown = computed(() => {
     const own = this.own();
@@ -222,11 +218,11 @@ export class TurnPanel {
       return `${own.label} está estável.`;
     }
     return own.deathFailures >= 3
-      ? `${own.label} está ${this.downWord()}, com três falhas: o mestre decide.`
-      : `${own.label} está ${this.downWord()}. Na sua vez, role o teste contra a morte.`;
+      ? `${own.label} está com 0 PV, com três falhas: o mestre decide.`
+      : `${own.label} está com 0 PV. Na sua vez, role o teste contra a morte.`;
   });
   protected readonly downTitle = computed(() =>
-    this.down() ? `${this.own()?.label} está ${this.downWord()}` : '',
+    this.down() ? `${this.own()?.label} está com 0 PV` : '',
   );
   protected readonly downText = computed(() => {
     const own = this.own();

@@ -139,7 +139,7 @@ function castRow(
   return {
     id: t.combatantId,
     label,
-    state: who ? stateWord(who.state, who.label) : '',
+    state: who ? stateWord(who.state) : '',
     word: parts.reduce((word, part) => part.word ?? word, ''),
     tone: parts.reduce<CastRow['tone']>((tone, part) => part.tone ?? tone, 'plain'),
     ...(natural ? { natural } : {}),

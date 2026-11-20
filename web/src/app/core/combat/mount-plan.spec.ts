@@ -53,7 +53,7 @@ describe('mount rows', () => {
 
   it('words each refusal the server gives', () => {
     expect(why({ refusal: MountRefusal.TOO_SMALL })).toBe(
-      'Tamanho pequeno demais para você: precisa ser maior.',
+      'Tamanho menor que o seu: precisa ser maior.',
     );
     expect(why({ combatantId: 'm', refusal: MountRefusal.TOO_FAR, distanceFt: 15 })).toBe(
       'A 4,5 m: chegue ao lado do Mastim primeiro.',
@@ -70,10 +70,10 @@ describe('mount rows', () => {
   it('agrees with the mount it names, and does not guess a gender', () => {
     const spider = [combatant('a', 'Aranha gigante'), combatant('m', 'Mastim')];
     expect(why({ combatantId: 'a', refusal: MountRefusal.TOO_SMALL }, spider)).toBe(
-      'Tamanho pequeno demais para você: precisa ser maior.',
+      'Tamanho menor que o seu: precisa ser maior.',
     );
     expect(why({ combatantId: 'm', refusal: MountRefusal.TOO_SMALL }, spider)).toBe(
-      'Tamanho pequeno demais para você: precisa ser maior.',
+      'Tamanho menor que o seu: precisa ser maior.',
     );
     expect(why({ combatantId: 'a', refusal: MountRefusal.TOO_FAR, distanceFt: 10 }, spider)).toBe(
       'A 3,0 m: chegue ao lado da Aranha gigante primeiro.',

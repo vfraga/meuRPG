@@ -19,11 +19,9 @@ import { afterTurn, jointTurn, listNames, type JointTurn, npcPlural } from './jo
 
 /** How hurt an NPC is, as a word a player may read (RN-20), and where a
  * player's character is when it is at 0 hit points: "Caído", "Estável",
- * "Morrendo" (only the master gets that one) or "Morto". The word of a
- * person has a gender, taken from the name the way `article` does
- * ("Brisa" is "Caída"). */
-export function stateWord(state: CombatantState, label = ''): string {
-  const feminine = label !== '' && article(label) === 'a';
+ * "Morrendo" (only the master gets that one) or "Morto". A state label keeps
+ * the condition's form, whoever it names. */
+export function stateWord(state: CombatantState): string {
   switch (state) {
     case CombatantState.UNHURT:
       return 'Ileso';
@@ -34,13 +32,13 @@ export function stateWord(state: CombatantState, label = ''): string {
     case CombatantState.DEFEATED:
       return 'Derrotado';
     case CombatantState.DOWN:
-      return feminine ? 'Caída' : 'Caído';
+      return 'Caído';
     case CombatantState.DYING:
       return 'Morrendo';
     case CombatantState.STABLE:
       return 'Estável';
     case CombatantState.DEAD:
-      return feminine ? 'Morta' : 'Morto';
+      return 'Morto';
     default:
       return '';
   }
@@ -64,7 +62,7 @@ export function isDown(c: Combatant): boolean {
 /** The second line of a chip or a row for another player: "Jogador" (their
  * name is not sent), or the word of their state when they are down. */
 export function playerWord(c: Combatant): string {
-  return isDown(c) || c.state === CombatantState.DEAD ? stateWord(c.state, c.label) : 'Jogador';
+  return isDown(c) || c.state === CombatantState.DEAD ? stateWord(c.state) : 'Jogador';
 }
 
 /** The letter or letters on a token: the first letter, plus the number of a

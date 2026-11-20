@@ -154,7 +154,7 @@ test('no turno de um personagem a 0 PV o teste contra a morte é o turno inteiro
     await adjustVitalsRPC(m, campaignId, t.table.characterId, { hitPointsCurrent: 0 });
     await passTurnsTo(m, campaignId, 'Vex');
     await openSessionPage(m, campaignId);
-    await expect(m.getByRole('heading', { name: 'Vex está caído: teste contra a morte' })).toBeVisible();
+    await expect(m.getByRole('heading', { name: 'Vex está com 0 PV: teste contra a morte' })).toBeVisible();
     await m.getByRole('button', { name: 'Digitar o resultado' }).click();
     await m.getByLabel(/Role 1d20 para o teste contra a morte/).fill('15');
     await m.getByRole('button', { name: 'Confirmar 15' }).click();

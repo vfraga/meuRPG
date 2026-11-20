@@ -221,8 +221,8 @@ describe('CombatSummary and the XP (E7-06)', () => {
     fixture.componentRef.setInput('vitals', [zero('c-a'), zero('c-b')]);
     fixture.detectChanges();
     const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
-    expect(text).toContain('Toren está caída');
-    expect(text).not.toContain('Brisa está caída');
+    expect(text).toContain('Toren está com 0 PV');
+    expect(text).not.toContain('Brisa está com 0 PV');
   });
 
   it('counts the dead out of the players standing, and lists them among those who fell', async () => {
@@ -247,7 +247,7 @@ describe('CombatSummary and the XP (E7-06)', () => {
     expect(text).toMatch(/Jogadores em pé\s*1 de 2/);
     expect(text).not.toContain('Ninguém caiu neste combate');
     expect(text).toContain('Brisa');
-    expect(text).toContain('Morta');
+    expect(text).toContain('Morto');
   });
 
   it('has no "Voltar à sessão" of its own while the highlights card above it has the one "Fechar"', async () => {

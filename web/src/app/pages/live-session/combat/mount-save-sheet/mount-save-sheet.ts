@@ -16,7 +16,12 @@ import { MatIconModule } from '@angular/material/icon';
 import { Code, ConnectError } from '@connectrpc/connect';
 
 import { DiceMode, DicePreference } from '../../../../../gen/meurpg/campaigns/v1/campaigns_pb';
-import type { MountSavePrompt, MountSaveResult } from '../../../../../gen/meurpg/play/v1/combat_pb';
+import {
+  CombatantKind,
+  type Combatant,
+  type MountSavePrompt,
+  type MountSaveResult,
+} from '../../../../../gen/meurpg/play/v1/combat_pb';
 import type { AnswerHeldRollResponse } from '../../../../../gen/meurpg/play/v1/resources_pb';
 import { effectivePreference } from '../../../../core/campaigns/dice-labels';
 import { CombatClient } from '../../../../core/combat/combat-client';
@@ -62,7 +67,7 @@ const EFFECT_DIE_FACES = 4;
 const CLOCK_TICK_MS = 1000;
 
 /**
- * "Você cai da montaria?" the Dexterity saving throw of a rider whose mount was moved
+ * "Você cai da montaria?", the Dexterity saving throw of a rider whose mount was moved
  * against its will, or who was knocked prone while mounted, answered with `RollMountSave`. It opens by itself for the rider's
  * player, who has to answer it (the turn waits), and from "Rolar por Tor" for the master, who may close it. It says the cause,
  * the roll and the bonus; the DC only where the server sent it (the master, or a table that shows save DCs). "Rolar no app", or
@@ -160,6 +165,7 @@ export class MountSaveSheet {
   });
   private readonly names = computed(() => ({
     rider: this.label(this.data.prompt.riderId),
+    riderIsPlayer: this.rider()?.kind === CombatantKind.PLAYER,
     mount: this.label(this.data.prompt.mountId),
   }));
   protected readonly resultView = computed(() => {
@@ -225,6 +231,10 @@ export class MountSaveSheet {
       );
     }
   });
+
+  private rider(): Combatant | undefined {
+    return this.data.state.encounter()?.combatants.find((c) => c.id === this.data.prompt.riderId);
+  }
 
   private label(id: string): string {
     return (id && this.data.state.encounter()?.combatants.find((c) => c.id === id)?.label) || '';

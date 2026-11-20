@@ -6,9 +6,9 @@ import {
   type MountSaveResult,
 } from '../../../gen/meurpg/play/v1/combat_pb';
 import { RollMode } from '../../../gen/meurpg/play/v1/combat_rolls_pb';
-import { theName } from '../format/article';
+import { withArticle } from '../format/article';
 import { dcLabel } from '../format/save-dc';
-import { joinDots } from '../format/text';
+import { joinDots, upFirst } from '../format/text';
 import { modifierText } from './combat-dice';
 import { isPlayer, signed } from './combat-view';
 import { whoseTurn } from './whose-turn';
@@ -39,12 +39,12 @@ export function ownMountSave(e: Encounter): MountSavePrompt | undefined {
 
 /** "de Tor" for a character, "do Wight" for a creature. */
 function ofWho(c: Combatant): string {
-  return isPlayer(c) ? `de ${c.label}` : theName(c.label, 'de');
+  return isPlayer(c) ? `de ${c.label}` : withArticle(c.label, 'de');
 }
 
 /** The subject of a sentence about the rider: "Tor" for a character, "O Wight" for a creature. */
 function theRider(c: Combatant): string {
-  return isPlayer(c) ? c.label : capital(theName(c.label));
+  return isPlayer(c) ? c.label : upFirst(withArticle(c.label));
 }
 
 /** The sum of the d20 that counted: "15 + 2 = 17", with what a die added after it (a Bardic Inspiration die) as one more term; the bare d20 when nothing is added. */
@@ -58,8 +58,6 @@ function sumOf(r: MountSaveResult): string {
   const added = `${modifierText(roll.modifier)}${modifierText(dice)}`;
   return added ? `${kept}${added} = ${roll.total}` : `${kept}`;
 }
-
-const capital = (text: string): string => `${text.charAt(0).toUpperCase()}${text.slice(1)}`;
 
 /** What the sheet of the save says before the roll. */
 export interface MountSaveView {
@@ -123,7 +121,7 @@ function causeOf(
     return mine ? 'Você cai da montaria.' : `${who} cai da montaria (Derrubado).`;
   }
   return mount
-    ? `${capital(theName(mount.label))} sofreu um empurrão.`
+    ? `${upFirst(withArticle(mount.label))} sofreu um empurrão.`
     : `A ${mine ? 'sua ' : ''}montaria sofreu um empurrão.`;
 }
 
@@ -138,7 +136,7 @@ function modeLineOf(mode: MountSaveView['mode'], who: string): string {
 
 /** "do Cavalo de guerra", or "da montaria" for a mount the reader does not see. */
 function besideOf(mount: Combatant | undefined): string {
-  return mount ? theName(mount.label, 'de') : 'da montaria';
+  return mount ? withArticle(mount.label, 'de') : 'da montaria';
 }
 
 /** `mine`: the reader is the rider's player ("Você"); the master reads the rider by name. */
@@ -157,8 +155,8 @@ export function mountSaveView(e: Encounter, p: MountSavePrompt, mine: boolean): 
     subtitle: SAVE,
     cause: causeOf(p, mount, mine, who),
     body: mine
-      ? `Passe para seguir na montaria; se falhar, você cai Derrubado num quadrado ao lado ${beside}.`
-      : `Se passar, segue na montaria; se falhar, cai Derrubado num quadrado ao lado ${beside}.`,
+      ? `Passe para seguir na montaria; se falhar, você cai da montaria (Derrubado), num quadrado ao lado ${beside}.`
+      : `Se passar, segue na montaria; se falhar, cai da montaria (Derrubado), num quadrado ao lado ${beside}.`,
     tags: tagsOf(p, mode),
     wait: `${whoseTurn(e, mine ? p.riderId : '')} espera este teste.`,
     mode,
@@ -179,16 +177,22 @@ export interface MountSaveResultView {
   readonly line: string;
 }
 
-/** `names.mount` is `''` when the reader does not see the mount. */
+/** `names.mount` is `''` when the reader does not see the mount; a character is named with no article, a creature with one. */
 export function mountSaveResultView(
   r: MountSaveResult,
   mine: boolean,
-  names: { readonly rider: string; readonly mount: string },
+  names: { readonly rider: string; readonly riderIsPlayer: boolean; readonly mount: string },
 ): MountSaveResultView {
-  const who = mine ? 'você' : names.rider;
-  const beside = names.mount ? `ao lado ${theName(names.mount, 'de')}` : 'ao lado da montaria';
+  const who = mine
+    ? 'você'
+    : names.riderIsPlayer
+      ? names.rider
+      : names.rider
+        ? withArticle(names.rider)
+        : 'quem cavalgava';
+  const beside = names.mount ? `ao lado ${withArticle(names.mount, 'de')}` : 'ao lado da montaria';
   if (r.autoFail || !r.save) {
-    const fell = `${who} caiu Derrubado ${beside}, sem rolar.`;
+    const fell = `${who} caiu da montaria (Derrubado) ${beside}, sem rolar.`;
     return {
       word: r.held ? 'Passou' : 'Falha automática',
       good: r.held,
@@ -203,7 +207,11 @@ export function mountSaveResultView(
   const where = r.noRoomNextToMount
     ? `no quadrado livre mais perto: não havia lugar ${beside}`
     : beside;
-  return { word: 'Falhou', good: false, line: `${sum}: ${who} caiu Derrubado ${where}.` };
+  return {
+    word: 'Falhou',
+    good: false,
+    line: `${sum}: ${who} caiu da montaria (Derrubado) ${where}.`,
+  };
 }
 
 /** What the master reads while a rider's save holds the table. */
@@ -236,7 +244,7 @@ export function mountSaveWait(e: Encounter): MountSaveWait | null {
     detail: `${SAVE}${dc ? ` ${dc}` : ''}: ${cause} ${
       player ? `${rider.label} está respondendo no celular.` : 'O teste é seu.'
     }`,
-    rollLabel: `Rolar ${player ? `por ${rider.label}` : theName(rider.label, 'por')}`,
+    rollLabel: `Rolar ${player ? `por ${rider.label}` : withArticle(rider.label, 'por')}`,
     why: `Espera o teste ${ofWho(rider)}`,
   };
 }

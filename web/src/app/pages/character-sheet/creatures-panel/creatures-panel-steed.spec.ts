@@ -113,7 +113,7 @@ describe('CreaturesPanel, a bonded steed that is away: the dashed "Fora" row', (
     expect(row.querySelector('.away__line')).toBeNull();
     expect(getComputedStyle(row.querySelector('.mr-tag')!).borderTopStyle).toBe('dashed');
     expect(flat(el.querySelector('.cast__cost'))).toBe(
-      'Traz Estrela de volta, com a mesma forma e o mesmo tipo e os PV cheios.',
+      'Traz Estrela de volta, com a mesma forma, o mesmo tipo e os PV cheios.',
     );
     expect(getComputedStyle(row.querySelector('.away')!).borderTopStyle).toBe('dashed');
     expect(row.querySelector('.tiles')).toBeNull();

@@ -210,7 +210,7 @@ export function areaRows(
     return {
       id: t.combatantId,
       label: t.self ? `${t.label} (você)` : t.label,
-      state: stateWord(t.state, t.label),
+      state: stateWord(t.state),
       ally: t.ally && !t.self,
       self: t.self,
       hidden: t.hidden,

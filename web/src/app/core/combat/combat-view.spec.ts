@@ -55,11 +55,9 @@ describe('combat view helpers', () => {
     expect(stateWord(CombatantState.DEFEATED)).toBe('Derrotado');
   });
 
-  it('writes the word of the fallen in the gender of their name', () => {
-    expect(stateWord(CombatantState.DOWN, 'Brisa')).toBe('Caída');
-    expect(stateWord(CombatantState.DOWN, 'Toren')).toBe('Caído');
-    expect(stateWord(CombatantState.DEAD, 'Brisa')).toBe('Morta');
-    expect(stateWord(CombatantState.DEAD, 'Toren')).toBe('Morto');
+  it('writes the word of the fallen in the condition form, whoever it names', () => {
+    expect(stateWord(CombatantState.DOWN)).toBe('Caído');
+    expect(stateWord(CombatantState.DEAD)).toBe('Morto');
   });
 
   it('counts the stable as down, and tells a player only what happened to a fallen one', () => {

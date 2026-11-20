@@ -1698,7 +1698,7 @@ async function scanCastingScreens(browser: Browser, colorScheme: 'light' | 'dark
     await adjustVitalsRPC(m, campaignId, table.characterId, { hitPointsCurrent: 0 });
     for (let i = 0; i < 3; i++) {
       await passTurnsToAndWait(m, campaignId, 'Pensantus', [m, p]);
-      await expect(p.getByRole('heading', { name: 'Pensantus está caído' })).toBeVisible();
+      await expect(p.getByRole('heading', { name: 'Pensantus está com 0 PV' })).toBeVisible();
       if (i === 0) {
         await expectScreenPasses(p, `Caído, antes de rolar ${where}`);
       }
@@ -6087,16 +6087,16 @@ async function scanTheatreScreens(browser: Browser, colorScheme: 'light' | 'dark
     await expect(prompt).toHaveCount(0);
     await expectScreenPasses(p, `Combate sem mapa, jogador, fora da vez ${where}`);
 
-    // Brisa falls: the death saves are hers and the master's; Toren reads only "Caída".
+    // Brisa falls: the death saves are hers and the master's; Toren reads only "Caído".
     await adjustVitalsRPC(m, campaignId, lia.characterId, { hitPointsCurrent: 0 });
     enc = await getEncounterRPC(m, campaignId);
     await passTurnsTo(m, campaignId, 'Toren');
     await passTurnsTo(m, campaignId, 'Brisa');
     await expect(lia.page.getByTestId('death-private')).toBeVisible();
-    await expectScreenPasses(lia.page, `Brisa caída, o dono ${where}`);
-    await expectScreenPasses(m, `Brisa caída, o mestre ${where}`);
-    await expect(p.getByText('Caída').first()).toBeVisible();
-    await expectScreenPasses(p, `Brisa caída, o outro jogador ${where}`);
+    await expectScreenPasses(lia.page, `Brisa com 0 PV, o dono ${where}`);
+    await expectScreenPasses(m, `Brisa com 0 PV, o mestre ${where}`);
+    await expect(p.getByText('Caído').first()).toBeVisible();
+    await expectScreenPasses(p, `Brisa com 0 PV, o outro jogador ${where}`);
   } finally {
     await lia?.close();
     await master.close();
@@ -13142,7 +13142,7 @@ async function scanMasterActs(browser: Browser, colorScheme: 'light' | 'dark', w
     const enc = await getEncounterRPC(m, campaignId);
     await combatRPC(m, 'EndTurn', { campaignId, encounterId: enc.id, expectedCombatantId: enc.currentCombatantId });
     await passTurnsToAndWait(m, campaignId, 'Pensantus', m);
-    await expect(m.getByRole('heading', { name: 'Pensantus está caído: teste contra a morte' })).toBeVisible();
+    await expect(m.getByRole('heading', { name: 'Pensantus está com 0 PV: teste contra a morte' })).toBeVisible();
     await expectScreenPasses(m, `O mestre, o teste contra a morte de Pensantus ${where}`);
     await m.getByRole('button', { name: 'Digitar o resultado' }).click();
     await expectScreenPasses(m, `O mestre digita o teste contra a morte ${where}`);
@@ -16390,7 +16390,7 @@ test('a ficha com "A arma mudou." que o mestre lê na ficha do jogador passa no 
   test.setTimeout(240_000);
   await scanAxeTurnedTwoHanded(browser, 'dark', 1280, 'master');
 });
-// (mounted combat and Convocar Montaria): the summon sheet of a steed, its card, questions and "fora da mesa" row, the
+// Mounted combat and Convocar Montaria: the summon sheet of a steed, its card, questions and "fora da mesa" row, the
 // "Montaria" panel of "Mover", the pair's card and token, the master's "Montaria" select and the pair in the order, the save to
 // stay on, the dismount sheet and "também" on a spell of the rider's own.
 for (const [colorScheme, theme] of [

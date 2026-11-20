@@ -302,7 +302,7 @@ export function castTargetRows(
     if (t.combatantId === casterId) {
       parts.push('você');
     } else {
-      const word = stateWord(t.state, t.label);
+      const word = stateWord(t.state);
       if (word) {
         parts.push(word);
       }

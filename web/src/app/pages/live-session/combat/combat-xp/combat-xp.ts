@@ -218,9 +218,9 @@ export class CombatXp {
         disabled: dead,
         amount: on ? tight(`+${formatInt(this.split().each)} XP`) : 'Não recebe',
         tag: dead
-          ? { label: stateWord(CombatantState.DEAD, c.label), icon: 'close' }
+          ? { label: stateWord(CombatantState.DEAD), icon: 'close' }
           : isDown(c)
-            ? { label: stateWord(c.state, c.label), icon: 'warning' }
+            ? { label: stateWord(c.state), icon: 'warning' }
             : undefined,
         note: dead
           ? 'Morreu: não recebe XP.'

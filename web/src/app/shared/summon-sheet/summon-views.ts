@@ -9,7 +9,7 @@ import type { Creature, CreatureSummary } from '../../../gen/meurpg/rules/v1/rul
 import { effectivePreference } from '../../core/campaigns/dice-labels';
 import { type SlotRow, freeText } from '../../core/combat/cast-flow';
 import { circleLabel } from '../../core/combat/combat-grid';
-import { groupFeminine, pluralName } from '../../core/combat/creature-names';
+import { pluralName } from '../../core/combat/creature-names';
 import {
   beastAttacks,
   beastLine,
@@ -311,14 +311,13 @@ export function costLineOf(
   return tight(`${made}${s.castingTimePt} · ${spend}`);
 }
 
-/** "Lobos atrozes conjurados": the title of the result stage, in the gender of the group. */
+/** "Lobo atroz 1 chegou", "Lobos atrozes chegaram": the title of the result stage. */
 export function resultTitleOf(creatures: readonly Combatant[]): string {
   const first = creatures[0];
   const sameKind = creatures.every((c) => c.monsterKey === first?.monsterKey);
-  const fem = creatures.length > 0 && groupFeminine(creatures);
   return creatures.length === 1
-    ? `${first.label} ${fem ? 'conjurada' : 'conjurado'}`
-    : `${sameKind && first?.monsterNamePt ? pluralName(first.monsterNamePt) : 'Criaturas'} ${fem ? 'conjuradas' : 'conjurados'}`;
+    ? `${first.label} chegou`
+    : `${sameKind && first?.monsterNamePt ? pluralName(first.monsterNamePt) : 'Criaturas'} chegaram`;
 }
 
 /** "CA 14 · PV 37 de 37 · 15 m" for a creature of the result (its numbers are the owner's). */

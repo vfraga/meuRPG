@@ -7,7 +7,7 @@ import {
   CombatantKind,
   type GetTurnOptionsResponse,
 } from '../../../../../gen/meurpg/play/v1/combat_pb';
-import { theName } from '../../../../core/format/article';
+import { withArticle } from '../../../../core/format/article';
 import { combatantInitial } from '../../../../core/combat/combat-view';
 import { pairActions, type PairAction } from '../../../../core/combat/pair-actions';
 import { metersFixed } from '../../../../core/units';
@@ -106,9 +106,9 @@ export class PairCard {
   /** An NPC's token for an NPC; a player's own steed (Find Steed) is a creature. */
   protected readonly npc = computed(() => this.mount().kind === CombatantKind.NPC);
   /** "o Cavalo de guerra", "a Égua". */
-  protected readonly theMount = computed(() => theName(this.mount().label));
+  protected readonly theMount = computed(() => withArticle(this.mount().label));
   /** "do Cavalo de guerra": whose action a button is, in its accessible name. */
-  protected readonly ofMount = computed(() => theName(this.mount().label, 'de'));
+  protected readonly ofMount = computed(() => withArticle(this.mount().label, 'de'));
   private readonly view = computed(() => pairActions(this.options(), this.mount()));
   protected readonly actions = computed(() => this.view().actions);
   protected readonly why = computed(() => this.view().why);

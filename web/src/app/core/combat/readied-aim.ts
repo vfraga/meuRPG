@@ -49,7 +49,7 @@ function spellRows(e: Encounter | null, reactorId: string, named: string): Readi
     sub: [
       c.id === reactorId ? 'Você mesmo' : '',
       c.id === named ? 'O alvo que você disse' : '',
-      stateWord(c.state, c.label),
+      stateWord(c.state),
     ]
       .filter(Boolean)
       .join(' · '),

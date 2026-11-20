@@ -37,7 +37,7 @@ export interface DismountSheetData {
 /**
  * "O Cavalo de guerra caiu. Usar a reação para desmontar de pé?": the `alertdialog` of a rider whose mount
  * was knocked prone or dropped to 0 hit points, opened by itself for the rider's player and answered with `AnswerReaction`.
- * "Cair derrubado" (PASS) comes first and "Desmontar de pé" (USE) is the filled one; the focus starts on the title, on neither. Unlike the optional
+ * "Cair (Derrubado)" (PASS) comes first and "Desmontar de pé" (USE) is the filled one; the focus starts on the title, on neither. Unlike the optional
  * reactions it has no countdown: nothing passes it, because passing is a fall. The master may answer too; if the window leaves
  * the combat meanwhile the sheet says how it ended and only closes. The server decides every refusal.
  */
@@ -190,7 +190,7 @@ export class DismountSheet {
     )?.focus({ focusVisible: true } as FocusOptions);
   }
 
-  /** "Desmontar de pé" (USE) or "Cair derrubado" (PASS): the answer to the window. */
+  /** "Desmontar de pé" (USE) or "Cair (Derrubado)" (PASS): the answer to the window. */
   protected async answer(use: boolean): Promise<void> {
     if (this.busy()) {
       return;

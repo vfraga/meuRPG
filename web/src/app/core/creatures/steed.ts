@@ -16,11 +16,11 @@ import { metersText } from '../units';
 import { creatureErrorMessage } from './creature-errors';
 import { CREATURE_TYPES } from './creature-types';
 
-/** Convocar Montaria's key: the summon whose creature is the character's bonded steed . */
+/** Convocar Montaria's key: the summon whose creature is the character's bonded steed. */
 export const FIND_STEED = 'spell:find-steed';
 
 /** The warning of a form the caster cannot ride (`SummonOption.too_small_for_you`): the cast still works. */
-export const STEED_TOO_SMALL = 'Tamanho pequeno demais para você montar';
+export const STEED_TOO_SMALL = 'Tamanho menor que o necessário para você montar';
 
 /** What a type the app has no word for is called: a server key is never shown. */
 export const OTHER_TYPE = 'Outro tipo';
@@ -60,7 +60,7 @@ export function steedCostLine(level: number): string {
 
 /** Under the fixed row of a bonded steed ("Mesmo corcel"): what the sheet says of its return. */
 export function steedSameLine(name: string): string {
-  return `${name} volta como era: a mesma forma, o mesmo tipo, e os PV cheios. Para outra forma ou outro tipo, liberte ${name} antes, no bloco Criaturas.`;
+  return `${name} volta como era: a mesma forma, o mesmo tipo e os PV cheios. Para outra forma ou outro tipo, liberte ${name} antes, no bloco Criaturas.`;
 }
 
 /** The end of the sheet's subtitle: "Magia de 2º nível · 10 minutos · um corcel vinculado". */

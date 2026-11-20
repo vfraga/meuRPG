@@ -90,7 +90,7 @@ describe('DismountSheet', () => {
       'O Cavalo de guerra caiu. Usar a reação para desmontar de pé?',
     );
     expect(flat(el.querySelector('.small'))).toBe(
-      'Com a reação, você desce de pé num quadrado ao lado da montaria. Sem ela, cai Derrubado a até 1,5 m.',
+      'Com a reação, você desce de pé num quadrado ao lado da montaria. Sem ela, cai da montaria (Derrubado) a até 1,5 m.',
     );
     expect(Array.from(el.querySelectorAll('.tag')).map((t) => flat(t))).toEqual([
       'Gasta a sua reação',
@@ -228,7 +228,7 @@ describe('DismountSheet', () => {
     );
     await settle();
     expect(flat(el.querySelector('[role=status]'))).toBe(
-      'A pergunta se fechou sem a sua resposta: você caiu Derrubado.',
+      'A pergunta se fechou sem a sua resposta: você caiu da montaria (Derrubado).',
     );
     expect(el.querySelector('.pair')).toBeNull();
     button('Fechar').click();

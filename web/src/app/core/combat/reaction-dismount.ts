@@ -4,7 +4,8 @@ import {
   ReactionKind,
   type ReactionWindow,
 } from '../../../gen/meurpg/play/v1/combat_pb';
-import { theName } from '../format/article';
+import { withArticle } from '../format/article';
+import { upFirst } from '../format/text';
 import { mountOf } from './mount-view';
 import { whoseTurn } from './whose-turn';
 
@@ -23,8 +24,6 @@ const PRONE = 'condition:prone';
 export function isDismountWindow(w: ReactionWindow): boolean {
   return w.kind === ReactionKind.DISMOUNT;
 }
-
-const capital = (text: string): string => `${text.charAt(0).toUpperCase()}${text.slice(1)}`;
 
 /** What the rider's prompt says, ready to draw. */
 export interface DismountView {
@@ -50,7 +49,7 @@ export interface DismountView {
 export function dismountView(e: Encounter, w: ReactionWindow): DismountView {
   const rider = e.combatants.find((c) => c.id === w.reactorId);
   const mount = rider ? mountOf(e, rider) : undefined;
-  const lead = mount ? `${capital(theName(mount.label))} caiu.` : 'A sua montaria caiu.';
+  const lead = mount ? `${upFirst(withArticle(mount.label))} caiu.` : 'A sua montaria caiu.';
   const question = 'Usar a reação para desmontar de pé?';
   return {
     title: 'A montaria caiu',
@@ -58,7 +57,7 @@ export function dismountView(e: Encounter, w: ReactionWindow): DismountView {
     subtitleRest: ` · desmontar · Rodada ${e.round}`,
     lead,
     question,
-    note: 'Com a reação, você desce de pé num quadrado ao lado da montaria. Sem ela, cai Derrubado a até 1,5 m.',
+    note: 'Com a reação, você desce de pé num quadrado ao lado da montaria. Sem ela, cai da montaria (Derrubado) a até 1,5 m.',
     chips: ['Gasta a sua reação', 'Volta no começo da sua vez'],
     wait: `${whoseTurn(e, w.reactorId)} espera a resposta. O mestre também pode responder.`,
     declineLabel: 'Cair (Derrubado)',
@@ -77,7 +76,7 @@ export function dismountGoneText(own: Combatant | null): string {
     return 'Não é mais preciso responder: você segue na montaria.';
   }
   if (own?.conditions.includes(PRONE)) {
-    return 'A pergunta se fechou sem a sua resposta: você caiu Derrubado.';
+    return 'A pergunta se fechou sem a sua resposta: você caiu da montaria (Derrubado).';
   }
   if (own?.reactionUsed) {
     return 'O mestre respondeu por você: você desmontou de pé e gastou a reação.';

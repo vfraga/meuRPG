@@ -13,7 +13,12 @@ import {
   riderOn,
 } from './mount-view';
 
-const tor = combatant({ id: 'tor', label: 'Tor', mountedOnId: 'cav' });
+const tor = combatant({
+  id: 'tor',
+  label: 'Tor',
+  mountedOnId: 'cav',
+  kind: CombatantKind.PLAYER,
+});
 const horse = (kind = 'controlled') =>
   combatant({ id: 'cav', label: 'Cavalo de guerra', mountKind: kind });
 const wight = combatant({ id: 'w', label: 'Wight', mountedOnId: 'esq' });
@@ -58,6 +63,26 @@ describe('the line a row says about the link', () => {
     expect(mountLine(e, horse(), false, true)).toBe('Montaria de Tor');
     expect(mountLine(e, horse(), true, true)).toBe('Adestrada · leva Tor');
     expect(mountLine(e, tor, false, true)).toBe('');
+  });
+
+  it('names a creature that rides with its article, as the title does, and a character with none', () => {
+    const goblin = combatant({
+      id: 'g',
+      label: 'Goblin 1',
+      mountedOnId: 'cav',
+      kind: CombatantKind.NPC,
+    });
+    const lia = combatant({
+      id: 'l',
+      label: 'Lia',
+      mountedOnId: 'cav',
+      kind: CombatantKind.PLAYER,
+    });
+    const withGoblin = encounter({ combatants: [goblin, horse()] });
+    const withLia = encounter({ combatants: [lia, horse()] });
+    expect(mountLine(withGoblin, horse(), false, true)).toBe('Montaria do Goblin 1');
+    expect(mountLine(withGoblin, horse(), true, true)).toBe('Adestrada · leva o Goblin 1');
+    expect(mountLine(withLia, horse(), false, true)).toBe('Montaria de Lia');
   });
 
   it("links the two rows of a mount that keeps its own turn, with the mount name's article", () => {

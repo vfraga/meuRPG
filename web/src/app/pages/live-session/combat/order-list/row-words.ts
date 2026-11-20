@@ -23,18 +23,16 @@ export function isDying(c: Combatant): boolean {
   return c.state === CombatantState.DYING;
 }
 
-/** "Caída", "Estável", "Morrendo · 3 falhas". */
+/** "Caído", "Estável", "Morrendo · 3 falhas". */
 export function downText(c: Combatant): string {
-  return isDying(c)
-    ? joinDots(['Morrendo', `${c.deathFailures} falhas`])
-    : stateWord(c.state, c.label);
+  return isDying(c) ? joinDots(['Morrendo', `${c.deathFailures} falhas`]) : stateWord(c.state);
 }
 
 export function stateWordOf(c: Combatant): string {
-  return stateWord(c.defeated && isPlayer(c) ? CombatantState.DEAD : c.state, c.label);
+  return stateWord(c.defeated && isPlayer(c) ? CombatantState.DEAD : c.state);
 }
 
-/** The one state word of a closed row, or `''`, by priority: "Derrotado", "Caída", "Morrendo · 3 falhas", "Escondido", "Concentração". */
+/** The one state word of a closed row, or `''`, by priority: "Derrotado", "Caído", "Morrendo · 3 falhas", "Escondido", "Concentração". */
 export function rowState(c: Combatant): string {
   if (c.defeated) {
     return isPlayer(c) ? stateWordOf(c) : 'Derrotado';

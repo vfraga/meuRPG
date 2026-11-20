@@ -61,7 +61,7 @@ test(
       // The sheet: the slot, how many and which, what losing the concentration does, and one d20 for the group.
       await openActionTab(p, 'Magias');
       await p.getByRole('button', { name: 'Conjurar Conjurar Animais' }).click();
-      // The dialog's name is its title, which changes to "Lobos atrozes conjurados" with the result.
+      // The dialog's name is its title, which changes to "Lobos atrozes chegaram" with the result.
     const sheet = p.getByRole('dialog');
       await expect(sheet.getByText('Escolha a criatura.')).toBeVisible();
       await sheet.getByText('2 feras de ND 1 ou menos').click();
@@ -71,7 +71,7 @@ test(
       await sheet.getByRole('button', { name: 'Digitar o d20 de um dado físico' }).click();
       await sheet.getByLabel('Role 1d20 para a iniciativa das criaturas').fill('8');
       await sheet.getByRole('button', { name: 'Conjurar Animais', exact: true }).click();
-      await expect(sheet.getByRole('heading', { name: 'Lobos atrozes conjurados' })).toBeVisible();
+      await expect(sheet.getByRole('heading', { name: 'Lobos atrozes chegaram' })).toBeVisible();
       await expect(sheet.getByText('Os 2 Lobos atrozes entram no combate com iniciativa 10 (um d20 para os dois: 8 + 2). Eles agem juntos, depois da Sálvia.')).toBeVisible();
       await expect(sheet.getByText('CA 14 · PV 37 de 37 · 15 m')).toHaveCount(2);
       await sheet.getByRole('button', { name: 'Fechar' }).last().click();

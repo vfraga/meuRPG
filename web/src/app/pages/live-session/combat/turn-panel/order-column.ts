@@ -34,7 +34,7 @@ import { followsRider, mountLineOf } from '../../../../core/combat/mount-view';
  * "Ordem" (E6-14): the order of the turns as a column on the left, from
  * 1280px, numbered, with each one's token, name and one word: an NPC's state
  * ("Ileso", "Ferido"), "Jogador" for another player, "Você · 23 de 23 PV" for the person's
- * own, "✕ Derrotado"; a character at 0 hit points reads "Caída". The one on turn has the "Vez" pill on an `accent-soft`
+ * own, "✕ Derrotado"; a character at 0 hit points reads "Caído". The one on turn has the "Vez" pill on an `accent-soft`
  * row. Below 1280px the same is the strip (`order-strip`).
  */
 @Component({
@@ -155,10 +155,10 @@ export class OrderColumn {
 
   protected word(c: Combatant): string {
     if (c.defeated) {
-      return isPlayer(c) ? stateWord(CombatantState.DEAD, c.label) : 'Derrotado';
+      return isPlayer(c) ? stateWord(CombatantState.DEAD) : 'Derrotado';
     }
-    // A character at 0 hit points says so, even the person's own ("Você, caída").
-    const down = isPlayer(c) && isDown(c) ? stateWord(c.state, c.label) : '';
+    // A character at 0 hit points says so, even the person's own ("Você, caído").
+    const down = isPlayer(c) && isDown(c) ? stateWord(c.state) : '';
     if (c.mine) {
       // The person's own numbers are theirs to read: "Você · 23 de 23 PV" (C6-07); every other creature has a word, never a number (RN-20).
       const own = this.ownNumbers(c);

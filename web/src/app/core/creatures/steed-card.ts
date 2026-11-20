@@ -124,6 +124,6 @@ export function steedAwaySubtitle(form: string, type: string): string {
 /** Under the cast button of Convocar Montaria: what the cast does for a steed that is away, or for one that is here. */
 export function steedCastHint(name: string, away: boolean): string {
   return away
-    ? `Traz ${name} de volta, com a mesma forma e o mesmo tipo e os PV cheios.`
+    ? `Traz ${name} de volta, com a mesma forma, o mesmo tipo e os PV cheios.`
     : `Com ${name} aqui, os PV voltam cheios.`;
 }

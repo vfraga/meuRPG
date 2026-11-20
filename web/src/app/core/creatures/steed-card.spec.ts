@@ -138,10 +138,10 @@ describe("the bonded steed's card, in words", () => {
       'Cavalo de guerra\u00a0· celestial\u00a0· fora da mesa',
     );
     expect(steedCastHint('Estrela', true)).toBe(
-      'Traz Estrela de volta, com a mesma forma e o mesmo tipo e os PV cheios.',
+      'Traz Estrela de volta, com a mesma forma, o mesmo tipo e os PV cheios.',
     );
     expect(steedCastHint('Trovão', true)).toBe(
-      'Traz Trovão de volta, com a mesma forma e o mesmo tipo e os PV cheios.',
+      'Traz Trovão de volta, com a mesma forma, o mesmo tipo e os PV cheios.',
     );
     expect(steedCastHint('Estrela', false)).toBe('Com Estrela aqui, os PV voltam cheios.');
     expect(steedCastHint('Trovão', false)).toBe('Com Trovão aqui, os PV voltam cheios.');

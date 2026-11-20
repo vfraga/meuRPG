@@ -199,7 +199,7 @@ describe('the master rolls the death save of an absent player', () => {
     });
     const { el } = await mount(wire);
     expect(plain(el.querySelector('[data-testid="death-save-due"] h3')?.textContent)).toBe(
-      'Pensantus está caído: teste contra a morte',
+      'Pensantus está com 0 PV: teste contra a morte',
     );
   });
 
@@ -218,7 +218,7 @@ describe('the master rolls the death save of an absent player', () => {
     }
     await settle(fixture);
     expect(plain(el.querySelector('[data-testid="death-save-due"] h3')?.textContent)).toBe(
-      'Brisa está caída: teste contra a morte',
+      'Brisa está com 0 PV: teste contra a morte',
     );
     expect(button(el, 'Rolar por Brisa')).toBeDefined();
   });
@@ -273,10 +273,10 @@ describe('the master rolls the death save of an absent player', () => {
     expect(el.querySelector('app-death-save-due input')).not.toBeNull();
   });
 
-  it('leads with the card "Brisa está caída: teste contra a morte", with no "Agir por" and no way to skip the save', async () => {
+  it('leads with the card "Brisa está com 0 PV: teste contra a morte", with no "Agir por" and no way to skip the save', async () => {
     const { el } = await mount(enc('b', brisa()));
     expect(plain(el.querySelector('[data-testid="death-save-due"] h3')?.textContent)).toBe(
-      'Brisa está caída: teste contra a morte',
+      'Brisa está com 0 PV: teste contra a morte',
     );
     expect(plain(el.querySelector('[data-testid="death-save-due"]')?.textContent)).toContain(
       'O turno de Brisa só passa depois do teste.',

@@ -96,7 +96,7 @@ describe('SummonSheet: Convocar Montaria', () => {
       'Pônei',
     ]);
     expect(rows[1].querySelector('.row__warn')?.textContent).toContain(
-      'Tamanho pequeno demais para você montar',
+      'Tamanho menor que o necessário para você montar',
     );
     // the subtitle, the slot folded from the start, the list named "Forma", each row with its silhouette and numbers.
     expect(flat(el.querySelector('.frame__sub'))).toBe(

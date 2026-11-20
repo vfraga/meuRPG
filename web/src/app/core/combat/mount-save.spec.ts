@@ -68,7 +68,7 @@ describe("the rider's save to stay on the mount", () => {
     expect(v.subtitle).toBe('Teste de resistência de Destreza');
     expect(v.cause).toBe('O Cavalo de guerra sofreu um empurrão.');
     expect(v.body).toBe(
-      'Passe para seguir na montaria; se falhar, você cai Derrubado num quadrado ao lado do Cavalo de guerra.',
+      'Passe para seguir na montaria; se falhar, você cai da montaria (Derrubado), num quadrado ao lado do Cavalo de guerra.',
     );
     expect(v.tags).toEqual(['1d20 + 2', 'Destreza +2']);
     expect(v.wait).toBe('A vez do Wight espera este teste.');
@@ -158,12 +158,12 @@ describe("the rider's save to stay on the mount", () => {
     ).toBe('O Wight cai da montaria (Derrubado).');
     expect(v.cause).toBe('Tor cai da montaria (Derrubado).');
     expect(v.body).toBe(
-      'Se passar, segue na montaria; se falhar, cai Derrubado num quadrado ao lado do Cavalo de guerra.',
+      'Se passar, segue na montaria; se falhar, cai da montaria (Derrubado), num quadrado ao lado do Cavalo de guerra.',
     );
   });
 
-  it('tells the result as the board does: the sum, the DC when it came, and what happened', () => {
-    const names = { rider: 'Tor', mount: 'Cavalo de guerra' };
+  it('tells the result: the sum, the DC when it came, and what happened', () => {
+    const names = { rider: 'Tor', riderIsPlayer: true, mount: 'Cavalo de guerra' };
     expect(mountSaveResultView(result(), true, names)).toEqual({
       word: 'Passou',
       good: true,
@@ -179,16 +179,24 @@ describe("the rider's save to stay on the mount", () => {
     expect(mountSaveResultView(failed, true, names)).toEqual({
       word: 'Falhou',
       good: false,
-      line: '6 + 2 = 8: você caiu Derrubado ao lado do Cavalo de guerra.',
+      line: '6 + 2 = 8: você caiu da montaria (Derrubado) ao lado do Cavalo de guerra.',
     });
-    expect(mountSaveResultView(failed, true, { rider: 'Tor', mount: '' }).line).toBe(
-      '6 + 2 = 8: você caiu Derrubado ao lado da montaria.',
-    );
+    expect(
+      mountSaveResultView(failed, true, { rider: 'Tor', riderIsPlayer: true, mount: '' }).line,
+    ).toBe('6 + 2 = 8: você caiu da montaria (Derrubado) ao lado da montaria.');
     expect(mountSaveResultView(failed, false, names).line).toBe(
-      '6 + 2 = 8: Tor caiu Derrubado ao lado do Cavalo de guerra.',
+      '6 + 2 = 8: Tor caiu da montaria (Derrubado) ao lado do Cavalo de guerra.',
     );
     expect(mountSaveResultView(result(), false, names).line).toBe(
       '15 + 2 = 17: Tor segue na montaria.',
+    );
+    // A creature that rides is named with its article, as the title says it.
+    const wight = { rider: 'Wight', riderIsPlayer: false, mount: 'Cavalo de guerra' };
+    expect(mountSaveResultView(failed, false, wight).line).toBe(
+      '6 + 2 = 8: o Wight caiu da montaria (Derrubado) ao lado do Cavalo de guerra.',
+    );
+    expect(mountSaveResultView(result(), false, wight).line).toBe(
+      '15 + 2 = 17: o Wight segue na montaria.',
     );
   });
 
@@ -198,8 +206,12 @@ describe("the rider's save to stay on the mount", () => {
       save: { diceCount: 1, diceSides: 20, faces: [4], modifier: 0, total: 4 },
     });
     expect(
-      mountSaveResultView(bare, true, { rider: 'Isolda', mount: 'Cavalo de guerra' }).line,
-    ).toBe('4: você caiu Derrubado ao lado do Cavalo de guerra.');
+      mountSaveResultView(bare, true, {
+        rider: 'Isolda',
+        riderIsPlayer: true,
+        mount: 'Cavalo de guerra',
+      }).line,
+    ).toBe('4: você caiu da montaria (Derrubado) ao lado do Cavalo de guerra.');
   });
 
   it('sums the d20 that counted of a pair, and a die added after it as one more term', () => {
@@ -213,18 +225,18 @@ describe("the rider's save to stay on the mount", () => {
         total: 21,
       },
     });
-    expect(mountSaveResultView(pair, true, { rider: 'Tor', mount: '' }).line).toBe(
-      '15 + 2 + 4 = 21: você segue na montaria.',
-    );
+    expect(
+      mountSaveResultView(pair, true, { rider: 'Tor', riderIsPlayer: true, mount: '' }).line,
+    ).toBe('15 + 2 + 4 = 21: você segue na montaria.');
   });
 
   it('tells an automatic failure with no numbers, and the fall that found no room only where the server said so', () => {
-    const names = { rider: 'Tor', mount: 'Cavalo de guerra' };
+    const names = { rider: 'Tor', riderIsPlayer: true, mount: 'Cavalo de guerra' };
     const auto = result({ held: false, autoFail: true, save: undefined });
     expect(mountSaveResultView(auto, true, names)).toEqual({
       word: 'Falha automática',
       good: false,
-      line: 'Você caiu Derrubado ao lado do Cavalo de guerra, sem rolar.',
+      line: 'Você caiu da montaria (Derrubado) ao lado do Cavalo de guerra, sem rolar.',
     });
     const far = result({
       held: false,
@@ -232,7 +244,7 @@ describe("the rider's save to stay on the mount", () => {
       save: { diceCount: 1, diceSides: 20, faces: [6], modifier: 2, total: 8 },
     });
     expect(mountSaveResultView(far, false, names).line).toBe(
-      '6 + 2 = 8: Tor caiu Derrubado no quadrado livre mais perto: não havia lugar ao lado do Cavalo de guerra.',
+      '6 + 2 = 8: Tor caiu da montaria (Derrubado) no quadrado livre mais perto: não havia lugar ao lado do Cavalo de guerra.',
     );
   });
 

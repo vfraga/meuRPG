@@ -31,7 +31,7 @@ class Host {
       sub: 'Ladina 3',
       checked: false,
       amount: 'Não recebe',
-      tag: { label: 'Caída', icon: 'warning' },
+      tag: { label: 'Caído', icon: 'warning' },
       note: 'Morreu: não recebe XP.',
       disabled: true,
     },
@@ -61,7 +61,7 @@ describe('the XP pieces', () => {
       expect(el.querySelectorAll('li')[0].textContent).toContain('+116 XP');
       // Not receiving is a word, never only an empty box.
       expect(el.querySelectorAll('li')[1].textContent).toContain('Não recebe');
-      expect(el.querySelectorAll('li')[1].textContent).toContain('Caída');
+      expect(el.querySelectorAll('li')[1].textContent).toContain('Caído');
       expect(el.querySelectorAll('li')[1].textContent).toContain('Morreu: não recebe XP.');
       expect(el.querySelector('ul')?.getAttribute('aria-label')).toBe('Quem recebe');
     });

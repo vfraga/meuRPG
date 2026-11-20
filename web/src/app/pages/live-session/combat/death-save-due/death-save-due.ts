@@ -5,7 +5,6 @@ import { MatIconModule } from '@angular/material/icon';
 import { DiceMode, type DicePreference } from '../../../../../gen/meurpg/campaigns/v1/campaigns_pb';
 import type { Combatant } from '../../../../../gen/meurpg/play/v1/combat_pb';
 import type { AttackDie } from '../../../../core/combat/combat-client-types';
-import { article } from '../../../../core/combat/combat-log';
 import { combatantInitial } from '../../../../core/combat/combat-view';
 import { countText } from '../../../../core/combat/death-saves';
 import { joinDots } from '../../../../core/format/text';
@@ -22,7 +21,7 @@ export interface DeathSaveRoll {
 }
 
 /**
- * The turn card of a downed player character on the master's "Turno" (C8-03, RN-03, RN-18): "Toren está caído: teste contra a
+ * The turn card of a downed player character on the master's "Turno" (C8-03, RN-03, RN-18): "Toren está com 0 PV: teste contra a
  * morte", before anything else. A downed character's turn starts with its death save (SRD 5.1), so the card shows the successes and
  * failures so far, one line of the rule, "Rolar por Toren" (the app's dice) and "Digitar o resultado" (a physical die), at the same
  * size, as the table's dice mode allows. The turn does not pass until the save is made ("Próximo turno" is off, the bar says why), and
@@ -40,7 +39,7 @@ export interface DeathSaveRoll {
           <div class="due__head">
             <app-combatant-token [initial]="initial(c)" [current]="true" [size]="44" />
             <div class="due__who">
-              <h3 class="due__title">{{ c.label }} está {{ down(c) }}: teste contra a morte</h3>
+              <h3 class="due__title">{{ c.label }} está com 0 PV: teste contra a morte</h3>
               <p class="due__sub">{{ sub(c) }}</p>
             </div>
           </div>
@@ -217,11 +216,6 @@ export class DeathSaveDue {
 
   protected initial(c: Combatant): string {
     return combatantInitial(c.label);
-  }
-
-  /** "caído" or "caída", by the name's article. */
-  protected down(c: Combatant): string {
-    return article(c.label) === 'a' ? 'caída' : 'caído';
   }
 
   /** "Guerreiro 3 · 0 de 28 PV". */

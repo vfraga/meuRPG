@@ -28,7 +28,7 @@ import { FormTag } from '../combatant-tags/form-tag';
  * NPC says its state (Ileso, Ferido, Muito ferido, Derrotado), another
  * player only "Jogador" (their name is not sent to the other players), and
  * the one on turn has the 2px accent frame and the word "Vez"; the player's
- * own chip says "Você". A character at 0 hit points reads "Caída" (never
+ * own chip says "Você". A character at 0 hit points reads "Caído" (never
  * "Morrendo": that word is the master's), and a combatant with conditions has
  * its first tag and "+N" for the rest (E6-29). Hidden combatants are not in the
  * list a player gets.

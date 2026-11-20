@@ -138,7 +138,7 @@ describe('CreatureBlock (E9-12 states 3 and 6)', () => {
 
   it('off its turn every button is off, with the reason in a line', () => {
     const { el } = setup({}, options(['monster:dire-wolf#bite']), { acting: false });
-    expect(flat(el.querySelector('.why'))).toBe('Ainda não é a vez dele.');
+    expect(flat(el.querySelector('.why'))).toBe('Ainda não é a vez do Lobo atroz 1.');
     expect(el.querySelector('.atk button')?.getAttribute('aria-disabled')).toBe('true');
     expect(el.querySelector('.go')?.getAttribute('aria-disabled')).toBe('true');
   });

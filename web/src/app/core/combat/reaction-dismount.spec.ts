@@ -52,7 +52,7 @@ describe("the rider's dismount as its mount falls", () => {
     expect(v.lead).toBe('O Cavalo de guerra caiu.');
     expect(v.question).toBe('Usar a reação para desmontar de pé?');
     expect(v.note).toBe(
-      'Com a reação, você desce de pé num quadrado ao lado da montaria. Sem ela, cai Derrubado a até 1,5 m.',
+      'Com a reação, você desce de pé num quadrado ao lado da montaria. Sem ela, cai da montaria (Derrubado) a até 1,5 m.',
     );
     expect(v.chips).toEqual(['Gasta a sua reação', 'Volta no começo da sua vez']);
     expect(v.wait).toBe('A vez do Zumbi 1 espera a resposta. O mestre também pode responder.');
@@ -97,7 +97,7 @@ describe("the rider's dismount as its mount falls", () => {
     );
     expect(
       dismountGoneText(combatant({ id: 'tor', label: 'Tor', conditions: ['condition:prone'] })),
-    ).toBe('A pergunta se fechou sem a sua resposta: você caiu Derrubado.');
+    ).toBe('A pergunta se fechou sem a sua resposta: você caiu da montaria (Derrubado).');
     expect(dismountGoneText(combatant({ id: 'tor', label: 'Tor', reactionUsed: true }))).toBe(
       'O mestre respondeu por você: você desmontou de pé e gastou a reação.',
     );

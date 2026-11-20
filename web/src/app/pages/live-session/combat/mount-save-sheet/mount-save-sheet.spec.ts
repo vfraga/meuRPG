@@ -123,14 +123,14 @@ describe('MountSaveSheet', () => {
     resources.answerHeldRoll.mockReset();
   });
 
-  it('asks the rider as the board does, with no DC on a table that hides it, and has to be answered', () => {
+  it('asks the rider with no DC on a table that hides it, and has to be answered', () => {
     const { el } = setup();
     expect(plain(el.querySelector('h2')?.textContent)).toBe('Você cai da montaria?');
     expect(plain(el.querySelector('.frame__sub')?.textContent)).toBe(
       'Teste de resistência de Destreza',
     );
     expect(plain(el.querySelector('.what')?.textContent)).toBe(
-      'O Cavalo de guerra sofreu um empurrão. Passe para seguir na montaria; se falhar, você cai Derrubado num quadrado ao lado do Cavalo de guerra.',
+      'O Cavalo de guerra sofreu um empurrão. Passe para seguir na montaria; se falhar, você cai da montaria (Derrubado), num quadrado ao lado do Cavalo de guerra.',
     );
     expect(Array.from(el.querySelectorAll('.tag')).map((t) => plain(t.textContent))).toEqual([
       '1d20 + 2',
@@ -238,7 +238,7 @@ describe('MountSaveSheet', () => {
     expect(plain(res.querySelector('.pill')?.textContent)).toBe('closeFalhou');
     expect(res.querySelector('.pill')?.classList.contains('pill--bad')).toBe(true);
     expect(plain(res.querySelector('.what')?.textContent)).toBe(
-      '6 + 2 = 8: você caiu Derrubado ao lado do Cavalo de guerra.',
+      '6 + 2 = 8: você caiu da montaria (Derrubado) ao lado do Cavalo de guerra.',
     );
   });
 
@@ -309,7 +309,7 @@ describe('MountSaveSheet', () => {
     expect(rollMountSave.mock.calls[0][3]).toEqual({ kind: 'app' });
     expect(plain(el.querySelector('.res .pill')?.textContent)).toBe('closeFalha automática');
     expect(plain(el.querySelector('.res .what')?.textContent)).toBe(
-      'Você caiu Derrubado ao lado do Cavalo de guerra, sem rolar.',
+      'Você caiu da montaria (Derrubado) ao lado do Cavalo de guerra, sem rolar.',
     );
   });
 
@@ -503,7 +503,7 @@ describe('MountSaveSheet', () => {
     const { el } = setup(prompt({ dc: 10 }), { byMaster: true });
     expect(plain(el.querySelector('h2')?.textContent)).toBe('Tor cai da montaria? · CD 10');
     expect(plain(el.querySelector('.what')?.textContent)).toContain(
-      'Se passar, segue na montaria; se falhar, cai Derrubado num quadrado ao lado do Cavalo de guerra.',
+      'Se passar, segue na montaria; se falhar, cai da montaria (Derrubado), num quadrado ao lado do Cavalo de guerra.',
     );
     expect(el.querySelector('.frame__close')?.getAttribute('aria-label')).toBe('Fechar');
   });

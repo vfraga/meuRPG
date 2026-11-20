@@ -6,7 +6,7 @@ import type { MountSavePrompt } from '../../../../../gen/meurpg/play/v1/combat_p
 import type { MountSaveWait } from '../../../../core/combat/mount-save';
 
 /**
- * "Esperando o teste de Tor" what the master reads while a rider's save to stay mounted holds the table. It
+ * "Esperando o teste de Tor": what the master reads while a rider's save to stay mounted holds the table. It
  * says the save, its DC and the cause, and who is answering; "Rolar por Tor" opens the save's sheet for the master, who may always
  * roll it (the rider's player has it open on their own screen). The turn does not pass until the save is rolled.
  */

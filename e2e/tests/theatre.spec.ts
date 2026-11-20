@@ -148,7 +148,7 @@ test(
 );
 
 test(
-  'o teste contra a morte escondido: o outro jogador lê só "Caída" e o aviso do registro, e o dono e o mestre veem as marcas',
+  'o teste contra a morte escondido: o outro jogador lê só "Caído" e o aviso do registro, e o dono e o mestre veem as marcas',
   { tag: ['@RN-24', '@RN-20', '@MR-025'] },
   async ({ browser }) => {
     test.setTimeout(300_000);
@@ -177,7 +177,7 @@ test(
       await openOrderRow(m, 'Brisa');
       await expect(m.getByText('Dono e mestre').first()).toBeVisible();
       // The other player: the state in words, no marks, no counts, and the reason in the log.
-      await expect(p.getByText('Caída').first()).toBeVisible();
+      await expect(p.getByText('Caído').first()).toBeVisible();
       await expect(p.getByText(/Sucessos|Falhas/)).toHaveCount(0);
       await expect(p.getByText(/\d de 3/)).toHaveCount(0);
       // The log (a sheet on the phone) says why her rolls are not in it, and has none of them.

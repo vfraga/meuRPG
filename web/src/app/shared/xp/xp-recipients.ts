@@ -15,7 +15,7 @@ export interface Recipient {
   /** What this one gets ("+116 XP"), "Não recebe" when unchecked, or empty
    * (a milestone has no number). */
   readonly amount: string;
-  /** A state word beside the name ("Caída"), with its icon. */
+  /** A state word beside the name ("Caído"), with its icon. */
   readonly tag?: { readonly label: string; readonly icon: string };
   /** A quiet line under the sub ("Está viva, então recebe a parte dela."). */
   readonly note?: string;

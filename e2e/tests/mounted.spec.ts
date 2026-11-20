@@ -9,7 +9,7 @@ import { openSessionPage } from './live-session-support';
 import { beginMountedCombat, mountedTable, STEED } from './mounted-support';
 import { tapSquare } from './move-support';
 
-// (mounted combat and Convocar Montaria): the paladin calls her steed, gets on it in the combat, rides, and a shove that
+// Mounted combat and Convocar Montaria: the paladin calls her steed, gets on it in the combat, rides, and a shove that
 // pushes the horse asks her the save to stay on. The goblin's shove goes through the API (the master's dice are not under test);
 // everything the player presses and reads is the screen's.
 
@@ -71,7 +71,7 @@ test(
       await save.getByRole('button', { name: 'Digitar o resultado' }).click();
       await save.getByLabel('Face do d20 (1 a 20)').fill('4');
       await save.getByRole('button', { name: /^Confirmar/ }).click();
-      await expect(save.locator('.res')).toContainText('4: você caiu Derrubado ao lado do Cavalo de guerra.');
+      await expect(save.locator('.res')).toContainText('4: você caiu da montaria (Derrubado) ao lado do Cavalo de guerra.');
       await closeSheet(save);
       // Under it, the shove's own sheet (the horse is hers, so the contest came to her screen).
       await closeSheet(p.getByRole('dialog', { name: /Goblin 1 tenta empurrar/ }));

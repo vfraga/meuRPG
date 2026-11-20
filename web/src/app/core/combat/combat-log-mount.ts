@@ -1,5 +1,5 @@
 import { type CombatLogEntry, CombatLogKind } from '../../../gen/meurpg/play/v1/combat_pb';
-import { theName } from '../format/article';
+import { withArticle } from '../format/article';
 import type { LogLine } from './combat-log-types';
 
 /** What a builder of these lines is given: the entry and the fields every line shares. */
@@ -32,7 +32,7 @@ function landing(e: CombatLogEntry): string {
   if (!save?.noRoomNextToMount) {
     return '';
   }
-  const mount = e.targetLabel ? theName(e.targetLabel, 'de') : 'da montaria';
+  const mount = e.targetLabel ? withArticle(e.targetLabel, 'de') : 'da montaria';
   return ` e parou no quadrado livre mais perto: não havia lugar ao lado ${mount}`;
 }
 
@@ -41,7 +41,7 @@ function onMount(label: string, preposition: 'em' | 'de'): string {
   if (!label) {
     return preposition === 'em' ? 'em uma montaria' : 'de uma montaria';
   }
-  return theName(label, preposition);
+  return withArticle(label, preposition);
 }
 
 const line = (args: MountArgs, text: string): LogLine => ({ ...args.base, icon: 'pets', text });

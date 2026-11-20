@@ -1,5 +1,5 @@
 import type { Combatant, Encounter } from '../../../gen/meurpg/play/v1/combat_pb';
-import { theName } from '../format/article';
+import { withArticle } from '../format/article';
 import { isPlayer } from './combat-view';
 
 /** `Combatant.mount_kind` and `SetCombatantMountRequest.kind`: `''` takes the mark off. */
@@ -40,7 +40,7 @@ function hintOf(kind: MountKind, rider: string): string {
 }
 
 function noteOf(label: string): string {
-  return `Com a marca, ${theName(label)} aceita um cavaleiro, que monta na própria vez. Você monta qualquer criatura.`;
+  return `Com a marca, ${withArticle(label)} aceita um cavaleiro, que monta na própria vez. Você monta qualquer criatura.`;
 }
 
 /** `null` for a combatant that takes no mark, or is not in the combat. The server decides every refusal. */

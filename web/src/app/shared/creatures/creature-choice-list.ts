@@ -31,7 +31,7 @@ export interface ChoiceRow {
   readonly attacks?: readonly AttackLine[];
   /** A creature of the table's own (key ends with "@mesa"): "Da mesa" beside the name, and the note in place of numbers it does not have yet. */
   readonly table?: boolean;
-  /** A warning that does not stop the pick ("Tamanho pequeno demais para você montar"), under the numbers with an icon. */
+  /** A warning that does not stop the pick ("Tamanho menor que o necessário para você montar"), under the numbers with an icon. */
   readonly warning?: string;
 }
 

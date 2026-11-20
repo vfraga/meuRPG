@@ -656,7 +656,7 @@
  "[chrome] › target-map.spec.ts › o jogador toca o alvo no mapa: Adaga em Goblin 1, Confirmar abre a folha na rolagem e o ataque acontece": 5.6,
  "[chrome] › target-map.spec.ts › um alvo apagado diz por que não vale, ao toque: fora de alcance": 4.8,
  "[chrome] › theatre.spec.ts › o crítico \"máximo mais uma rolagem\" com dados físicos: a dica diz o que rolar e o máximo aparece como parte fixa": 5.3,
- "[chrome] › theatre.spec.ts › o teste contra a morte escondido: o outro jogador lê só \"Caída\" e o aviso do registro, e o dono e o mestre veem as marcas": 9.9,
+ "[chrome] › theatre.spec.ts › o teste contra a morte escondido: o outro jogador lê só \"Caído\" e o aviso do registro, e o dono e o mestre veem as marcas": 9.9,
  "[chrome] › theatre.spec.ts › um combate sem mapa de ponta a ponta: o mestre inicia, Toren gasta 6,0 m e vê que restam 3,0 m, ataca sem distância, e o mestre oferece o ataque de oportunidade": 9.6,
  "[chrome] › token-move.spec.ts › \"Pôr o grupo no mapa\" abre a janela com quem vem, a formação e o quadrado do mapa, e o servidor põe os tokens em fila a partir dele": 6.1,
  "[chrome] › token-move.spec.ts › o jogador vê \"O mestre move os tokens agora.\" e nenhum controle; quando o mestre libera ele move a Pensantus, o movimento para antes do quadrado \"Não dá para passar\", e quando o mestre trava o painel fecha": 7.2,
