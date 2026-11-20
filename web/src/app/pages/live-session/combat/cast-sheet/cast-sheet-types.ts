@@ -62,6 +62,8 @@ export interface CastSheetData {
   readonly grant?: SpellGrantOption | null;
   /** The spell reaches only the caster, who rides its bonded steed in this combat (`SpellOption.also_steed`): the check "Estrela também". */
   readonly alsoSteed?: boolean;
+  /** The caster's bonded steed (`GetSummonOptionsResponse.bonded_steed`'s id, which a creature's combatant carries as `creature_id`); empty when none is known. The check names only that one. */
+  readonly bondedSteedId?: string;
   /** The spell attack bonus, for the typed d20's total. */
   readonly attackBonus: number;
   readonly diceMode: DiceMode;

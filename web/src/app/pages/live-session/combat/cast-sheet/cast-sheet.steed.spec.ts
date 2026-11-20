@@ -10,15 +10,24 @@ import { combatant, encounter } from '../../../../core/combat/combat-testing';
 import { SpellCatalog } from '../../../../core/combat/spell-catalog';
 import { CastSheet, type CastSheetData } from './cast-sheet';
 
-describe('CastSheet: "Estrela também", a self-only spell that reaches the steed the caster rides (#588, board 588-26 card 6)', () => {
-  async function open(alsoSteed: boolean, answer?: unknown) {
+describe('CastSheet: "Estrela também", a self-only spell that reaches the steed the caster rides', () => {
+  async function open(
+    alsoSteed: boolean,
+    answer?: unknown,
+    ids: { bonded: string; mount: string } = { bonded: 'bond-1', mount: 'bond-1' },
+  ) {
     TestBed.resetTestingModule();
     const castSpell = answer
       ? vi.fn().mockResolvedValue(answer)
       : vi.fn().mockRejectedValue(new Error('stop'));
     const details = { spell: { level: 1 }, damage: [], healBySlotLevel: {}, higherLevel: [] };
     const lia = combatant({ id: 'lia', label: 'Lia', mountedOnId: 'estrela' });
-    const estrela = combatant({ id: 'estrela', label: 'Estrela', riderId: 'lia' });
+    const estrela = combatant({
+      id: 'estrela',
+      label: 'Estrela',
+      riderId: 'lia',
+      creatureId: ids.mount,
+    });
     const live = signal(encounter({ combatants: [lia, estrela] }));
     const data = {
       campaignId: 'c',
@@ -41,6 +50,7 @@ describe('CastSheet: "Estrela também", a self-only spell that reaches the steed
       diceMode: DiceMode.PLAYERS_CHOOSE,
       preference: DicePreference.APP,
       alsoSteed,
+      bondedSteedId: ids.bonded,
       state: { encounter: live, apply: vi.fn() },
     } as unknown as CastSheetData;
     TestBed.configureTestingModule({
@@ -133,6 +143,21 @@ describe('CastSheet: "Estrela também", a self-only spell that reaches the steed
     expect(el.querySelector('app-steed-also')).toBeNull();
     await cast();
     expect(castSpell.mock.calls[0][12]).not.toHaveProperty('alsoSteed');
+  });
+
+  it("has no check for a mount that is not the caster's bonded steed, though the caster rides it", async () => {
+    const { el, castSpell, cast } = await open(true, undefined, {
+      bonded: 'bond-1',
+      mount: 'other',
+    });
+    expect(el.querySelector('app-steed-also')).toBeNull();
+    await cast();
+    expect(castSpell.mock.calls[0][12]).not.toHaveProperty('alsoSteed');
+  });
+
+  it('has no check when the bonded steed is not known', async () => {
+    const { el } = await open(true, undefined, { bonded: '', mount: '' });
+    expect(el.querySelector('app-steed-also')).toBeNull();
   });
 
   it('a dismount while the sheet is open takes the check away and says why; the cast reaches the caster alone', async () => {

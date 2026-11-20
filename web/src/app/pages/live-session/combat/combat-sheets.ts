@@ -184,12 +184,39 @@ export class CombatSheets {
       return;
     }
     const data: CastSheetData = preset ? { ...built, preset } : built;
+    if (!data.alsoSteed) {
+      this.openCastSheet(data, resume);
+      return;
+    }
+    // "Estrela também" names the caster's bonded steed only: the sheet opens once the bond is read.
+    void this.bondedSteedId().then((bondedSteedId) =>
+      this.openCastSheet({ ...data, bondedSteedId }, resume),
+    );
+  }
+
+  private openCastSheet(data: CastSheetData, resume?: readonly PendingDamage[]): void {
     openSheet<CastSheet, CastSheetData, boolean>(this.ctx.dialog, this.ctx.bottomSheet, CastSheet, {
       data,
       ariaLabel: castAriaLabel(data.name, !!resume),
       labelledBy: 'sheet-t',
       ...(opensOnMap(data) ? { focus: '[role="application"]' } : {}),
     }).subscribe();
+  }
+
+  /** The id of the caster's bonded steed (`GetSummonOptionsResponse.bonded_steed`); empty with none, or when the read fails. */
+  private async bondedSteedId(): Promise<string> {
+    const own = this.ctx.own();
+    if (!own) {
+      return '';
+    }
+    try {
+      return (
+        (await this.ctx.creatures.summonOptions(this.ctx.campaignId(), own.characterId)).bondedSteed
+          ?.id ?? ''
+      );
+    } catch {
+      return '';
+    }
   }
 
   /** What the cast sheet is handed for a spell of the options, or `null` when the combat or the options are not there. */

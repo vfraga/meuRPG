@@ -1775,6 +1775,41 @@ describe('CombatView sheets: casting', () => {
     expect(d['resume']).toBeUndefined();
   });
 
+  it("hands a spell that may reach the steed the caster's bonded steed id, read from the summon options", async () => {
+    const summonOptions = vi.fn(async () => ({ spells: [], bondedSteed: { id: 'bond-1' } }));
+    const m = await mount(
+      { spells: [missile({ alsoSteed: true })] },
+      {},
+      { creatures: { summonOptions } },
+    );
+    m.view.sheets.castSheet('spell:magic-missile');
+    await settle(m.fixture);
+    expect(summonOptions).toHaveBeenCalledWith('c', 'toren-c');
+    expect(data(m)['bondedSteedId']).toBe('bond-1');
+  });
+
+  it('opens the sheet with no bonded steed when the summon options cannot be read', async () => {
+    const summonOptions = vi.fn(async () => {
+      throw new Error('offline');
+    });
+    const m = await mount(
+      { spells: [missile({ alsoSteed: true })] },
+      {},
+      { creatures: { summonOptions } },
+    );
+    m.view.sheets.castSheet('spell:magic-missile');
+    await settle(m.fixture);
+    expect(data(m)['bondedSteedId']).toBe('');
+  });
+
+  it('does not read the summon options for a spell that cannot reach a steed', async () => {
+    const summonOptions = vi.fn(async () => ({ spells: [] }));
+    const m = await mount({ spells: [missile()] }, {}, { creatures: { summonOptions } });
+    m.view.sheets.castSheet('spell:magic-missile');
+    expect(m.opened).toHaveLength(1);
+    expect(summonOptions).not.toHaveBeenCalled();
+  });
+
   it('hands the sheet empty slots, no pact, no points and no Escudo when the character has none', async () => {
     const m = await mount({ spells: [missile({ metamagicOptions: [], sculptSpells: false })] });
     m.view.sheets.castSheet('spell:magic-missile');
