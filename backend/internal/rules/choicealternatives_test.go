@@ -559,3 +559,27 @@ func TestTheMessageOfAnAlternativeOptionOutsideTheSRDIsInEnglish(t *testing.T) {
 		t.Errorf("attr %q message %q, want %q %q", attr, msg, altFromAttr, want)
 	}
 }
+
+// A feat the sheet loses (its prerequisite is no longer met) gives the sheet nothing: the screen and the save read the sheet
+// without it, so a pick of what the feat would give is no repeated pick, in either.
+func TestAFeatTheSheetLostGivesNothingToTheChoicesNorToTheSave(t *testing.T) {
+	t.Parallel()
+	alt := Effect{Type: "choice", Choice: choiceAlternatives, Count: 1, Alternatives: skillOrLanguage.Alternatives}
+	const featKey = "feat:veterano" + tableSuffix
+	o := filterBackgroundWith(alt)
+	o.Strict = []string{featKey}
+	o.Feats = []TableFeat{{
+		TableEntry: TableEntry{Key: featKey, NamePT: "Veterano"}, DescPT: []string{"Texto."}, Prerequisite: FeatPrerequisite{Level: 5},
+		Effects: []Effect{{Type: "proficiency", Proficiency: "skill:stealth"}},
+	}}
+	c := withOverlayOn(t, loadForTest(t), o)
+	b := altBuild(altStored(alt, "skill:stealth"))
+	b.Feats = []string{featKey} // the sheet is level 1: the feat is lost
+	if _, _, found := c.NewDuplicateAlternativePick(nil, b); found {
+		t.Error("the save refuses the pick for a feat the sheet lost")
+	}
+	ch := choiceOf(t, c.ChoicesAgainst(nil, b), altKey(alt))
+	if slices.Contains(ch.Unmet, "skill:stealth") || ch.Missing() != 0 {
+		t.Errorf("the screen: unmet %v, missing %d; want it to agree with the save", ch.Unmet, ch.Missing())
+	}
+}

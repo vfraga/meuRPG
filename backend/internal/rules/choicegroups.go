@@ -452,7 +452,8 @@ func (cb *choiceBuilder) derive() *Derived {
 // deriver is the deriver of the Build, once, for what the choices of alternatives ask of the sheet's sources.
 func (cb *choiceBuilder) deriver() *deriver {
 	if cb.dx == nil {
-		cb.dx = deriverOf(cb.b, cb.c, nil)
+		_, lost, _ := cb.c.settleLost(cb.b) // the sheet without the feats and options it loses, as the save reads it
+		cb.dx = deriverOf(cb.b, cb.c, lost)
 	}
 	return cb.dx
 }
