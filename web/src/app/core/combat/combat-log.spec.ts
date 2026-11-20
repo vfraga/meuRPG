@@ -1107,6 +1107,15 @@ describe('the log of spells, reactions, the fallen and conditions', () => {
       entry({ kind: CombatLogKind.CREATURE_RELEASED, targetLabel: 'Estrela' } as never),
     );
     expect(noActor).toMatchObject({ actor: '', text: 'Libertação de Estrela' });
+    const noLabel = logLine(entry({ kind: CombatLogKind.CREATURE_DISMISSED } as never));
+    expect(noLabel).toMatchObject({
+      actor: '',
+      text: 'Dispensa da criatura: o vínculo continua',
+    });
+    const noLabelWithActor = logLine(
+      entry({ kind: CombatLogKind.CREATURE_RELEASED, actorLabel: 'Lia' } as never),
+    );
+    expect(noLabelWithActor).toMatchObject({ actor: 'Lia', text: ' libertou a criatura' });
   });
 
   it('writes "Toren caiu da montaria" for a dismount fall, with no save text for the master either', () => {

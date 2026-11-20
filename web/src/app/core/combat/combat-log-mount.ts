@@ -46,13 +46,22 @@ function onMount(label: string, preposition: 'em' | 'de'): string {
 
 const line = (args: MountArgs, text: string): LogLine => ({ ...args.base, icon: 'pets', text });
 
-/** "Lia dispensou Estrela: o vínculo continua" and "Lia libertou Estrela": a bonded creature sent away in a combat. The creature is named
- * with no article and the verb has no participle, so nothing agrees with a gender guessed from a name. With no actor in the line the
- * noun carries the sentence ("Dispensa de Estrela"). */
-function sentAway(args: MountArgs, verb: string, noun: string, tail: string): LogLine {
-  const name = args.e.targetLabel || 'a criatura';
-  const text = args.base.actor ? ` ${verb} ${name}${tail}` : `${noun} de ${name}${tail}`;
-  return { ...args.base, icon: noun === 'Dispensa' ? 'pets' : 'link_off', text };
+/** "Lia dispensou Estrela: o vínculo continua" and "Lia libertou Estrela": a bonded creature sent away in a combat.
+ * The creature is named with no article and the verb has no participle, so nothing agrees with a gender guessed from a name.
+ * With no actor in the line the noun carries the sentence ("Dispensa de Estrela"), and with no name "Dispensa da criatura". */
+function sentAway(
+  args: MountArgs,
+  icon: string,
+  verb: string,
+  noun: string,
+  tail: string,
+): LogLine {
+  const label = args.e.targetLabel;
+  const name = label || 'criatura';
+  const text = args.base.actor
+    ? ` ${verb} ${label ? name : 'a criatura'}${tail}`
+    : `${noun} ${label ? 'de' : 'da'} ${name}${tail}`;
+  return { ...args.base, icon, text };
 }
 
 /** The lines of a mount (SRD 5.1, "Mounting and Dismounting", "Mounted Combat"). The server sends a line only to who sees both
@@ -67,7 +76,7 @@ export const MOUNT_LINES: readonly (readonly [CombatLogKind, (args: MountArgs) =
   ],
   [
     CombatLogKind.CREATURE_DISMISSED,
-    (a) => sentAway(a, 'dispensou', 'Dispensa', ': o vínculo continua'),
+    (a) => sentAway(a, 'pets', 'dispensou', 'Dispensa', ': o vínculo continua'),
   ],
-  [CombatLogKind.CREATURE_RELEASED, (a) => sentAway(a, 'libertou', 'Libertação', '')],
+  [CombatLogKind.CREATURE_RELEASED, (a) => sentAway(a, 'link_off', 'libertou', 'Libertação', '')],
 ];

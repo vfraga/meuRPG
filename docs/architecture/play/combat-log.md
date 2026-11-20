@@ -125,7 +125,7 @@ Changing the table rules (`SetTableRules`) writes no event either: it moves the 
 
 ## Events
 
-Each change is written in the same transaction as the change, with ids and numbers only; the event carries the `encounter_id`, the round and whether a hidden combatant was in it.
+Each change is written in the same transaction as the change, with ids and numbers only, except the removal of a steed sent away, which carries the steed's name because its combatant is gone when the log is read; the event carries the `encounter_id`, the round and whether a hidden combatant was in it.
 A weapon's or action's name never goes in the event: the log reads it from the sheet, on the spot.
 An `EFFECT` line with change `ENDED` carries `unused` when the effect was an on-hit one that ended with no hit having spent it (see [Lasting effects](lasting-effects.md)).
 It is stored in the line's event and read by the same readers as the line.

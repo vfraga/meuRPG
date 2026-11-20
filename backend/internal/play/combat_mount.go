@@ -119,7 +119,10 @@ func riderOf(cs []playdb.Combatant, mountID string) *playdb.Combatant {
 
 // mountFor puts on out, the copy of c that the viewer reads, what the viewer may know of the mount and the rider (RN-10, RN-20).
 // The link goes to a viewer who sees both rows, so a hidden mount leaves its rider plain and a hidden rider leaves its mount
-// without one. The mark says what the master made a mount of (RN-10, RN-21). A mount nobody rides keeps it for the master and the player who controls the combatant. While it is ridden, every viewer who sees both the rider and the mount reads it: the order of the pair depends on whether the mount obeys.
+// without one.
+// The mark says what the master made a mount of (RN-10, RN-21).
+// A mount nobody rides keeps it for the master and the player who controls the combatant.
+// While it is ridden, every viewer who sees both the rider and the mount reads it.
 // cs is every combatant of the combat, in whatever order.
 func mountFor(out *playv1.Combatant, c playdb.Combatant, cs []playdb.Combatant, v combatViewer) {
 	rider := riderOf(cs, c.ID)

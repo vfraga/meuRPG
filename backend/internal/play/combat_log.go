@@ -1228,6 +1228,8 @@ var actedForPlayerKinds = map[playv1.CombatLogKind]bool{
 	playv1.CombatLogKind_COMBAT_LOG_KIND_RESOURCE:                true,
 	playv1.CombatLogKind_COMBAT_LOG_KIND_WILD_SHAPE:              true,
 	playv1.CombatLogKind_COMBAT_LOG_KIND_TURN_PART_ENDED:         true,
+	playv1.CombatLogKind_COMBAT_LOG_KIND_CREATURE_DISMISSED:      true,
+	playv1.CombatLogKind_COMBAT_LOG_KIND_CREATURE_RELEASED:       true,
 }
 
 // byMasterFor says the line is the master's act for the player's character that is its actor: a

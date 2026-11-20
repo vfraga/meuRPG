@@ -18353,8 +18353,8 @@ export enum CombatLogKind {
   /**
    * A bonded creature, the steed of Find Steed, was dismissed in a running combat ("Lia dispensou Estrela"): the bond stays and the
    * spell brings it back. The actor is the combatant of its owner and `target_label` names the creature (its combatant left the
-   * combat, so `target_id` is empty). The audience is the creature's own: the master and every player when the creature was in sight,
-   * and the master alone when the master had hidden it (RN-10).
+   * combat, so `target_id` is empty). The audience follows the creature's visibility: the master and every player who sees the creature,
+   * and the master alone when the creature or its owner's combatant is hidden (RN-10).
    *
    * @generated from enum value: COMBAT_LOG_KIND_CREATURE_DISMISSED = 120;
    */

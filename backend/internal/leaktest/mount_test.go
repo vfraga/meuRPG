@@ -1,9 +1,10 @@
 package leaktest
 
 import (
-	"bytes"
 	"strings"
 	"testing"
+
+	"google.golang.org/protobuf/encoding/protojson"
 
 	playv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/play/v1"
 	"github.com/PuraFome/meuRPG/backend/gen/meurpg/play/v1/playv1connect"
@@ -214,14 +215,20 @@ func TestTheMountMarkIsReadByWhoSeesThePairWhileItIsRidden(t *testing.T) {
 			t.Fatalf("%s: %v", q, err)
 		}
 	}
-	// markOf is what the person reads of the mark; an answer that is refused has no mark to read.
+	// markOf is the mount_kind of the mount's own combatant in the person's copy; an answer that is refused has none.
 	markOf := func(p *person) string {
 		res := p.call(playv1connect.CombatServiceGetEncounterProcedure, &playv1.GetEncounterRequest{CampaignId: w.campaign})
 		if !res.ok() {
 			return ""
 		}
-		if bytes.Contains(res.body, []byte("independent")) {
-			return "independent"
+		var got playv1.GetEncounterResponse
+		if err := protojson.Unmarshal(res.body, &got); err != nil {
+			t.Fatalf("read %s's copy of the combat: %v", p.name, err)
+		}
+		for _, c := range got.GetEncounter().GetCombatants() {
+			if c.GetId() == mount.GetId() {
+				return c.GetMountKind()
+			}
 		}
 		return ""
 	}

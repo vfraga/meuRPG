@@ -653,7 +653,8 @@ Uma criatura sem marca do mestre age por conta própria.
 A marca ("adestrada" ou "independente") de uma criatura que ninguém cavalga é lida pelo mestre e pelo dono dela.
 Enquanto a criatura é cavalgada, todo jogador que vê o cavaleiro e a montaria lê a marca, e cada tela mostra a ordem do par como ela é.
 Um jogador que não vê o cavaleiro, um membro pendente e um estranho não leem a marca.
-Que uma criatura é uma montaria disposta é lido por qualquer jogador que a vê: o painel "Montaria" dele a lista.
+Que uma criatura é uma montaria disposta é lido por qualquer jogador que a vê.
+O painel "Montaria" lista as criaturas do próprio jogador e as do lado do grupo que o mestre marcou, e nenhuma outra.
 Uma montaria que o jogador não vê não é listada e não mostra distância.
 O par ocupa um só lugar, o quadrado da montaria, e o turno da montaria continua sendo dela.
 
@@ -670,7 +671,7 @@ O par ocupa um só lugar, o quadrado da montaria, e o turno da montaria continua
   Uma nova conjuração traz de volta a mesma montaria com os PV cheios, com a forma, o nome e o tipo, e recusa outra forma ou outro tipo.
   "Dispensar" manda a montaria embora e mantém o vínculo, e "Libertar" encerra o vínculo.
   Num combate que tem a montaria, qualquer um dos dois custa a ação do dono; o mestre e a dispensa fora do combate são gratuitos.
-  Num combate em andamento, qualquer um dos dois é uma linha do registro ("Lia dispensou Estrela: o vínculo continua", "Lia libertou Estrela"), lida pelo mestre e por todo jogador.
+  Num combate em andamento, qualquer um dos dois é uma linha do registro ("Lia dispensou Estrela: o vínculo continua", "Lia libertou Estrela"), lida pelo mestre e por todo jogador que viu a montaria; uma escondida é só do mestre.
   Com 0 PV a montaria desaparece e o vínculo fica, então uma nova conjuração a traz de volta.
   A Inteligência da montaria é no mínimo 6, e nenhum efeito lê um valor menor.
   O conjurador escolhe celestial, fada ou ínfero; só o dono e o mestre leem a escolha.

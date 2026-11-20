@@ -218,10 +218,129 @@ func TestFindSteedDismissAndReleaseInACombatAreLines(t *testing.T) {
 				if line.GetActorLabel() != "Aurélio" || line.GetTargetLabel() != "Trovão" {
 					t.Errorf("%s reads %q and %q, want the owner's character and the steed", who, line.GetActorLabel(), line.GetTargetLabel())
 				}
+				if line.GetByMaster() {
+					t.Errorf("%s reads the owner's own dismissal as the master's act", who)
+				}
 				if wrong := a.steedLine(t, u, e, tc.other); wrong != nil {
 					t.Errorf("%s reads a %v line too", who, tc.other)
 				}
 			}
 		})
+	}
+}
+
+// anySteedLine says whether anybody of the table reads a steed line, of either kind.
+func (a *armed) anySteedLine(t *testing.T, e *playv1.Encounter) map[string]bool {
+	t.Helper()
+	read := map[string]bool{}
+	for who, u := range map[string]*user{"the master": a.master, "the owner": a.ana, "another player": a.caio} {
+		for _, kind := range []playv1.CombatLogKind{playv1.CombatLogKind_COMBAT_LOG_KIND_CREATURE_DISMISSED, playv1.CombatLogKind_COMBAT_LOG_KIND_CREATURE_RELEASED} {
+			if a.steedLine(t, u, e, kind) != nil {
+				read[who] = true
+			}
+		}
+	}
+	return read
+}
+
+// TestFindSteedLineFollowsTheVisibilityOfWhoIsInIt: a steed or an owner's combatant that is hidden when the steed is sent away makes the
+// line the master's alone. The API never hides a player's creature, so the test hides it in the table.
+func TestFindSteedLineFollowsTheVisibilityOfWhoIsInIt(t *testing.T) {
+	t.Parallel()
+	for _, hidden := range []string{"Trovão", "Aurélio"} {
+		t.Run(hidden, func(t *testing.T) {
+			t.Parallel()
+			a, e := riderInFight(t)
+			if _, err := a.h.pool.Exec(t.Context(), `UPDATE combatants SET hidden = true WHERE label = $1`, hidden); err != nil {
+				t.Fatalf("hide %s: %v", hidden, err)
+			}
+			if err := a.dismissSteedAs(t, a.master, a.steedCreatureID(t), charactersv1.CreatureDismissal_CREATURE_DISMISSAL_DISMISS); err != nil {
+				t.Fatalf("dismiss error = %v", err)
+			}
+			if got := a.anySteedLine(t, e); !got["the master"] || got["the owner"] || got["another player"] {
+				t.Errorf("who reads the line of a dismissal with %s hidden = %v, want the master alone", hidden, got)
+			}
+		})
+	}
+}
+
+// TestFindSteedSendingAwayWritesNoLineWhenItIsNotASteedOrNotARunningCombat: a creature that is not a bonded steed, a combat in setup and a
+// combat that is over leave no line; a steed removed by the master or fallen at 0 hit points leaves none either.
+func TestFindSteedSendingAwayWritesNoLineWhenItIsNotASteedOrNotARunningCombat(t *testing.T) {
+	t.Parallel()
+	dismiss := charactersv1.CreatureDismissal_CREATURE_DISMISSAL_DISMISS
+	cases := []struct {
+		name string
+		run  func(t *testing.T, a *armed, e *playv1.Encounter)
+	}{
+		{"a creature that is not a steed", func(t *testing.T, a *armed, _ *playv1.Encounter) {
+			t.Helper()
+			id := a.steedCreatureID(t)
+			if _, err := a.h.pool.Exec(t.Context(), `UPDATE character_creatures SET source = 'master', bonded = false WHERE id = $1`, id); err != nil {
+				t.Fatalf("make it a creature of the master: %v", err)
+			}
+			if err := a.dismissSteedAs(t, a.master, id, dismiss); err != nil {
+				t.Fatalf("dismiss error = %v", err)
+			}
+		}},
+		{"a combat in setup", func(t *testing.T, a *armed, _ *playv1.Encounter) {
+			t.Helper()
+			if _, err := a.h.pool.Exec(t.Context(), `UPDATE encounters SET status = 'setup'`); err != nil {
+				t.Fatalf("put the combat in setup: %v", err)
+			}
+			if err := a.dismissSteedAs(t, a.master, a.steedCreatureID(t), dismiss); err != nil {
+				t.Fatalf("dismiss error = %v", err)
+			}
+		}},
+		{"a combat that is over", func(t *testing.T, a *armed, e *playv1.Encounter) {
+			t.Helper()
+			if _, err := a.master.combat.EndEncounter(t.Context(), connect.NewRequest(&playv1.EndEncounterRequest{CampaignId: a.campaignID, EncounterId: e.GetId(), IdempotencyKey: newKey()})); err != nil {
+				t.Fatalf("end the combat: %v", err)
+			}
+			if err := a.dismissSteedAs(t, a.master, a.steedCreatureID(t), dismiss); err != nil {
+				t.Fatalf("dismiss error = %v", err)
+			}
+		}},
+		{"a steed removed by the master", func(t *testing.T, a *armed, e *playv1.Encounter) {
+			t.Helper()
+			if _, err := a.master.combat.RemoveCombatant(t.Context(), connect.NewRequest(&playv1.RemoveCombatantRequest{
+				CampaignId: a.campaignID, EncounterId: e.GetId(), CombatantId: a.id(t, "Trovão"), IdempotencyKey: newKey(),
+			})); err != nil {
+				t.Fatalf("RemoveCombatant() error = %v", err)
+			}
+		}},
+		{"a steed at 0 hit points", func(t *testing.T, a *armed, e *playv1.Encounter) {
+			t.Helper()
+			if _, err := a.adjustHP(t, e, "Trovão", func(r *playv1.AdjustCombatantHitPointsRequest) {
+				r.Change = &playv1.AdjustCombatantHitPointsRequest_HitPoints{HitPoints: 0}
+			}); err != nil {
+				t.Fatalf("take the steed to 0 hit points: %v", err)
+			}
+		}},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			a, e := steedFight(t, false)
+			tc.run(t, a, e)
+			if got := a.anySteedLine(t, e); len(got) != 0 {
+				t.Errorf("%s: who reads a steed line = %v, want nobody", tc.name, got)
+			}
+		})
+	}
+}
+
+// TestFindSteedDismissByTheMasterIsMarkedAsHisAct: the master sends the owner's steed away and every reader of the line is told it was his hand.
+func TestFindSteedDismissByTheMasterIsMarkedAsHisAct(t *testing.T) {
+	t.Parallel()
+	a, e := riderInFight(t)
+	if err := a.dismissSteedAs(t, a.master, a.steedCreatureID(t), charactersv1.CreatureDismissal_CREATURE_DISMISSAL_DISMISS); err != nil {
+		t.Fatalf("dismiss error = %v", err)
+	}
+	for who, u := range map[string]*user{"the master": a.master, "the owner": a.ana, "another player": a.caio} {
+		line := a.steedLine(t, u, e, playv1.CombatLogKind_COMBAT_LOG_KIND_CREATURE_DISMISSED)
+		if line == nil || !line.GetByMaster() {
+			t.Errorf("%s reads %v, want the line marked as the master's act", who, line)
+		}
 	}
 }

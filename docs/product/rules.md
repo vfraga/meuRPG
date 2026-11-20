@@ -653,7 +653,8 @@ A creature the master marked nothing acts on its own.
 The mark ("adestrada" or "independente") of a creature nobody rides is read by the master and by its owner.
 While a creature is ridden, every player who sees both the rider and the mount reads its mark, so each screen shows the order of the pair as it is.
 A player who does not see the rider, a pending member and a stranger do not read it.
-That a creature is a willing mount is read by any player who sees it: their "Montaria" panel lists it.
+That a creature is a willing mount is read by any player who sees it.
+Their "Montaria" panel lists the creatures of their own and the party-side creatures the master marked, and no other.
 A mount the player cannot see is not listed and has no distance.
 The pair is one occupant of the mount's square, and the mount's turn is its own.
 
@@ -670,12 +671,12 @@ The pair is one occupant of the mount's square, and the mount's turn is its own.
   A recast revives the same steed at full hit points, with its form, name and type, and refuses another form or type.
   "Dispensar" sends the steed away and keeps the bond, and "Libertar" ends the bond.
   In a combat that holds the steed, either one costs the owner's action; the master and a dismissal outside combat are free.
-  In a running combat either one is a line of the log ("Lia dispensou Estrela: o vínculo continua", "Lia libertou Estrela"), read by the master and by every player.
+  In a running combat either one is a line of the log ("Lia dispensou Estrela: o vínculo continua", "Lia libertou Estrela"), read by the master and by every player who saw the steed; a hidden one is the master's alone.
   At 0 hit points the steed disappears and the bond stays, so a recast brings it back.
   The steed's Intelligence is at least 6, and no effect reads a lower one.
   The caster picks celestial, fey or fiend; only the owner and the master read the choice.
   A spell that targets only the caster can also reach the steed (`also_steed`) while the caster rides it: a lasting effect lands on both, and any other spell leaves a text note.
-- A player reads the link between two creatures only when they see both of them; a hidden mount leaves its rider plain, and no player reads the mark of a mount nobody rides (RN-21) or another player's save roll.
+- A player reads the link between two creatures only when they see both of them; a hidden mount leaves its rider plain, and no other player reads the mark of a mount nobody rides (RN-21) or another player's save roll.
 
 **Sculpt Spells** (SRD 5.1, School of Evocation).
 An evocation wizard from level 2, casting an evocation spell that affects other creatures it can see, spares up to 1 + the spell's level of them (the level it is cast at). A spared creature succeeds on its saving throw with no roll and takes no damage when the spell would deal half; the save line says "Esculpir Magias".
