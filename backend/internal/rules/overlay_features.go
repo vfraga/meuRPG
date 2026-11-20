@@ -18,7 +18,7 @@ import (
 // the SRD has no effect of that type (a feat from another book brings it).
 var overlayEffectTypes = []string{
 	"modifier", "proficiency", "resource", "sense", "roll_mode", "grant_action",
-	"superiority_die", "extra_attack", "extra_damage", "power_attack", "ambush", "wild_shape", "slot_recovery", "ranged_attack", "resistance", "state", "weapon_rule", "pseudo_weapon", "natural_attack",
+	"superiority_die", "extra_attack", "extra_damage", "power_attack", "ambush", "wild_shape", "slot_recovery", "ranged_attack", "resistance", "state", "weapon_rule", "pseudo_weapon", "natural_attack", "hit_rider",
 	"condition_immunity", "breathes_water", "granted_spell", "on_event", "spell_modifier", "reroll", "roll_minimum", "flag", "aura", "choice", "ability_increase", "note",
 }
 
@@ -408,6 +408,7 @@ var effectTypeChecks = map[string]func(b *overlayBuilder, site effectSite, e *Ef
 	"spell_modifier":   (*overlayBuilder).checkOnTarget,
 	"ambush":           (*overlayBuilder).checkOnTarget,
 	"power_attack":     (*overlayBuilder).checkPowerAttack,
+	"hit_rider":        (*overlayBuilder).checkHitRider,
 	"reroll":           (*overlayBuilder).checkReroll,
 	"roll_minimum":     (*overlayBuilder).checkRollMinimum,
 	"flag":             func(_ *overlayBuilder, site effectSite, e *Effect) error { return checkFlag(site, e) },
@@ -728,13 +729,16 @@ var ownFields = map[string][]string{
 	"on_event":     {"event", "resource", "cost", "restore", "value", "heal", "temp_hp", "heal_percent_max", "ability"},
 	"note":         {"value", "spells"},
 	// A superiority die is a feature option's (or a feature's) die from a resource.
-	"superiority_die": {"value", "resource", "economy", "applies", "ability", "targets"},
+	"superiority_die": {"value", "resource", "economy", "applies", "ability", "dc_ability_alt", "targets"},
 	// An ability_increase is a feat's alone (checkEffect).
 	"ability_increase": {"value", "count", "from"},
 	// An extra_damage adds its value to a weapon hit, when its applies holds, from a resource if it names one.
 	"extra_damage": {"applies", "value", "resource", "dice", "dice_sides", "damage_type", "weapon", "frequency", "no_crit_doubling", "line", "while"},
 	// A power_attack trades a penalty on the attack roll for flat damage, for the weapons its filters choose.
 	"power_attack": {"attack_penalty", "damage_bonus", "weapon", "weapon_properties", "only_proficient", "resource"},
+	// A hit_rider puts a lasting effect, a forced move or both on the target of a hit of its line, from its
+	// duration, its frequency and an optional saving throw.
+	"hit_rider": {"line", "rider", "speed_reduction_ft", "forced_move", "forced_move_ft", "duration_rounds", "ends_on", "frequency", "save_ability", "ability", "dc_ability_alt"},
 	// An ambush gives an edge against a target, by its applies alone.
 	"ambush": {"applies"},
 	// A reroll covers some rolls up to a face and may spend a resource.
@@ -756,7 +760,7 @@ var ownFields = map[string][]string{
 	"state": {"state_name", "duration_rounds", "ends_on", "resource", "economy"},
 	// A weapon rule changes the weapons its filter chooses; a pseudo-weapon is an attack line of its own.
 	"weapon_rule":   {"weapon", "weapon_name", "attack_ability", "damage_ability", "attack_bonus", "damage_bonus", "reach_ft", "magical", "silvered", "adamantine", "line", "while"},
-	"pseudo_weapon": {"attack_name", "weapon", "damage_dice", "damage_type", "ability", "reach_ft", "range_ft", "while"},
+	"pseudo_weapon": {"attack_name", "weapon", "damage_dice", "damage_type", "ability", "reach_ft", "range_ft", "long_range_ft", "while"},
 	// A natural attack: the name, the dice, the damage type, the ability and the reach; the when that gates it.
 	"natural_attack": {"attack_name", "damage_dice", "damage_type", "ability", "reach_ft"},
 	// breathes_water has no field of its own: only the when that gates it.
@@ -864,6 +868,13 @@ var effectFields = []effectField{
 	{"duration_rounds", func(e *Effect) bool { return e.DurationRounds != "" }, func(e *Effect) { e.DurationRounds = "" }},
 	{"ends_on", func(e *Effect) bool { return len(e.EndsOn) > 0 }, func(e *Effect) { e.EndsOn = nil }},
 	{"line", func(e *Effect) bool { return e.Line != "" }, func(e *Effect) { e.Line = "" }},
+	{"rider", func(e *Effect) bool { return e.Rider != "" }, func(e *Effect) { e.Rider = "" }},
+	{"speed_reduction_ft", func(e *Effect) bool { return e.SpeedReductionFt != 0 }, func(e *Effect) { e.SpeedReductionFt = 0 }},
+	{"forced_move", func(e *Effect) bool { return e.ForcedMove != "" }, func(e *Effect) { e.ForcedMove = "" }},
+	{"forced_move_ft", func(e *Effect) bool { return e.ForcedMoveFt != 0 }, func(e *Effect) { e.ForcedMoveFt = 0 }},
+	{"save_ability", func(e *Effect) bool { return e.SaveAbility != "" }, func(e *Effect) { e.SaveAbility = "" }},
+	{"dc_ability_alt", func(e *Effect) bool { return e.DCAbilityAlt != "" }, func(e *Effect) { e.DCAbilityAlt = "" }},
+	{"long_range_ft", func(e *Effect) bool { return e.LongRangeFt != 0 }, func(e *Effect) { e.LongRangeFt = 0 }},
 	{"weapon_name", func(e *Effect) bool { return e.WeaponName != "" }, func(e *Effect) { e.WeaponName = "" }},
 	{"attack_ability", func(e *Effect) bool { return e.AttackAbility != "" }, func(e *Effect) { e.AttackAbility = "" }},
 	{"damage_ability", func(e *Effect) bool { return e.DamageAbility != "" }, func(e *Effect) { e.DamageAbility = "" }},
@@ -1540,6 +1551,9 @@ func checkGoadCost(site effectSite, e *Effect) error {
 	}
 	if e.Economy != "" {
 		return site.fail(".economy", ReasonValue, "a goad costs no action")
+	}
+	if msg := goadAltProblem(e); msg != "" {
+		return site.fail(".dc_ability_alt", ReasonValue, "%s", msg)
 	}
 	return nil
 }

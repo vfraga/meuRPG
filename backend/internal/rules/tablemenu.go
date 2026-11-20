@@ -184,6 +184,11 @@ const (
 	ListEffectFlags = "effect_flags"
 	// ListNaturalAbilities are the abilities a natural attack uses: Strength, Dexterity or the better of the two.
 	ListNaturalAbilities = "natural_abilities"
+	// ListHitRiders, ListHitMoves and ListHitRiderEnds are the lasting effects a hit_rider puts on the target, the forced
+	// moves it makes and the ways a lasting one ends besides its rounds.
+	ListHitRiders    = "hit_riders"
+	ListHitMoves     = "hit_moves"
+	ListHitRiderEnds = "hit_rider_ends"
 )
 
 // menuTypes is the menu's types, in the picker's order, with the copy in
@@ -244,11 +249,12 @@ var menuTypes = []MenuType{
 		{Name: "tags", Kind: "tags", List: ListTagPrefixes},
 		{Name: "text_pt", Kind: "text"},
 	}},
-	{Type: "superiority_die", NamePT: "Dado de manobra", HintPT: "Um dado que uma opção (uma manobra) soma a uma rolagem e que gasta um uso de um recurso que a entrada define: ao dano de um ataque com arma que acertou, a um ataque, ao teste de Atletismo de uma agarrada, como redução do dano de um ataque corpo a corpo (reação), ou ao dano com uma provocação: o alvo faz um teste de Sabedoria contra a CD da manobra (8 + proficiência + o modificador da habilidade escolhida) e, se falhar, tem desvantagem nos ataques contra quem não seja o personagem até o fim do próximo turno dele. Também pode ir num teste de habilidade do personagem (todos, ou só os das perícias e habilidades da lista), num teste de resistência (qualquer, ou o da habilidade escolhida) ou na iniciativa; esses não custam ação. O texto é o efeito que o mestre lê.", Fields: []MenuField{
+	{Type: "superiority_die", NamePT: "Dado de manobra", HintPT: "Um dado que uma opção (uma manobra) soma a uma rolagem e que gasta um uso de um recurso que a entrada define: ao dano de um ataque com arma que acertou, a um ataque, ao teste de Atletismo de uma agarrada, como redução do dano de um ataque corpo a corpo (reação), ou ao dano com uma provocação: o alvo faz um teste de Sabedoria contra a CD da manobra (8 + proficiência + o modificador da habilidade escolhida, ou o maior entre o dela e o da segunda habilidade, se houver) e, se falhar, tem desvantagem nos ataques contra quem não seja o personagem até o fim do próximo turno dele. Também pode ir num teste de habilidade do personagem (todos, ou só os das perícias e habilidades da lista), num teste de resistência (qualquer, ou o da habilidade escolhida) ou na iniciativa; esses não custam ação. O texto é o efeito que o mestre lê.", Fields: []MenuField{
 		{Name: "applies", Required: true, Kind: "choice", List: ListManeuverApplies},
 		{Name: "resource", Required: true, Kind: "resource_ref"},
 		{Name: "value", Required: true, Kind: "formula"},
 		{Name: "ability", Kind: "choice", List: ListAbilities},
+		{Name: "dc_ability_alt", Kind: "choice", List: ListAbilities},
 		{Name: "targets", Kind: "choices", List: ListRollDieTargets},
 		{Name: "economy", Kind: "choice", List: ListEconomies},
 		{Name: "when", Kind: "condition"},
@@ -344,13 +350,14 @@ var menuTypes = []MenuType{
 		{Name: "while", Kind: "state_ref"},
 		{Name: "text_pt", Kind: "text"},
 	}},
-	{Type: "pseudo_weapon", NamePT: "Arma da característica", HintPT: "Dá à ficha um ataque próprio, que nunca é um item: nome, dados de dano, tipo de dano, a habilidade que usa e o alcance (o de contato, no corpo a corpo; a distância máxima, à distância). Conta como uma arma em que o personagem tem proficiência, aparece na lista de ataques e no combate, e as regras de arma também a mudam.", Fields: []MenuField{
+	{Type: "pseudo_weapon", NamePT: "Arma da característica", HintPT: "Dá à ficha um ataque próprio, que nunca é um item: nome, dados de dano, tipo de dano, a habilidade que usa e o alcance (o de contato, no corpo a corpo; a distância normal, à distância). À distância, o alcance longo (opcional, maior que o normal) vale como o de uma arma: o ataque feito além do alcance normal e dentro do longo tem desvantagem. Conta como uma arma em que o personagem tem proficiência, aparece na lista de ataques e no combate, e as regras de arma também a mudam.", Fields: []MenuField{
 		{Name: "attack_name", Required: true, Kind: "text"},
 		{Name: "weapon", Required: true, Kind: "choice", List: ListWeaponKinds},
 		{Name: "damage_dice", Required: true, Kind: "text"},
 		{Name: "damage_type", Required: true, Kind: "choice", List: ListDamageTypes},
 		{Name: "ability", Required: true, Kind: "choice", List: ListAbilities},
 		{Name: "range_ft", Kind: "number", Min: feetStep, Max: MaxWeaponRangeFt, AlwaysShown: true},
+		{Name: "long_range_ft", Kind: "number", Min: 2 * feetStep, Max: MaxWeaponLongRangeFt, AlwaysShown: true},
 		{Name: "reach_ft", Kind: "number", Min: feetStep, Max: MaxWeaponReachFt, AlwaysShown: true},
 		{Name: "when", Kind: "condition"},
 		{Name: "while", Kind: "state_ref"},
@@ -362,6 +369,21 @@ var menuTypes = []MenuType{
 		{Name: "damage_type", Required: true, Kind: "choice", List: ListDamageTypes},
 		{Name: "ability", Required: true, Kind: "choice", List: ListNaturalAbilities},
 		{Name: "reach_ft", Kind: "number", Min: feetStep, Max: MaxWeaponReachFt, AlwaysShown: true},
+		{Name: "when", Kind: "condition"},
+		{Name: "text_pt", Kind: "text"},
+	}},
+	{Type: "hit_rider", NamePT: "Efeito no acerto", HintPT: "Um efeito que o alvo de um acerto leva além do dano, oferecido no cartão do acerto depois que o dano cai: um efeito que dura (desvantagem nos ataques contra qualquer um que não seja quem tem a característica, ou redução do deslocamento, de 5 a 60 pés), um empurrão ou uma puxada, ou os dois. A linha é obrigatória e diz qual acerto o carrega: uma linha de ataque como no dano extra (a arma do pacto, uma arma pela chave, o nome de uma arma da característica ou de um ataque natural da mesma entrada) ou a chave de uma magia (spell:...), cujo ataque que acerta, ou cujo teste de resistência que falha, o carrega. O efeito que dura vale por um número de rodadas ou até o início ou o fim do próximo turno de quem tem a característica, um dos dois. O empurrão e a puxada movem o alvo de 5 em 5 pés, até 60 pés (18 m), e param numa parede ou numa criatura; sem mapa, nada se move. Vale uma vez por turno, ou em todo acerto. O teste de resistência do alvo é opcional: com ele, o alvo que passa não leva nada; a CD é 8 + proficiência + o modificador da habilidade escolhida, ou o maior entre o dela e o da segunda habilidade. Uma magia que já tem teste de resistência é decidida por ele e não leva outro aqui.", Fields: []MenuField{
+		{Name: "line", Required: true, Kind: "text"},
+		{Name: "rider", Kind: "choice", List: ListHitRiders, AlwaysShown: true},
+		{Name: "speed_reduction_ft", Kind: "number", Min: MinHitRiderFt, Max: MaxHitRiderFt},
+		{Name: "forced_move", Kind: "choice", List: ListHitMoves, AlwaysShown: true},
+		{Name: "forced_move_ft", Kind: "number", Min: MinHitRiderFt, Max: MaxHitRiderFt, AlwaysShown: true},
+		{Name: "duration_rounds", Kind: "formula", AlwaysShown: true},
+		{Name: "ends_on", Kind: "choices", List: ListHitRiderEnds, AlwaysShown: true},
+		{Name: "frequency", Kind: "choice", List: ListExtraDamageFrequencies, AlwaysShown: true},
+		{Name: "save_ability", Kind: "choice", List: ListAbilities, AlwaysShown: true},
+		{Name: "ability", Kind: "choice", List: ListAbilities, AlwaysShown: true},
+		{Name: "dc_ability_alt", Kind: "choice", List: ListAbilities, AlwaysShown: true},
 		{Name: "when", Kind: "condition"},
 		{Name: "text_pt", Kind: "text"},
 	}},
@@ -793,6 +815,9 @@ func (c *content) menuLists() []MenuList {
 		{Name: ListFeatOptionSets, Values: menuFeatOptionSets()},
 		{Name: ListResistanceConditions, Values: []MenuValue{{Key: ResistanceWhileRage, NamePT: "Em fúria", HintPT: "Vale enquanto o personagem estiver em fúria (e não usar armadura pesada)."}}},
 		{Name: ListStateEnds, Values: namedMenuHint(stateEnds, stateEndNms)},
+		{Name: ListHitRiders, Values: hitRiderTypeValues()},
+		{Name: ListHitMoves, Values: hitMoveValues()},
+		{Name: ListHitRiderEnds, Values: hitEndsValues()},
 		{Name: ListStateEconomies, Values: namedMenu(stateEconomies, func(k string) string { return economyNms[k] })},
 		{Name: ListWeaponFilters, Values: namedMenuHint(weaponFilters, weaponFilterNms)},
 		{Name: ListWeaponKinds, Values: namedMenuHint(weaponKinds, weaponFilterNms)},

@@ -36,6 +36,8 @@ func checkNaturalAttack(e *Effect, damageTypeOK func(string) bool) weaponProblem
 		return problem(".ability", ReasonValue, "ability is "+strings.Join(naturalAbilities, ", "))
 	case len(e.Tags) > 0:
 		return problem(".tags", ReasonValue, "a natural attack has no tags")
+	case e.LongRangeFt != 0:
+		return problem(".long_range_ft", ReasonValue, "a natural attack is melee only: it has a reach, not a long range")
 	}
 	return checkReach(e, false)
 }

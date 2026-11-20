@@ -802,6 +802,9 @@ type Derived struct {
 	// ExtraDamages are the damage the character's table features add to a weapon hit
 	// once per turn (extra_damage effects), with the amount worked out.
 	ExtraDamages []ExtraDamage
+	// HitRiders are the lasting effects and forced moves the character's table features put on the target of a hit
+	// (hit_rider effects), with the saving throw's DC and the rounds worked out.
+	HitRiders []HitRider `json:",omitempty"`
 	// PowerAttacks are the trades of a penalty on the attack roll for flat damage that the character's table
 	// features offer (power_attack effects).
 	PowerAttacks []PowerAttack `json:",omitempty"`

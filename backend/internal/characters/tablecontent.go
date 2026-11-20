@@ -488,6 +488,8 @@ func tableEffectsOf(in []*rulesv1.TableEffect) []rules.Effect {
 			Flag: e.GetFlag(), Use: featureUseOf(e.GetUse()), Aura: tableSpellEffectOf(e.GetAura()),
 			AttackPenalty: int(e.GetAttackPenalty()), WeaponProperties: e.GetWeaponProperties(),
 			Filter: choiceFilterOf(e.GetFilter()), FromFeature: e.GetFromFeature(),
+			Rider: e.GetRider(), SpeedReductionFt: int(e.GetSpeedReductionFt()), ForcedMove: e.GetForcedMove(), ForcedMoveFt: int(e.GetForcedMoveFt()),
+			SaveAbility: e.GetSaveAbility(), LongRangeFt: int(e.GetLongRangeFt()), DCAbilityAlt: e.GetDcAbilityAlt(),
 		})
 	}
 	return out
@@ -747,7 +749,7 @@ func tableSpellEffectOf(m *rulesv1.TableSpellEffect) *rules.TableSpellEffect {
 			Trigger: enumOrUnknown(hitTriggerOf, x.GetTrigger()), Dice: int(x.GetDice()), PerSlotDice: int(x.GetPerSlotDice()),
 			MaxDice: int(x.GetMaxDice()), DamageType: x.GetDamageType(), Save: x.GetSave(), OnFailConditions: x.GetOnFailConditions(),
 			ConditionDuration: enumOrUnknown(hitConditionDurationOf, x.GetConditionDuration()),
-			ValueAbility:      x.GetValueAbility(), ValueMin: int(x.GetValueMin()),
+			ValueAbility:      x.GetValueAbility(), ValueMin: int(x.GetValueMin()), ExceptSource: x.GetExceptSource(),
 		}
 		for _, r := range x.GetAppliesTo() {
 			w := enumOrUnknown(effectRollOf, r)

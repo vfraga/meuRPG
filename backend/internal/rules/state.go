@@ -226,7 +226,8 @@ func (x effectCompiler) strayStateAndWeapon() error {
 		set   bool
 		names string
 	}{
-		{[]string{"state"}, e.StateName != "" || e.DurationRounds != "" || len(e.EndsOn) > 0, "state_name, duration_rounds and ends_on belong to state"},
+		{[]string{"state"}, e.StateName != "", "state_name belongs to state"},
+		{[]string{"state", "hit_rider"}, e.DurationRounds != "" || len(e.EndsOn) > 0, "duration_rounds and ends_on belong to state and hit_rider"},
 		{
 			[]string{"weapon_rule"},
 			e.WeaponName != "" || e.AttackAbility != "" || e.DamageAbility != "" || e.AttackBonus != 0,

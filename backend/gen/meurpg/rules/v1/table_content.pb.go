@@ -822,7 +822,7 @@ const (
 	TableEffectModifierKind_TABLE_EFFECT_MODIFIER_KIND_SAVE_ADVANTAGE TableEffectModifierKind = 6
 	// Advantage on the ability checks of `abilities`.
 	TableEffectModifierKind_TABLE_EFFECT_MODIFIER_KIND_CHECK_ADVANTAGE TableEffectModifierKind = 7
-	// Disadvantage on the creature's attack rolls. It reads no other field.
+	// Disadvantage on the creature's attack rolls. It reads no other field but `except_source`.
 	TableEffectModifierKind_TABLE_EFFECT_MODIFIER_KIND_ATTACK_DISADVANTAGE TableEffectModifierKind = 8
 	// Adds a flat `value` (-20 to 20, not 0) to the rolls of `applies_to`. Needs value and applies_to.
 	TableEffectModifierKind_TABLE_EFFECT_MODIFIER_KIND_ROLL_BONUS TableEffectModifierKind = 14
@@ -2223,7 +2223,36 @@ type TableEffect struct {
 	// of the unarmed strike, or the `attack_name` (or the line key, "pseudo:..." or "natural:...") of a
 	// pseudo_weapon or natural_attack of the same entry. A value that names no such line is refused
 	// at this field; two lines of the entry with the same name make the name ambiguous.
-	Line          string `protobuf:"bytes,99,opt,name=line,proto3" json:"line,omitempty"`
+	Line string `protobuf:"bytes,99,opt,name=line,proto3" json:"line,omitempty"`
+	// hit_rider: a lasting effect, a forced move or both, put on the target of one attack line's hit and offered
+	// on the hit card after the damage lands. `line` is required and names the hit it rides on: a line as for
+	// extra_damage (a pseudo_weapon or natural_attack of the entry, a weapon key, "pact"), or the key of a spell
+	// ("spell:...", of the SRD or the table) whose spell attack carries it on a hit, or whose saving throw carries it
+	// on a failed save. `rider` is the lasting effect, one of "attack_disadvantage_except_holder" (disadvantage on
+	// the target's attack rolls against anyone but the creature that holds the feature) and "speed_reduction"
+	// (the target's speed is lower by `speed_reduction_ft`). `speed_reduction_ft` is required by "speed_reduction"
+	// and refused with any other rider: 5 to 60, in steps of 5. A lasting rider lasts `duration_rounds` (an Int
+	// formula, 1 to 600 rounds) or, in `ends_on`, until "start_of_holder_turn" or "end_of_holder_turn" (the
+	// holder's next one): exactly one of the two. A forced move alone has neither. `forced_move` ("push" or
+	// "pull") and `forced_move_ft` (5 to 60, in steps of 5) go together: the target moves that far away from, or
+	// toward, the holder, and stops at a wall or at a creature; with no map nothing moves. A hit_rider has a rider,
+	// a forced move or both. `frequency` is "once_per_turn" (the default) or "each_hit". `save_ability` ("str",
+	// "dex", "con", "int", "wis", "cha") gives the target a saving throw against a DC of 8 + proficiency + the
+	// modifier of `ability` (required with it), or of the better of `ability` and `dc_ability_alt`; a target
+	// that passes takes neither the rider nor the move. A spell with a saving throw of its own is decided by that
+	// saving throw, so its rider takes no `save_ability`, `ability` or `dc_ability_alt`.
+	Rider            string `protobuf:"bytes,100,opt,name=rider,proto3" json:"rider,omitempty"`
+	SpeedReductionFt int32  `protobuf:"varint,101,opt,name=speed_reduction_ft,json=speedReductionFt,proto3" json:"speed_reduction_ft,omitempty"`
+	ForcedMove       string `protobuf:"bytes,102,opt,name=forced_move,json=forcedMove,proto3" json:"forced_move,omitempty"`
+	ForcedMoveFt     int32  `protobuf:"varint,103,opt,name=forced_move_ft,json=forcedMoveFt,proto3" json:"forced_move_ft,omitempty"`
+	SaveAbility      string `protobuf:"bytes,104,opt,name=save_ability,json=saveAbility,proto3" json:"save_ability,omitempty"`
+	// pseudo_weapon of a ranged line: the long range, 10 to 600 feet in steps of 5 and more than `range_ft`. A
+	// target beyond `range_ft` and within it is attacked with disadvantage, as with a weapon, and the line reaches
+	// that far. Refused on a melee line and on a natural_attack, which is melee only.
+	LongRangeFt int32 `protobuf:"varint,105,opt,name=long_range_ft,json=longRangeFt,proto3" json:"long_range_ft,omitempty"`
+	// hit_rider with `save_ability`: the second ability of the saving throw's DC, so that the DC uses the better
+	// of `ability` and this one. Needs `ability`, and is a different ability.
+	DcAbilityAlt  string `protobuf:"bytes,106,opt,name=dc_ability_alt,json=dcAbilityAlt,proto3" json:"dc_ability_alt,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2933,6 +2962,55 @@ func (x *TableEffect) GetFromFeature() string {
 func (x *TableEffect) GetLine() string {
 	if x != nil {
 		return x.Line
+	}
+	return ""
+}
+
+func (x *TableEffect) GetRider() string {
+	if x != nil {
+		return x.Rider
+	}
+	return ""
+}
+
+func (x *TableEffect) GetSpeedReductionFt() int32 {
+	if x != nil {
+		return x.SpeedReductionFt
+	}
+	return 0
+}
+
+func (x *TableEffect) GetForcedMove() string {
+	if x != nil {
+		return x.ForcedMove
+	}
+	return ""
+}
+
+func (x *TableEffect) GetForcedMoveFt() int32 {
+	if x != nil {
+		return x.ForcedMoveFt
+	}
+	return 0
+}
+
+func (x *TableEffect) GetSaveAbility() string {
+	if x != nil {
+		return x.SaveAbility
+	}
+	return ""
+}
+
+func (x *TableEffect) GetLongRangeFt() int32 {
+	if x != nil {
+		return x.LongRangeFt
+	}
+	return 0
+}
+
+func (x *TableEffect) GetDcAbilityAlt() string {
+	if x != nil {
+		return x.DcAbilityAlt
 	}
 	return ""
 }
@@ -6470,7 +6548,11 @@ type TableEffectModifier struct {
 	// aura has one.
 	ValueAbility string `protobuf:"bytes,19,opt,name=value_ability,json=valueAbility,proto3" json:"value_ability,omitempty"`
 	// ROLL_BONUS with `value_ability` only: the least the bonus is, 1 to 5 (Aura of Protection: at least +1).
-	ValueMin      int32 `protobuf:"varint,20,opt,name=value_min,json=valueMin,proto3" json:"value_min,omitempty"`
+	ValueMin int32 `protobuf:"varint,20,opt,name=value_min,json=valueMin,proto3" json:"value_min,omitempty"`
+	// ATTACK_DISADVANTAGE only: the disadvantage holds against every target but the creature that put the effect
+	// on (the caster of the spell, the bearer of the aura), as the goad's does. It needs a spell that lasts or an
+	// aura, and is refused with every other kind.
+	ExceptSource  bool `protobuf:"varint,21,opt,name=except_source,json=exceptSource,proto3" json:"except_source,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -6643,6 +6725,13 @@ func (x *TableEffectModifier) GetValueMin() int32 {
 		return x.ValueMin
 	}
 	return 0
+}
+
+func (x *TableEffectModifier) GetExceptSource() bool {
+	if x != nil {
+		return x.ExceptSource
+	}
+	return false
 }
 
 // TableContentViolation is one thing the server refused in a write: the path of
@@ -10040,7 +10129,7 @@ const file_meurpg_rules_v1_table_content_proto_rawDesc = "" +
 	" \x01(\x05R\vlongRangeFt\x12\x1b\n" +
 	"\tweight_oz\x18\v \x01(\x05R\bweightOz\x12\x19\n" +
 	"\bprice_cp\x18\f \x01(\x05R\apriceCp\x129\n" +
-	"\x19two_handed_since_revision\x18\r \x01(\x05R\x16twoHandedSinceRevision\"\x95\x17\n" +
+	"\x19two_handed_since_revision\x18\r \x01(\x05R\x16twoHandedSinceRevision\"\x8d\x19\n" +
 	"\vTableEffect\x12\x12\n" +
 	"\x04type\x18\x01 \x01(\tR\x04type\x12\x16\n" +
 	"\x06target\x18\x02 \x01(\tR\x06target\x12\x12\n" +
@@ -10155,7 +10244,15 @@ const file_meurpg_rules_v1_table_content_proto_rawDesc = "" +
 	"cast_level\x18_ \x01(\x05R\tcastLevel\x12:\n" +
 	"\x06filter\x18` \x01(\v2\".meurpg.rules.v1.TableChoiceFilterR\x06filter\x12!\n" +
 	"\ffrom_feature\x18a \x01(\tR\vfromFeature\x12\x12\n" +
-	"\x04line\x18c \x01(\tR\x04lineJ\x04\bZ\x10[\"F\n" +
+	"\x04line\x18c \x01(\tR\x04line\x12\x14\n" +
+	"\x05rider\x18d \x01(\tR\x05rider\x12,\n" +
+	"\x12speed_reduction_ft\x18e \x01(\x05R\x10speedReductionFt\x12\x1f\n" +
+	"\vforced_move\x18f \x01(\tR\n" +
+	"forcedMove\x12$\n" +
+	"\x0eforced_move_ft\x18g \x01(\x05R\fforcedMoveFt\x12!\n" +
+	"\fsave_ability\x18h \x01(\tR\vsaveAbility\x12\"\n" +
+	"\rlong_range_ft\x18i \x01(\x05R\vlongRangeFt\x12$\n" +
+	"\x0edc_ability_alt\x18j \x01(\tR\fdcAbilityAltJ\x04\bZ\x10[\"F\n" +
 	"\x11TableChoiceFilter\x121\n" +
 	"\x11proficiency_kinds\x18\x01 \x03(\tB\x04\x88\xb5\x18\x03R\x10proficiencyKinds\"\x94\x04\n" +
 	"\fTableFeature\x12\x10\n" +
@@ -10444,7 +10541,7 @@ const file_meurpg_rules_v1_table_content_proto_rawDesc = "" +
 	"\x04aura\x18\x06 \x01(\v2 .meurpg.rules.v1.TableEffectAuraR\x04aura\"k\n" +
 	"\x0fTableEffectAura\x12\x1b\n" +
 	"\tradius_ft\x18\x01 \x01(\x05R\bradiusFt\x12;\n" +
-	"\aaffects\x18\x02 \x01(\x0e2!.meurpg.rules.v1.TableAuraAffectsR\aaffects\"\xd9\x06\n" +
+	"\aaffects\x18\x02 \x01(\x0e2!.meurpg.rules.v1.TableAuraAffectsR\aaffects\"\xfe\x06\n" +
 	"\x13TableEffectModifier\x12<\n" +
 	"\x04kind\x18\x01 \x01(\x0e2(.meurpg.rules.v1.TableEffectModifierKindR\x04kind\x12\x10\n" +
 	"\x03die\x18\x02 \x01(\x05R\x03die\x12\x12\n" +
@@ -10470,7 +10567,8 @@ const file_meurpg_rules_v1_table_content_proto_rawDesc = "" +
 	"\x12on_fail_conditions\x18\x11 \x03(\tB\x04\x90\xb5\x18@R\x10onFailConditions\x12Y\n" +
 	"\x12condition_duration\x18\x12 \x01(\x0e2*.meurpg.rules.v1.TableHitConditionDurationR\x11conditionDuration\x12)\n" +
 	"\rvalue_ability\x18\x13 \x01(\tB\x04\x90\xb5\x18\x10R\fvalueAbility\x12\x1b\n" +
-	"\tvalue_min\x18\x14 \x01(\x05R\bvalueMin\"q\n" +
+	"\tvalue_min\x18\x14 \x01(\x05R\bvalueMin\x12#\n" +
+	"\rexcept_source\x18\x15 \x01(\bR\fexceptSource\"q\n" +
 	"\x15TableContentViolation\x12\x14\n" +
 	"\x05field\x18\x01 \x01(\tR\x05field\x12\x16\n" +
 	"\x06reason\x18\x02 \x01(\tR\x06reason\x12\x18\n" +

@@ -335,6 +335,21 @@ type Effect struct {
 	// flag (effectflags.go): the closed rule of the game it switches on, one of effectFlags.
 	Flag string `json:"flag,omitempty"`
 
+	// hit_rider (hitrider.go): a lasting effect and/or a forced move put on the target of one hit. Line is the hit it
+	// rides on (a line as for extra_damage, or a spell key); Rider is one of HitRider* (the lasting effect) with
+	// SpeedReductionFt for the speed one; ForcedMove (HitMovePush or HitMovePull) and ForcedMoveFt the move;
+	// DurationRounds (above) or one of EndsOn (above) how long the rider lasts; Frequency (above) how often; SaveAbility
+	// the target's saving throw against a DC from Ability (above) or the better of it and DCAbilityAlt.
+	Rider            string `json:"rider,omitempty"`
+	SpeedReductionFt int    `json:"speed_reduction_ft,omitempty"`
+	ForcedMove       string `json:"forced_move,omitempty"`
+	ForcedMoveFt     int    `json:"forced_move_ft,omitempty"`
+	SaveAbility      string `json:"save_ability,omitempty"`
+	DCAbilityAlt     string `json:"dc_ability_alt,omitempty"`
+	// LongRangeFt (pseudo_weapon) is the line's long range: a target beyond RangeFt and within it is attacked with
+	// disadvantage, as with a ranged weapon.
+	LongRangeFt int `json:"long_range_ft,omitempty"`
+
 	// aura (effectaura.go): the aura the holder carries into a combat, as a table spell's effect is written.
 	Aura *TableSpellEffect `json:"aura,omitempty"`
 
@@ -373,7 +388,7 @@ var (
 		"resource", "choice", "grant_action", "extra_attack", "note", "handler", "wild_shape", "beast_spells", "replaces", "slot_recovery",
 		"ability_increase", "superiority_die", "song_of_rest", "ranged_attack", "extra_damage", "ambush", "resistance",
 		"state", "weapon_rule", "pseudo_weapon", "breathes_water", "condition_immunity", "granted_spell", "on_event", "spell_modifier",
-		"reroll", "roll_minimum", "flag", "natural_attack", "aura", "power_attack",
+		"reroll", "roll_minimum", "flag", "natural_attack", "aura", "power_attack", "hit_rider",
 	}
 	modifierTargets = []string{
 		"ac.base", "ac", "hp.max", "speed.walk", "speed.fly", "speed.swim", "speed.climb", "speed.burrow", "initiative",
@@ -488,6 +503,7 @@ var effectCheckers = map[string]func(x effectCompiler) error{
 	"superiority_die":    effectCompiler.superiorityDie,
 	"extra_damage":       effectCompiler.extraDamage,
 	"power_attack":       effectCompiler.powerAttack,
+	"hit_rider":          effectCompiler.hitRider,
 	"spell_modifier":     effectCompiler.spellModifier,
 	"ambush":             effectCompiler.ambush,
 	"reroll":             effectCompiler.reroll,
@@ -581,6 +597,9 @@ func (x effectCompiler) strayFields() error {
 	if err := x.strayPowerAttack(); err != nil {
 		return err
 	}
+	if err := x.strayHitRider(); err != nil {
+		return err
+	}
 	if err := x.strayConditions(); err != nil {
 		return err
 	}
@@ -644,14 +663,17 @@ func (x effectCompiler) straySpellAndRangeFields() error {
 // strayExtraDamage refuses the fields of extra_damage and spell_modifier on an effect of another type.
 func (x effectCompiler) strayExtraDamage() error {
 	e := x.e
-	if e.Type != "extra_damage" && (e.Dice != "" || e.DiceSides != 0 || e.Frequency != "" || e.NoCritDoubling) {
-		return x.fail("dice, dice_sides, frequency and no_crit_doubling belong to extra_damage")
+	if e.Type != "extra_damage" && (e.Dice != "" || e.DiceSides != 0 || e.NoCritDoubling) {
+		return x.fail("dice, dice_sides and no_crit_doubling belong to extra_damage")
+	}
+	if e.Type != "extra_damage" && e.Type != "hit_rider" && e.Frequency != "" {
+		return x.fail("frequency belongs to extra_damage and hit_rider")
 	}
 	if !slices.Contains(damageTypeEffects, e.Type) && e.DamageType != "" {
 		return x.fail("damage_type belongs to extra_damage, spell_modifier, pseudo_weapon, natural_attack and roll_minimum")
 	}
-	if e.Type != "extra_damage" && e.Type != "weapon_rule" && e.Line != "" {
-		return x.fail("line belongs to extra_damage and weapon_rule")
+	if e.Type != "extra_damage" && e.Type != "weapon_rule" && e.Type != "hit_rider" && e.Line != "" {
+		return x.fail("line belongs to extra_damage, weapon_rule and hit_rider")
 	}
 	if !slices.Contains(weaponEffects, e.Type) && e.Weapon != "" {
 		return x.fail("weapon belongs to extra_damage, weapon_rule, pseudo_weapon and power_attack")
@@ -938,6 +960,9 @@ func (x effectCompiler) superiorityDie() error {
 	}
 	if err := x.strayTargets(); err != nil {
 		return err
+	}
+	if msg := goadAltProblem(e); msg != "" {
+		return x.fail("%s", msg)
 	}
 	return x.maneuverRider()
 }

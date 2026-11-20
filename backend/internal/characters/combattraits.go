@@ -174,6 +174,7 @@ func traitsOf(content *rules.Content, d rules.Derived) link.Traits {
 	t.UnactedAdvantage, t.SurprisedCritical = d.UnactedAdvantage, d.SurprisedCritical
 	t.Maneuvers, t.ExtraDamages, t.SpellModifiers = tableTraitsOf(d)
 	t.PowerAttacks = powerAttacksOf(d)
+	t.HitRiders = hitRidersOf(d)
 	t.RerollRules = rerollRulesOf(d)
 	t.Flags = slices.Clone(d.Flags)
 	t.Auras = featureAurasOf(d)
@@ -214,6 +215,18 @@ func tableTraitsOf(d rules.Derived) (maneuvers []link.Maneuver, extras []link.Ex
 		})
 	}
 	return maneuvers, extras, options
+}
+
+// hitRidersOf are the riders the character's table features put on the target of a hit.
+func hitRidersOf(d rules.Derived) (out []link.HitRider) {
+	for _, r := range d.HitRiders {
+		out = append(out, link.HitRider{
+			Key: r.Key, NamePT: r.NamePT, Line: r.Line, TextPT: r.TextPT, Rider: r.Rider, ForcedMove: r.ForcedMove, EndsOn: r.EndsOn,
+			Frequency: r.Frequency, SaveAbility: r.SaveAbility, SpeedReductionFt: r.SpeedReductionFt, ForcedMoveFt: r.ForcedMoveFt,
+			DurationRounds: r.DurationRounds, SaveDC: r.SaveDC,
+		})
+	}
+	return out
 }
 
 // powerAttacksOf are the attack-for-damage trades the character's table features offer.

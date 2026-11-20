@@ -526,6 +526,35 @@ message TableEffect {
   // pseudo_weapon or natural_attack of the same entry. A value that names no such line is refused
   // at this field; two lines of the entry with the same name make the name ambiguous.
   string line = 99;
+  // hit_rider: a lasting effect, a forced move or both, put on the target of one attack line's hit and offered
+  // on the hit card after the damage lands. `line` is required and names the hit it rides on: a line as for
+  // extra_damage (a pseudo_weapon or natural_attack of the entry, a weapon key, "pact"), or the key of a spell
+  // ("spell:...", of the SRD or the table) whose spell attack carries it on a hit, or whose saving throw carries it
+  // on a failed save. `rider` is the lasting effect, one of "attack_disadvantage_except_holder" (disadvantage on
+  // the target's attack rolls against anyone but the creature that holds the feature) and "speed_reduction"
+  // (the target's speed is lower by `speed_reduction_ft`). `speed_reduction_ft` is required by "speed_reduction"
+  // and refused with any other rider: 5 to 60, in steps of 5. A lasting rider lasts `duration_rounds` (an Int
+  // formula, 1 to 600 rounds) or, in `ends_on`, until "start_of_holder_turn" or "end_of_holder_turn" (the
+  // holder's next one): exactly one of the two. A forced move alone has neither. `forced_move` ("push" or
+  // "pull") and `forced_move_ft` (5 to 60, in steps of 5) go together: the target moves that far away from, or
+  // toward, the holder, and stops at a wall or at a creature; with no map nothing moves. A hit_rider has a rider,
+  // a forced move or both. `frequency` is "once_per_turn" (the default) or "each_hit". `save_ability` ("str",
+  // "dex", "con", "int", "wis", "cha") gives the target a saving throw against a DC of 8 + proficiency + the
+  // modifier of `ability` (required with it), or of the better of `ability` and `dc_ability_alt`; a target
+  // that passes takes neither the rider nor the move. A spell with a saving throw of its own is decided by that
+  // saving throw, so its rider takes no `save_ability`, `ability` or `dc_ability_alt`.
+  string rider = 100;
+  int32 speed_reduction_ft = 101;
+  string forced_move = 102;
+  int32 forced_move_ft = 103;
+  string save_ability = 104;
+  // pseudo_weapon of a ranged line: the long range, 10 to 600 feet in steps of 5 and more than `range_ft`. A
+  // target beyond `range_ft` and within it is attacked with disadvantage, as with a weapon, and the line reaches
+  // that far. Refused on a melee line and on a natural_attack, which is melee only.
+  int32 long_range_ft = 105;
+  // hit_rider with `save_ability`: the second ability of the saving throw's DC, so that the DC uses the better
+  // of `ability` and this one. Needs `ability`, and is a different ability.
+  string dc_ability_alt = 106;
   // Field 90 is not used.
   reserved 90;
 }
@@ -1440,7 +1469,7 @@ enum TableEffectModifierKind {
   TABLE_EFFECT_MODIFIER_KIND_SAVE_ADVANTAGE = 6;
   // Advantage on the ability checks of `abilities`.
   TABLE_EFFECT_MODIFIER_KIND_CHECK_ADVANTAGE = 7;
-  // Disadvantage on the creature's attack rolls. It reads no other field.
+  // Disadvantage on the creature's attack rolls. It reads no other field but `except_source`.
   TABLE_EFFECT_MODIFIER_KIND_ATTACK_DISADVANTAGE = 8;
   // 9 to 13 were condition immunity, no move, no action, no reaction and temporary hit points each turn.
   // Conditions go in the effect's `conditions`.
@@ -1556,6 +1585,10 @@ message TableEffectModifier {
   string value_ability = 19 [(meurpg.options.v1.max_len) = 16];
   // ROLL_BONUS with `value_ability` only: the least the bonus is, 1 to 5 (Aura of Protection: at least +1).
   int32 value_min = 20;
+  // ATTACK_DISADVANTAGE only: the disadvantage holds against every target but the creature that put the effect
+  // on (the caster of the spell, the bearer of the aura), as the goad's does. It needs a spell that lasts or an
+  // aura, and is refused with every other kind.
+  bool except_source = 21;
 }
 
 // TableZoneTrigger is when a table spell's area catches a creature.

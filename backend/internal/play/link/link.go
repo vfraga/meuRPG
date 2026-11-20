@@ -13,6 +13,7 @@ package link
 import (
 	"errors"
 	"slices"
+	"strings"
 	"time"
 
 	mapsv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/maps/v1"
@@ -245,6 +246,26 @@ type ExtraDamage struct {
 	NoCritDoubling                         bool
 }
 
+// HitRider is what a table feature puts on the target of a hit (the engine's hit_rider effect). Line is the key
+// of the attack line whose hit carries it (rules.LinePact, a weapon key, or the key of a pseudo_weapon or
+// natural_attack line), or of the spell ("spell:...") whose attack hit or failed saving throw does (OnSpell). Rider
+// is the lasting effect (rules.HitRider*, empty for a forced move alone) with SpeedReductionFt for the speed one;
+// ForcedMove (rules.HitMovePush or rules.HitMovePull) and ForcedMoveFt the move. A lasting rider lasts
+// DurationRounds rounds or, when that is 0, until EndsOn (rules.HitEnds*). Frequency is "once_per_turn" or "each_hit".
+// SaveAbility, when set, is the target's saving throw against SaveDC. rules.LineMatches reads Line.
+type HitRider struct {
+	Key, NamePT, Line, TextPT string
+	Rider, ForcedMove, EndsOn string
+	Frequency, SaveAbility    string
+	SpeedReductionFt          int
+	ForcedMoveFt              int
+	DurationRounds            int
+	SaveDC                    int
+}
+
+// OnSpell says the rider rides on a spell (Line is a spell's key) and not on a weapon line.
+func (r HitRider) OnSpell() bool { return strings.HasPrefix(r.Line, "spell:") }
+
 // PowerAttack is a trade a table feature offers on a weapon attack (the engine's power_attack effect):
 // AttackPenalty off the attack roll for DamageBonus flat on the damage of a hit. Weapon ("any", "melee" or
 // "ranged"), Properties (the "weapon-property:" keys the weapon must all have, PropertyNamesPT their
@@ -343,6 +364,9 @@ type Traits struct {
 	ExtraDamages []ExtraDamage
 	// PowerAttacks are the trades of attack roll for damage the table's features offer (power_attack effects).
 	PowerAttacks []PowerAttack `json:",omitempty"`
+	// HitRiders are the lasting effects and forced moves the table's features put on the target of a hit (hit_rider
+	// effects).
+	HitRiders []HitRider `json:",omitempty"`
 	// RerollRules are the rerolls of a die the table's features give (reroll effects).
 	RerollRules []RerollRule `json:",omitempty"`
 	// RollMinimums are the lowest values a die counts as that the table's features give (roll_minimum effects).

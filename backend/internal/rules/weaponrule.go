@@ -50,6 +50,8 @@ const (
 	// MaxWeaponReachFt bounds a melee reach, and MaxWeaponRangeFt a pseudo-weapon's range.
 	MaxWeaponReachFt = 60
 	MaxWeaponRangeFt = 300
+	// MaxWeaponLongRangeFt bounds a pseudo-weapon's long range.
+	MaxWeaponLongRangeFt = 600
 	// maxPseudoDice is the most dice a pseudo-weapon rolls.
 	maxPseudoDice = 10
 	// maxPseudoNameRunes and maxWeaponNameRunes bound the names the effects carry.
@@ -158,8 +160,11 @@ func checkPseudoWeapon(e *Effect, damageTypeOK func(string) bool) weaponProblem 
 // one: each has one, and neither has the other's.
 func checkPseudoReach(e *Effect) weaponProblem {
 	if e.Weapon == WeaponMelee {
-		if e.RangeFt != 0 {
+		switch {
+		case e.RangeFt != 0:
 			return problem(".range_ft", ReasonValue, "a melee weapon has a reach, not a range")
+		case e.LongRangeFt != 0:
+			return problem(".long_range_ft", ReasonValue, "a melee weapon has a reach, not a long range")
 		}
 		return checkReach(e, false)
 	}
@@ -168,6 +173,8 @@ func checkPseudoReach(e *Effect) weaponProblem {
 		return problem(".reach_ft", ReasonValue, "a reach belongs to melee weapons")
 	case e.RangeFt <= 0 || e.RangeFt > MaxWeaponRangeFt || e.RangeFt%feetStep != 0:
 		return problem(".range_ft", ReasonLimit, "a ranged weapon has a range of 5 to "+strconv.Itoa(MaxWeaponRangeFt)+" feet, in steps of 5")
+	case e.LongRangeFt != 0 && (e.LongRangeFt <= e.RangeFt || e.LongRangeFt > MaxWeaponLongRangeFt || e.LongRangeFt%feetStep != 0):
+		return problem(".long_range_ft", ReasonLimit, "a long range is more than the range, up to "+strconv.Itoa(MaxWeaponLongRangeFt)+" feet, in steps of 5")
 	}
 	return weaponProblem{}
 }
@@ -305,7 +312,7 @@ func (x *deriver) pseudoWeapon(a activeEffect, n int) {
 		Key: PseudoWeaponKey(a.owner, n), Name: e.AttackName, NamePT: e.AttackName, Kind: "weapon", Ability: t.attackAbility,
 		AttackBonus: x.mods[t.attackAbility] + prof + t.attackBonus, Proficient: true,
 		DamageType: e.DamageType, DamageTypeNamePT: x.c.namePT(e.DamageType),
-		Melee: melee, AbilityMod: x.mods[t.damageAbility], RangeFt: e.RangeFt,
+		Melee: melee, AbilityMod: x.mods[t.damageAbility], RangeFt: e.RangeFt, LongRangeFt: e.LongRangeFt,
 	}
 	if _, ok := plainDice(e.DamageDice); ok {
 		line.Damage = withModifier(strings.TrimSpace(e.DamageDice), x.mods[t.damageAbility]+t.damageBonus)

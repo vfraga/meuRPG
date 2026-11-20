@@ -149,8 +149,9 @@ var refusedForTableSpell = []string{ModifierAura, ModifierBaseAC, ModifierExtraA
 
 // spellModifierRefusal refuses what a modifier may be in the SRD's file but makes no sense for a table
 // spell: the base armor class and the extra action need the engine's own working out, and the rest are
-// worked out when the spell is cast, which a table spell has no way to say. A table effect's modifiers are a
-// closed set: conditions go in the effect's `conditions`, and what stops a creature from moving or acting is a
+// worked out when the spell is cast, which a table spell has no way to say. The one exception to what a table effect
+// says of its source is the goad's disadvantage, which spares the caster of the spell or the bearer of the aura
+// (except_source). A table effect's modifiers are a closed set: conditions go in the effect's `conditions`, and what stops a creature from moving or acting is a
 // condition (paralyzed, restrained), not a modifier.
 func spellModifierRefusal(m EffectModifier, fromFeature bool) error {
 	switch {
@@ -166,8 +167,8 @@ func spellModifierRefusal(m EffectModifier, fromFeature bool) error {
 		return modifierField("choose", "a table spell cannot ask the caster to choose an ability")
 	case m.Kind == ModifierAttackDisadvantage && m.Once:
 		return modifierField("once", "attack_disadvantage of a table spell lasts as the effect does, not for one roll")
-	case m.Kind == ModifierAttackDisadvantage && m.ExceptSource:
-		return modifierField("except_source", "attack_disadvantage of a table spell has no source to spare")
+	case m.ExceptSource && m.Kind != ModifierAttackDisadvantage:
+		return modifierField("except_source", "except_source belongs to attack_disadvantage")
 	}
 	return nil
 }

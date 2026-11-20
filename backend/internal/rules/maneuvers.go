@@ -143,12 +143,23 @@ func (x *deriver) goadDC(e *Effect) int {
 	if e.Applies != ManeuverGoad {
 		return 0
 	}
-	for _, a := range x.d.Abilities {
-		if string(a.Ability) == e.Ability {
-			return goadBaseDC + x.d.ProficiencyBonus + a.Modifier
-		}
+	return x.saveDC(e.Ability, e.DCAbilityAlt)
+}
+
+// goadAltProblem says what is wrong with the second ability of a goad's DC ("" when right): only a goad has one, it
+// is an ability and not the first.
+func goadAltProblem(e *Effect) string {
+	switch {
+	case e.DCAbilityAlt == "":
+		return ""
+	case e.Applies != ManeuverGoad:
+		return "dc_ability_alt is for the DC of a goad"
+	case !isAbilityKey(e.DCAbilityAlt):
+		return fmt.Sprintf("dc_ability_alt %q is not an ability", e.DCAbilityAlt)
+	case e.DCAbilityAlt == e.Ability:
+		return "dc_ability_alt is a second ability: it cannot be the ability"
 	}
-	return 0
+	return ""
 }
 
 // goadBaseDC is the 8 of a maneuver's save DC.
