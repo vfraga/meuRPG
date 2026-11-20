@@ -659,10 +659,10 @@ describe('CombatMapCard: the "Montado" legend line', () => {
         encounter: encounter({ currentCombatantId: 'p', combatants: [tor, horse] }),
       });
       // The player reads what the mark is; the master, who marked the mount, reads the short word.
-      const item = plain(el.querySelector('.legend .legend__pair')?.parentElement?.textContent);
+      const item = plain(el.querySelector('.legend app-mounted-legend')?.textContent);
       expect(item).toBe(isMaster ? 'Montado' : 'Montado: o cavaleiro pequeno, na sela');
       // The legend draws the mark itself: a small token with the rider's disc on the saddle.
-      expect(el.querySelector('.legend .legend__pair app-rider-mark')).not.toBeNull();
+      expect(el.querySelector('.legend app-mounted-legend app-rider-mark')).not.toBeNull();
     }
   });
 
@@ -674,7 +674,7 @@ describe('CombatMapCard: the "Montado" legend line', () => {
       encounter: encounter({ currentCombatantId: 'p', combatants: [tor, horse] }),
     });
     expect(legend(el)).toBe('Montado: o cavaleiro pequeno, na sela');
-    expect(el.querySelectorAll('.legend li').length).toBe(1);
+    expect(el.querySelectorAll('.legend app-mounted-legend').length).toBe(1);
     const none = mount({ legend: false, compact: true });
     expect(none.el.querySelector('.legend')).toBeNull();
   });

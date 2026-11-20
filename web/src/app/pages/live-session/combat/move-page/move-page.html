@@ -91,11 +91,7 @@
             <li><span class="mr-swatch mr-swatch--chosen" aria-hidden="true"></span>Quadrado escolhido</li>
           }
           @if (ride.mountedOn()) {
-            <li>
-              <span class="legend__pair" aria-hidden="true"
-                ><app-combatant-token initial="" [npc]="true" [ridden]="true" [size]="22" [onMap]="true" /><app-rider-mark initial="" [onMap]="true" size="22px"
-              /></span>Montado: o cavaleiro pequeno, na sela
-            </li>
+            <app-mounted-legend text="Montado: o cavaleiro pequeno, na sela" />
           }
           @if (drag.legend()) {
             <li><span class="mr-swatch mr-swatch--dragged" aria-hidden="true"></span>{{ drag.legend() }}</li>

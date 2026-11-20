@@ -821,3 +821,12 @@ a.mr-list__row:hover .mr-list__name {
   line-height: 17px;
   color: var(--mr-ink-muted);
 }
+
+// The outlined buttons of the mounted flow's screens (the move page, the pair card, the steed card and its sheets, the summon
+// sheet, the mount save, the dismount, the master's wait) have an ink label and icon, and a pointer over one tints it ink, not
+// accent. Set on the screen's root: the buttons inside inherit the tokens.
+.mr-outline-ink {
+  --mat-button-outlined-label-text-color: var(--mr-ink);
+  --mat-button-outlined-state-layer-color: var(--mr-ink);
+  --mat-button-outlined-ripple-color: var(--mr-ink);
+}

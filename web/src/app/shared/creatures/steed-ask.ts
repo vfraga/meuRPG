@@ -39,6 +39,7 @@ let nextId = 0;
  * actions. Any other error stays here, in words, with the question open.
  */
 @Component({
+  host: { class: 'mr-outline-ink' },
   selector: 'app-steed-ask',
   imports: [MatButtonModule, MatIconModule],
   changeDetection: ChangeDetectionStrategy.OnPush,

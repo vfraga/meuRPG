@@ -53,19 +53,13 @@
   cursor: default;
 }
 
-// "Cancelar" and "Conjurar" are two real buttons of the same width, side by
-// side, Cancelar first (the DOM has Conjurar first, for the order of focus).
-// Under 480px a long spell name would wrap inside a half-width button: stacked,
-// full width, Conjurar on top.
+// "Cancelar" and "Conjurar" are two real buttons side by side, Cancelar first (the DOM has Conjurar first, for the order of
+// focus), Cancelar in the narrow column and Conjurar in the wide one. Under 480px a long spell name would wrap inside a
+// half-width button: stacked, full width, Conjurar on top.
 .actions {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
   gap: 10px;
-
-  // The primary label keeps one line: it has the wider column.
-  .cast {
-    white-space: nowrap;
-  }
 
   @media (max-width: 479.98px) {
     grid-template-columns: minmax(0, 1fr);

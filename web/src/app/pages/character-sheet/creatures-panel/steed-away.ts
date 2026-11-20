@@ -27,6 +27,7 @@ import { SteedAsk } from '../../../shared/creatures/steed-ask';
  * in the row (`SteedAsk`); out of a combat it spends nothing.
  */
 @Component({
+  host: { class: 'mr-outline-ink' },
   selector: 'app-steed-away',
   imports: [CreatureArt, MatIconModule, MatMenuModule, SteedAsk],
   changeDetection: ChangeDetectionStrategy.OnPush,

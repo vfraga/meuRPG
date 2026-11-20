@@ -22,9 +22,8 @@
 
 .frame__head {
   display: flex;
-  flex-wrap: wrap;
   align-items: flex-start;
-  gap: 0 12px;
+  gap: 12px;
 }
 
 .frame__icon {
@@ -46,12 +45,7 @@
   margin-top: -1px;
 }
 
-// The title is a flex item of the head, and the subtitle drops to a line of its own under the whole head.
 .frame__titles {
-  display: contents;
-}
-
-.frame__title {
   flex: 1;
   min-width: 0;
 }
@@ -82,9 +76,7 @@
 }
 
 .frame__sub {
-  order: 1;
-  flex: 0 0 100%;
-  margin: 6px 0 0;
+  margin: -8px 0 0;
   font-size: var(--mr-font-14);
   line-height: 19px;
   color: var(--mr-ink-muted);
@@ -198,12 +190,6 @@
     background: var(--mr-accent-soft);
     color: var(--mr-accent-text);
     font-size: var(--mr-font-24);
-  }
-
-  .frame__titles {
-    display: block;
-    flex: 1;
-    min-width: 0;
   }
 
   .frame__title {

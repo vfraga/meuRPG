@@ -225,21 +225,6 @@
     border-top: 1px solid var(--mr-line);
     background: var(--mr-ground);
   }
-
-  // On a phone or a tablet the two buttons share a row, so the dock leaves the map its height.
-  .move__buttons {
-    flex-direction: row;
-  }
-
-  .move__buttons > .move__go {
-    flex: 1 1 auto;
-    width: auto;
-  }
-
-  .move__buttons > .move__cancel {
-    flex: none;
-    width: auto;
-  }
 }
 
 .move__ask {
@@ -249,17 +234,23 @@
 
 .move__buttons {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   gap: var(--mr-space-3);
+
+  // From 1024 px the side column stacks them, both its full width.
+  @media (min-width: 1024px) {
+    flex-direction: column;
+  }
 }
 
-// From 1024 px the side column stacks them, both its full width.
+// On a phone or a tablet the two buttons share a row, so the dock leaves the map its height.
 .move__go {
   --mat-button-filled-container-height: 48px;
-  width: 100%;
+  flex: 1 1 auto;
 
   @media (min-width: 1024px) {
     --mat-button-filled-container-height: 44px;
+    width: 100%;
   }
 }
 
@@ -274,10 +265,11 @@
 
 .move__cancel {
   --mat-button-outlined-container-height: 48px;
-  width: 100%;
+  flex: none;
 
   @media (min-width: 1024px) {
     --mat-button-outlined-container-height: 44px;
+    width: 100%;
   }
 }
 
@@ -369,13 +361,6 @@
   mat-icon {
     flex: none;
   }
-}
-
-// The legend's "Montado": a small token with the rider's disc on the saddle, as the map draws the pair.
-.legend__pair {
-  position: relative;
-  display: inline-flex;
-  flex: none;
 }
 
 .move__ridecol .move__seg {

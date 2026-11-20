@@ -1,3 +1,4 @@
+import { NgTemplateOutlet } from '@angular/common';
 import {
   Component,
   DestroyRef,
@@ -22,7 +23,7 @@ import { MatIconModule } from '@angular/material/icon';
  */
 @Component({
   selector: 'app-sheet-frame',
-  imports: [MatIconModule],
+  imports: [MatIconModule, NgTemplateOutlet],
   template: `
     <div class="frame" [class.frame--phone]="phone()" [style.height]="height() || null">
       @if (phone() && handle()) {
@@ -36,8 +37,8 @@ import { MatIconModule } from '@angular/material/icon';
         <ng-content select="[head-icon]" />
         <div class="frame__titles">
           <h2 class="frame__title" [class.frame__title--small]="small()" [id]="titleId()" tabindex="-1">{{ title() }}</h2>
-          @if (subtitle() || subtitleLead()) {
-            <p class="frame__sub"><ng-content select="[sub-mark]" />@if (subtitleLead()) {<b class="frame__lead">{{ subtitleLead() }}</b>}{{ subtitle() }}</p>
+          @if (tile() && (subtitle() || subtitleLead())) {
+            <ng-container *ngTemplateOutlet="subTpl" />
           }
         </div>
         <!-- An extra icon button before the close one (the cast sheet's "?"). -->
@@ -48,6 +49,12 @@ import { MatIconModule } from '@angular/material/icon';
           </button>
         }
       </div>
+      @if (!tile() && (subtitle() || subtitleLead())) {
+        <ng-container *ngTemplateOutlet="subTpl" />
+      }
+      <ng-template #subTpl>
+        <p class="frame__sub"><ng-content select="[sub-mark]" />@if (subtitleLead()) {<b class="frame__lead">{{ subtitleLead() }}</b>}{{ subtitle() }}</p>
+      </ng-template>
       <div #body class="frame__body" [class.frame__body--scrolls]="scrolls()" [attr.tabindex]="focusableBody() && scrolls() ? 0 : null"><ng-content /></div>
       <div class="frame__foot"><ng-content select="[foot]" /></div>
     </div>

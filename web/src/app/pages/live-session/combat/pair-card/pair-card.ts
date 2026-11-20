@@ -23,6 +23,7 @@ import { EconomyShapes, economyShapes } from '../../../../shared/economy-shapes/
  * keeps its place, dashed, with the reason under the three ("Caído: o mestre conduz o Cavalo de guerra.").
  */
 @Component({
+  host: { class: 'mr-outline-ink' },
   selector: 'app-pair-card',
   imports: [CombatantToken, EconomyShapes, MatButtonModule, MatIconModule],
   changeDetection: ChangeDetectionStrategy.OnPush,

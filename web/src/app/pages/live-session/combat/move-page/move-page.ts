@@ -1,5 +1,3 @@
-import { CombatantToken } from '../../../../shared/combatant-token/combatant-token';
-import { RiderMark } from '../../../../shared/combatant-token/rider-mark';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -40,6 +38,7 @@ import {
   type CombatMapImage,
   type Reach,
 } from '../../../../shared/combat-map/combat-map';
+import { MountedLegend } from '../../../../shared/combatant-token/mounted-legend';
 import { LivePill } from '../../../../shared/live-pill/live-pill';
 import { MapLayersLegend } from '../../../../shared/map-layers/map-layers-legend';
 import { mediaQuery } from '../../../../shared/map-view/media-query';
@@ -93,19 +92,19 @@ export type { JumpRequest } from './move-page-view';
  */
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { class: 'mr-outline-ink' },
   selector: 'app-move-page',
   imports: [
     CombatMap,
-    CombatantToken,
     JumpPanel,
     LivePill,
     MapLayersLegend,
     MatButtonModule,
     MatIconModule,
+    MountedLegend,
     MountPanel,
     MoveAdjust,
     MoveStatus,
-    RiderMark,
     Segmented,
   ],
   templateUrl: './move-page.html',
@@ -385,7 +384,11 @@ export class MovePage {
       this.chosen();
       untracked(() => this.trapAsk.set(false));
     });
-    effect(() => this.trapAsk() && queueMicrotask(() => this.safe()?.nativeElement.focus()));
+    effect(() => {
+      if (this.trapAsk()) {
+        queueMicrotask(() => this.safe()?.nativeElement.focus());
+      }
+    });
   }
 
   /** "Voltar" on the trap question: the focus goes back to the button that asked. */

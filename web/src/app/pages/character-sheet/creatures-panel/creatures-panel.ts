@@ -31,6 +31,7 @@ import { combatErrorMessage } from '../../../core/combat/combat-errors';
 import { isUnlimited } from '../../../core/combat/unlimited-uses';
 import { ActionKey } from '../../../core/connect/idempotency';
 import { CreatureCard } from './creature-card';
+import { FIND_STEED } from '../../../core/creatures/steed';
 import { SteedAway } from './steed-away';
 import { SteedCast, bondOf } from './steed-cast';
 import { readWild, stayBeast, wildLineOf } from './wild-read';
@@ -109,6 +110,7 @@ export class CreaturesPanel {
   protected readonly live = computed(() =>
     this.openSessions.sessions().some((s) => s.campaignId === this.campaignId()),
   );
+  protected readonly findSteed = FIND_STEED;
   protected readonly casts = computed(() => (this.isMaster() ? [] : this.spells()));
   /** Convocar Montaria's cast button: off in a combat, and what the cast does for the bonded steed. */
   protected readonly steedCast = new SteedCast(this.injector);

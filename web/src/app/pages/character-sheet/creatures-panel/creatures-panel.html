@@ -64,7 +64,7 @@
     }
 
     @for (c of casts(); track c.spellKey) {
-      <div class="cast">
+      <div class="cast" [class.mr-outline-ink]="c.spellKey === findSteed">
         <button
           type="button"
           matButton="outlined"
@@ -77,11 +77,11 @@
         >
           <mat-icon aria-hidden="true">auto_awesome</mat-icon>{{ c.namePt }}
         </button>
-        <p class="cast__cost" [id]="'cast-cost-' + $index">{{ steedCast.cost(c, creatures()) }}</p>
         @if (steedCast.why(c, live()); as why) {
-          <!-- Why the button is off: the block mark and the words in regular weight, right under the dashed button's cost. -->
+          <!-- Why the button is off: the block mark and the words in regular weight, right under the dashed button, before the cost. -->
           <p class="cast__why"><mat-icon aria-hidden="true">block</mat-icon><span [id]="'cast-why-' + $index">{{ why }}</span></p>
         }
+        <p class="cast__cost" [id]="'cast-cost-' + $index">{{ steedCast.cost(c, creatures()) }}</p>
       </div>
     }
     @if (wildShape() && !isMaster()) {

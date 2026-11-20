@@ -93,13 +93,6 @@ describe('CastSheet: "Estrela também", a self-only spell that reaches the steed
     expect(castSpell.mock.calls[0][12]).toMatchObject({ alsoSteed: true });
   });
 
-  it('keeps the primary label on one line: it has the wider column', async () => {
-    const { el } = await open(true);
-    el.querySelector<HTMLInputElement>('app-slot-picker input')?.click();
-    const primary = el.querySelector<HTMLElement>('.actions .cast')!;
-    expect(getComputedStyle(primary).whiteSpace).toBe('nowrap');
-  });
-
   it('frames the check in the accent', async () => {
     const { el } = await open(true);
     const row = getComputedStyle(el.querySelector('app-steed-also .also')!);

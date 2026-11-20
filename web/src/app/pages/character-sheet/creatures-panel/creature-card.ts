@@ -66,6 +66,7 @@ import { SteedAsk } from '../../../shared/creatures/steed-ask';
  * the page says the combat changed (`tick`).
  */
 @Component({
+  host: { '[class.mr-outline-ink]': 'creature().bonded' },
   selector: 'app-creature-card',
   imports: [
     CreatureArt,

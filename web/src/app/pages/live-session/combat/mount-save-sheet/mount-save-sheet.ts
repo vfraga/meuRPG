@@ -90,7 +90,7 @@ const MS_PER_SECOND = 1000;
     SaddleIcon,
     SheetFrame,
   ],
-  host: { '(keydown.escape)': 'close()' },
+  host: { class: 'mr-outline-ink', '(keydown.escape)': 'close()' },
   templateUrl: './mount-save-sheet.html',
   styleUrls: [
     '../resource-pick/resource-sheet.scss',

@@ -119,6 +119,8 @@ describe('CreatureCard, a bonded steed', () => {
     expect(flat(tag)).toBe('Montaria vinculada');
     expect(tag?.querySelector('mat-icon')?.textContent?.trim()).toBe('link');
     expect(tag?.classList).toContain('mr-tag--accent');
+    // The steed card's outlined buttons are ink; a creature that is no steed keeps the app's.
+    expect(el.classList).toContain('mr-outline-ink');
     expect(flat(el.querySelector('.sub'))).toBe('Cavalo de guerra · Grande · celestial');
     // On a phone the tag sits under the subtitle; from the tablet up the grid puts it beside the name.
     const order = Array.from(el.querySelector('.head__text')!.children).map((n) => n.className);
@@ -158,6 +160,7 @@ describe('CreatureCard, a bonded steed', () => {
     const { el } = await setup({ creature: creature('cr-1', 'Nanquim') });
     expect(el.querySelector('.head .mr-tag')).toBeNull();
     expect(el.querySelector('.js-more')).toBeNull();
+    expect(el.classList).not.toContain('mr-outline-ink');
     expect(flat(el.querySelector('.sub'))).toContain('Familiar de Lia');
   });
 

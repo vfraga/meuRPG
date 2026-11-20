@@ -11,6 +11,7 @@ import type { MountSaveWait } from '../../../../core/combat/mount-save';
  * roll it (the rider's player has it open on their own screen). The turn does not pass until the save is rolled.
  */
 @Component({
+  host: { class: 'mr-outline-ink' },
   selector: 'app-mount-save-wait',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [MatButtonModule, MatIconModule],

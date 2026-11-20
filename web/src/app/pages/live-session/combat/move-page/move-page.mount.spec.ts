@@ -131,6 +131,20 @@ const choices = create(MountOptionsSchema, {
 });
 
 describe('MovePage, on foot', () => {
+  it('shares one row between "Mover para cá" and "Cancelar" under 1024 px and stacks them from 1024', () => {
+    const { el, choose } = setup({ combatants: [tor(), mastiff] });
+    choose(8, 5);
+    const buttons = el.querySelector('.move__buttons')!;
+    // The outlined "Cancelar" is ink here: the page carries the mounted flow's ink class.
+    expect(el.classList).toContain('mr-outline-ink');
+    const wide = document.documentElement.clientWidth >= 1024;
+    expect(getComputedStyle(buttons).flexDirection).toBe(wide ? 'column' : 'row');
+    if (!wide) {
+      expect(getComputedStyle(el.querySelector('.move__go')!).flexGrow).toBe('1');
+      expect(getComputedStyle(el.querySelector('.move__cancel')!).flexGrow).toBe('0');
+    }
+  });
+
   it('says nothing about a mount on a plain page, for a character and for a creature', () => {
     expect(setup({ combatants: [tor(), mastiff] }).el.querySelector('.move__why')).toBeNull();
     const creature = combatant({
@@ -371,14 +385,14 @@ describe('MovePage, mounted', () => {
     expect(notice.classList).toContain('mr-notice--neutral');
     // The lead and the sentence run on, in one paragraph.
     expect(notice.querySelectorAll('p').length).toBe(1);
-    const mark = el.querySelector('.mr-legend .legend__pair')!;
-    expect(plain(mark.parentElement)).toBe('Montado: o cavaleiro pequeno, na sela');
-    expect(mark.querySelector('app-rider-mark')).not.toBeNull();
+    const mark = el.querySelector('.mr-legend app-mounted-legend')!;
+    expect(plain(mark)).toBe('Montado: o cavaleiro pequeno, na sela');
+    expect(mark.querySelectorAll('app-rider-mark').length).toBe(1);
   });
 
   it('has no "Montado" legend line on foot', () => {
     const { el } = setup({ combatants: [tor(), mastiff] });
-    expect(el.querySelector('.mr-legend .legend__pair')).toBeNull();
+    expect(el.querySelector('.mr-legend app-mounted-legend')).toBeNull();
   });
 
   it('leaves only Desmontar on a mount with a turn of its own', () => {

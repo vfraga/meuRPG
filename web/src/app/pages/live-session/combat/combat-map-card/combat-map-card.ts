@@ -1,4 +1,3 @@
-import { NgTemplateOutlet } from '@angular/common';
 import { Component, computed, effect, input, model, output, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -43,7 +42,7 @@ import {
   tileRects,
   visionLegend,
 } from '../../../../core/maps/vision';
-import { RiderMark } from '../../../../shared/combatant-token/rider-mark';
+import { MountedLegend } from '../../../../shared/combatant-token/mounted-legend';
 
 /**
  * The map panel of a running combat or of its setup (E6-04, E6-05, E6-11):
@@ -64,8 +63,7 @@ const CROP_MAX_SHARE = 0.6;
 @Component({
   selector: 'app-combat-map-card',
   imports: [
-    NgTemplateOutlet,
-    RiderMark,
+    MountedLegend,
     AreaOverlay,
     CombatMap,
     CombatantToken,

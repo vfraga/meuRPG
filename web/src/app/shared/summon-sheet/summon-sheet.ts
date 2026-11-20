@@ -79,6 +79,7 @@ export type { SummonCombat, SummonSheetData } from './summon-sheet-data';
  * made anew whenever a choice changes, so a tap repeated after a lost answer never casts twice.
  */
 @Component({
+  host: { '[class.mr-outline-ink]': 'steed.on' },
   selector: 'app-summon-sheet',
   imports: [
     CreatureArt,

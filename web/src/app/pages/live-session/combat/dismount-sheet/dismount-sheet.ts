@@ -42,6 +42,7 @@ export interface DismountSheetData {
  * the combat meanwhile the sheet says how it ended and only closes. The server decides every refusal.
  */
 @Component({
+  host: { class: 'mr-outline-ink' },
   selector: 'app-dismount-sheet',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [EconomyMark, MatButtonModule, MatIconModule, SheetFrame],

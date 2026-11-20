@@ -72,6 +72,23 @@ describe('SheetFrame', () => {
     expect(plain.querySelector('.frame__head')?.classList).not.toContain('frame__head--tile');
   });
 
+  it('a sheet without a tile keeps the old structure: the subtitle is a sibling after the head, and the head is a plain row', () => {
+    const f = TestBed.createComponent(SheetFrame);
+    f.componentRef.setInput('title', 'Escudo');
+    f.componentRef.setInput('subtitle', 'Reação');
+    f.detectChanges();
+    const el = f.nativeElement as HTMLElement;
+    const head = el.querySelector('.frame__head')!;
+    expect(head.nextElementSibling).toBe(el.querySelector('.frame__sub'));
+    expect(head.querySelector('.frame__sub')).toBeNull();
+    expect(Array.from(head.children).map((c) => c.className)).toEqual([
+      'frame__titles',
+      'frame__close',
+    ]);
+    expect(getComputedStyle(el.querySelector('.frame__titles')!).display).toBe('block');
+    expect(getComputedStyle(el.querySelector('.frame__sub')!).marginTop).toBe('-8px');
+  });
+
   it('takes a glyph of its own before the title, and a subtitle with a mark and a bold lead', () => {
     @Component({
       imports: [SheetFrame],

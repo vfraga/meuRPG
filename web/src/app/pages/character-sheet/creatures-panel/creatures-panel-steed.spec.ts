@@ -179,6 +179,12 @@ describe('CreaturesPanel, a bonded steed that is away: the dashed "Fora" row', (
     expect(flat(el.querySelector('.cast__why'))).toBe(
       'Leva 10 minutos: não dá durante um combate.',
     );
+    // The reason is right under the button, before the cost line.
+    expect(cast.nextElementSibling).toBe(el.querySelector('.cast__why'));
+    expect(el.querySelector('.cast__why')?.nextElementSibling).toBe(
+      el.querySelector('.cast__cost'),
+    );
+    expect(el.querySelector('.cast')?.classList).toContain('mr-outline-ink');
   });
 
   it('a combat without the character, or none, leaves the cast button on; outside a session it says so', async () => {

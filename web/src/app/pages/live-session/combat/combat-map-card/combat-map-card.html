@@ -375,7 +375,7 @@
         </li>
       }
       @if (hasMounted()) {
-        <ng-container [ngTemplateOutlet]="mountedMark" />
+        <app-mounted-legend [text]="isMaster() ? 'Montado' : 'Montado: o cavaleiro pequeno, na sela'" />
       }
       <li>
         <app-combatant-token initial="P" [current]="true" [onMap]="true" [size]="18" />{{
@@ -405,19 +405,8 @@
     </app-map-layers-legend>
   } @else if (hasMounted()) {
     <app-map-layers-legend class="legend" [layers]="emptyLayers">
-      <ng-container [ngTemplateOutlet]="mountedMark" />
+      <app-mounted-legend [text]="isMaster() ? 'Montado' : 'Montado: o cavaleiro pequeno, na sela'" />
     </app-map-layers-legend>
   }
-  <!-- The pair's mark, named under the map the player reads as well as under the master's (the other marks stay off a compact map). -->
-  <ng-template #mountedMark>
-    <li>
-      <span class="legend__pair" aria-hidden="true"
-        ><app-combatant-token initial="" [npc]="true" [ridden]="true" [size]="22" [onMap]="true" /><app-rider-mark
-          initial=""
-          [onMap]="true"
-          size="22px" /></span
-      >{{ isMaster() ? 'Montado' : 'Montado: o cavaleiro pequeno, na sela' }}
-    </li>
-  </ng-template>
   <ng-content select="[mapFoot]" />
 </section>
