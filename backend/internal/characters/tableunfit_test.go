@@ -2,6 +2,7 @@ package characters
 
 import (
 	"errors"
+	"slices"
 	"strings"
 	"testing"
 
@@ -224,7 +225,7 @@ func TestCompletingChoicesRefusesAToolNoSourceTakesWithTheHeldPicks(t *testing.T
 }
 
 // A sheet a package brings holds its picks: it imports though no list of its table takes one of them, where the same sheet
-// made now is refused, and the master reads the issue about it.
+// made now by a player is refused, and the master reads the issue about it.
 func TestAnImportedSheetThatDoesNotFitImportsAndTheMasterReadsTheIssue(t *testing.T) {
 	t.Parallel()
 	u := newUnfitTable(t, "skill:survival")
@@ -233,9 +234,10 @@ func TestAnImportedSheetThatDoesNotFitImportsAndTheMasterReadsTheIssue(t *testin
 		t.Fatal(err)
 	}
 	master := authz.Membership{CampaignID: u.campaign, Role: authz.RoleMaster}
+	player := authz.Membership{CampaignID: u.campaign, Role: authz.RolePlayer}
 	sheet := u.sheet("skill:investigation", "skill:insight", "skill:nature")
-	if _, err := checkNewSheet(content, master, kindPlayer, proto.CloneOf(sheet)); err == nil {
-		t.Fatal("a sheet made now with a pick no list allows is accepted")
+	if _, err := checkNewSheet(content, player, kindPlayer, proto.CloneOf(sheet)); err == nil {
+		t.Fatal("a sheet made now by a player with a pick no list allows is accepted")
 	}
 	checked, err := checkImportedSheet(content, master, kindPlayer, proto.CloneOf(sheet))
 	if err != nil {
@@ -274,4 +276,91 @@ func TestAnExpertiseOnAListWithNoRoomLeftIsRefusedWithItsOwnSentenceOfNoRoom(t *
 		CampaignId: u.campaign, Kind: charactersv1.CharacterKind_CHARACTER_KIND_PLAYER, Name: "Pensantus", Sheet: s,
 	}))
 	wantUnfitSentence(t, err, "sheet.full.expertise_skill_keys[0]", "Não há vaga para a especialização em Investigação: as listas que a oferecem já estão preenchidas pelas outras especializações marcadas. Desmarque uma delas para marcar a especialização em Investigação.")
+}
+
+// The master is held to no list: a skill no list allows and an expertise no source takes are saved on an NPC, and on a
+// player's character the master edits, and the master reads the fit issue on them. The same picks of a player are refused.
+func TestTheMasterSavesPicksNoListAllowsAndReadsTheIssue(t *testing.T) {
+	t.Parallel()
+	u := newUnfitTable(t, "skill:survival")
+	// nature is on no list of the sheet, and the sheet has no source of expertise.
+	bad := func() *charactersv1.CharacterSheet {
+		s := u.sheet("skill:investigation", "skill:insight", "skill:nature")
+		s.GetFull().ExpertiseSkillKeys = []string{"skill:investigation"}
+		return s
+	}
+	hasFitIssue := func(c *charactersv1.Character) bool {
+		return slices.ContainsFunc(c.GetDerived().GetIssues(), func(is *rulesv1.Issue) bool { return is.GetCode() == rules.IssuePickFit })
+	}
+	enemy := charactersv1.CharacterKind_CHARACTER_KIND_ENEMY
+	npc := u.master.create(t, u.campaign, enemy, "Sábio sem lista", bad())
+	if got := u.master.get(t, u.campaign, npc.GetId()); !hasFitIssue(got) {
+		t.Error("the master's read of the NPC has no fit issue")
+	}
+	// A save that changes the pick is accepted too.
+	changed := u.sheet("skill:investigation", "skill:insight", "skill:history")
+	changed.GetFull().ExpertiseSkillKeys = []string{"skill:insight"}
+	if _, err := u.master.update(t, npc, "Sábio sem lista", changed); err != nil {
+		t.Errorf("the master's save of an NPC with a pick no list allows: %v", err)
+	}
+	// The same sheet of a player is refused, on create and on save.
+	_, err := u.player.api.CreateCharacter(t.Context(), connect.NewRequest(&charactersv1.CreateCharacterRequest{
+		CampaignId: u.campaign, Kind: charactersv1.CharacterKind_CHARACTER_KIND_PLAYER, Name: "Pensantus", Sheet: bad(),
+	}))
+	wantUnfit(t, err, "sheet.full.skill_proficiency_keys[2]", "Natureza")
+	pc := u.player.create(t, u.campaign, charactersv1.CharacterKind_CHARACTER_KIND_PLAYER, "Pensantus", u.sheet("skill:investigation", "skill:insight", "skill:survival"))
+	_, err = u.player.update(t, pc, "Pensantus", bad())
+	wantUnfit(t, err, "sheet.full.skill_proficiency_keys[2]", "Natureza")
+	// The master edits the player's character with the same picks: saved, previewed, and read with the issue; the player reads none.
+	if _, err := u.master.preview(t, u.campaign, pc.GetId(), charactersv1.CharacterKind_CHARACTER_KIND_PLAYER, bad()); err != nil {
+		t.Errorf("the master's preview of a player's character with a pick no list allows: %v", err)
+	}
+	saved, err := u.master.update(t, pc, "Pensantus", bad())
+	if err != nil {
+		t.Fatalf("the master's save of a player's character with a pick no list allows: %v", err)
+	}
+	if !hasFitIssue(u.master.get(t, u.campaign, saved.GetId())) {
+		t.Error("the master's read of the player's character has no fit issue")
+	}
+	if hasFitIssue(u.player.get(t, u.campaign, saved.GetId())) {
+		t.Error("the player's read of the character carries the fit issue")
+	}
+}
+
+// The master completes the choices of a sheet with a tool no source takes with the held picks, which a player is refused
+// (TestCompletingChoicesRefusesAToolNoSourceTakesWithTheHeldPicks).
+func TestTheMasterCompletesAChoiceWithAToolNoSourceTakes(t *testing.T) {
+	t.Parallel()
+	u := newUnfitTable(t, "skill:nature")
+	bg := u.master.addEntry(t, u.campaign, toolRace(toolEffect(1, smithsTools)))
+	pc := u.player.create(t, u.campaign, charactersv1.CharacterKind_CHARACTER_KIND_PLAYER, "Ferreira", u.toolSheet(t, bg, thievesTools, smithsTools))
+	if h := u.h.lockSheets(u.campaign); h != 1 {
+		t.Fatalf("locked %d sheets", h)
+	}
+	u.master.updateEntry(t, u.campaign, bg, toolRace(toolEffect(2, smithsTools, glassTools)))
+	owner := u.traitOf(t, bg)
+	if _, err := (&choiceTable{h: u.h, campaign: u.campaign}).complete(u.master, u.master.get(t, u.campaign, pc.GetId()), pick(rules.ToolPickKey(owner), herbalismKit)); err != nil {
+		t.Errorf("the master's completion of a choice with a tool no source takes: %v", err)
+	}
+}
+
+// refuseUnfitPick is the one place that holds a player to the lists: it refuses a player's pick no list allows, on every path
+// that calls it (create, import, save, preview, completing the choices and the level-up), and never the master's.
+func TestOnlyAPlayerIsRefusedAPickNoListAllows(t *testing.T) {
+	t.Parallel()
+	u := newUnfitTable(t, "skill:survival")
+	content, err := u.h.svc.contentFor(t.Context(), nil, u.campaign)
+	if err != nil {
+		t.Fatal(err)
+	}
+	bad := u.sheet("skill:investigation", "skill:insight", "skill:nature").GetFull()
+	for who, m := range map[string]authz.Membership{
+		"the master": {CampaignID: u.campaign, Role: authz.RoleMaster},
+		"a player":   {CampaignID: u.campaign, Role: authz.RolePlayer},
+	} {
+		err := refuseUnfitPick(content, m, noSheet, bad)
+		if (who == "a player") != (err != nil) {
+			t.Errorf("%s: refuseUnfitPick = %v", who, err)
+		}
+	}
 }
