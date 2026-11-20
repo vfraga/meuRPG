@@ -302,14 +302,4 @@ describe("ReactionQueue, a readied action's window (#582, board 582-05)", () => 
       'row__status--wait',
     );
   });
-
-  it('says "Depois de ..." and no clock for a window that waits for another', () => {
-    const { el } = setup({}, { answerNow: false });
-    expect(plain(el.querySelector('[data-testid=readied-wait]')?.textContent)).toContain(
-      'hourglass_top',
-    );
-    expect(plain(el.querySelector('[data-testid=readied-wait]')?.textContent)).not.toContain(
-      'passa sozinho',
-    );
-  });
 });

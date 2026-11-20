@@ -353,12 +353,12 @@
         @if (row.readied) {
           @let wait = aim.waitOf(row, autoLeft()[row.window.id]);
           <p class="row__status row__status--wait" [id]="uid + row.window.id + '-wait'" data-testid="readied-wait">
-            @if (!row.readied.after && wait.onMap) {
+            @if (wait.onMap) {
               <mat-icon class="row__pin" aria-hidden="true">location_on</mat-icon>
             } @else {
               <mat-icon class="row__pin" aria-hidden="true">hourglass_top</mat-icon>
             }
-            {{ row.readied.after || wait.text }}
+            {{ wait.text }}
           </p>
         } @else if (autoLeft()[row.window.id] !== undefined) {
           <p class="row__status">

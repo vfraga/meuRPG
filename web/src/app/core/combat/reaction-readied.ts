@@ -10,7 +10,6 @@ import { article } from '../format/article';
 import { joinDots, tight } from '../format/text';
 import { metersFixed, metersText } from '../units';
 import { stateWord } from './combat-view';
-import { combatantIsPlayer, ofReactor } from './reaction-bar';
 import { targetPhrase } from './ready-card';
 import { heldName } from './ready-held';
 
@@ -275,7 +274,7 @@ export function readiedMasterRow(e: Encounter, w: ReactionWindow): ReadiedMaster
 }
 
 /** The fields of the master's queue row for the window: what it holds, the wait the server writes while another window holds the roll (`reaction_wait`), and the answers. */
-export function readiedRowFields(e: Encounter, w: ReactionWindow, before?: ReactionWindow) {
+export function readiedRowFields(e: Encounter, w: ReactionWindow) {
   const row = readiedMasterRow(e, w);
   const wait = e.reactionWait;
   return {
@@ -284,10 +283,6 @@ export function readiedRowFields(e: Encounter, w: ReactionWindow, before?: React
     useLabel: row.useLabel,
     passLabel: row.passLabel,
     readied: {
-      after:
-        !w.answerNow && before
-          ? `Depois ${ofReactor(before, before.reactorIsPlayer || combatantIsPlayer(e, before.reactorId))}`
-          : '',
       aims: [ReadiedKind.ATTACK, ReadiedKind.SPELL].includes(readiedOfWindow(e, w)?.kind as never),
     },
   };

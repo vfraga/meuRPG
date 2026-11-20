@@ -12,7 +12,6 @@ import {
   readiedGoneText,
   readiedLegend,
   readiedPrompt,
-  readiedRowFields,
   readiedTargetRows,
   readiedMasterRow,
 } from './reaction-readied';
@@ -244,35 +243,5 @@ describe("the master's row of a readied window (582-05)", () => {
       ],
     });
     expect(readiedMasterRow(spell, w).useLabel).toBe('Soltar por Tor');
-  });
-});
-
-describe('the second readied window of a queue (857-08 card 6)', () => {
-  const e = encounter({
-    combatants: [
-      combatant({ id: 'pen', label: 'Pensantus', readied: held({ kind: ReadiedKind.SPELL }) }),
-      combatant({ id: 'tor', label: 'Tor', readied: held({ kind: ReadiedKind.MOVE, moveFt: 30 }) }),
-    ],
-  });
-  const second = reactionWindow({
-    id: 'w2',
-    kind: ReactionKind.READIED,
-    reactorId: 'tor',
-    reactorLabel: 'Tor',
-    reactorIsPlayer: true,
-    answerNow: false,
-  });
-  const first = reactionWindow({
-    id: 'w1',
-    kind: ReactionKind.READIED,
-    reactorId: 'pen',
-    reactorLabel: 'Pensantus',
-    reactorIsPlayer: true,
-    answerNow: true,
-  });
-
-  it('waits behind the first one, and says so', () => {
-    expect(readiedRowFields(e, second, first).readied.after).toBe('Depois de Pensantus');
-    expect(readiedRowFields(e, first, undefined).readied.after).toBe('');
   });
 });
