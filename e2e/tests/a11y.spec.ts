@@ -7641,7 +7641,7 @@ for (const [scheme, theme] of [['light', 'claro'], ['dark', 'escuro']] as const)
  */
 async function scanPickLists(browser: Browser, colorScheme: 'light' | 'dark', width: number): Promise<void> {
   test.setTimeout(240_000);
-  const masterContext = await newSignedInContext(browser, 'Mestre Teste');
+  const masterContext = await newSignedInContext(browser, 'Mestre Teste', { colorScheme, viewport: { width, height: 900 } });
   const context = await browser.newContext({ storageState: authStatePath('Jogador Teste'), colorScheme, viewport: { width, height: 900 } });
   const m = await masterContext.newPage();
   const page = await context.newPage();
