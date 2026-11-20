@@ -464,7 +464,9 @@ func TestHeldToolPicksOverTheCountAreNotCounted(t *testing.T) {
 		if got := missingTools(d); got != 1 || missing != 1 {
 			t.Errorf("%s: Derive misses %d tools, the choices %d, want 1 and 1", name, got, missing)
 		}
-		has := func(k string) bool { return slices.ContainsFunc(d.Proficiencies, func(p Proficiency) bool { return p.Key == k }) }
+		has := func(k string) bool {
+			return slices.ContainsFunc(d.Proficiencies, func(p Proficiency) bool { return p.Key == k })
+		}
 		if !has(thieves) || has(herbs) {
 			t.Errorf("%s: thieves proficient %v, herbs proficient %v", name, has(thieves), has(herbs))
 		}
