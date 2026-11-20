@@ -3,12 +3,14 @@ package characters
 import (
 	"errors"
 	"slices"
+	"strings"
 	"testing"
 
 	"connectrpc.com/connect"
 	"google.golang.org/protobuf/proto"
 
 	charactersv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/characters/v1"
+	"github.com/PuraFome/meuRPG/backend/gen/meurpg/characters/v1/charactersv1connect"
 	rulesv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/rules/v1"
 	"github.com/PuraFome/meuRPG/backend/internal/rules"
 )
@@ -258,5 +260,31 @@ func TestTableEffectsOfReadsTheAlternativesOfAChoice(t *testing.T) {
 	got := tableEffectsOf([]*rulesv1.TableEffect{skillOrLanguageEffect()})
 	if len(got) != 1 || len(got[0].Alternatives) != 2 || got[0].Alternatives[1].Kind != "language" || !slices.Equal(got[0].Alternatives[0].From, []string{"skill:stealth", "skill:persuasion"}) {
 		t.Errorf("effect = %+v, want the two alternatives", got)
+	}
+}
+
+// A new pick that repeats what another source gives the sheet is refused at the pick's own field, for the player and the
+// master alike; a pick of another key of the choice is taken.
+func TestANewPickOfWhatAnotherSourceGivesIsRefused(t *testing.T) {
+	t.Parallel()
+	f := newAlternativesFlow(t)
+	repeating := func(pick string) *charactersv1.CharacterSheet {
+		s := f.sheet(2, pick)
+		s.GetFull().GetCustomBackground().SkillKeys = []string{"skill:stealth", "skill:survival"} // the background gives stealth
+		return s
+	}
+	kinds := map[string]charactersv1.CharacterKind{"the player": charactersv1.CharacterKind_CHARACTER_KIND_PLAYER, "the master": charactersv1.CharacterKind_CHARACTER_KIND_ENEMY}
+	for who, api := range map[string]charactersv1connect.CharacterServiceClient{"the player": f.davi.api, "the master": f.master.api} {
+		kind := kinds[who]
+		_, err := api.CreateCharacter(t.Context(), connect.NewRequest(&charactersv1.CreateCharacterRequest{CampaignId: f.campaign, Kind: kind, Name: "Ícaro", Sheet: repeating("skill:stealth")}))
+		ce, ok := errors.AsType[*connect.Error](err)
+		if !ok || ce.Code() != connect.CodeInvalidArgument || !strings.Contains(ce.Message(), "feature_choice_keys") {
+			t.Errorf("%s: the pick of the skill the background gives: error = %v, want invalid_argument at feature_choice_keys", who, err)
+		}
+	}
+	if _, err := f.davi.api.CreateCharacter(t.Context(), connect.NewRequest(&charactersv1.CreateCharacterRequest{
+		CampaignId: f.campaign, Kind: charactersv1.CharacterKind_CHARACTER_KIND_PLAYER, Name: "Ícaro", Sheet: repeating("language:giant"),
+	})); err != nil {
+		t.Errorf("the pick of a language: error = %v", err)
 	}
 }

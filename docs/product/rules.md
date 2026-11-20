@@ -1290,8 +1290,8 @@ The choices cover the SRD 5.1 sections Fighting Style, Draconic Ancestry and Bre
   A table feature may offer a choice that mixes kinds: a skill or a language, a skill or a tool, or all three.
   The master lists each kind once with its own keys (a tool kind may tick kinds of proficiency instead) and says how many picks the player makes in all.
   The player reads one choice in "Escolhas" and in the guided level up, with the options of every kind together and each one marked with its kind.
-  A pick is never one the character already has from another source (a race's language, a class's skill, a background's tool) and never the same twice: such an option is blocked on the screen, and a save that carries it is refused.
-  A pick the choice itself holds stays when the sheet is saved again.
+  A pick is never one the character already has from another source (a race's language, a class's skill, a background's tool) and never the same twice: such an option is blocked on the screen, and a save that adds it as a new pick is refused, for the master too.
+  A pick the sheet already holds stays when another source later gives the same thing (a feature of a later level, a master's edit): it counts toward the choice and gives nothing more.
   A skill picked this way is a skill the character has apart from the class's and the other sources' lists, and takes no place in them.
   A language joins the character's languages, and a tool is placed with the character's other tool picks.
   A pick that none of the kinds offers is refused as a key that does not exist.

@@ -110,12 +110,26 @@ func refuseUnfitPick(content *rules.Content, m authz.Membership, before func() *
 	}
 	field, key, found := view.UnplacedNewPick(stored, buildOf(after))
 	if !found {
-		return nil
+		return refuseRepeatedAlternativePick(view, stored, buildOf(after))
 	}
 	if strings.HasPrefix(field, "full.feature_choice_keys") && !view.IsToolProficiency(key) {
 		return errUnknownKey("sheet." + field) // a tool pick of anything but a tool is a key the content does not have
 	}
 	return invalidArgument(&fieldError{field: "sheet." + field, err: errors.New(unfitSentence(view, buildOf(after), field, key))})
+}
+
+// refuseRepeatedAlternativePick refuses a new pick of a choice of alternatives that repeats what another source gives the sheet,
+// with the field of the pick and a sentence that names only the key's own name. A pick the stored sheet holds stays.
+func refuseRepeatedAlternativePick(view *rules.Content, stored *rules.Build, after rules.Build) error {
+	field, key, found := view.NewDuplicateAlternativePick(stored, after)
+	if !found {
+		return nil
+	}
+	name := view.NamePT(key)
+	if strings.HasPrefix(key, "proficiency:") {
+		name = view.ProficiencyNamePT(key)
+	}
+	return invalidArgument(&fieldError{field: "sheet." + field, err: errors.New(name + " o personagem já tem por outra origem: uma escolha entre tipos diferentes não repete isso")})
 }
 
 // unfitSentence is the sentence of a pick that cannot be placed, by the kind of pick the field holds: a skill or an

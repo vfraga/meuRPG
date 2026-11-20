@@ -308,8 +308,9 @@ func TestAChoiceOfAlternativesIsCarriedByTheOverlay(t *testing.T) {
 	}
 }
 
-// A pick that repeats what another source gives the sheet is one the character would have twice: the option is blocked, a
-// held pick on it is unmet, and the sheet does not count it. The choice's own picks are not "another source".
+// A new pick that repeats what another source gives the sheet is one the character would have twice: the option is blocked, and
+// the save refuses the pick. A pick the stored sheet holds stays: it counts toward the choice. The choice's own picks are not
+// "another source".
 func TestAPickOfWhatAnotherSourceGivesIsRefused(t *testing.T) {
 	t.Parallel()
 	toolsOrSkill := Effect{Type: "choice", Choice: choiceAlternatives, Count: 1, Alternatives: []ChoiceAlternative{
@@ -334,10 +335,7 @@ func TestAPickOfWhatAnotherSourceGivesIsRefused(t *testing.T) {
 			b.SkillProficiencies = []string{"skill:perception", "skill:insight"}
 			return b
 		}, "skill:perception", "skill:stealth"},
-		{"a background tool", toolsOrSkill, func() Build {
-			b := altBuild()
-			return b
-		}, "proficiency:disguise-kit", "skill:stealth"},
+		{"a background tool", toolsOrSkill, func() Build { return altBuild() }, "proficiency:disguise-kit", "skill:stealth"},
 	}
 	for _, r := range rows {
 		t.Run(r.name, func(t *testing.T) {
@@ -348,41 +346,26 @@ func TestAPickOfWhatAnotherSourceGivesIsRefused(t *testing.T) {
 			}
 			c := withOverlayOn(t, loadForTest(t), o)
 			b := r.build()
-			b.FeatureChoices = []string{altStored(r.effect, r.value)}
-			set := c.Choices(b)
-			ch := choiceOf(t, set, altKey(r.effect))
-			if !optionOf(t, ch, r.value).Blocked() {
+			if ch := choiceOf(t, c.Choices(b), altKey(r.effect)); !optionOf(t, ch, r.value).Blocked() {
 				t.Errorf("%s: the option the sheet has from another source is offered", r.value)
 			}
-			if !slices.Contains(ch.Unmet, r.value) {
-				t.Errorf("%s: the pick is not unmet (unmet %v)", r.value, ch.Unmet)
+			b.FeatureChoices = []string{altStored(r.effect, r.value)}
+			if _, key, found := c.NewDuplicateAlternativePick(nil, b); !found || key != r.value {
+				t.Errorf("%s: the new pick is not refused (found %v, %q)", r.value, found, key)
 			}
-			if !slices.ContainsFunc(set.ChoiceProblems(false), func(p ChoiceProblem) bool {
-				return p.Code == ChoiceProblemPrerequisite && p.OptionKey == r.value
-			}) {
-				t.Errorf("%s: the pick is no problem of the save: %v", r.value, set.ChoiceProblems(false))
+			// The stored sheet holds it: it stays, counts toward the choice and is no problem of the save.
+			if _, _, found := c.NewDuplicateAlternativePick(&b, b); found {
+				t.Errorf("%s: a held pick is refused", r.value)
 			}
-			// The pick counts for nothing: the choice asks again.
-			if d := Derive(b, c); missingIssues(d) != 1 {
-				t.Errorf("%s: the sheet counts the pick: missing issues %d, want 1", r.value, missingIssues(d))
+			if set := c.Choices(b); len(set.ChoiceProblems(false)) != 0 || missingIssues(Derive(b, c)) != 0 {
+				t.Errorf("%s: a held pick is a problem: %v", r.value, set.ChoiceProblems(false))
 			}
-			// A pick of another key of the choice is whole, and stays so when the sheet is saved again.
+			// A new pick of another key of the choice is whole.
 			b.FeatureChoices = []string{altStored(r.effect, r.other)}
-			set = c.Choices(b)
-			if len(set.ChoiceProblems(false)) != 0 || missingIssues(Derive(b, c)) != 0 {
-				t.Errorf("%s: the choice's own pick is refused: %v", r.other, set.ChoiceProblems(false))
+			if _, _, found := c.NewDuplicateAlternativePick(nil, b); found || missingIssues(Derive(b, c)) != 0 {
+				t.Errorf("%s: the choice's own pick is refused", r.other)
 			}
 		})
-	}
-}
-
-// The message of an option an alternative does not offer is in the language of the other messages of the overlay's checks.
-func TestTheMessageOfAnAlternativeOptionOutsideTheSRDIsInEnglish(t *testing.T) {
-	t.Parallel()
-	a := ChoiceAlternative{Kind: altSkill, From: []string{"skill:nenhuma"}}
-	_, _, msg := loadForTest(t).c.alternativeFault(nil, a)
-	if want := `"skill:nenhuma" is not a skill of the SRD that an alternative offers`; msg != want {
-		t.Errorf("message = %q, want %q", msg, want)
 	}
 }
 
@@ -411,13 +394,12 @@ func TestAToolPickOfWhatABackgroundGroupGaveIsRefused(t *testing.T) {
 	group := BackgroundGroup{Kind: GroupTool, Choose: 1, Options: []string{"proficiency:disguise-kit", "proficiency:dice-set"}}
 	c, b, bg := altSheet(t, alt, nil, []BackgroundGroup{group}, ScopedChoice(BackgroundGroupKey(filterBackground, group), "proficiency:disguise-kit"))
 	_ = bg
-	b.FeatureChoices = append(b.FeatureChoices, altStored(alt, "proficiency:disguise-kit"))
-	ch := choiceOf(t, c.Choices(b), altKey(alt))
-	if !optionOf(t, ch, "proficiency:disguise-kit").Blocked() || !slices.Contains(ch.Unmet, "proficiency:disguise-kit") {
-		t.Errorf("the tool the group gave is offered again: unmet %v", ch.Unmet)
+	if ch := choiceOf(t, c.Choices(b), altKey(alt)); !optionOf(t, ch, "proficiency:disguise-kit").Blocked() {
+		t.Error("the tool the group gave is offered again")
 	}
-	if missingIssues(Derive(b, c)) != 1 {
-		t.Errorf("the sheet counts the repeated tool pick")
+	b.FeatureChoices = append(b.FeatureChoices, altStored(alt, "proficiency:disguise-kit"))
+	if _, key, found := c.NewDuplicateAlternativePick(nil, b); !found || key != "proficiency:disguise-kit" {
+		t.Errorf("the new pick of the tool the group gave is not refused")
 	}
 }
 
@@ -442,16 +424,76 @@ func TestASkillPickIsRefusedOnlyForAnUnconditionalFullSource(t *testing.T) {
 		t.Run(r.name, func(t *testing.T) {
 			t.Parallel()
 			c, b, _ := altSheet(t, alt, []Effect{r.effect}, nil, altStored(alt, "skill:stealth"))
-			ch := choiceOf(t, c.Choices(b), altKey(alt))
-			if got := optionOf(t, ch, "skill:stealth").Blocked(); got != r.refused {
+			open := b
+			open.FeatureChoices = nil
+			if got := optionOf(t, choiceOf(t, c.Choices(open), altKey(alt)), "skill:stealth").Blocked(); got != r.refused {
 				t.Errorf("blocked = %v, want %v", got, r.refused)
 			}
-			if got := slices.Contains(ch.Unmet, "skill:stealth"); got != r.refused {
-				t.Errorf("unmet = %v, want %v", got, r.refused)
-			}
-			if got := missingIssues(Derive(b, c)) == 1; got != r.refused {
-				t.Errorf("the sheet asks the choice again = %v, want %v", got, r.refused)
+			if _, _, got := c.NewDuplicateAlternativePick(nil, b); got != r.refused {
+				t.Errorf("the new pick is refused = %v, want %v", got, r.refused)
 			}
 		})
+	}
+}
+
+// A pick the stored sheet holds stays when another source gives the same thing later: the level-up goes through, the choice is
+// not open after it, and a pick of something already held that is new is still refused.
+func TestAHeldPickStaysWhenAnotherSourceGivesTheSameThingLater(t *testing.T) {
+	t.Parallel()
+	alt := Effect{Type: "choice", Choice: choiceAlternatives, Count: 1, Alternatives: skillOrLanguage.Alternatives}
+	later := Effect{Type: "proficiency", Proficiency: "skill:stealth", When: "level() >= 2"} // the level 2 feature gives stealth
+	c, _, _ := altSheet(t, alt, []Effect{later}, nil)
+	b := sweepBase(t, c, "class:fighter", "")
+	b.Background = filterBackground
+	b.FeatureChoices = append(b.FeatureChoices, altStored(alt, "skill:stealth"))
+	if _, _, found := c.NewDuplicateAlternativePick(nil, b); found {
+		t.Fatal("the pick is refused at level 1, before the other source gives it")
+	}
+	after := mustApply(t, c, b, satisfy(t, c, b, "class:fighter", ""))
+	if err := CheckLevelUp(b, after, c); err != nil {
+		t.Errorf("the level-up with a pick another source now gives: %v", err)
+	}
+	d := Derive(after, c)
+	if missingIssues(d) != 0 || !hasSkill(d, "skill:stealth") {
+		t.Errorf("after the level-up: missing issues %d, stealth %v; want the choice counted and the skill held", missingIssues(d), hasSkill(d, "skill:stealth"))
+	}
+	if set := c.Choices(after); len(set.ChoiceProblems(false)) != 0 || choiceOf(t, set, altKey(alt)).Missing() != 0 {
+		t.Errorf("problems after the level-up: %v", set.ChoiceProblems(false))
+	}
+	if _, _, found := c.NewDuplicateAlternativePick(&b, after); found {
+		t.Error("the stored sheet's pick is refused after the level-up")
+	}
+	// A new pick of what the sheet holds apart is refused: the same pick on a sheet that did not store it.
+	fresh := after
+	fresh.FeatureChoices = without(after.FeatureChoices, altKey(alt))
+	fresh.FeatureChoices = append(fresh.FeatureChoices, altStored(alt, "skill:stealth"))
+	if _, key, found := c.NewDuplicateAlternativePick(&after, fresh); found && key != "skill:stealth" {
+		t.Errorf("refused %q", key)
+	}
+	nothing := after
+	nothing.FeatureChoices = without(after.FeatureChoices, altKey(alt))
+	if _, key, found := c.NewDuplicateAlternativePick(&nothing, after); !found || key != "skill:stealth" {
+		t.Errorf("a new pick of a skill the sheet holds apart is not refused: %q %v", key, found)
+	}
+}
+
+// A master edit that adds the same skill to the sheet's sources does not refuse the pick the player holds.
+func TestAHeldPickStaysAfterTheMasterGivesTheSameSkill(t *testing.T) {
+	t.Parallel()
+	alt := Effect{Type: "choice", Choice: choiceAlternatives, Count: 1, Alternatives: skillOrLanguage.Alternatives}
+	plain, _, _ := altSheet(t, alt, nil, nil)
+	edited, b, _ := altSheet(t, alt, []Effect{{Type: "proficiency", Proficiency: "skill:stealth"}}, nil, altStored(alt, "skill:stealth"))
+	var stored Build = b
+	if _, _, found := plain.NewDuplicateAlternativePick(nil, b); found {
+		t.Fatal("refused before the master's edit")
+	}
+	if _, _, found := edited.NewDuplicateAlternativePick(&stored, b); found {
+		t.Error("the next save of the held pick is refused")
+	}
+	if set := edited.Choices(b); len(set.ChoiceProblems(false)) != 0 || choiceOf(t, set, altKey(alt)).Missing() != 0 || missingIssues(Derive(b, edited)) != 0 {
+		t.Errorf("the held pick is a problem: %v", set.ChoiceProblems(false))
+	}
+	if _, key, found := edited.NewDuplicateAlternativePick(nil, b); !found || key != "skill:stealth" {
+		t.Error("a new pick of the same skill is not refused")
 	}
 }

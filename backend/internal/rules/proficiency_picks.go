@@ -170,8 +170,7 @@ func (x *deriver) proficiencyPicks() {
 	var placed []proficiencyPick
 	x.pickedLanguages, placed, x.unplacedTools = x.c.pickedProficiencies(x.b, func(k string) bool { return x.owned[k] || onSheet(k) })
 	x.pickedTools = slices.Concat(placed, x.unplacedTools)
-	x.dropDuplicateAlternativePicks()
-	x.altPicks = x.withoutDuplicateAlternatives(x.c.pickedAlternatives(x.b, func(k string) bool { return x.owned[k] || onSheet(k) }))
+	x.altPicks = x.c.pickedAlternatives(x.b, func(k string) bool { return x.owned[k] || onSheet(k) })
 }
 
 // listedNames adds to the sheet's list the names the player typed in a free field, once each: a name the sheet

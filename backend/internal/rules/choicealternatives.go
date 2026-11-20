@@ -308,18 +308,23 @@ func (x *deriver) languageHeldApart(language string) bool {
 	return hasPick(withoutAlternatives(x.pickedLanguages), language)
 }
 
-// withoutDuplicateAlternatives drops the picks of the choices of alternatives that repeat what another source gives.
-func (x *deriver) withoutDuplicateAlternatives(picks []altPick) []altPick {
-	return slices.DeleteFunc(picks, func(p altPick) bool { return x.heldApart(p.Value) })
-}
-
-// dropDuplicateAlternativePicks takes out of the language and tool picks the ones a choice of alternatives took that another
-// source gives the sheet too.
-func (x *deriver) dropDuplicateAlternativePicks() {
-	repeated := func(p proficiencyPick) bool { return p.Alt && x.heldApart(p.Value) }
-	x.pickedLanguages = slices.DeleteFunc(x.pickedLanguages, repeated)
-	x.pickedTools = slices.DeleteFunc(x.pickedTools, repeated)
-	x.unplacedTools = slices.DeleteFunc(x.unplacedTools, repeated)
+// NewDuplicateAlternativePick returns the sheet field and the key of the first pick of a choice of alternatives of the new sheet
+// that the stored sheet (nil for a new character) does not hold and that repeats what another source gives the sheet. A pick
+// the stored sheet holds stays, though another source gives the same thing later: it counts toward its choice and gives
+// nothing more than the sheet has. c is the caller's view of the content.
+func (c *Content) NewDuplicateAlternativePick(stored *Build, now Build) (field, key string, found bool) {
+	x := c.deriverFor(now)
+	for i, s := range now.FeatureChoices {
+		if stored != nil && slices.Contains(stored.FeatureChoices, s) {
+			continue
+		}
+		for _, p := range x.altPicks {
+			if ScopedChoice(p.Key, p.Value) == s && x.heldApart(p.Value) {
+				return fmt.Sprintf("full.feature_choice_keys[%d]", i), p.Value, true
+			}
+		}
+	}
+	return "", "", false
 }
 
 // alternativeRequired is requiredPicks for a choice of alternatives: the keys it offers that the sheet does not have
@@ -403,9 +408,8 @@ func (cb *choiceBuilder) alternativeChoiceOptions(e *Effect, key string) (option
 			}
 			o := ChoiceOption{Key: k, Stored: ScopedChoice(key, k), NamePT: cb.c.alternativeOptionName(k), SummaryPT: alternativeKindNames[a.Kind] + "."}
 			if slices.Contains(cb.scoped[key], k) {
-				held = append(held, k)
-			}
-			if cb.deriver().heldApart(k) {
+				held = append(held, k) // a pick the sheet holds stays, though another source gives it too
+			} else if cb.deriver().heldApart(k) {
 				blockOption(&o, "Você já tem isto.")
 			}
 			options = append(options, o)
@@ -426,7 +430,6 @@ func (cb *choiceBuilder) alternativeChoices(g *groupBuild, owner string) {
 		}
 		ch := cb.addChoice(g, &Choice{Key: key, FeatureKey: owner, Kind: ChoiceKindOptions, TitlePT: alternativesTitle(e), HintPT: hint, Picks: cb.deriver().alternativeRequired(e, held), family: familyAlternativePick, Options: options})
 		cb.takeScoped(ch)
-		unmeetBlockedPicks(ch)
 	}
 }
 
