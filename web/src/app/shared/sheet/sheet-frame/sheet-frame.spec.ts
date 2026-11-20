@@ -53,6 +53,25 @@ describe('SheetFrame', () => {
     expect(body.classList.contains('frame__body--scrolls')).toBe(true);
   });
 
+  it('puts the icon in a tile with the title and the subtitle beside it, and the subtitle under the head otherwise', () => {
+    const make = (tile: boolean) => {
+      const f = TestBed.createComponent(SheetFrame);
+      f.componentRef.setInput('title', 'A montaria caiu');
+      f.componentRef.setInput('subtitle', 'Reação · desmontar');
+      f.componentRef.setInput('icon', 'download');
+      f.componentRef.setInput('tile', tile);
+      f.detectChanges();
+      return f.nativeElement as HTMLElement;
+    };
+    const tiled = make(true);
+    expect(tiled.querySelector('.frame__head')?.classList).toContain('frame__head--tile');
+    // The subtitle is in the block of the title, beside the tile.
+    expect(tiled.querySelector('.frame__titles .frame__sub')).not.toBeNull();
+    expect(tiled.querySelector('.frame__titles .frame__title')).not.toBeNull();
+    const plain = make(false);
+    expect(plain.querySelector('.frame__head')?.classList).not.toContain('frame__head--tile');
+  });
+
   it('takes a glyph of its own before the title, and a subtitle with a mark and a bold lead', () => {
     @Component({
       imports: [SheetFrame],

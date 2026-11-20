@@ -1068,7 +1068,7 @@
       }
     </div>
     <!-- Fixed above the pinned nav: what the turn still owes, and the page's one filled button (the card has none of its own). -->
-    <div class="phone__bar">
+    <div class="phone__bar" [class.phone__bar--noted]="!!(owed() || waitNote() || actCard())">
       @if (targeting.mode.active() && acting()) {
         <!-- Choosing a target on the map for the character (C7-04): the bar takes the place of the turn's bar. -->
         <app-target-bar

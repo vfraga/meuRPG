@@ -22,8 +22,9 @@
 
 .frame__head {
   display: flex;
+  flex-wrap: wrap;
   align-items: flex-start;
-  gap: 12px;
+  gap: 0 12px;
 }
 
 .frame__icon {
@@ -45,7 +46,12 @@
   margin-top: -1px;
 }
 
+// The title is a flex item of the head, and the subtitle drops to a line of its own under the whole head.
 .frame__titles {
+  display: contents;
+}
+
+.frame__title {
   flex: 1;
   min-width: 0;
 }
@@ -76,7 +82,9 @@
 }
 
 .frame__sub {
-  margin: -8px 0 0;
+  order: 1;
+  flex: 0 0 100%;
+  margin: 6px 0 0;
   font-size: var(--mr-font-14);
   line-height: 19px;
   color: var(--mr-ink-muted);
@@ -170,5 +178,48 @@
 
   &:empty {
     display: none;
+  }
+}
+
+// The tile: a 44 px tinted square with the icon, the title and the subtitle beside it as one block.
+.frame__head--tile {
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 0 12px;
+
+  .frame__icon,
+  ::ng-deep [head-icon] {
+    box-sizing: border-box;
+    width: 44px;
+    height: 44px;
+    margin-top: 0;
+    padding: 10px;
+    border-radius: var(--mr-radius-lg);
+    background: var(--mr-accent-soft);
+    color: var(--mr-accent-text);
+    font-size: var(--mr-font-24);
+  }
+
+  .frame__titles {
+    display: block;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .frame__title {
+    font-size: var(--mr-font-21);
+    line-height: 26px;
+  }
+
+  .frame__sub {
+    margin: 0;
+    font-size: var(--mr-font-13);
+    line-height: 18px;
+  }
+
+  .frame__close,
+  ::ng-deep [head-action] {
+    align-self: flex-start;
+    margin-top: -6px;
   }
 }

@@ -101,12 +101,15 @@ The browser draws what the server sends (reach from `GetMoveOptions`, totals, ve
   When the d20 is held for a question, the master's sheet counts down the player's first ten seconds and keeps its buttons off until they pass.
   "Rolar no app" is the filled button with the focus and "Digitar o resultado" the outlined one; a rider that fails by itself reads "Falha automática" and has one button, "Continuar".
   The result is a pill ("Passou", "Falhou", "Falha automática", each with its icon) and one sentence ("15 + 2 = 17: você segue na montaria."), then "Fechar".
-  The master reads a warning card at the top of the turn, "Esperando o teste de Tor", with the save, its DC, the cause and who is answering, and "Rolar por Tor", which opens the same sheet with the rider by name; "Próximo turno" is dashed with "Espera o teste de Tor".
+  The master reads a warning card at the top of the turn, "Esperando o teste de Tor", with the save, its DC, the cause and who is answering, and "Rolar por Tor" with the dice mark, which opens the same sheet with the rider by name; "Próximo turno" is dashed with "Espera o teste de Tor".
+  On a phone the pinned bar puts that wait note on its own line above "Próximo turno", so the button never wraps.
+  The save's sheet and the dismount sheet head with a 44 px tinted tile for the icon, and the title and the subtitle beside it.
 - **The rider's dismount:**
   "A montaria caiu" is an alert for the rider's player.
   Under it come the reaction's square and "Reação · desmontar · Rodada 4", with "Reação" in bold.
   The fall and the question are one bold line.
-  "Cair (Derrubado)" (outlined) and "Desmontar de pé" (filled) sit side by side at 390 px.
+  "Cair (Derrubado)" (outlined) and "Desmontar de pé" (filled) have one line each: side by side from 400 px, stacked below it with the filled one on top.
+  The master's row for the window says "a montaria (Pônei) foi derrubada" or "caiu a 0 PV" from the mount's own row, and only "caiu" when the combat does not say; its answer reads "Desmontar de pé pelo jogador".
   The focus starts on the title, and on neither answer.
   The tags are "Gasta a sua reação" and "Volta no começo da sua vez".
   A line says whose turn waits.

@@ -373,13 +373,42 @@ describe("what the master's held actions say", () => {
       trigger: { actorLabel: '', actionNamePt: '', targetLabel: 'Pônei' } as never,
     } as never);
     expect(reactionName(w)).toBe('Desmontar');
-    expect(plain(describeRow(w))).toBe('Desmontar · a montaria (Pônei) caiu ou morreu');
+    // Nothing in the combat says what happened to the mount: it fell, and the row does not guess a cause.
+    expect(plain(describeRow(w))).toBe('Desmontar · a montaria (Pônei) caiu');
     const bare = reactionWindow({ id: 'e', kind: ReactionKind.DISMOUNT } as never);
-    expect(plain(describeRow(bare))).toBe('Desmontar · a montaria caiu ou morreu');
+    expect(plain(describeRow(bare))).toBe('Desmontar · a montaria caiu');
+    // With the mount's own row the cause is read from it: prone, or 0 hit points.
+    const named = reactionWindow({
+      id: 'f',
+      kind: ReactionKind.DISMOUNT,
+      trigger: {
+        actorLabel: '',
+        actionNamePt: '',
+        targetId: 'pony',
+        targetLabel: 'Pônei',
+      } as never,
+    } as never);
+    const prone = encounter({
+      combatants: [
+        combatant({
+          id: 'pony',
+          label: 'Pônei',
+          hitPointsCurrent: 9,
+          conditions: ['condition:prone'],
+        }),
+      ],
+    });
+    expect(plain(describeRow(named, prone))).toBe('Desmontar · a montaria (Pônei) foi derrubada');
+    const down = encounter({
+      combatants: [combatant({ id: 'pony', label: 'Pônei', hitPointsCurrent: 0 })],
+    });
+    expect(plain(describeRow(named, down))).toBe('Desmontar · a montaria (Pônei) caiu a 0 PV');
     const card = reactionCards(encounter({ combatants, reactionWindows: [w] })).find(
       (c) => c.type === 'queue' || c.type === 'single',
     );
     expect(JSON.stringify(card)).toContain('Reações a uma montaria');
+    // The master answers for the rider's player with the action named: not a bare "Usar".
+    expect(JSON.stringify(card)).toContain('Desmontar de pé pelo jogador');
   });
 });
 

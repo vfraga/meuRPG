@@ -129,6 +129,7 @@ const ROW_FACTS: {
     w: ReactionWindow,
     t: Trigger | undefined,
     far: string,
+    e: Encounter | undefined,
   ) => string[];
 } = {
   [ReactionKind.COUNTERSPELL]: (_w, _t, far) => [
@@ -150,21 +151,36 @@ const ROW_FACTS: {
   [ReactionKind.FEATHER_FALL]: (_w, t) => (t?.actorLabel ? [`${t.actorLabel} cai`] : []),
   [ReactionKind.SLOW_FALL]: (w) => [`${w.reactorLabel} cai`],
   [ReactionKind.FEATURE]: (w) => [featureWindowFact(w)],
-  [ReactionKind.DISMOUNT]: (_w, t) => [
-    t?.targetLabel ? `a montaria (${t.targetLabel}) caiu ou morreu` : 'a montaria caiu ou morreu',
-  ],
+  [ReactionKind.DISMOUNT]: (_w, t, _far, e) => [dismountFact(t, e)],
   [ReactionKind.CUTTING_WORDS]: (_w, t, far) => [
     ...(t ? [`rolagem ${ofThe([t.actorLabel])}`] : []),
     ...(far ? [far] : []),
   ],
 };
 
+/**
+ * What happened to the rider's mount, from the mount's own row in the combat: "a montaria (Pônei) foi derrubada" or "a montaria
+ * (Pônei) caiu a 0 PV". The trigger does not say which; a mount the screen cannot read, or one that is neither prone nor at 0
+ * hit points, is only "caiu", never a guess.
+ */
+function dismountFact(t: Trigger | undefined, e: Encounter | undefined): string {
+  const mount = t?.targetId ? e?.combatants.find((c) => c.id === t.targetId) : undefined;
+  const name = t?.targetLabel ? `a montaria (${t.targetLabel})` : 'a montaria';
+  if (mount && (mount.hitPointsCurrent ?? 1) <= 0) {
+    return `${name} caiu a 0 PV`;
+  }
+  if (mount?.conditions.includes('condition:prone')) {
+    return `${name} foi derrubada`;
+  }
+  return `${name} caiu`;
+}
+
 /** What the window offers, said for the row: "Contramágica · espaço de 3º nível ou maior · a 9 m do Mago 1". */
-export function describeRow(w: ReactionWindow): string {
+export function describeRow(w: ReactionWindow, e?: Encounter): string {
   const t = w.trigger;
   const far =
     t?.distanceFt !== undefined ? `a ${metersText(t.distanceFt)} ${ofThe([t.actorLabel])}` : '';
-  const facts = ROW_FACTS[w.kind]?.(w, t, far) ?? (far ? [far] : []);
+  const facts = ROW_FACTS[w.kind]?.(w, t, far, e) ?? (far ? [far] : []);
   return joinDots([reactionName(w), ...facts]);
 }
 
@@ -205,7 +221,7 @@ function rowOf(e: Encounter, w: ReactionWindow, before: ReactionWindow | undefin
     label: w.reactorLabel,
     isPlayer: player,
     tag: player ? 'Jogador' : 'NPC',
-    description: describeRow(w),
+    description: describeRow(w, e),
     status:
       !w.answerNow && before
         ? `Depois ${ofReactor(before, before.reactorIsPlayer || combatantIsPlayer(e, before.reactorId))}`
@@ -213,7 +229,9 @@ function rowOf(e: Encounter, w: ReactionWindow, before: ReactionWindow | undefin
     answerNow: w.answerNow,
     // A player's window is answered "pelo jogador": the name never tells a pronoun.
     useLabel: player
-      ? 'Usar pelo jogador'
+      ? w.kind === ReactionKind.DISMOUNT
+        ? 'Desmontar de pé pelo jogador'
+        : 'Usar pelo jogador'
       : `Usar ${name} ${article(w.reactorLabel) === 'a' ? 'pela' : 'pelo'} ${w.reactorLabel}`,
     passLabel: player ? 'Deixar passar pelo jogador' : 'Deixar passar',
     slots: slotOptions(w),

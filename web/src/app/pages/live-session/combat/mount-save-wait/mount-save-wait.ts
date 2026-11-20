@@ -23,7 +23,7 @@ import type { MountSaveWait } from '../../../../core/combat/mount-save';
             <h3 class="card__title" id="mount-save-wait-t">{{ w.title }}</h3>
             <p class="card__detail">{{ w.detail }}</p>
             <button matButton="outlined" type="button" class="card__btn" [disabled]="busy()" disabledInteractive (click)="roll.emit(w.prompt)">
-              {{ w.rollLabel }}
+              <mat-icon aria-hidden="true">casino</mat-icon>{{ w.rollLabel }}
             </button>
           </div>
         </section>

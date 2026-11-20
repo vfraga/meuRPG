@@ -239,6 +239,27 @@
   margin-inline-start: auto;
 }
 
+// A note of what the turn waits for ("Esperando o teste de Isolda") has its own line above, so it never squeezes the button.
+.phone__bar--noted {
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--mr-space-2);
+
+  .mr-tag {
+    align-self: flex-start;
+    max-width: 100%;
+    white-space: normal;
+    height: auto;
+    min-height: 26px;
+    padding-block: 3px;
+    line-height: 18px;
+  }
+
+  .phone__next {
+    margin-inline-start: 0;
+  }
+}
+
 // The player's turn (C4-03, C6-07). The DOM reads turn card, notes, actions, strip, map, log, vitals, bar (the keyboard order); the
 // phone shows the map first, then the card and the tabs, by `order` on the page's column (`.player` is `display: contents` there).
 // From 1024px the turn bar is the first row and sticks under the page's bars (its card is `display: contents`, so the column is its

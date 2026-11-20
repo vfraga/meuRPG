@@ -28,7 +28,7 @@ import { MatIconModule } from '@angular/material/icon';
       @if (phone() && handle()) {
         <span class="frame__handle" aria-hidden="true"></span>
       }
-      <div class="frame__head">
+      <div class="frame__head" [class.frame__head--tile]="tile()">
         @if (icon()) {
           <mat-icon class="frame__icon" aria-hidden="true">{{ icon() }}</mat-icon>
         }
@@ -36,6 +36,9 @@ import { MatIconModule } from '@angular/material/icon';
         <ng-content select="[head-icon]" />
         <div class="frame__titles">
           <h2 class="frame__title" [class.frame__title--small]="small()" [id]="titleId()" tabindex="-1">{{ title() }}</h2>
+          @if (subtitle() || subtitleLead()) {
+            <p class="frame__sub"><ng-content select="[sub-mark]" />@if (subtitleLead()) {<b class="frame__lead">{{ subtitleLead() }}</b>}{{ subtitle() }}</p>
+          }
         </div>
         <!-- An extra icon button before the close one (the cast sheet's "?"). -->
         <ng-content select="[head-action]" />
@@ -45,9 +48,6 @@ import { MatIconModule } from '@angular/material/icon';
           </button>
         }
       </div>
-      @if (subtitle() || subtitleLead()) {
-        <p class="frame__sub"><ng-content select="[sub-mark]" />@if (subtitleLead()) {<b class="frame__lead">{{ subtitleLead() }}</b>}{{ subtitle() }}</p>
-      }
       <div #body class="frame__body" [class.frame__body--scrolls]="scrolls()" [attr.tabindex]="focusableBody() && scrolls() ? 0 : null"><ng-content /></div>
       <div class="frame__foot"><ng-content select="[foot]" /></div>
     </div>
@@ -71,6 +71,8 @@ export class SheetFrame {
   readonly small = input(false);
   /** An alert dialog that must be answered has no close button. */
   readonly closable = input(true);
+  /** The icon sits in a 44 px tinted tile with the title and the subtitle beside it (a question the app asks of the player). */
+  readonly tile = input(false);
   /** A fixed height (a CSS length) for a dialog whose list filters: it does not jump as the results change. */
   readonly height = input('');
 

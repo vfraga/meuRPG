@@ -39,7 +39,10 @@ describe('MountSaveWaitCard', () => {
     const rolled: unknown[] = [];
     fixture.componentInstance.roll.subscribe((p) => rolled.push(p));
     el.querySelector<HTMLButtonElement>('button')!.click();
-    expect(el.querySelector('button')?.textContent?.trim()).toBe('Rolar por Tor');
+    const button = el.querySelector('button')!;
+    // The dice mark, as on every roll button of the app, then the words.
+    expect(button.querySelector('mat-icon')?.textContent?.trim()).toBe('casino');
+    expect(button.textContent?.replace('casino', '').trim()).toBe('Rolar por Tor');
     expect(rolled).toEqual([wait.prompt]);
   });
 });
