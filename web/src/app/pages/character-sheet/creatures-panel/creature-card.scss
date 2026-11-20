@@ -195,7 +195,7 @@
 
 .acts--steed {
   // The row is one line with the ⋮ at its end: a real gap keeps the focus ring clear of the next button, every button
-  // stretches to the same height, and a narrow card with "Dispensar" off drops the icons before a word wraps.
+  // stretches to the same height, and a narrow card with "Dispensar" off has no icons while "Dispensar" is off.
   flex-wrap: nowrap;
   align-items: stretch;
   gap: 0 var(--mr-space-2);
@@ -211,23 +211,9 @@
   margin-left: calc(var(--mr-space-2) * -1);
 }
 
-@container (max-width: 420px) {
-  .acts--steed:has(.act--off) .act:not(.act--more) .mat-icon {
-    display: none;
-  }
-}
-
-// A card narrower than 360 px (a phone, the sheet column at 768 px, the sheet at 1280 px): "· desligado" stays for a screen reader only (the button is muted and
-// aria-disabled, and the reason is under the row), so the three buttons keep one line each.
-@container (max-width: 360px) {
-  .acts--steed .act__off {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip-path: inset(50%);
-    white-space: nowrap;
-  }
+// With "Dispensar" off the row shows no icons: the muted button and the reason line under the row are the cue.
+.acts--steed:has(.act--off) .act:not(.act--more) .mat-icon {
+  display: none;
 }
 
 // A bonded steed's card: "Renomear" and "Corrigir PV" in ink; only "Dispensar" keeps its danger.
@@ -247,11 +233,6 @@
 .act--off {
   color: var(--mr-ink-muted);
   cursor: default;
-}
-
-.act__off {
-  font-weight: 400;
-  white-space: nowrap;
 }
 
 .acts__why .mat-icon {

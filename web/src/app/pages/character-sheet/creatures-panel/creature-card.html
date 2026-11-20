@@ -84,7 +84,7 @@
         >
           <mat-icon aria-hidden="true">{{ refusal() ? 'block' : 'close' }}</mat-icon>Dispensar
           @if (refusal()) {
-            <span class="act__off">· desligado</span>
+            <span class="act__off mr-visually-hidden">· desligado</span>
           }
         </button>
         <button type="button" class="act act--more js-more" [matMenuTriggerFor]="more" [attr.aria-label]="'Mais ações de ' + c.name">

@@ -112,7 +112,10 @@ The browser draws what the server sends and computes no rule: multiclass prerequ
   The chip shows only while the combat runs: a combat still being set up charges nothing.
   Under the actions the card says "Dispensar mantém o vínculo: Convocar Montaria traz Estrela de volta.", and to the owner "Fora de combate, não gasta nada."; "Renomear" and "Corrigir PV" are in ink on this card.
   After a refusal "Libertar Estrela" is off too, with the same reason in its menu item; the gate's other refusals read "Com 0 PV, não age.", "Não dá para agir agora." and the surprise line, and any other refusal reads "Não dá para fazer isso agora. Tente de novo.".
-  A refusal for the turn or the action closes the question and turns "Dispensar" off (muted, the block icon, "Dispensar · desligado") with "Só na vez de Lia: dispensar gasta a ação." or "Você já usou a ação desta vez." linked under the actions with the block icon, until the page says the combat changed.
+  A refusal for the turn or the action closes the question and turns "Dispensar" off (muted) with "Só na vez de Lia: dispensar gasta a ação." or "Você já usou a ação desta vez." linked under the actions with the block icon, until the page says the combat changed.
+  The row shows no icons while "Dispensar" is off.
+  "· desligado" is for a screen reader only.
+  The visible cue is the muted button and the reason line under it.
   The actions stay one row with the ⋮ at its end, and a focused action has the app's rounded focus ring.
   A bonded steed that is not among the creatures is a dashed row from `GetSummonOptionsResponse.bonded_steed` (the bond outlives an unprepared spell): the muted silhouette, the name, "Cavalo de guerra · celestial · fora da mesa", the dashed tag "Fora", and its own "⋮" › "Libertar Estrela".
   Under the cast button of Convocar Montaria (`creatures-panel/steed-cast`): "Traz Estrela de volta, com a mesma forma, o mesmo tipo e os PV cheios." for a steed that is away, and the cost line plus "Com Estrela aqui, os PV voltam cheios." for one that is here.

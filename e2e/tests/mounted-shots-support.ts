@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { expect, type Browser, type Locator, type Page } from '@playwright/test';
 
 import { castSheet, openCastOf } from './casting-support';
-import { combatRPC, endTurnOf, getEncounterRPC, passTurnsToAndWait, type Encounter } from './combat-support';
+import { adjustVitalsRPC, combatRPC, endTurnOf, getEncounterRPC, passTurnsToAndWait, type Encounter } from './combat-support';
 import { openOrderRow, openTurn } from './combat-layout';
 import { closeSheet, contestRPC, idOf } from './contests-support';
 import { openSessionPage } from './live-session-support';
@@ -90,7 +90,7 @@ async function expectOneRow(items: Locator, what: string): Promise<void> {
     expect(Math.abs(b.height - boxes[0].height), `${what}, item ${i + 1}: its height differs`).toBeLessThanOrEqual(1);
     expect(b.cut, `${what}, item ${i + 1}: its content is cut by ${b.cut}px`).toBeLessThanOrEqual(1);
     if (i > 0) {
-      expect(b.left - boxes[i - 1].right, `${what}, item ${i + 1}: it touches the one before`).toBeGreaterThanOrEqual(7.5);
+      expect(b.left - boxes[i - 1].right, `${what}, item ${i + 1}: it touches the one before`).toBeGreaterThanOrEqual(7.99);
     }
   }
 }
@@ -311,6 +311,18 @@ async function rideScreens(t: MountedTable, l: Look): Promise<void> {
   await crop(rider.locator('xpath=..'), 'mapa-par', l);
   await expectRiddenMountReadable(rider, `${l.scheme}, ${l.width}px`);
   await openTurn(m);
+  const pairCard = m.locator('app-pair-card');
+  await expect(pairCard).toBeVisible();
+  await expect(pairCard.getByText(/Próximo turno encerra a vez dos dois\./)).toBeVisible();
+  await see(m, 'mestre-turno', l, pairCard);
+
+  // The rider at 0 HP: the master drives the mount, the card says so and has its own end button.
+  await adjustVitalsRPC(m, campaignId, t.table.characterId, { hitPointsCurrent: 0 });
+  await expect(pairCard.getByText('Caído: você conduz a montaria.')).toBeVisible();
+  await expect(pairCard.getByRole('button', { name: new RegExp(`^Encerrar a vez .*${STEED}`) })).toBeVisible();
+  await see(m, 'mestre-caido', l, pairCard);
+  await adjustVitalsRPC(m, campaignId, t.table.characterId, { hitPointsCurrent: 44 });
+  await expect(pairCard.getByText('Caído: você conduz a montaria.')).toBeHidden();
 
   // Goblin 1 pushes the horse: the save to stay on, on her screen, and the master's wait.
   await endTurnOf(p, m, campaignId, 'Isolda');
@@ -351,6 +363,13 @@ async function rideScreens(t: MountedTable, l: Look): Promise<void> {
   await expect(off).toHaveAttribute('aria-describedby', /steed-why-/);
   await expect(card.getByText(/Só na vez de .*: dispensar gasta a ação\./)).toBeVisible();
   await expectOneRow(card.locator('.acts .act'), `os botões do cartão do corcel (${l.scheme}, ${l.width}px)`);
+  // "· desligado" is for a screen reader only: it takes no room on screen.
+  const offWord = await off.locator('.act__off').evaluate((el) => {
+    const r = el.getBoundingClientRect();
+    return { width: r.width, height: r.height };
+  });
+  expect(offWord.width, 'the word "desligado" shows on screen').toBeLessThanOrEqual(1);
+  expect(offWord.height, 'the word "desligado" shows on screen').toBeLessThanOrEqual(1);
   await see(p, 'cartao-recusa', l, card);
 }
 

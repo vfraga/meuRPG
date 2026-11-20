@@ -16,7 +16,6 @@ The browser draws what the server sends (reach from `GetMoveOptions`, totals, ve
   The rider's small disc sits inside it, top right, on an ink saddle crescent (`app-rider-mark`).
   A Large mount keeps its 2 × 2 footprint while ridden, with the rider's disc and saddle inside the mount's circle at the top right (45°), the size they have on one square.
   The rider's initial and the mount's are never under 10 px, so both stay readable on a 22 px token.
-  The mount's initial is never under 10 px, so it stays readable on a 22 px token.
   On a pair the hidden seal sits top left, clear of the rider.
   The turn ring and "Vez" go around the pair when the rider or the mount has the turn.
   The token moves with the rider's own "Mover".
@@ -50,7 +49,8 @@ The browser draws what the server sends (reach from `GetMoveOptions`, totals, ve
   A pair that ties with others stays together inside the "Turno conjunto" box.
   The pair on turn is one turn, for the master and for every viewer: the box has "Vez" in its head and its rows carry no "Ainda age" chips.
   The master reads one pair card in the turn panel (the rider and the mount with their numbers, no action buttons, "Próximo turno encerra a vez dos dois.") instead of the joint-turn card.
-  The master's "Próximo turno" on that pair ends the rider's part and then the mount's, in two calls, as the player's "Encerrar turno" does; a refusal on the first stops there.
+  The master's "Próximo turno" on that pair ends the rider's part and then the mount's, in two calls, as the player's "Encerrar turno" does.
+  A refusal on the first call stops there.
   With the rider at 0 hit points the card reads "Caído: você conduz a montaria." and has one outlined button, "Encerrar a vez do Cavalo de guerra", that ends the mount's part alone.
   The combat bar shows the pair token, "Vez de Isolda" and "Cavalgando o Cavalo de guerra · em seguida: …", and "Próximo turno" is not dashed.
   Every viewer who sees both rows reads the mount's kind while it is ridden.
