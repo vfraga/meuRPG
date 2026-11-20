@@ -24,6 +24,7 @@ import type { ModeChoice } from '../../../../core/combat/combat-client-types';
 import { article } from '../../../../core/combat/combat-log';
 import { beamSpentText, bonusSpentText } from '../../../../core/combat/combat-options';
 import { diceName, sumRange } from '../../../../core/combat/combat-dice';
+import type { RollField } from '../../../../shared/multi-roll/multi-roll';
 import {
   brutalLabel,
   brutalTypedHint,
@@ -388,6 +389,12 @@ export function extraDiceProblem(
     ? `Digite o resultado do d${fields[0].faces} antes de confirmar.`
     : 'Digite o resultado de cada dado extra antes de confirmar.';
 }
+
+/** The two d20 of advantage or disadvantage, as the fields a typed roll asks for them, in the order they were rolled. */
+export const D20_PAIR_FIELDS: readonly RollField[] = [
+  { key: 'd20-1', label: 'Primeiro d20', min: 1, max: 20 },
+  { key: 'd20-2', label: 'Segundo d20', min: 1, max: 20 },
+];
 
 /** The signed attack bonus, "+6" or "−1". */
 export function signedBonus(b: number): string {

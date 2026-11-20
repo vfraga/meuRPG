@@ -78,18 +78,14 @@
       </div>
     }
     @case ('roll') {
-      <div class="chosen">
-        <mat-icon aria-hidden="true">check</mat-icon>
-        <span class="chosen__text">
-          <span class="chosen__cap">Alvo</span>
-          <span><b>{{ target()?.label }}</b>{{ target()?.sub ? ' · ' + target()?.sub : '' }}</span>
-        </span>
+      <app-chosen-row icon="check" caption="Alvo">
+        <b>{{ target()?.label }}</b>{{ target()?.sub ? ' · ' + target()?.sub : '' }}
         @if (!data.opportunity) {
-          <button type="button" class="link" (click)="change()">Trocar</button>
+          <button action type="button" class="link" (click)="change()">Trocar</button>
         } @else {
-          <span class="mr-tag">Ataque de oportunidade</span>
+          <span action class="mr-tag">Ataque de oportunidade</span>
         }
-      </div>
+      </app-chosen-row>
       @if (mode.hasMode()) {
         <app-favor-spend [control]="fav" [busy]="s.busy()" />
         <app-roll-mode-picker

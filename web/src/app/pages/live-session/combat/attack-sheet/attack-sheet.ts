@@ -32,6 +32,7 @@ import { HeldVanishWatch } from '../../../../core/held-rolls/held-vanish';
 import { ResourceClient } from '../../../../core/resources/resources-client';
 import { metersText } from '../../../../core/units';
 import { FavorSpendBox } from '../../../../shared/favor-spend/favor-spend';
+import { ChosenRow } from '../../../../shared/chosen-row/chosen-row';
 import { CombatantToken } from '../../../../shared/combatant-token/combatant-token';
 import { HeldRollPrompt } from '../../../../shared/held-roll-prompt/held-roll-prompt';
 import { RollDieOffer } from '../../../../shared/roll-die-offer/roll-die-offer';
@@ -53,6 +54,7 @@ import { AttackResult } from './attack-result';
 import { AttackRolls } from './attack-rolls';
 import type { AttackSheetData } from './attack-sheet-types';
 import {
+  D20_PAIR_FIELDS,
   attackTargetRows,
   heldWait,
   outcomeOf,
@@ -93,6 +95,7 @@ export type { AttackSheetData } from './attack-sheet-types';
     WeaponTags,
     BonusChip,
     AttackSteps,
+    ChosenRow,
     CombatantToken,
     AttackDamageStep,
     ExtraDice,
@@ -238,10 +241,7 @@ export class AttackSheet {
       this.data.state.encounter()?.combatants ?? [],
     ),
   );
-  protected readonly d20Fields: readonly RollField[] = [
-    { key: 'd20-1', label: 'Primeiro d20', min: 1, max: 20 },
-    { key: 'd20-2', label: 'Segundo d20', min: 1, max: 20 },
-  ];
+  protected readonly d20Fields: readonly RollField[] = D20_PAIR_FIELDS;
   protected readonly stepList = computed(() => steps(this.s.stage()));
   protected readonly target = computed(() => {
     const id = this.s.targetId();

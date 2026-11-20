@@ -29,7 +29,7 @@ import type {
   ModeChoice,
   PairDie,
 } from '../../../../core/combat/combat-client-types';
-import { type TypedEntry, typedEntries } from '../../../../core/combat/typed-fields';
+import type { TypedEntry } from '../../../../core/combat/typed-fields';
 import { ExtraDiceState } from '../../../../core/effects/extra-dice-state';
 import { ActionKey } from '../../../../core/connect/idempotency';
 import type { FavorSpend } from '../../../../core/play/favor-spend';
@@ -43,10 +43,10 @@ import { rerollShow } from '../../../../shared/held-roll-prompt/held-roll-shows'
 import type { RollAnimator, RollShow } from '../../../../shared/roll-overlay/roll-animator';
 import { runBusy } from '../../../../shared/sheet/run-busy';
 import type { AttackDamage } from './attack-damage';
+import { DamageRolls } from './damage-rolls';
 import {
   EFFECT_DIE_FACES,
   attackShow,
-  damageShow,
   extraDiceProblem,
   inspirationShow,
   rollRefusal,
@@ -85,12 +85,12 @@ export class AttackRolls {
   );
   /** One key per attack roll (target and die): the same values again are a retry, others a new attack. */
   private readonly attackKeys = new ActionKey();
-  /** One key per damage roll: the same die again is a retry, another die (typed after an app roll was lost) is a new request. */
-  private readonly damageKeys = new ActionKey();
+  /** The damage of the hit: one key for each die, so the same die again is a retry and another die (typed after an app roll was lost) is a new request. */
+  private readonly damageRolls: DamageRolls;
 
   constructor(
     private readonly s: AttackState,
-    private readonly damage: AttackDamage,
+    damage: AttackDamage,
     private readonly question: HeldRollController,
     private readonly host: {
       readonly api: CombatClient;
@@ -104,6 +104,11 @@ export class AttackRolls {
       readonly fav?: FavorSpend;
     },
   ) {
+    this.damageRolls = new DamageRolls(s, damage, {
+      api: host.api,
+      animator: host.animator,
+      fail: (err) => this.fail(err),
+    });
     this.maneuverDice.set(s.data.maneuverDice ?? []);
     this.extraFields.set(
       dieFields(
@@ -185,50 +190,20 @@ export class AttackRolls {
     };
   }
 
-  async rollDamage(
+  /** The damage of the hit and the sums typed for it: `DamageRolls`, which the window of a readied attack rolls with too. */
+  rollDamage(
     die: DamageDie | { readonly parts: true },
     typedParts?: readonly TypedEntry[],
   ): Promise<void> {
-    const p = this.s.pending();
-    if (!p || this.s.busy()) {
-      return;
-    }
-    const { data } = this.s;
-    await runBusy(
-      this.s.busy,
-      this.s.error,
-      async () => {
-        // With parts the answer is the whole choice, the extras marked (even none) and the sums typed.
-        const choice =
-          this.damage.parts().length > 0
-            ? { extras: this.s.picks(), ...(typedParts ? { typedParts } : {}) }
-            : undefined;
-        const res = await this.host.api.attacks.rollDamage(
-          data.campaignId,
-          data.encounterId,
-          p.id,
-          die,
-          this.damageKeys.keyFor({ die, choice }),
-          choice,
-        );
-        data.state.apply(res.encounter);
-        this.s.damage.set(res.pending);
-        this.play(damageShow(res.pending));
-        this.s.typing.set(false);
-        this.s.stage.set('done');
-      },
-      (err) => this.fail(err),
-    );
+    return this.damageRolls.rollDamage(die, typedParts);
   }
 
-  /** The sums typed for each damage type (or part that needs its own key), in the order of the fields. */
   rollDamageParts(sums: number[]): Promise<void> {
-    return this.rollDamage({ parts: true }, typedEntries(this.damage.typed(), sums));
+    return this.damageRolls.rollDamageParts(sums);
   }
 
-  /** The sum asked again after the master took an extra out of a group: that damage type alone. */
   rollAwaitedSum(sums: number[], typeKey: string): Promise<void> {
-    return this.rollDamage({ parts: true }, [{ damageType: typeKey, sum: sums[0] }]);
+    return this.damageRolls.rollAwaitedSum(sums, typeKey);
   }
 
   /** What a roll answered: the result and, for a hit, the damage; or, for a held roll, the d20 and its question (Lucky

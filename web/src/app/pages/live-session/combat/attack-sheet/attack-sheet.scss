@@ -172,34 +172,6 @@
   }
 }
 
-.chosen {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  box-sizing: border-box;
-  min-height: 64px;
-  padding: 10px 16px;
-  border: 1px solid var(--mr-line);
-  border-radius: var(--mr-radius-md);
-
-  .mat-icon {
-    flex: none;
-  }
-}
-
-.chosen__text {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  min-width: 0;
-}
-
-.chosen__cap {
-  font-size: var(--mr-font-13);
-  line-height: 16px;
-  color: var(--mr-ink-muted);
-}
-
 .link {
   min-width: 44px;
   min-height: 44px;

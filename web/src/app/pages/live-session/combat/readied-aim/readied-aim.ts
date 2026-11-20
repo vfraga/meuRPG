@@ -89,6 +89,8 @@ export class ReadiedAimList implements OnInit {
   readonly release = model<ReleasePick>(NO_PICK);
   /** What the options say of the held spell, once read: the parent builds the answer with it. */
   readonly plan = model<ReadiedAim['plan']>(null);
+  /** The readier's own turn options as they were read: the roll step of a released attack or spell reads its bonus, its dice and the mode the server suggests from them (#938). */
+  readonly options = model<GetTurnOptionsResponse | null>(null);
   /** The first time the one answering touches the list (a creature, a dart): the parent tells the table they are choosing. Once. */
   readonly touched = output<void>();
   private told = false;
@@ -139,6 +141,7 @@ export class ReadiedAimList implements OnInit {
         this.reactorId(),
       );
       this.result.set(res);
+      this.options.set(res);
       const aim = this.aim();
       this.target.set(aim.chosen);
       if (aim.plan) {
