@@ -60,7 +60,7 @@ func TestAChoiceOfAlternativesOffersTheSamePoolToEveryone(t *testing.T) {
 			if got := optionsOf(choicesOf(t, plain), key[len(owner):]); !slices.Equal(got, want) {
 				t.Errorf("the pool has %d options, want the %d keys of the alternatives and nothing else", len(got), len(want))
 			}
-			if strings.Contains(string(plain.body), "proficiency:thieves-tools") || strings.Contains(string(plain.body), "skill:arcana") {
+			if strings.Contains(string(plain.body), "proficiency:thieves-tools") || strings.Contains(string(plain.body), "skill:acrobatics") {
 				t.Error("the answer names a key no alternative offers")
 			}
 			for _, inside := range []string{"skill:stealth", "proficiency:glaives"} {
