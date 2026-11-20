@@ -1,6 +1,6 @@
 import { signal } from '@angular/core';
 
-import type { Encounter } from '../../../gen/meurpg/play/v1/combat_pb';
+import { type Encounter, ReactionBusy } from '../../../gen/meurpg/play/v1/combat_pb';
 import type { CombatClient } from './combat-client';
 
 /** The window the mark is about. */
@@ -35,6 +35,8 @@ export class ReleaseMark {
     private readonly api: Pick<CombatClient['attacks'], 'markReactionRolling'>,
     private readonly ids: ReleaseMarkIds,
     private readonly apply: (e: Encounter) => void,
+    /** What the player is busy with while marked: left out for the map (the first use of the mark), `DICE` for the typed roll of a release. */
+    private readonly busy: ReactionBusy = ReactionBusy.UNSPECIFIED,
   ) {}
 
   /** On entering the map: marks the window, once. */
@@ -115,6 +117,9 @@ export class ReleaseMark {
 
   private call(clear: boolean): Promise<Encounter> {
     const { campaignId, encounterId, windowId } = this.ids;
-    return this.api.markReactionRolling(campaignId, encounterId, windowId, clear);
+    // The clear names nothing, and the map's mark keeps the four arguments it always had.
+    return clear || this.busy === ReactionBusy.UNSPECIFIED
+      ? this.api.markReactionRolling(campaignId, encounterId, windowId, clear)
+      : this.api.markReactionRolling(campaignId, encounterId, windowId, false, this.busy);
   }
 }

@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 
+import { ReactionBusy } from '../../../gen/meurpg/play/v1/combat_pb';
 import { encounter } from './combat-testing';
 import { ReleaseMark } from './release-mark';
 
@@ -153,5 +154,39 @@ describe("the wait mark of a readied window's release (#857, #856)", () => {
     release();
     await Promise.all([leaving, entering]);
     expect(order).toEqual(['clear', 'mark']);
+  });
+
+  describe('the mark of the dice (#938)', () => {
+    function dice() {
+      const mark = vi.fn(async (_c: string, _e: string, _w: string, _clear?: boolean) =>
+        encounter({ revision: 5 }),
+      );
+      const m = new ReleaseMark(
+        { markReactionRolling: mark } as never,
+        { campaignId: 'camp', encounterId: 'enc', windowId: 'w1' },
+        vi.fn(),
+        ReactionBusy.DICE,
+      );
+      return { m, mark };
+    }
+
+    it('says the player is busy with the dice on entering, and names nothing on the clear', async () => {
+      const { m, mark } = dice();
+      await m.enter();
+      await m.leave();
+      expect(mark.mock.calls).toEqual([
+        ['camp', 'enc', 'w1', false, ReactionBusy.DICE],
+        ['camp', 'enc', 'w1', true],
+      ]);
+    });
+
+    it('marks the dice again when a window reopened clean by an undo is seen not rolling', async () => {
+      const { m, mark } = dice();
+      await m.enter();
+      m.observe({ rolling: true });
+      m.observe({ rolling: false });
+      await Promise.resolve();
+      expect(mark).toHaveBeenLastCalledWith('camp', 'enc', 'w1', false, ReactionBusy.DICE);
+    });
   });
 });

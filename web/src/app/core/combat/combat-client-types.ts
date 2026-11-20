@@ -245,7 +245,15 @@ export interface ReactionAnswer {
   /** A readied spell: the targets with their darts, as a cast names them (`targets`); not with `creatureIds`. */
   readonly targets?: readonly CastTarget[];
   /** The die the answer needs, when it needs one: the app rolls it, or the face typed from a physical die. */
-  readonly die?: { readonly inApp: true } | { readonly typed: number };
+  readonly die?:
+    | { readonly inApp: true }
+    | { readonly typed: number }
+    /** A readied release's d20 pair (advantage or disadvantage), in the order they were rolled (`d20_faces`). */
+    | { readonly d20Faces: readonly number[] }
+    /** A readied pool spell's sum of physical dice (`pool_sum`). */
+    | { readonly poolSum: number };
+  /** A readied attack released with physical dice: the faces of the dice an effect adds to the roll (Bênção, Perdição, a maneuver die). */
+  readonly extraDieFaces?: readonly number[];
   /** A maneuver reduction: the option of the prompt the player uses. */
   readonly maneuverKey?: string;
 }
@@ -262,6 +270,10 @@ export interface AnswerResult {
   /** The question the d20 of a Counterspell's check waits on (the halfling's Lucky about a 1, a Bardic Inspiration die): the
    * window stays open and nothing is spent until it is answered. */
   readonly held: HeldRollOffer | undefined;
+  /** What the release of a readied action rolled (#938): the attack roll and the damage it opened, or the cast. Unset for any other answer. */
+  readonly attackRoll: AttackRoll | undefined;
+  readonly pendingDamage: PendingDamage | undefined;
+  readonly cast: SpellCast | undefined;
 }
 
 /** What an effect changes in an attack roll: the faces of the d4 it adds from physical dice, and the extra action it gives. */

@@ -1,4 +1,8 @@
-import { ReactionChoice, type Encounter } from '../../../gen/meurpg/play/v1/combat_pb';
+import {
+  ReactionBusy,
+  ReactionChoice,
+  type Encounter,
+} from '../../../gen/meurpg/play/v1/combat_pb';
 import { spendFavorOf } from '../play/favor-errors';
 import { heldOfferOf } from '../held-rolls/held-roll-offer';
 import { type RollMode, type RollModeRequest } from '../../../gen/meurpg/play/v1/combat_rolls_pb';
@@ -34,6 +38,14 @@ function attackRollOf(die: AttackDie | PairDie) {
   if ('inApp' in die) return { case: 'rollInApp', value: true } as const;
   if ('face' in die) return { case: 'd20Face', value: die.face } as const;
   return { case: undefined } as const;
+}
+
+/** The die of a reaction answer: rolled in the app, one typed face, a pool's sum; the d20 pair travels in `d20_faces`, not in the oneof. */
+function reactionRollOf(die: ReactionAnswer['die']) {
+  if (!die || 'd20Faces' in die) return { case: undefined } as const;
+  if ('inApp' in die) return { case: 'rollInApp', value: true } as const;
+  if ('poolSum' in die) return { case: 'poolSum', value: die.poolSum } as const;
+  return { case: 'typed', value: die.typed } as const;
 }
 
 /** The calls of attacks, damage, roll modes, reactions and concentration. */
@@ -289,17 +301,18 @@ export class CombatAttackCalls {
       creatureIds: [...(answer.creatureIds ?? [])],
       targets: (answer.targets ?? []).map((t) => ({ combatantId: t.combatantId, darts: t.darts })),
       maneuverKey: answer.maneuverKey ?? '',
-      roll: !answer.die
-        ? { case: undefined }
-        : 'inApp' in answer.die
-          ? { case: 'rollInApp', value: true }
-          : { case: 'typed', value: answer.die.typed },
+      roll: reactionRollOf(answer.die),
+      d20Faces: answer.die && 'd20Faces' in answer.die ? [...answer.die.d20Faces] : [],
+      extraDieFaces: [...(answer.extraDieFaces ?? [])],
       idempotencyKey: key,
     });
     return {
       encounter: need(res.encounter, 'AnswerReaction'),
       result: res.result,
       held: res.heldRollOffer,
+      attackRoll: res.attackRoll,
+      pendingDamage: res.pendingDamage,
+      cast: res.cast,
     };
   }
 
@@ -336,19 +349,22 @@ export class CombatAttackCalls {
   /**
    * `MarkReactionRolling`: the player says they are using an optional reaction and rolling now, so the master's
    * clock waits longer before it passes the window. With `clear` it takes the mark off (the player came back from the
-   * map of a readied spell or move). Idempotent either way, so it needs no key.
+   * map of a readied spell or move). `busy` says what the player is busy with (the dice of a readied release; nothing is the map).
+   * Idempotent either way, so it needs no key.
    */
   async markReactionRolling(
     campaignId: string,
     encounterId: string,
     windowId: string,
     clear = false,
+    busy: ReactionBusy = ReactionBusy.UNSPECIFIED,
   ): Promise<Encounter> {
     const res = await this.base.client.markReactionRolling({
       campaignId,
       encounterId,
       windowId,
       clear,
+      busy,
     });
     return need(res.encounter, 'MarkReactionRolling');
   }
