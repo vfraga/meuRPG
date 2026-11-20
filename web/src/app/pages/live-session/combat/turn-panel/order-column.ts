@@ -149,7 +149,7 @@ export class OrderColumn {
     return pool ? ` · ${pool.current} de ${pool.max} PV${beast}` : '';
   }
 
-  /** "Montaria de Tor · Ileso": the link first, with its icon, then how it is (588-04); a mount under its rider is indented. */
+  /** "Montaria de Tor · Ileso": the link first, with its icon, then how it is; a mount under its rider is indented. */
   protected readonly ride = (c: Combatant): string => mountLineOf(this.encounter(), c, false);
   protected readonly follows = (c: Combatant): boolean => followsRider(this.encounter(), c);
 

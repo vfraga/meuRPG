@@ -269,7 +269,7 @@ describe('CombatView, the reaction windows', () => {
     ).toContain('Ação preparada');
   });
 
-  it('opens the dismount prompt by itself for the rider whose mount fell (#588), and the master answers from his queue', async () => {
+  it('opens the dismount prompt by itself for the rider whose mount fell, and the master answers from his queue', async () => {
     const fell = (over: object = {}) =>
       reactionWindow({
         id: 'wd',
@@ -297,7 +297,7 @@ describe('CombatView, the reaction windows', () => {
     ).toContain('Reações a uma montaria');
   });
 
-  describe("a rider's save to stay mounted (#588)", () => {
+  describe("a rider's save to stay mounted", () => {
     // The server sends the prompt only to the master and to the rider's player; the player's DC is 0 on a table that hides it.
     const owed = (over: object = {}) => ({
       riderId: 't',

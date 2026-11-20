@@ -13,7 +13,7 @@ export interface MountMarkOption {
   readonly disabled: boolean;
 }
 
-/** The master's "Montaria" select of a row (#588, boards 588-08 and 588-09). */
+/** The master's "Montaria" select of a row. */
 export interface MountMarkView {
   readonly current: MountKind;
   readonly options: readonly MountMarkOption[];

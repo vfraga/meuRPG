@@ -110,9 +110,9 @@ export class CreaturesPanel {
     this.openSessions.sessions().some((s) => s.campaignId === this.campaignId()),
   );
   protected readonly casts = computed(() => (this.isMaster() ? [] : this.spells()));
-  /** Convocar Montaria's cast button: off in a combat, and what the cast does for the bonded steed (#588). */
+  /** Convocar Montaria's cast button: off in a combat, and what the cast does for the bonded steed. */
   protected readonly steedCast = new SteedCast(this.injector);
-  /** The bonded steed that is not among the creatures (dismissed, or gone at 0 hit points): the dashed "Fora" row (#588). */
+  /** The bonded steed that is not among the creatures (dismissed, or gone at 0 hit points): the dashed "Fora" row. */
   protected readonly away = computed(() => {
     const steed = this.steedCast.bond();
     return steed && !this.creatures().some((c) => c.id === steed.id) ? steed : null;

@@ -144,7 +144,7 @@ export class SummonSheet {
     () => this.granted() !== '' || this.data.spellKey.endsWith('@mesa'),
   );
   protected readonly familiar = computed(() => this.data.spellKey === FIND_FAMILIAR);
-  /** Convocar Montaria (#588): the steed's type, or the bonded steed that comes back. */
+  /** Convocar Montaria: the steed's type, or the bonded steed that comes back. */
   protected readonly steed = new SteedPick(this.data.spellKey, this.spell);
   /** A feature's summon spends a use of the feature's resource: no slot, and the one circle the server lists. */
   protected readonly granted = computed(() => this.spell()?.grantedBy ?? '');

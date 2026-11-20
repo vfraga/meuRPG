@@ -138,8 +138,8 @@
   }
 }
 
-// A bonded steed (#588). The tag sits under the name, before the subtitle.
-// "Montaria vinculada": under the subtitle on a phone (588-23), beside the name where the card has the room (588-25): the
+// A bonded steed. The tag sits under the name, before the subtitle.
+// "Montaria vinculada": under the subtitle on a phone, beside the name where the card has the room: the
 // card's own width decides, since the sheet's column at 768 px is as narrow as a phone.
 :host {
   container-type: inline-size;
@@ -170,7 +170,7 @@
   }
 }
 
-// "⋮": a bordered 44 px square with no words, at the far right of the actions (588-23).
+// "⋮": a bordered 44 px square with no words, at the far right of the actions.
 .act--more {
   justify-content: center;
   width: 44px;
@@ -190,7 +190,7 @@
   background: var(--mr-accent-soft);
 }
 
-// A bonded steed's card (588-23): "Renomear" and "Corrigir PV" in ink; only "Dispensar" keeps its danger.
+// A bonded steed's card: "Renomear" and "Corrigir PV" in ink; only "Dispensar" keeps its danger.
 .acts--steed .act:not(.act--danger, .act--off) {
   color: var(--mr-ink);
 }

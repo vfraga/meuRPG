@@ -60,9 +60,9 @@ export class CombatantToken {
   readonly mine = input(false);
   /** Drawn on a battle map: fixed colours, since the picture is not themed. */
   readonly onMap = input(false);
-  /** The eye-off seal sits top left: the mount of a pair on the map, whose top right holds its rider's disc (588-04). */
+  /** The eye-off seal sits top left: the mount of a pair on the map, whose top right holds its rider's disc. */
   readonly sealLeft = input(false);
-  /** The mount of a pair: its initial is small, in the lower left, and the rider's disc and saddle take the rest (`app-rider-mark`, 588-04). */
+  /** The mount of a pair: its initial is small, in the lower left, and the rider's disc and saddle take the rest (`app-rider-mark`). */
   readonly ridden = input(false);
   /** The side: pixels as a number (28 in lists, 48 in the bar), or any CSS
    * length (the map sizes it from its square). */

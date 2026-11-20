@@ -4,7 +4,7 @@ import { CreatureDismissal } from '../../../gen/meurpg/characters/v1/characters_
 import { CONNECT_TRANSPORT } from '../connect/transport';
 import { CreaturesClient } from './creatures-client';
 
-/** The real client with its two services replaced by recorders: what goes on the wire for a bonded steed (#588). */
+/** The real client with its two services replaced by recorders: what goes on the wire for a bonded steed. */
 describe('CreaturesClient, the requests of a bonded steed', () => {
   function withRequests() {
     TestBed.configureTestingModule({

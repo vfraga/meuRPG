@@ -8,7 +8,7 @@ const SIDE = 30;
 const RIDER = 0.5;
 
 /**
- * The token of a rider's turn with the mount it directs (#588, boards 588-04 and 588-05): the mount's token, with the rider's
+ * The token of a rider's turn with the mount it directs: the mount's token, with the rider's
  * small disc on its top right corner. The map draws the pair its own way, inside one square (`app-rider-mark`). Decorative: the
  * title beside it names the two.
  */

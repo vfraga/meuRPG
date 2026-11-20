@@ -58,7 +58,7 @@ class PairHost {
   paired = true;
 }
 
-describe('ActionGroups: the projected pair card (588-05)', () => {
+describe('ActionGroups: the projected pair card', () => {
   it('sits in a slot of the panel, 12 px from its sides like every other child, and first from 768 px', () => {
     const fixture = TestBed.createComponent(PairHost);
     fixture.detectChanges();
@@ -96,7 +96,7 @@ describe('ActionGroups: the economy row', () => {
     ]);
   });
 
-  it('has no divider and no room of its own under it when the pair card comes next (588-05): the column gap, 12 px, is all there is', () => {
+  it('has no divider and no room of its own under it when the pair card comes next: the column gap, 12 px, is all there is', () => {
     const plain = getComputedStyle(setup().el.querySelector('.econ')!);
     expect(plain.borderBottomStyle).toBe('solid');
     expect(plain.paddingBottom).toBe('12px');

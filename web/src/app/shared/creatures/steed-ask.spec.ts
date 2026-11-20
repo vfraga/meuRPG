@@ -11,7 +11,7 @@ import { FakeCreaturesClient, creature, flat } from '../../core/creatures/creatu
 import { nextTurn } from '../../../test-settle';
 import { SteedAsk } from './steed-ask';
 
-describe('SteedAsk: "Dispensar Estrela?" and "Libertar Estrela?", asked in place (#588, boards 588-24 and 588-25)', () => {
+describe('SteedAsk: "Dispensar Estrela?" and "Libertar Estrela?", asked in place', () => {
   let api: FakeCreaturesClient;
 
   async function setup(mode: 'dismiss' | 'release', inputs: Record<string, unknown> = {}) {
@@ -59,7 +59,7 @@ describe('SteedAsk: "Dispensar Estrela?" and "Libertar Estrela?", asked in place
       'O vínculo fica',
     );
     expect(buttons().map((b) => flat(b))).toEqual(['Voltar', 'Dispensar Estrela']);
-    // Board 588-24: the confirm carries the "✕" of the card's action.
+    // the confirm carries the "✕" of the card's action.
     expect(buttons()[1].querySelector('mat-icon')?.textContent?.trim()).toBe('close');
     expect(flat(el.querySelector('.ask__d'))).toBe(
       'Estrela some do mapa e da sua ficha. O vínculo fica: Convocar Montaria traz Estrela de volta. Fora de combate, não gasta nada.',
@@ -130,7 +130,7 @@ describe('SteedAsk: "Dispensar Estrela?" and "Libertar Estrela?", asked in place
     expect(buttons().every((b) => !b.disabled)).toBe(true);
   });
 
-  it('the release, out of a combat, says it spends nothing, and its confirm carries the broken link (board 588-25)', async () => {
+  it('the release, out of a combat, says it spends nothing, and its confirm carries the broken link', async () => {
     const { el, buttons } = await setup('release');
     expect(flat(el.querySelector('.ask__t'))).toBe('Libertar Estrela?');
     expect(flat(el.querySelector('.ask__d'))).toBe(

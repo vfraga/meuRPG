@@ -4,7 +4,7 @@ import { CombatantKind } from '../../../../../gen/meurpg/play/v1/combat_pb';
 import { combatant, encounter } from '../../../../core/combat/combat-testing';
 import { TurnPanel } from './turn-panel';
 
-describe('TurnPanel: the rider with the mount it directs (588-04, 588-05)', () => {
+describe('TurnPanel: the rider with the mount it directs', () => {
   it('is the rider\'s own turn, "Cavalgando o Cavalo de guerra", with no joint pill and one "Encerrar turno"', () => {
     const fixture = TestBed.createComponent(TurnPanel);
     fixture.componentRef.setInput(
@@ -38,7 +38,7 @@ describe('TurnPanel: the rider with the mount it directs (588-04, 588-05)', () =
     expect(el.querySelector('.turn__sub')?.textContent?.replace(/\s+/g, ' ')).toContain(
       'Cavalgando o Cavalo de guerra · em seguida: Zumbi 1',
     );
-    // Boards 588-04 and 588-05: the token of the turn is the pair's, the mount with the rider's small disc on its corner.
+    // the token of the turn is the pair's, the mount with the rider's small disc on its corner.
     const pair = el.querySelector('.turn__banner app-pair-token')!;
     const [mount, rider] = Array.from(pair.querySelectorAll('app-combatant-token'));
     expect([mount.textContent?.trim(), rider.textContent?.trim()]).toEqual(['C', 'T']);

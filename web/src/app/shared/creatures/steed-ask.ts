@@ -29,7 +29,7 @@ import {
 let nextId = 0;
 
 /**
- * The two questions a bonded steed's card asks in place (#588, boards 588-24 and 588-25), never in a dialog: "Dispensar
+ * The two questions a bonded steed's card asks in place, never in a dialog: "Dispensar
  * Estrela?" (the steed goes, the bond stays) and "Libertar Estrela?" (the bond ends). An `alertdialog` like any dismissal:
  * "Voltar" first and with the focus, so a stray Enter sends nothing away; the confirm carries `data-confirm`. Both call
  * `DismissCreature`, with `dismissal` DISMISS or RELEASE.

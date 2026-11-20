@@ -21,7 +21,7 @@ const THREE: readonly { key: string; name: string; icon: string }[] = [
 
 /**
  * The pair card's three actions from the mount's own options, and the one line that says why they are off: "Caído: o mestre
- * conduz o Cavalo de guerra." for a rider at 0 hit points (COMBATANT_DOWN, 588-10 card 5), else the server's reason. Pure.
+ * conduz o Cavalo de guerra." for a rider at 0 hit points (COMBATANT_DOWN), else the server's reason. Pure.
  */
 export function pairActions(
   res: GetTurnOptionsResponse | null,

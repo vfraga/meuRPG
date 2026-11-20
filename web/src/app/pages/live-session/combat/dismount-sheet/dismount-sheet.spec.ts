@@ -76,7 +76,7 @@ describe('DismountSheet', () => {
     const { el, settle } = setup();
     await settle();
     expect(flat(el.querySelector('h2'))).toBe('A montaria caiu');
-    // Board 588-07: the reaction's square, "Reação" in bold, then what it is for and the round.
+    // the reaction's square, "Reação" in bold, then what it is for and the round.
     const sub = el.querySelector('.frame__sub')!;
     expect(flat(sub)).toBe('Reação · desmontar · Rodada 4');
     expect(flat(sub.querySelector('b'))).toBe('Reação');

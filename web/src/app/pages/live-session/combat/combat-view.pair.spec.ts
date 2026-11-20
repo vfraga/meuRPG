@@ -15,7 +15,7 @@ import { combatant, encounter, reactionWindow } from '../../../core/combat/comba
 import { PHONE_QUERY } from '../../../shared/map-view/media-query';
 import { mountCombatView } from './combat-view-testing';
 
-describe('CombatView: the rider and the mount it directs (588-04)', () => {
+describe('CombatView: the rider and the mount it directs', () => {
   const enc = (mountKind = 'controlled', state = CombatantState.UNHURT) =>
     encounter({
       currentCombatantId: 'tor',
@@ -87,7 +87,7 @@ describe('CombatView: the rider and the mount it directs (588-04)', () => {
     );
   });
 
-  it('words the last line for the width: the desktop line, and the short one on a phone (588-05)', async () => {
+  it('words the last line for the width: the desktop line, and the short one on a phone', async () => {
     const opts = {
       enc: enc(),
       turnOptions: (id: string) => (id === 'h' ? (three(true) as never) : undefined),
@@ -106,7 +106,7 @@ describe('CombatView: the rider and the mount it directs (588-04)', () => {
     expect(note?.querySelector('mat-icon')?.getAttribute('aria-hidden')).toBe('true');
   });
 
-  it('on a phone sits inside the one action card: the shapes and "Mover", then the mount, then the tabs (588-05)', async () => {
+  it('on a phone sits inside the one action card: the shapes and "Mover", then the mount, then the tabs', async () => {
     const m = mountCombatView({
       enc: enc(),
       matches: [PHONE_QUERY],
@@ -123,14 +123,14 @@ describe('CombatView: the rider and the mount it directs (588-04)', () => {
     expect(getComputedStyle(kids[at('.groups__pair')]).marginLeft).toBe('12px');
     expect(m.el.querySelectorAll('.econ app-economy-shapes')).toHaveLength(1);
     expect(m.el.querySelectorAll('.econ .econ__move')).toHaveLength(1);
-    // No divider between the row and the card, and 12 px of the column's gap (588-05).
+    // No divider between the row and the card, and 12 px of the column's gap.
     expect(getComputedStyle(m.el.querySelector('.econ')!).borderBottomStyle).toBe('none');
     expect(parseFloat(getComputedStyle(m.el.querySelector('app-pair-card')!).marginTop) || 0).toBe(
       0,
     );
   });
 
-  it('from 768 px comes first, with the rider\'s shapes in it: the row under it keeps only "Mover" (588-04)', async () => {
+  it('from 768 px comes first, with the rider\'s shapes in it: the row under it keeps only "Mover"', async () => {
     const m = mountCombatView({
       enc: enc(),
       turnOptions: (id) => (id === 'h' ? (three(true) as never) : undefined),

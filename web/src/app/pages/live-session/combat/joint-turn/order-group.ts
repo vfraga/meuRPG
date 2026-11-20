@@ -148,7 +148,7 @@ export class OrderGroup {
   /** `null`: the viewer has no total for the box (an NPC pair, to a player), and the head says none. */
   readonly total = input.required<number | null>();
   readonly onTurn = input(false);
-  /** A rider and the mount it rides: the head reads "Montado" and no hint (588-04). */
+  /** A rider and the mount it rides: the head reads "Montado" and no hint. */
   readonly mounted = input(false);
   /** For a screen reader: "Turno conjunto: Brisa e Toren, iniciativa 19". */
   readonly label = input('');

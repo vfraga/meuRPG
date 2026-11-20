@@ -53,7 +53,7 @@ function fight(
 }
 const who = (e: ReturnType<typeof fight>, id: string) => e.combatants.find((c) => c.id === id)!;
 
-describe('the turn of a rider and the mount it directs (#588, 588-04)', () => {
+describe('the turn of a rider and the mount it directs', () => {
   describe('the banner', () => {
     it("is the rider's own turn while either part is theirs to end, and theirs no more once both ended", () => {
       expect(turnBanner(fight())).toMatchObject({

@@ -233,7 +233,7 @@ export interface TurnBanner {
   readonly joint: JointTurn | null;
   /** The caller's own part of the joint turn ended. */
   readonly ownEnded: boolean;
-  /** The mount the caller's character rides and directs on this turn (588-04): the two play as one, so the banner is the rider's
+  /** The mount the caller's character rides and directs on this turn: the two play as one, so the banner is the rider's
    * alone, with "Montado no Cavalo de guerra". Absent otherwise. */
   readonly riding?: Combatant;
 }

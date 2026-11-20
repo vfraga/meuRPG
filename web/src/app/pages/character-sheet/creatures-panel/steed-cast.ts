@@ -16,7 +16,7 @@ export function bondOf(options: GetSummonOptionsResponse | null): CharacterCreat
 }
 
 /**
- * What the "Criaturas" panel says at the cast button of Convocar Montaria (#588, boards 588-23 and 588-26). The cast takes
+ * What the "Criaturas" panel says at the cast button of Convocar Montaria. The cast takes
  * ten minutes: in a combat that holds the character the button is dashed, with why. Under it, what the cast does for a
  * bonded steed: brings it back when it is away, or fills its hit points when it is here.
  */

@@ -54,7 +54,7 @@ export function steedWhere(
 }
 
 /**
- * What the question says before a dismissal or a release, in the words of boards 588-24 and 588-25. `owner` is empty for
+ * What the question says before a dismissal or a release. `owner` is empty for
  * the owner's own view, the owner's name for the master's. The rider's landing is said only with the owner on the steed;
  * "Fora de combate, não gasta nada." only to the owner (the master never spends) and only with no combat holding the steed.
  */
@@ -110,7 +110,7 @@ export function steedAskError(err: unknown): string {
     : creatureErrorMessage(err, 'dismiss');
 }
 
-/** Under the actions of a bonded steed's card (588-23): what "Dispensar" keeps, and to the owner that it is free out of a combat. */
+/** Under the actions of a bonded steed's card: what "Dispensar" keeps, and to the owner that it is free out of a combat. */
 export function steedActionsHint(name: string, master: boolean): string {
   const keeps = `Dispensar mantém o vínculo: Convocar Montaria traz ${name} de volta.`;
   return master ? keeps : `${keeps} Fora de combate, não gasta nada.`;

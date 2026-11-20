@@ -13,7 +13,7 @@ import {
 } from '../../core/creatures/steed';
 
 /**
- * What the summon sheet keeps for Convocar Montaria alone (#588): the steed's type, picked on the first cast, and the bonded
+ * What the summon sheet keeps for Convocar Montaria alone: the steed's type, picked on the first cast, and the bonded
  * steed that comes back as it was, with nothing to pick. `on` is false for every other spell, and the sheet asks nothing here.
  */
 export class SteedPick {
@@ -55,7 +55,7 @@ export class SteedPick {
     return this.on ? [this.bonded()?.name || formTitle].filter((n) => n !== '') : [];
   }
 
-  /** The bold part of the footer's line: all of it, or for Convocar Montaria only what it spends (its first sentence, 588-21). */
+  /** The bold part of the footer's line: all of it, or for Convocar Montaria only what it spends (its first sentence). */
   costLead(line: string): string {
     const end = this.on ? line.indexOf('. ') : -1;
     return end < 0 ? line : line.slice(0, end + 1);

@@ -16,11 +16,11 @@ import { CombatantToken } from '../../../../shared/combatant-token/combatant-tok
 import { EconomyShapes, economyShapes } from '../../../../shared/economy-shapes/economy-shapes';
 
 /**
- * The rider's turn with the mount it directs (588-04 desktop, 588-05 phone): one card in the accent frame, with the mount's
+ * The rider's turn with the mount it directs (desktop and phone): one card in the accent frame, with the mount's
  * line (its action and the metres it has left, from its own `GetTurnOptions`) and the three actions it takes while it carries
  * someone, "Disparada", "Desengajar" and "Esquivar" (`TakeAction` with the mount's id). It stands in for a creature tab: the
  * pair has one "Mover" (the rider's, which moves the pair) and one "Encerrar turno" (it ends both parts). A refused action
- * keeps its place, dashed, with the reason under the three ("Caído: o mestre conduz o Cavalo de guerra.", 588-10 card 5).
+ * keeps its place, dashed, with the reason under the three ("Caído: o mestre conduz o Cavalo de guerra.").
  */
 @Component({
   selector: 'app-pair-card',
@@ -33,7 +33,7 @@ import { EconomyShapes, economyShapes } from '../../../../shared/economy-shapes/
       [attr.aria-label]="phone() ? rider().label + ' e ' + mount().label + ', turno conjunto' : null"
     >
       @if (!phone()) {
-        <!-- On a phone the card comes under the rider's own shapes and "Mover": the mount's line comes alone (588-05). -->
+        <!-- On a phone the card comes under the rider's own shapes and "Mover": the mount's line comes alone. -->
         <p class="pair__head" id="pair-title">
           <mat-icon aria-hidden="true">link</mat-icon><b>{{ rider().label }} e {{ mount().label }}</b
           ><span class="pair__joint"> · turno conjunto</span>
@@ -96,7 +96,7 @@ export class PairCard {
   /** The mount's own `GetTurnOptions`, read for the rider's player (the three actions and the mount's economy only). */
   readonly options = input<GetTurnOptionsResponse | null>(null);
   readonly busy = input(false);
-  /** The phone's card comes under the rider's own shapes and "Mover": its last line is the short one (588-05). */
+  /** The phone's card comes under the rider's own shapes and "Mover": its last line is the short one. */
   protected readonly phone = mediaQuery(PHONE_QUERY);
   /** The key of the action pressed ("standard:dash"). */
   readonly act = output<string>();
@@ -112,7 +112,7 @@ export class PairCard {
   private readonly view = computed(() => pairActions(this.options(), this.mount()));
   protected readonly actions = computed(() => this.view().actions);
   protected readonly why = computed(() => this.view().why);
-  /** The rider's own action, bonus action and reaction, on one line (588-04). */
+  /** The rider's own action, bonus action and reaction, on one line. */
   protected readonly riderShapes = computed(() => economyShapes(this.rider()));
   /** The mount's action and the metres it has left; `null` until its options are read (nothing is made up meanwhile). */
   protected readonly shapes = computed(() => {

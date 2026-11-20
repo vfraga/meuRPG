@@ -9,7 +9,7 @@ import { openSessionPage } from './live-session-support';
 import { beginMountedCombat, mountedTable, STEED } from './mounted-support';
 import { tapSquare } from './move-support';
 
-// #588 (mounted combat and Convocar Montaria): the paladin calls her steed, gets on it in the combat, rides, and a shove that
+// (mounted combat and Convocar Montaria): the paladin calls her steed, gets on it in the combat, rides, and a shove that
 // pushes the horse asks her the save to stay on. The goblin's shove goes through the API (the master's dice are not under test);
 // everything the player presses and reads is the screen's.
 

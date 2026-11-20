@@ -22,7 +22,7 @@ import { Fold } from '../fold/fold';
 import { Segmented } from '../segmented/segmented';
 
 /**
- * The part of the summon sheet that only Convocar Montaria has (#588, boards 588-21 and 588-22). On the first cast, under
+ * The part of the summon sheet that only Convocar Montaria has. On the first cast, under
  * the list of forms (part `rest`): "Tipo do corcel", three segments with the app's words, none chosen until the player
  * picks. With a bonded steed, above the slot (part `same`): one fixed row with the silhouette, tagged "Mesmo corcel", and
  * the line that says what the cast does and where to change the steed. Under either, "Como funciona" folds the spell's

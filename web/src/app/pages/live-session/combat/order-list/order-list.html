@@ -376,7 +376,7 @@
                     </button>
                   }
                   @if (canMount(c)) {
-                    <!-- The master's mount mark (#588, 588-08): the select opens in the row, as the cover picker does. -->
+                    <!-- The master's mount mark: the select opens in the row, as the cover picker does. -->
                     <button mat-menu-item type="button" [disabled]="!!c.mountedOnId" (click)="mounting.set(mounting() === c.id ? null : c.id)">
                       <app-saddle-icon class="mat-icon row__menu-saddle" />Montaria…
                       @if (c.mountedOnId) {

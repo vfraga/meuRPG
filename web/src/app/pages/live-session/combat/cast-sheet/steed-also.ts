@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 
 /**
- * "Estrela também" on the cast sheet (#588, board 588-26 card 6; SRD 5.1, Find Steed): a spell that reaches only the caster
+ * "Estrela também" on the cast sheet (SRD 5.1, Find Steed): a spell that reaches only the caster
  * may reach the bonded steed the caster rides too. The server says when (`SpellOption.also_steed`); the check is on by
  * default and the caster may take it off. A real checkbox in a 44 px row, as "Esculpir Magias" has: Space marks.
  */
@@ -29,7 +29,7 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
       min-height: 44px;
       padding: 8px 12px;
       box-sizing: border-box;
-      // Framed in the accent, on its soft ground (588-26 card 6): the one choice here that reaches someone else.
+      // Framed in the accent, on its soft ground: the one choice here that reaches someone else.
       border-width: 1px;
       border-style: solid;
       border-color: var(--mr-accent);

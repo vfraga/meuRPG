@@ -61,7 +61,7 @@ function sumOf(r: MountSaveResult): string {
 
 const capital = (text: string): string => `${text.charAt(0).toUpperCase()}${text.slice(1)}`;
 
-/** What the sheet of the save says before the roll (board 588-06). */
+/** What the sheet of the save says before the roll. */
 export interface MountSaveView {
   readonly title: string;
   /** "Teste de resistência de Destreza", with "· CD 10" when the server sent the DC. */
@@ -172,7 +172,7 @@ export function mountSaveView(e: Encounter, p: MountSavePrompt, mine: boolean): 
   };
 }
 
-/** The pill and the line of a save that was rolled (board 588-10, card 6). */
+/** The pill and the line of a save that was rolled. */
 export interface MountSaveResultView {
   readonly word: 'Passou' | 'Falhou' | 'Falha automática';
   readonly good: boolean;
@@ -206,7 +206,7 @@ export function mountSaveResultView(
   return { word: 'Falhou', good: false, line: `${sum}: ${who} caiu Derrubado ${where}.` };
 }
 
-/** What the master reads while a rider's save holds the table (board 588-08). */
+/** What the master reads while a rider's save holds the table. */
 export interface MountSaveWait {
   readonly prompt: MountSavePrompt;
   /** "Esperando o teste de Tor". */

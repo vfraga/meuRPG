@@ -26,7 +26,7 @@ import {
   steedSubtitle,
 } from './steed-card';
 
-describe("the bonded steed's card, in words (#588, boards 588-23 to 588-26)", () => {
+describe("the bonded steed's card, in words", () => {
   const blocked = (reason: EncounterBlockedReason) =>
     new ConnectError('no', Code.FailedPrecondition, undefined, [
       { desc: EncounterBlockedSchema, value: create(EncounterBlockedSchema, { reason }) },
@@ -43,7 +43,7 @@ describe("the bonded steed's card, in words (#588, boards 588-23 to 588-26)", ()
   const out = { combat: false, spends: false, mounted: false };
   const riding = { combat: true, spends: true, mounted: true };
 
-  it("says what a dismissal does to the rider in a combat, in board 588-24's words: the bond stays", () => {
+  it('says what a dismissal does to the rider in a combat: the bond stays', () => {
     expect(steedAskText('dismiss', 'Estrela', '', riding)).toBe(
       'Estrela some do mapa e da sua ficha, e você desce de pé no quadrado onde Estrela estava. O vínculo fica: Convocar Montaria traz Estrela de volta.',
     );
@@ -67,7 +67,7 @@ describe("the bonded steed's card, in words (#588, boards 588-23 to 588-26)", ()
     );
   });
 
-  it("says what a release does, in board 588-25's words: the bond ends, and the next cast picks again", () => {
+  it('says what a release does: the bond ends, and the next cast picks again', () => {
     expect(steedAskText('release', 'Estrela', '', out)).toBe(
       'O vínculo acaba: Estrela some da ficha e do mapa, e a próxima Convocar Montaria escolhe de novo a forma e o tipo. Fora de combate, não gasta nada.',
     );
@@ -133,7 +133,7 @@ describe("the bonded steed's card, in words (#588, boards 588-23 to 588-26)", ()
     expect(steedRefusal(new ConnectError('down', Code.Unavailable), 'Lia')).toBe('');
   });
 
-  it('writes the row of a steed that is away, and what the cast button says under it (board 588-26 card 1, 588-23)', () => {
+  it('writes the row of a steed that is away, and what the cast button says under it', () => {
     expect(steedAwaySubtitle('Cavalo de guerra', 'celestial')).toBe(
       'Cavalo de guerra\u00a0· celestial\u00a0· fora da mesa',
     );
@@ -154,7 +154,7 @@ describe("the bonded steed's card, in words (#588, boards 588-23 to 588-26)", ()
     expect(steedAskError(new ConnectError('down', Code.Unavailable))).not.toContain('Feche');
   });
 
-  it('says under the actions what "Dispensar" keeps, and to the owner that it is free out of a combat (board 588-23)', () => {
+  it('says under the actions what "Dispensar" keeps, and to the owner that it is free out of a combat', () => {
     expect(steedActionsHint('Estrela', false)).toBe(
       'Dispensar mantém o vínculo: Convocar Montaria traz Estrela de volta. Fora de combate, não gasta nada.',
     );

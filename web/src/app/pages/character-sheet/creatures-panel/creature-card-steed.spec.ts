@@ -23,7 +23,7 @@ import {
 import { nextTurn } from '../../../../test-settle';
 import { CreatureCard } from './creature-card';
 
-describe('CreatureCard, a bonded steed (#588, boards 588-23 to 588-26)', () => {
+describe('CreatureCard, a bonded steed', () => {
   let api: FakeCreaturesClient;
   let getEncounter: ReturnType<typeof vi.fn>;
 
@@ -111,13 +111,13 @@ describe('CreatureCard, a bonded steed (#588, boards 588-23 to 588-26)', () => {
     expect(flat(tag)).toBe('Montaria vinculada');
     expect(tag?.querySelector('mat-icon')?.textContent?.trim()).toBe('link');
     expect(flat(el.querySelector('.sub'))).toBe('Cavalo de guerra · Grande · celestial');
-    // Board 588-23 (phone): the tag sits under the subtitle; from the tablet up the grid puts it beside the name (588-25).
+    // On a phone the tag sits under the subtitle; from the tablet up the grid puts it beside the name.
     const order = Array.from(el.querySelector('.head__text')!.children).map((n) => n.className);
     expect(order).toEqual(['name', 'sub', 'mr-tag']);
     expect(el.querySelector('.head__text')?.classList).toContain('head__text');
   });
 
-  it('says under the actions what "Dispensar" keeps (board 588-23), and writes "Renomear" in ink', async () => {
+  it('says under the actions what "Dispensar" keeps, and writes "Renomear" in ink', async () => {
     const owner = await setup();
     expect(flat(owner.el.querySelector('.acts__hint'))).toBe(
       'Dispensar mantém o vínculo: Convocar Montaria traz Estrela de volta. Fora de combate, não gasta nada.',
@@ -137,7 +137,7 @@ describe('CreatureCard, a bonded steed (#588, boards 588-23 to 588-26)', () => {
     expect(other.el.querySelector('.acts')?.classList).not.toContain('acts--steed');
   });
 
-  it('"⋮" is a bordered square at the far right of the actions (board 588-23)', async () => {
+  it('"⋮" is a bordered square at the far right of the actions', async () => {
     const { el } = await setup();
     const more = getComputedStyle(el.querySelector('.js-more')!);
     expect(more.borderTopStyle).toBe('solid');
@@ -237,7 +237,7 @@ describe('CreatureCard, a bonded steed (#588, boards 588-23 to 588-26)', () => {
     expect(flat(el.querySelector('.ask__d'))).not.toContain('não gasta nada');
   });
 
-  it('with the owner on the steed, the question says where the rider lands (board 588-24)', async () => {
+  it('with the owner on the steed, the question says where the rider lands', async () => {
     const { el, acts, settle } = await setup({ live: true });
     getEncounter.mockResolvedValue(
       create(EncounterSchema, {
@@ -309,7 +309,7 @@ describe('CreatureCard, a bonded steed (#588, boards 588-23 to 588-26)', () => {
     expect(off.getAttribute('aria-disabled')).toBe('true');
     expect(off.classList).toContain('act--off');
     expect(off.querySelector('mat-icon')?.textContent?.trim()).toBe('block');
-    // Board 588-26 card 4: "⊘ Dispensar · desligado", and the reason with the block icon.
+    // "⊘ Dispensar · desligado", and the reason with the block icon.
     expect(flat(off)).toBe('Dispensar · desligado');
     const why = el.querySelector(`#${off.getAttribute('aria-describedby')}`);
     expect(flat(why)).toBe('Só na vez de Lia: dispensar gasta a ação.');
@@ -318,7 +318,7 @@ describe('CreatureCard, a bonded steed (#588, boards 588-23 to 588-26)', () => {
     off.click();
     await settle();
     expect(el.querySelector('app-steed-ask')).toBeNull();
-    // The release spends the action too (588-26 card 4): its item is off with the same reason, never a silent tap.
+    // The release spends the action too: its item is off with the same reason, never a silent tap.
     el.querySelector<HTMLButtonElement>('.js-more')!.click();
     await settle();
     const panels = document.querySelectorAll('.mat-mdc-menu-panel');

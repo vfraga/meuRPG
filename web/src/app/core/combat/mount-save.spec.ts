@@ -53,7 +53,7 @@ const result = (over: object = {}) =>
     ...over,
   } as never);
 
-describe("the rider's save to stay on the mount (#588, boards 588-06, 588-08 and 588-10 card 6)", () => {
+describe("the rider's save to stay on the mount", () => {
   it("is the player's own when the rider is theirs, and nobody's when the server sent none", () => {
     expect(ownMountSave(fight())?.riderId).toBe('tor');
     expect(
@@ -81,7 +81,7 @@ describe("the rider's save to stay on the mount (#588, boards 588-06, 588-08 and
 
   it('shows the DC only when the server sent one (show_save_dc, or the master)', () => {
     const v = mountSaveView(fight(), prompt({ dc: 10 }), true);
-    // The notes (588-10 card 6): "the title gains '· CD 10'", the subtitle stays as it is.
+    // The notes: "the title gains '· CD 10'", the subtitle stays as it is.
     expect(plain(v.title)).toBe('Você cai da montaria? · CD 10');
     expect(v.subtitle).toBe('Teste de resistência de Destreza');
     expect(v.tags.map(plain)).toEqual(['1d20 + 2', 'Destreza +2', 'CD 10']);

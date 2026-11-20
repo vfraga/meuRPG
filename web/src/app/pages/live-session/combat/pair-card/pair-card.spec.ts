@@ -38,7 +38,7 @@ const three = (enabled: boolean, over: object = {}) =>
     },
   }) as never;
 
-describe('PairCard (#588, boards 588-04 and 588-05)', () => {
+describe('PairCard', () => {
   function setup(
     opts: {
       options?: unknown;
@@ -68,7 +68,7 @@ describe('PairCard (#588, boards 588-04 and 588-05)', () => {
     return { fixture, el, buttons, acted };
   }
 
-  it("draws the head, the rider's line with its three shapes, the mount's line and the three actions (588-04)", () => {
+  it("draws the head, the rider's line with its three shapes, the mount's line and the three actions", () => {
     const { el, buttons } = setup();
     expect(flat(el.querySelector('.pair__head'))).toBe(
       'linkTor e Cavalo de guerra · turno conjunto',
@@ -88,7 +88,7 @@ describe('PairCard (#588, boards 588-04 and 588-05)', () => {
     ]);
   });
 
-  it('on a phone is the mount alone: no head and no rider line, which the row above it already says (588-05)', () => {
+  it('on a phone is the mount alone: no head and no rider line, which the row above it already says', () => {
     const { el } = setup({ phone: true });
     expect(el.querySelector('.pair__head')).toBeNull();
     expect(el.querySelector('.pair__rider')).toBeNull();

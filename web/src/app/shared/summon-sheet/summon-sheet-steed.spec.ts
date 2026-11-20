@@ -22,7 +22,7 @@ import { steedSpell } from '../../core/creatures/steed-testing';
 import { nextTurn } from '../../../test-settle';
 import { SummonSheet, type SummonSheetData } from './summon-sheet';
 
-describe('SummonSheet: Convocar Montaria (#588, boards 588-21 and 588-22)', () => {
+describe('SummonSheet: Convocar Montaria', () => {
   let api: FakeCreaturesClient;
   let close: ReturnType<typeof vi.fn>;
 
@@ -98,7 +98,7 @@ describe('SummonSheet: Convocar Montaria (#588, boards 588-21 and 588-22)', () =
     expect(rows[1].querySelector('.row__warn')?.textContent).toContain(
       'Tamanho pequeno demais para você montar',
     );
-    // Board 588-21: the subtitle, the slot folded from the start, the list named "Forma", each row with its silhouette and numbers.
+    // the subtitle, the slot folded from the start, the list named "Forma", each row with its silhouette and numbers.
     expect(flat(el.querySelector('.frame__sub'))).toBe(
       'Magia de 2º nível · 10 minutos · um corcel vinculado',
     );
@@ -122,7 +122,7 @@ describe('SummonSheet: Convocar Montaria (#588, boards 588-21 and 588-22)', () =
     expect(foot()).toContain(
       'Gasta um espaço de 2º nível ou maior. Só durante uma sessão, fora de combate.',
     );
-    // Board 588-21: only what it spends is bold.
+    // only what it spends is bold.
     expect(flat(el.querySelector('[foot] .line b'))).toBe('Gasta um espaço de 2º nível ou maior.');
   });
 
@@ -150,7 +150,7 @@ describe('SummonSheet: Convocar Montaria (#588, boards 588-21 and 588-22)', () =
     expect(el.querySelector('app-creature-choice-list')).toBeNull();
     expect(el.querySelector('[aria-label="Tipo do corcel"]')).toBeNull();
     expect(flat(el.querySelector('.same .mr-tag'))).toBe('Mesmo corcel');
-    // Board 588-22: the fixed row and its line come before the slot, "Como funciona" after it.
+    // the fixed row and its line come before the slot, "Como funciona" after it.
     expect(flat(el.querySelector('.frame__sub'))).toBe(
       'Magia de 2º nível · 10 minutos · o seu corcel vinculado',
     );
@@ -197,7 +197,7 @@ describe('SummonSheet: Convocar Montaria (#588, boards 588-21 and 588-22)', () =
     expect(el.querySelector('app-slot-picker')).not.toBeNull();
   });
 
-  it('a choice the server refuses for a bonded steed says to release it first (board 588-26 card 5)', async () => {
+  it('a choice the server refuses for a bonded steed says to release it first', async () => {
     const { el, go, settle } = await setup(steedSpell({ bondedSteed: estrela() }));
     api.failWith = new ConnectError('no', Code.FailedPrecondition, undefined, [
       {

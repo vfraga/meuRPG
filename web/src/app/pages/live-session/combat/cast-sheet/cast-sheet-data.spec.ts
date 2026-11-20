@@ -92,7 +92,7 @@ describe('castSheetData', () => {
     expect(data.metamagic).toHaveLength(1);
   });
 
-  it('says whether the spell may reach the bonded steed too, as the server offers it (`also_steed`, #588)', () => {
+  it('says whether the spell may reach the bonded steed too, as the server offers it (`also_steed`)', () => {
     const offered = { ...spellOption('spell:shield-of-faith'), alsoSteed: true };
     expect(
       castSheetData(request({ key: 'spell:shield-of-faith', turn: turn([offered]) })).alsoSteed,

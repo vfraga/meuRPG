@@ -1123,7 +1123,7 @@
   <ng-container *ngTemplateOutlet="actionsBody" />
 </ng-template>
 
-<!-- The mount the character directs: its three actions, one "Mover" and one "Encerrar turno" for the two (588-04). -->
+<!-- The mount the character directs: its three actions, one "Mover" and one "Encerrar turno" for the two. -->
 <ng-template #pairCard let-me>
   @if (riding(); as ride) {
     <app-pair-card
@@ -1164,7 +1164,7 @@
     } @else if (myTurn() && own(); as me) {
       @if (ownDown()) {
         <div class="player__blocks">
-          <!-- A rider at 0 hit points: the three are dashed, the master leads the mount (588-10 card 5). -->
+          <!-- A rider at 0 hit points: the three are dashed, the master leads the mount. -->
           <ng-container *ngTemplateOutlet="pairCard; context: { $implicit: me }" />
           <app-death-saves
             [ownerOnly]="deathsHidden()"
@@ -1233,7 +1233,7 @@
               @if (targeting.mode.active() && laptop()) {
                 <app-target-bar pending variant="card" [mode]="targeting.mode" />
               }
-              <!-- The mount the character directs: under the economy row on a phone, first from 768 px (588-04, 588-05). -->
+              <!-- The mount the character directs: under the economy row on a phone, first from 768 px. -->
               <ng-container ngProjectAs="[pair]">
                 <ng-container *ngTemplateOutlet="pairCard; context: { $implicit: me }" />
               </ng-container>

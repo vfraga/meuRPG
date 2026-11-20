@@ -255,7 +255,7 @@ describe('combat view helpers', () => {
       });
     });
 
-    describe('a rider and the mount it directs (588-04)', () => {
+    describe('a rider and the mount it directs', () => {
       const pair = (mountKind: string, mine = true) =>
         encounter({
           combatants: [

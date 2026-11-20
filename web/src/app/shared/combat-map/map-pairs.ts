@@ -5,7 +5,7 @@ import { conditionTags } from '../../core/combat/conditions';
 import { ridingOn } from '../../core/combat/mount-view';
 
 /**
- * A rider and the mount it sits on, as the map draws them (588-04): one token, the mount's, with the rider's disc on it, one
+ * A rider and the mount it sits on, as the map draws them: one token, the mount's, with the rider's disc on it, one
  * pick button for the two, and the rider's line in the map's text list. Only a pair the viewer sees both of is drawn so; the
  * server sends the link only then (RN-10).
  */

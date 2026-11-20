@@ -13,7 +13,7 @@ import type { MountKind, MountMarkView } from '../../../../core/combat/mount-mar
 import { SaddleIcon } from '../../../../shared/saddle-icon/saddle-icon';
 
 /**
- * The master's "Montaria" select in an opened row of the order (#588, boards 588-08 and 588-09): "Mais" › "Montaria…" opens it,
+ * The master's "Montaria" select in an opened row of the order: "Mais" › "Montaria…" opens it,
  * as "Marcar cobertura" opens its picker. The three marks are "Nenhuma", "Adestrada" and "Independente", each with its line under
  * the name; the current one is the picked one, and what it means stays under the select, naming the rider it carries. A pick is
  * sent at once (`SetCombatantMount`). While the mount carries a rider "Nenhuma" is off and the reason is written; with no mark
@@ -86,7 +86,7 @@ import { SaddleIcon } from '../../../../shared/saddle-icon/saddle-icon';
       line-height: 18px;
       color: var(--mr-ink-muted);
     }
-    // Two lines an option (588-09): the name, and what the mark means under it.
+    // Two lines an option: the name, and what the mark means under it.
     .mount__opt {
       height: auto;
       min-height: 48px;

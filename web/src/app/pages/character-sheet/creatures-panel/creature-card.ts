@@ -59,7 +59,7 @@ import { SteedAsk } from '../../../shared/creatures/steed-ask';
  * - "Corrigir PV": the master's correction outside a combat (RN-02).
  * The focus goes back to the action that opened a question when it closes.
  *
- * A bonded steed of Convocar Montaria (#588, boards 588-23 to 588-26) has the tag "Montaria vinculada", its type's word in
+ * A bonded steed of Convocar Montaria has the tag "Montaria vinculada", its type's word in
  * the subtitle ("Cavalo de guerra · Grande · celestial"), and two ways to go: "Dispensar" keeps the bond, and "⋮" ›
  * "Libertar Estrela" ends it (`SteedAsk`). In a combat that holds the steed the owner's player spends the action: the
  * question says so, and a refusal for the turn or the action turns "Dispensar" off with the reason under the actions, until

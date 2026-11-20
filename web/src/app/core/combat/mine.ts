@@ -94,7 +94,7 @@ export function mineTabs(e: Encounter): MineTab[] {
 }
 
 /**
- * The tabs beside the pair card (588-04): the mount the character directs has no tab of its own while the card stands in for
+ * The tabs beside the pair card: the mount the character directs has no tab of its own while the card stands in for
  * it, so a player's own steed (Find Steed) does not show its three actions twice. Only the steed leaves a group it shares.
  */
 export function tabsBesideRide(tabs: readonly MineTab[], ride: Combatant | null): MineTab[] {
@@ -150,7 +150,7 @@ export function dyingIds(e: Encounter | null | undefined): Set<string> {
 }
 
 /** The combatants whose turn options the player's page reads besides the character's: its creatures, and the mount the
- * character directs on this turn (its three actions are on the pair card, 588-04). */
+ * character directs on this turn (its three actions are on the pair card). */
 export function optionIds(e: Encounter | null, master: boolean, ride: Combatant | null): string[] {
   if (!e || master || e.status !== EncounterStatus.ACTIVE) {
     return [];

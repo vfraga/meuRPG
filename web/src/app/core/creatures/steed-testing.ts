@@ -5,7 +5,7 @@ import {
   SummonSpellOptionsSchema,
 } from '../../../gen/meurpg/characters/v1/characters_pb';
 
-/** Convocar Montaria for a paladin (#588): two forms, the pony too small to ride, the three types, and the notes "Como funciona" folds. */
+/** Convocar Montaria for a paladin: two forms, the pony too small to ride, the three types, and the notes "Como funciona" folds. */
 export function steedSpell(
   over: MessageInitShape<typeof SummonSpellOptionsSchema> = {},
 ): SummonSpellOptions {

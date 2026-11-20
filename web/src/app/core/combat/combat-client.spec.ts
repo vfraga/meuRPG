@@ -130,7 +130,7 @@ describe('CombatClient area spells', () => {
     expect(requests[0]['area']).toEqual({ case: 'direction', value: { dx: 1, dy: -1 } });
   });
 
-  it('sends `also_steed` only when the cast asks for the steed too (#588)', async () => {
+  it('sends `also_steed` only when the cast asks for the steed too', async () => {
     const { client, requests } = withRequests();
     const cast = (extras: object) =>
       client.casts.castSpell(

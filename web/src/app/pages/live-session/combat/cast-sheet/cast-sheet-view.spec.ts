@@ -552,7 +552,7 @@ describe('the result of the cast', () => {
     expect(castNotes(create(SpellCastSchema, {}), spell).length).toBe(1);
   });
 
-  it("leaves the steed's line (#588, `steed_note`) to the result: it is not among what the cast spent", () => {
+  it("leaves the steed's line (`steed_note`) to the result: it is not among what the cast spent", () => {
     const spell = { name: 'Escudo da Fé', economy: 1, metaOptions: [], sorceryPoints: null };
     const notes = castNotes(
       create(SpellCastSchema, {

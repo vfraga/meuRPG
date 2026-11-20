@@ -5,7 +5,7 @@ import { isDismountWindow } from './reaction-dismount';
 import { openWindows } from './reactions';
 
 /**
- * "Encerrar turno" of a rider that directs its mount (a rider and the mount it directs): one button for the two parts, one call each. Pure
+ * "Encerrar turno" of a rider that directs its mount: one button for the two parts, one call each. Pure
  * functions over the combat as it is now.
  */
 

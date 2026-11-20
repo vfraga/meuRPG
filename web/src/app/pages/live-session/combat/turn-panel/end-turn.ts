@@ -201,7 +201,7 @@ export class EndTurn {
     }
     if (
       this.surprised() ||
-      // The character's own part ended already: the button ends the part of the mount it directs, and asks nothing (588-04).
+      // The character's own part ended already: the button ends the part of the mount it directs, and asks nothing.
       this.own().turnPartEnded ||
       cannotAct(this.own()) ||
       (this.own().actionUsed && this.attacksLeft() === 0)

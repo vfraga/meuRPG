@@ -22,7 +22,7 @@
   font-size: calc(var(--tk) * 0.4);
 }
 
-// The mount of a pair: its initial steps aside, to the lower left, for the rider's disc on the saddle (588-04).
+// The mount of a pair: its initial steps aside, to the lower left, for the rider's disc on the saddle.
 :host(.tk--ridden) {
   align-items: flex-end;
   justify-content: flex-start;
@@ -194,7 +194,7 @@
   }
 }
 
-// A pair on the map: the rider's disc holds the top right, so the seal goes top left (588-04).
+// A pair on the map: the rider's disc holds the top right, so the seal goes top left.
 :host(.tk--seal-left) .tk__badge {
   right: auto;
   left: -6px;

@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
 
 /**
  * A saddle, drawn in the line weight of the Material Symbols the app uses (the font has none): the "Montar" button, the
- * "Montaria" panel's title and "Cavalgar" (588-01, 588-02). It is 1 em wide and takes the colour of the text beside it.
+ * "Montaria" panel's title and "Cavalgar". It is 1 em wide and takes the colour of the text beside it.
  * Decorative: the words beside it name it.
  */
 @Component({

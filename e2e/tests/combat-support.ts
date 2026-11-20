@@ -213,7 +213,7 @@ export interface Combatant {
   conditionNamesPt?: string[];
   concentrationSpell?: string;
   armorClassBonus?: number;
-  /** The combatant this one rides (#588); unset on foot. */
+  /** The combatant this one rides; unset on foot. */
   mountedOnId?: string;
 }
 

@@ -333,7 +333,7 @@
   }
 }
 
-// Mounted: the segments and the notice share a row from 1024px (588-02); under it the notice sits below the segments.
+// Mounted: the segments and the notice share a row from 1024px; under it the notice sits below the segments.
 .move__ride {
   @media (min-width: 1024px) {
     display: flex;

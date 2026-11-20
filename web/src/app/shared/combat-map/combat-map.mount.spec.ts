@@ -20,13 +20,13 @@ function map(inputs: Record<string, unknown> = {}) {
   return fixture.nativeElement as HTMLElement;
 }
 
-describe('CombatMap: a rider on its mount (588-04)', () => {
+describe('CombatMap: a rider on its mount', () => {
   it('draws one token for the pair, the mount with the rider on it and the saddle', () => {
     const el = map();
     expect(el.querySelectorAll('.cm__tk')).toHaveLength(1);
     expect(el.querySelector('.cm__tk')?.getAttribute('data-id')).toBe('h');
     expect(el.querySelector('.cm__rider')?.textContent).toContain('T');
-    // Board 588-04: the rider's small disc sits inside the mount's token, top right, on an ink saddle crescent, and the
+    // the rider's small disc sits inside the mount's token, top right, on an ink saddle crescent, and the
     // mount's own initial moves to the lower left.
     const mark = el.querySelector('.cm__tk app-rider-mark')!;
     expect(mark.querySelector('svg.rm__saddle path')).not.toBeNull();

@@ -136,7 +136,7 @@ describe('MountSaveSheet', () => {
       '1d20 + 2',
       'Destreza +2',
     ]);
-    // Board 588-06: the mount's glyph beside the title, and the dice in the accent as the first tag.
+    // the mount's glyph beside the title, and the dice in the accent as the first tag.
     expect(el.querySelector('.frame__head')?.firstElementChild?.tagName.toLowerCase()).toBe(
       'app-saddle-icon',
     );

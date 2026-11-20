@@ -79,7 +79,7 @@ export class ReactionSheets {
     }
   }
 
-  /** "Você cai da montaria?" (#588): by itself for the rider's player, who has to answer it; from "Rolar por Tor" for the master. */
+  /** "Você cai da montaria?": by itself for the rider's player, who has to answer it; from "Rolar por Tor" for the master. */
   mountSave(prompt: MountSavePrompt, byMaster: boolean): void {
     const e = this.ctx.encounter();
     if (!e || this.reactionOpen()) {
@@ -215,7 +215,7 @@ export class ReactionSheets {
     );
   }
 
-  /** The prompt of a rider whose mount fell (#588): "O Cavalo de guerra caiu. Usar a reação para desmontar de pé?". Opens by itself, and has to be answered: nothing passes it. */
+  /** The prompt of a rider whose mount fell: "O Cavalo de guerra caiu. Usar a reação para desmontar de pé?". Opens by itself, and has to be answered: nothing passes it. */
   private dismountWindow(window: ReactionWindow, e: Encounter): void {
     const data: DismountSheetData = {
       campaignId: this.ctx.campaignId(),

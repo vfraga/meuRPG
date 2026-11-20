@@ -26,7 +26,7 @@ import { OpenSessions } from '../../../core/play/open-sessions';
 import { nextTurn } from '../../../../test-settle';
 import { CreaturesPanel } from './creatures-panel';
 
-describe('CreaturesPanel, a bonded steed that is away: the dashed "Fora" row (#588, board 588-26 card 1)', () => {
+describe('CreaturesPanel, a bonded steed that is away: the dashed "Fora" row', () => {
   let api: FakeCreaturesClient;
   const getEncounter = vi.fn(async (): Promise<Encounter | null> => null);
   const sessions = signal<readonly { campaignId: string }[]>([{ campaignId: 'camp-1' }]);
@@ -108,7 +108,7 @@ describe('CreaturesPanel, a bonded steed that is away: the dashed "Fora" row (#5
     expect(flat(row.querySelector('.away__sub'))).toBe(
       'Cavalo de guerra · celestial · fora da mesa',
     );
-    // Board 588-26 card 1: the muted silhouette, no line in the row; how it comes back is under the cast button.
+    // the muted silhouette, no line in the row; how it comes back is under the cast button.
     expect(row.querySelector('app-creature-art')).not.toBeNull();
     expect(row.querySelector('.away__line')).toBeNull();
     expect(getComputedStyle(row.querySelector('.mr-tag')!).borderTopStyle).toBe('dashed');
@@ -123,7 +123,7 @@ describe('CreaturesPanel, a bonded steed that is away: the dashed "Fora" row (#5
     const here = await setup({ live: true });
     expect(here.away()).toBeNull();
     expect(here.el.querySelectorAll('app-creature-card').length).toBe(1);
-    // Board 588-23: with the steed here, the cast only fills its hit points.
+    // with the steed here, the cast only fills its hit points.
     expect(flat(here.el.querySelector('.cast__cost'))).toBe(
       'Gasta um espaço de 2º nível ou maior. Só durante uma sessão, fora de combate. Com Estrela aqui, os PV voltam cheios.',
     );
@@ -161,7 +161,7 @@ describe('CreaturesPanel, a bonded steed that is away: the dashed "Fora" row (#5
     expect(api.dismiss).not.toHaveBeenCalled();
   });
 
-  it('in a combat that holds the character, the cast button is dashed and says the ten minutes (board 588-26 card 4)', async () => {
+  it('in a combat that holds the character, the cast button is dashed and says the ten minutes', async () => {
     getEncounter.mockResolvedValue(
       create(EncounterSchema, { id: 'enc-1', combatants: [{ id: 'c-1', characterId: 'char-1' }] }),
     );

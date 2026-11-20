@@ -5,7 +5,7 @@ import { combatant, encounter } from '../../../../core/combat/combat-testing';
 import { mountMarkView } from '../../../../core/combat/mount-mark';
 import { RowMount } from './row-mount';
 
-describe('RowMount, the master\'s "Montaria" select of a row (#588, 588-08)', () => {
+describe('RowMount, the master\'s "Montaria" select of a row', () => {
   const text = (n: Element | null | undefined) => n?.textContent?.replace(/\s+/g, ' ').trim();
   const tor = combatant({ id: 'tor', label: 'Tor', kind: CombatantKind.PLAYER, mountedOnId: 'h' });
   const horse = (over: object) =>
@@ -51,7 +51,7 @@ describe('RowMount, the master\'s "Montaria" select of a row (#588, 588-08)', ()
   it('lists the three marks, each with its line; the current one is the only one picked', async () => {
     const { open } = await setup({ mountKind: 'independent' });
     const options = open();
-    // Board 588-09: two lines an option, the name in bold and its line under it.
+    // two lines an option, the name in bold and its line under it.
     expect(options.map((o) => text(o.querySelector('.opt__t')))).toEqual([
       'Nenhuma',
       'Adestrada',
@@ -81,14 +81,14 @@ describe('RowMount, the master\'s "Montaria" select of a row (#588, 588-08)', ()
     expect(picked).toEqual([]);
   });
 
-  it('has no reason line for a mount that carries nobody, and no button of its own: "Montaria…" closes it (boards 588-08, 588-09)', async () => {
+  it('has no reason line for a mount that carries nobody, and no button of its own: "Montaria…" closes it', async () => {
     const { el } = await setup({ mountKind: 'controlled' });
     expect(el.querySelector('.mount__why')).toBeNull();
     expect(el.querySelector('button')).toBeNull();
     expect(el.querySelector('.mount__note')).toBeNull();
   });
 
-  it('with no mark yet, says under the select what marking does (board 588-09)', async () => {
+  it('with no mark yet, says under the select what marking does', async () => {
     const { el } = await setup({});
     expect(text(el.querySelector('.mount__hint'))).toBe('Não aceita cavaleiro.');
     expect(text(el.querySelector('.mount__note'))).toBe(
@@ -102,7 +102,7 @@ describe('RowMount, the master\'s "Montaria" select of a row (#588, 588-08)', ()
     expect(document.activeElement).toBe(el.querySelector('mat-select'));
   });
 
-  it('shows no saddle before "Nenhuma": nothing is marked (board 588-09)', async () => {
+  it('shows no saddle before "Nenhuma": nothing is marked', async () => {
     const { el } = await setup({});
     expect(text(el.querySelector('.mat-mdc-select-value'))).toBe('Nenhuma');
     expect(el.querySelector('.mat-mdc-select-value app-saddle-icon')).toBeNull();

@@ -2,7 +2,7 @@ import { CombatantKind } from '../../../gen/meurpg/play/v1/combat_pb';
 import { combatant, encounter } from './combat-testing';
 import { canMarkMount, mountMarkView } from './mount-mark';
 
-describe("the master's mount mark (#588, boards 588-08 and 588-09)", () => {
+describe("the master's mount mark", () => {
   const tor = combatant({ id: 'tor', label: 'Tor', kind: CombatantKind.PLAYER, mountedOnId: 'h' });
   const horse = (over: object = {}) =>
     combatant({ id: 'h', label: 'Cavalo de guerra', ...over } as never);
@@ -30,7 +30,7 @@ describe("the master's mount mark (#588, boards 588-08 and 588-09)", () => {
     expect(v?.note).toBe('');
   });
 
-  it('with no mark yet, says what marking does, naming the creature (board 588-09)', () => {
+  it('with no mark yet, says what marking does, naming the creature', () => {
     const mastim = combatant({ id: 'm', label: 'Mastim' });
     expect(mountMarkView(encounter({ combatants: [mastim] }), 'm')?.note).toBe(
       'Com a marca, o Mastim aceita um cavaleiro, que monta na própria vez. Você monta qualquer criatura.',
@@ -46,7 +46,7 @@ describe("the master's mount mark (#588, boards 588-08 and 588-09)", () => {
     const v = mountMarkView(e, 'h');
     expect(v?.hint).toBe('Age logo depois de Tor e só usa Disparada, Desengajar e Esquivar.');
     expect(v?.options[0].disabled).toBe(true);
-    // The notes' words (588-10 card 9): no label before them.
+    // The notes' words: no label before them.
     expect(v?.why).toBe('Só depois que Tor desmontar.');
     const free = mountMarkView(
       encounter({ combatants: [horse({ mountKind: 'independent', riderId: 'tor' }), tor] }),

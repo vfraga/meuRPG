@@ -1,4 +1,4 @@
-// The pair card (588-04, 588-05): the accent frame of the turn, the mount's line, three equal outlined buttons and one line.
+// The pair card: the accent frame of the turn, the mount's line, three equal outlined buttons and one line.
 :host {
   display: block;
 }
@@ -56,7 +56,7 @@
   color: var(--mr-ink);
 }
 
-// Three in a row at 390 px and in the 368 px rail (588-04, 588-05): each button as wide as its words, sharing what is left.
+// Three in a row at 390 px and in the 368 px rail: each button as wide as its words, sharing what is left.
 // Equal columns would cut "Desengajar"; the label is one step smaller and the padding tight, as the boards draw them.
 // Under about 360 px (320 is supported) the three do not fit on one row: the row wraps, and no label is cut.
 .pair__actions {

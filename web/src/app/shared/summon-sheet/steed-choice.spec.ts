@@ -4,7 +4,7 @@ import { creature, flat, raven, summary } from '../../core/creatures/creatures-t
 import { steedSpell } from '../../core/creatures/steed-testing';
 import { SteedChoice } from './steed-choice';
 
-describe('SteedChoice: the steed part of the summon sheet (#588, boards 588-21 and 588-22)', () => {
+describe('SteedChoice: the steed part of the summon sheet', () => {
   function setup(inputs: Record<string, unknown> = {}) {
     const fixture = TestBed.createComponent(SteedChoice);
     fixture.componentRef.setInput('spell', steedSpell());
@@ -81,7 +81,7 @@ describe('SteedChoice: the steed part of the summon sheet (#588, boards 588-21 a
       speedFlyFt: 0,
     });
 
-  it('part "same" (board 588-22): the fixed row with the silhouette, the name, the tag "Mesmo corcel" with the link icon, the numbers, and the line under it', () => {
+  it('part "same": the fixed row with the silhouette, the name, the tag "Mesmo corcel" with the link icon, the numbers, and the line under it', () => {
     const { el, types, fold } = setup({
       spell: steedSpell({ bondedSteed: estrela() }),
       part: 'same',

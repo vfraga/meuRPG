@@ -226,7 +226,7 @@ export abstract class CombatViewStateDirective {
   protected readonly creatureOptions = new CreatureOptionsState();
   /** The question to end a group's part is open: the tabs are inert until it is answered. */
   protected readonly partAsking = signal(false);
-  /** The mount the player's character rides and directs on this turn (588-04): the pair card, and one turn with one "Encerrar turno". */
+  /** The mount the player's character rides and directs on this turn: the pair card, and one turn with one "Encerrar turno". */
   protected readonly riding = computed(() => {
     const e = this.encounter();
     return e && !this.isMaster() ? (turnBanner(e).riding ?? null) : null;

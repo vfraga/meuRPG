@@ -48,7 +48,7 @@ describe('OrderList with a rider and its mount', () => {
     const line = box?.querySelector('.row--mount .row__ride');
     expect(text(line)).toBe('linkAdestrada · leva Tor');
     expect(line?.querySelector('mat-icon')?.getAttribute('aria-hidden')).toBe('true');
-    // Board 588-08: the mount's row under its rider says the link and nothing else (its numbers are in the opened row).
+    // the mount's row under its rider says the link and nothing else (its numbers are in the opened row).
     expect(text(box?.querySelector('.row--mount .row__sub'))).toBe('linkAdestrada · leva Tor');
   });
 
@@ -95,7 +95,7 @@ describe('OrderList with a rider and its mount', () => {
     );
   });
 
-  describe('the master\'s "Montaria…" of the row menu (588-08)', () => {
+  describe('the master\'s "Montaria…" of the row menu', () => {
     const flat = (n: Element) => text(n)?.replace(/^[a-z_]+(?=[A-Z])/, '');
     function live(combatants: Combatant[]) {
       const fixture = TestBed.createComponent(OrderList);

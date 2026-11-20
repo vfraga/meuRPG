@@ -16390,7 +16390,7 @@ test('a ficha com "A arma mudou." que o mestre lê na ficha do jogador passa no 
   test.setTimeout(240_000);
   await scanAxeTurnedTwoHanded(browser, 'dark', 1280, 'master');
 });
-// #588 (mounted combat and Convocar Montaria): the summon sheet of a steed, its card, questions and "fora da mesa" row, the
+// (mounted combat and Convocar Montaria): the summon sheet of a steed, its card, questions and "fora da mesa" row, the
 // "Montaria" panel of "Mover", the pair's card and token, the master's "Montaria" select and the pair in the order, the save to
 // stay on, the dismount sheet and "também" on a spell of the rider's own.
 for (const [colorScheme, theme] of [

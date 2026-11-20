@@ -30,7 +30,7 @@ function clamp(seconds: number, max: number): number {
  * comes with `unanswered` from the start, so it is the master's and nothing passes it.
  * While a readied attack's roll is held for other reactions, the server sends its window with `answerNow` false: it does not pass.
  * A rider's dismount as its mount falls (DISMOUNT) is not here: leaving it unanswered would be a fall prone, so it waits for the
- * rider's player or the master (#588).
+ * rider's player or the master.
  */
 const OPTIONAL_KINDS: ReadonlySet<ReactionKind> = new Set([
   ReactionKind.SHIELD,

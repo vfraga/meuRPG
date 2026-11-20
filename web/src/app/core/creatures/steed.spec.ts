@@ -30,7 +30,7 @@ import {
   steedTypes,
 } from './steed';
 
-describe('Convocar Montaria, the words of the summon sheet (#588, boards 588-21 and 588-22)', () => {
+describe('Convocar Montaria, the words of the summon sheet', () => {
   const spell = (over: object = {}) =>
     create(SummonSpellOptionsSchema, {
       spellKey: FIND_STEED,
@@ -118,7 +118,7 @@ describe('Convocar Montaria, the words of the summon sheet (#588, boards 588-21 
     );
   });
 
-  it("says a refused choice in the bonded steed's name, and a call that did not arrive as nothing spent (board 588-26 card 5)", () => {
+  it("says a refused choice in the bonded steed's name, and a call that did not arrive as nothing spent", () => {
     const invalid = new ConnectError('x', Code.FailedPrecondition, undefined, [
       {
         desc: EncounterBlockedSchema,
@@ -133,7 +133,7 @@ describe('Convocar Montaria, the words of the summon sheet (#588, boards 588-21 
     );
   });
 
-  it('writes the line of a form: the size, the walking speed, the armor class and the hit points (board 588-21)', () => {
+  it('writes the line of a form: the size, the walking speed, the armor class and the hit points', () => {
     const horse = create(CreatureSchema, {
       summary: { key: 'monster:warhorse', namePt: 'Cavalo de guerra', sizePt: 'Grande' },
       armorClass: 11,
@@ -160,7 +160,7 @@ describe('Convocar Montaria, the words of the summon sheet (#588, boards 588-21 
       hitPoints: 19,
       speedWalkFt: 60,
     });
-    // Board 588-22: "Cavalo de guerra · celestial · Grande · 18 m · CA 11 · PV 19".
+    // "Cavalo de guerra · celestial · Grande · 18 m · CA 11 · PV 19".
     expect(steedFixedLine(steed, horse)).toBe(
       'Cavalo de guerra\u00a0· celestial\u00a0· Grande\u00a0· 18\u00a0m\u00a0· CA\u00a011\u00a0· PV\u00a019',
     );

@@ -28,7 +28,7 @@ const fight = (over: object = {}) =>
     ...over,
   } as never);
 
-describe("the rider's dismount as its mount falls (#588, board 588-07)", () => {
+describe("the rider's dismount as its mount falls", () => {
   it('knows its window by the kind', () => {
     expect(isDismountWindow(window())).toBe(true);
     expect(isDismountWindow(window({ kind: ReactionKind.FEATURE }))).toBe(false);

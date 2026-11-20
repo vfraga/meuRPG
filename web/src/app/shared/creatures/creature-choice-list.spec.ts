@@ -27,7 +27,7 @@ describe('CreatureChoiceList table creatures', () => {
   });
 });
 
-describe('CreatureChoiceList, a row with a warning (#588, board 588-21)', () => {
+describe('CreatureChoiceList, a row with a warning', () => {
   const rows: readonly ChoiceRow[] = [
     {
       key: 'monster:pony',

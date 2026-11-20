@@ -105,7 +105,7 @@ describe('opportunity attacks in words', () => {
     expect(offersHolding(e, 'toren').map((o) => o.id)).toEqual(['o1', 'o4']);
   });
 
-  it("holds the rider's turn on an offer the NPC mount it directs raised (#588): a wait, not a refusal", () => {
+  it("holds the rider's turn on an offer the NPC mount it directs raised: a wait, not a refusal", () => {
     const rider = combatant({ id: 'toren', label: 'Toren', mine: true, mountedOnId: 'horse' });
     const horse = (mountKind: string) =>
       combatant({ id: 'horse', label: 'Cavalo de guerra', riderId: 'toren', mountKind });

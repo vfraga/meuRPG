@@ -647,7 +647,7 @@ describe('CombatMapCard, the sun (#704)', () => {
   });
 });
 
-describe('CombatMapCard: the "Montado" legend line (588-04)', () => {
+describe('CombatMapCard: the "Montado" legend line', () => {
   const tor = combatant({ id: 'p', label: 'Tor', kind: CombatantKind.PLAYER, mountedOnId: 'h' });
   const horse = combatant({ id: 'h', label: 'Cavalo de guerra', riderId: 'p' });
   const legend = (el: HTMLElement) => plain(el.querySelector('.legend')?.textContent);
@@ -658,7 +658,7 @@ describe('CombatMapCard: the "Montado" legend line (588-04)', () => {
         isMaster,
         encounter: encounter({ currentCombatantId: 'p', combatants: [tor, horse] }),
       });
-      // The player reads what the mark is (588-04); the master, who marked the mount, reads the short word (588-08).
+      // The player reads what the mark is; the master, who marked the mount, reads the short word.
       const item = plain(el.querySelector('.legend .legend__pair')?.parentElement?.textContent);
       expect(item).toBe(isMaster ? 'Montado' : 'Montado: o cavaleiro pequeno, na sela');
       // The legend draws the mark itself: a small token with the rider's disc on the saddle.

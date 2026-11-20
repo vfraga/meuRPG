@@ -3,7 +3,7 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { CombatantToken } from './combatant-token';
 
 /**
- * The rider on its mount's token (#588, board 588-04): the rider's small disc inside the token, top right, sitting on an ink
+ * The rider on its mount's token: the rider's small disc inside the token, top right, sitting on an ink
  * saddle crescent. It fills the box of the mount's token, which its parent positions (`position: relative`); the mount's own
  * initial moves to the lower left (`CombatantToken.ridden`). Decorative: the lists and the map's text name the pair.
  */

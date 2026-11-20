@@ -9,7 +9,7 @@ import { mountOf } from './mount-view';
 import { whoseTurn } from './whose-turn';
 
 /**
- * The window of a rider whose mount was knocked prone or dropped to 0 hit points (#588, `ReactionKind.DISMOUNT`; SRD 5.1,
+ * The window of a rider whose mount was knocked prone or dropped to 0 hit points (`ReactionKind.DISMOUNT`; SRD 5.1,
  * "Mounted Combat"): the rider uses its reaction to land on its feet next to the mount, or falls prone within 5 ft. The window
  * has no prompt of its own and the player's trigger does not name the mount, so the name comes from the rider's own row
  * (`mounted_on_id`, which the server sends only when the player sees both). Nothing passes this window by itself: letting it
@@ -26,7 +26,7 @@ export function isDismountWindow(w: ReactionWindow): boolean {
 
 const capital = (text: string): string => `${text.charAt(0).toUpperCase()}${text.slice(1)}`;
 
-/** What the rider's prompt says, ready to draw (board 588-07). */
+/** What the rider's prompt says, ready to draw. */
 export interface DismountView {
   readonly title: string;
   /** "Reação · desmontar · Rodada 4". */

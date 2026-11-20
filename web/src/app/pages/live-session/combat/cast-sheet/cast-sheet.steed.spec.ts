@@ -93,7 +93,7 @@ describe('CastSheet: "Estrela também", a self-only spell that reaches the steed
     expect(castSpell.mock.calls[0][12]).toMatchObject({ alsoSteed: true });
   });
 
-  it('frames the check in the accent, as board 588-26 card 6 draws it', async () => {
+  it('frames the check in the accent', async () => {
     const { el } = await open(true);
     const row = getComputedStyle(el.querySelector('app-steed-also .also')!);
     // The mark is the app's garnet, not the browser's blue (seen in the render).

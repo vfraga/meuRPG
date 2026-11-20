@@ -20,7 +20,7 @@ import { CreatureArt } from '../../../shared/creatures/creature-art';
 import { SteedAsk } from '../../../shared/creatures/steed-ask';
 
 /**
- * A bonded steed that is away (#588, board 588-26 card 1): dismissed, or gone at 0 hit points. `ListCharacterCreatures` does
+ * A bonded steed that is away: dismissed, or gone at 0 hit points. `ListCharacterCreatures` does
  * not list it, so the panel draws it from `SummonSpellOptions.bonded_steed`: a dashed row with the muted silhouette, the name, the
  * form and the type ("… · fora da mesa") and the dashed tag "Fora". It has no numbers and no page; how it comes back is
  * said under the cast button. Its one action is "⋮" › "Libertar Estrela", asked

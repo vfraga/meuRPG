@@ -58,7 +58,7 @@ export function steedCostLine(level: number): string {
   return `Gasta um espaço de ${circleLabel(level)} ou maior. Só durante uma sessão, fora de combate.`;
 }
 
-/** Under the fixed row of a bonded steed ("Mesmo corcel"): board 588-22's words. */
+/** Under the fixed row of a bonded steed ("Mesmo corcel"): what the sheet says of its return. */
 export function steedSameLine(name: string): string {
   return `${name} volta como era: a mesma forma, o mesmo tipo, e os PV cheios. Para outra forma ou outro tipo, liberte ${name} antes, no bloco Criaturas.`;
 }
@@ -99,7 +99,7 @@ export function steedFixedLine(steed: CharacterCreature, block: Creature | null)
   );
 }
 
-/** A refused cast of Convocar Montaria, in board 588-26's words: the two refusals of a ten-minute casting, the choice a bonded steed does not take, and a call that did not arrive. */
+/** A refused cast of Convocar Montaria, in words: the two refusals of a ten-minute casting, the choice a bonded steed does not take, and a call that did not arrive. */
 export function steedCastError(err: unknown, bondedName = ''): string {
   const connectErr = ConnectError.from(err, Code.Unavailable);
   if (connectErr.code === Code.FailedPrecondition) {

@@ -81,7 +81,7 @@ export class CastResult {
   readonly sentence = input('');
   /** The caster's own roll of the pool, `5d8 (2, 4, 1, 5, 3) = 15`: never an enemy's hit points. */
   readonly pool = input('');
-  /** The bonded steed the cast reached too (`SpellCast.steed_note`, #588): "O corcel também é alvo da magia." */
+  /** The bonded steed the cast reached too (`SpellCast.steed_note`): "O corcel também é alvo da magia." */
   readonly steed = input('');
 }
 

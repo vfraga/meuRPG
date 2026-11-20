@@ -35,7 +35,7 @@ export interface DismountSheetData {
 }
 
 /**
- * "O Cavalo de guerra caiu. Usar a reação para desmontar de pé?" (#588, board 588-07): the `alertdialog` of a rider whose mount
+ * "O Cavalo de guerra caiu. Usar a reação para desmontar de pé?": the `alertdialog` of a rider whose mount
  * was knocked prone or dropped to 0 hit points, opened by itself for the rider's player and answered with `AnswerReaction`.
  * "Cair derrubado" (PASS) comes first and "Desmontar de pé" (USE) is the filled one; the focus starts on the title, on neither. Unlike the optional
  * reactions it has no countdown: nothing passes it, because passing is a fall. The master may answer too; if the window leaves
