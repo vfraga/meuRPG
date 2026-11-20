@@ -59,10 +59,7 @@ func TestWithAtTheBudgets(t *testing.T) {
 		kept = c
 	}
 	after := heap()
-	retained := 0.0
-	if after > before { // a collection between the two readings can leave less than before
-		retained = float64(after-before) / 1e6
-	}
+	retained := float64(after-before) / 1e6
 	t.Logf("at the budgets: %v best of 5, %.2f MB kept (one content)", best, retained)
 	// The time is held only when asked (MEURPG_MEASURE=1, on a quiet machine,
 	// without -race): on a busy one, or in CI, a clock check fails for nothing.
