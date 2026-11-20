@@ -181,6 +181,11 @@ func (c *content) addNewlyLost(lost *map[string]*LostPrerequisite, b Build, d De
 // deriveWith is derive with the feats and options in lost (by key) listed but not applied; each is told with what
 // it lacks as the sheet with them in place had it.
 func deriveWith(b Build, c *content, lost map[string]*LostPrerequisite) Derived {
+	return *deriverOf(b, c, lost).d
+}
+
+// deriverOf is the deriver of deriveWith after it has made the sheet.
+func deriverOf(b Build, c *content, lost map[string]*LostPrerequisite) *deriver {
 	d := &Derived{ContentVersion: c.version}
 	var inactive map[string]bool
 	for k := range lost {
@@ -228,7 +233,7 @@ func deriveWith(b Build, c *content, lost map[string]*LostPrerequisite) Derived 
 			d.Issues[i].ChangeMessage, d.Issues[i].ChangeSubject = "", ""
 		}
 	}
-	return *d
+	return x
 }
 
 // dropReplacedTiers takes out of Features the lower tiers that a higher one
