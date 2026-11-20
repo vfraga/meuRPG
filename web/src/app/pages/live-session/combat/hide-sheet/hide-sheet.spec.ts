@@ -94,7 +94,7 @@ describe('HideSheet (board W7-Xc 8)', () => {
     expect(textOf(el.querySelector('h2')!)).toBe('Esconder-se');
     expect(text()).toContain('Ação · Destreza (Furtividade)');
     expect(text()).toContain(
-      'O mestre confirma se há onde se esconder. Você não se esconde de quem vê claramente quem se esconde.',
+      'O mestre confirma se há onde se esconder. Você não se esconde de quem vê você claramente.',
     );
     expect(text()).toContain('Seu teste de Furtividade: +7.');
     expect(button('Rolar no app')).toBeTruthy();
