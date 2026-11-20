@@ -496,7 +496,7 @@ func checkNewSheetOf(content *rules.Content, m authz.Membership, kind string, ra
 	if err := refuseNewKeys(content, m, "", nil, sheet.GetFull()); err != nil {
 		return nil, err
 	}
-	// The fit of the picks comes after every refusal that names a closed entry, so a pick never changes that answer.
+	// The fit comes after the answers that name a closed entry.
 	held := noSheet
 	if imported {
 		held = func() *charactersv1.FullSheet { return sheet.GetFull() }
@@ -519,8 +519,7 @@ func refuseNewChoices(content *rules.Content, m authz.Membership, characterID st
 	if err := refuseClosedChoices(content, m, characterID, stored, sheet); err != nil {
 		return err
 	}
-	// The fit of the picks comes last: a closed entry is answered as it is whatever the picks, so the answer never tells
-	// a player anything of the lists of an entry the player cannot have.
+	// The fit comes after the answers that name a closed entry.
 	return refuseUnfitPick(content, m, func() *charactersv1.FullSheet { return stored }, sheet)
 }
 

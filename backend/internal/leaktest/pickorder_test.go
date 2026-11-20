@@ -2,6 +2,7 @@ package leaktest
 
 import (
 	"bytes"
+	"strings"
 	"testing"
 
 	campaignsv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/campaigns/v1"
@@ -188,8 +189,18 @@ func TestAClosedEntryIsAnsweredFirstWhateverSkillIsPicked(t *testing.T) {
 			}
 			for call, send := range calls {
 				none, listed, unlisted := send(), send(listedSkill), send(unlistedSkill)
-				if none.ok() {
-					t.Errorf("%s, %s, %s: the draft with no skill picked is accepted: %s", kind.name, closing.how, call, shorten(none.body))
+				// The answer with no skill picked is the closed entry's (main's): its own refusal, naming its key.
+				reason := "CHARACTER_BLOCKED_REASON_SWITCHED_OFF_CONTENT"
+				switch {
+				case strings.HasPrefix(call, "level-up") && closing.how == "archived":
+					reason = "LEVEL_UP_REFUSAL_REASON_ARCHIVED_CHOICE"
+				case strings.HasPrefix(call, "level-up"):
+					reason = "LEVEL_UP_REFUSAL_REASON_SWITCHED_OFF_CHOICE"
+				case closing.how == "archived":
+					reason = "CHARACTER_BLOCKED_REASON_ARCHIVED_CONTENT"
+				}
+				if none.ok() || !strings.Contains(string(none.body), reason) || !strings.Contains(string(none.body), entry) {
+					t.Errorf("%s, %s, %s: the draft with no skill picked is answered HTTP %d %s, want the refusal of a closed entry (%s)", kind.name, closing.how, call, none.status, shorten(none.body), reason)
 				}
 				for what, got := range map[string]reply{"a skill the entry's list holds": listed, "a skill no list holds": unlisted} {
 					if got.status != none.status || !bytes.Equal(got.body, none.body) {
