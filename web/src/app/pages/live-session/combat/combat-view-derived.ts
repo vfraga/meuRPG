@@ -25,6 +25,7 @@ import { masterQueue } from '../../../core/combat/reaction-queue';
 import type { OfferMark } from '../../../shared/combat-map/combat-map';
 import { pendingNote } from '../../../core/combat/attack-flow';
 import { isDead, isDown, isPlayer } from '../../../core/combat/combat-view';
+import { directedMount } from '../../../core/combat/mount-view';
 import type { TabItem } from '../../../shared/tab-list/tab-list';
 import { masterWaitNote } from '../../../core/combat/auto-pass';
 import {
@@ -233,6 +234,11 @@ export abstract class CombatViewDerivedDirective extends CombatViewStateDirectiv
     return own && this.myTurn() && !this.ownDown() && !this.creatureTab() && !this.theatre()
       ? own
       : null;
+  });
+  /** The mount the player's character directs while it rides: "Mover" spends its movement, and the rows say so. */
+  protected readonly moverMount = computed(() => {
+    const own = this.own();
+    return own ? (directedMount(this.encounter()?.combatants ?? [], own) ?? null) : null;
   });
   /** From 1024px, off turn, the rail still has the character's reaction to say (C6-07). */
   protected readonly offRail = computed(() => {

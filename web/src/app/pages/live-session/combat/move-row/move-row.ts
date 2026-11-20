@@ -51,6 +51,8 @@ import { moveLine } from '../../../../core/combat/move-line';
 export class MoveRow {
   readonly own = input.required<Combatant>();
   readonly grappled = input(false);
+  /** The mount the rider directs: the movement the row reads is its. */
+  readonly mount = input<Combatant | null>(null);
   /** Why nothing can be done now ("Esperando a reação do mestre"); `''` when free. */
   readonly locked = input('');
   readonly busy = input(false);
@@ -61,7 +63,7 @@ export class MoveRow {
 
   readonly move = output<void>();
 
-  protected readonly line = computed(() => moveLine(this.own(), this.grappled()));
+  protected readonly line = computed(() => moveLine(this.own(), this.grappled(), this.mount() ?? undefined));
   protected readonly whyId = 'move-why';
   protected readonly waitNoteId = MASTER_WAIT_NOTE_ID;
   /** The wait is the master's: the turn card says it once, and the button points to it. */

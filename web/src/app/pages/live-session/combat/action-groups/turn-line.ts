@@ -14,9 +14,11 @@ export function turnLineOf(
     readonly blocked: boolean;
     readonly attacksLeft: number;
     readonly attacksPerAction: number;
+    /** The mount the rider directs: the walker's metres are its. */
+    readonly mount?: Combatant;
   },
 ): { readonly canMove: boolean; readonly shapes: EconomyShape[] } {
-  const line = moveLine(own, o.grappled);
+  const line = moveLine(own, o.grappled, o.mount);
   return {
     canMove: line.canMove && !o.blocked,
     shapes: economyShapes(own, {

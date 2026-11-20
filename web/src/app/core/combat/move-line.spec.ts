@@ -16,6 +16,26 @@ const own = (over: Parameters<typeof create<typeof CombatantSchema>>[1] = {}) =>
 const plain = (t: string) => t.replace(/\u00a0/g, ' ');
 
 describe('moveLine', () => {
+  it('reads the mount’s movement for a rider, and names the mount', () => {
+    const horse = own({
+      label: 'Cavalo de guerra',
+      speedDft: 335,
+      movementLeftDft: 335,
+      movementLeftFt: 33,
+    });
+    const line = moveLine(own({ movementLeftDft: 150, movementLeftFt: 5 }), false, horse);
+    expect(plain(line.lead)).toBe('Restam 10,1 m ao Cavalo de guerra');
+    expect(plain(line.left)).toBe('10,1 m');
+    expect(line.percent).toBe(100);
+    expect(line.canMove).toBe(true);
+  });
+
+  it('says there is no movement when the mount has none left', () => {
+    const horse = own({ label: 'Cavalo de guerra', movementLeftDft: 0, movementLeftFt: 0 });
+    const line = moveLine(own(), false, horse);
+    expect([line.lead, line.canMove]).toEqual(['Sem movimento', false]);
+  });
+
   it('says the metres left with one decimal and the squares', () => {
     const line = moveLine(own(), false);
     expect(

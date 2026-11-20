@@ -16,6 +16,15 @@ export function mountOf(e: Encounter, c: Combatant): Combatant | undefined {
   return c.mountedOnId ? e.combatants.find((x) => x.id === c.mountedOnId) : undefined;
 }
 
+/** The mount whose movement the rider spends: the one it directs. A rider on an independent mount moves on that mount's own turn. */
+export function directedMount(
+  combatants: readonly Combatant[],
+  c: Combatant,
+): Combatant | undefined {
+  const mount = c.mountedOnId ? combatants.find((x) => x.id === c.mountedOnId) : undefined;
+  return mount?.mountKind === 'controlled' ? mount : undefined;
+}
+
 /** The combatant that sits on the mount, when the viewer sees the link. */
 export function riderOn(e: Encounter, c: Combatant): Combatant | undefined {
   return e.combatants.find((x) => x.mountedOnId === c.id);

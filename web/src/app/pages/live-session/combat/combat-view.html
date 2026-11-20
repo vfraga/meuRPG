@@ -479,6 +479,7 @@
                       mapFoot
                       [own]="me"
                       [grappled]="contestFacts()?.grappled === true"
+                      [mount]="moverMount()"
                       [locked]="waiting()?.title ?? ''"
                       [busy]="busy()"
                       [button]="false"

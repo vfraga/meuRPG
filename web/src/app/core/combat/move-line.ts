@@ -1,4 +1,5 @@
 import type { Combatant } from '../../../gen/meurpg/play/v1/combat_pb';
+import { withArticle } from '../format/article';
 import { tight } from '../format/text';
 import { metersFixed, reachSquares, squaresText } from '../units';
 import { grappledWord } from './contest-view';
@@ -20,8 +21,13 @@ export interface MoveLine {
 /**
  * The movement of the player's own turn, in tenths of a foot as the server keeps it and metres with one decimal. A grappled
  * combatant's speed is 0 (SRD 5.1, Conditions): the line says why. After Desengajar the squares say they do not provoke.
+ * A rider on a mount it directs walks on the mount's movement (`mount`): the figures are the mount's and the line names it.
  */
-export function moveLine(own: Combatant, grappled: boolean): MoveLine {
+export function moveLine(own: Combatant, grappled: boolean, mount?: Combatant): MoveLine {
+  if (mount && !grappled) {
+    const line = moveLine(mount, false);
+    return line.canMove ? { ...line, lead: tight(`${line.lead} ${withArticle(mount.label, 'a')}`) } : line;
+  }
   const left = metersFixed(own.movementLeftDft / 10);
   if (grappled) {
     return {

@@ -69,6 +69,7 @@ import { hitCards } from '../../../../core/effects/hit-effect-text';
 import { AttackLegend } from './attack-legend';
 import { Fold } from '../../../../shared/fold/fold';
 import { EconomyShapes } from '../../../../shared/economy-shapes/economy-shapes';
+import { directedMount } from '../../../../core/combat/mount-view';
 import { movementOf, turnLineOf } from './turn-line';
 import { leaveDetailOf, SURPRISE_ROWS } from './surprise-and-form-text';
 import { holdsReadied, isReadyOption, withoutReady } from '../../../../core/combat/ready';
@@ -404,6 +405,7 @@ export class ActionGroups {
       blocked: this.theatre() || this.surprised() || this.moveAside(),
       attacksLeft: this.attacksLeft(),
       attacksPerAction: this.attacksPerAction(),
+      mount: directedMount(this.combatants(), this.own()),
     }),
   );
   protected readonly movement = computed(() => movementOf(this.own(), this.grappled()));

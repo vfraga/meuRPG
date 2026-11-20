@@ -69,6 +69,7 @@ The browser draws what the server sends (reach from `GetMoveOptions`, totals, ve
   Under about 360 px the three buttons wrap to a second row, and no label is cut.
   A refused action stays in its place, dashed, and the reason is one line in a polite live region that the three point to.
   There is one "Mover" (the rider's, which moves the pair) and one "Encerrar turno".
+  While the rider directs the mount, the metres beside "Mover" and the line under the map are the mount's: "Restam 10,2 m ao Cavalo de guerra".
   - **Ending the turn:** "Encerrar turno" ends the rider's own part first and then the mount's, one call each.
     What the rider still owes (a damage to roll, the rage question, a death save) refuses the first call, so nothing is sent for the mount and it keeps its move.
     A part that no longer acts is skipped: if the rider's part ended elsewhere (the master, another tab) the card and the button stay, and the button ends the mount's part without asking about an unused action.
@@ -80,6 +81,7 @@ The browser draws what the server sends (reach from `GetMoveOptions`, totals, ve
   - **A player's own steed** has no creature tab while the card stands in for it, so its three actions are not on the screen twice.
 - **The rider's save:**
   "Você cai da montaria?" is a sheet that opens by itself for the rider's player, as an alert with no "Fechar".
+  Only one dialog is on screen: a contest's answer or result that is open closes before it opens.
   The mount's saddle is the glyph beside the title.
   The title gains "· CD 10" only where the reader gets the DC (a table that shows the DC of saves, or the master).
   The line under it is "Teste de resistência de Destreza".

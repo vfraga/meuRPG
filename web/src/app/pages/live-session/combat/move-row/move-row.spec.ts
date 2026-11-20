@@ -12,6 +12,7 @@ describe('MoveRow', () => {
       drag: boolean;
       grappled: boolean;
       left: number;
+      mount: unknown;
     }> = {},
   ) {
     const fixture = TestBed.createComponent(MoveRow);
@@ -46,6 +47,18 @@ describe('MoveRow', () => {
     expect(el.querySelector('.row__bar')).not.toBeNull();
     button()!.click();
     expect(moves).toEqual([1]);
+  });
+
+  it('reads the mount the rider directs: its metres, named', () => {
+    const horse = create(CombatantSchema, {
+      label: 'Cavalo de guerra',
+      speedDft: 335,
+      movementLeftDft: 335,
+      movementLeftFt: 33,
+    });
+    const { el } = setup({ mount: horse, drag: true });
+    expect(text(el)).toContain('Restam 10,1 m ao Cavalo de guerra');
+    expect(text(el)).not.toContain('9,0 m');
   });
 
   it('turns "Mover" off with the reason instead of failing on click', () => {

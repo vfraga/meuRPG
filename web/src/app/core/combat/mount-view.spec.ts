@@ -4,6 +4,7 @@ import { CombatantKind } from '../../../gen/meurpg/play/v1/combat_pb';
 import { combatant, encounter } from './combat-testing';
 import {
   boxedPair,
+  directedMount,
   followsRider,
   isPair,
   mountLine,
@@ -46,6 +47,12 @@ describe('the link of a rider and its mount', () => {
   it('does not box a mount with no kind: the screens do not guess the order from adjacency', () => {
     expect(boxedPair(tor, horse(''))).toBe(false);
     expect(boxedPair(wight, { ...skeleton, mountKind: '' } as typeof skeleton)).toBe(false);
+  });
+
+  it('reads the mount a rider directs, never an independent one', () => {
+    expect(directedMount(e.combatants, tor)?.id).toBe('cav');
+    expect(directedMount([tor, horse('independent')], tor)).toBeUndefined();
+    expect(directedMount(e.combatants, horse())).toBeUndefined();
   });
 
   it('says which mount follows its rider in a box', () => {
