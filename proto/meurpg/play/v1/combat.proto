@@ -7222,6 +7222,9 @@ message ReactionWindow {
   // choosing the square or the point of a release; on any other kind, rolling a die. It never
   // changes what the window accepts.
   bool rolling = 13;
+  // What the player is busy with while `rolling` is set (the map or the dice), read by whoever reads `rolling`. Unspecified
+  // when `rolling` is false or hidden.
+  ReactionBusy busy = 17;
   // Only the master: the reactor is a player's character and nobody answered in the first 10 s, so the question has come
   // to the master ("10 s sem resposta"). The player may still answer; the first answer wins and the other reads
   // REACTION_ALREADY_ANSWERED.
@@ -7596,6 +7599,11 @@ message AnswerReactionRequest {
   // target takes). Copied one to one into the request the release builds, which checks it as it does. `invalid_argument` on a
   // pass, on another kind of window, or on a row that is not a spell.
   repeated RayRoll ray_rolls = 21;
+  // READIED, a readied attack (a held spell attack too) released at a table with physical dice: the faces of the dice an
+  // effect adds to the attack roll (Bênção, Perdição, a maneuver die), as RollAttackRequest.extra_die_faces. Copied one to
+  // one into the request the release builds, which checks them as it does. `invalid_argument` on a pass, on another kind of
+  // window, and on a readied action that is not released as an attack (a readied cast takes none).
+  repeated int32 extra_die_faces = 22;
 }
 
 // MarkReactionRollingRequest marks a window as being rolled.
@@ -7606,6 +7614,19 @@ message MarkReactionRollingRequest {
   // The player came back from the map: it takes the mark off. It does not restart the
   // wait: the wait began at the first mark and no later mark or clear changes that.
   bool clear = 4;
+  // What the player is busy with: the map (choosing a square or a point) or the dice (typing them). Unspecified is the
+  // map, what a mark meant before there was a choice. A mark that only changes this while the window is already marked
+  // updates it and does not restart the wait. Ignored when `clear` is set.
+  ReactionBusy busy = 5;
+}
+
+// ReactionBusy is what the reactor's player is busy with while a window is marked as being rolled.
+enum ReactionBusy {
+  REACTION_BUSY_UNSPECIFIED = 0;
+  // On the map, choosing the square or the point of a release.
+  REACTION_BUSY_MAP = 1;
+  // Typing the dice of a release.
+  REACTION_BUSY_DICE = 2;
 }
 
 message MarkReactionRollingResponse {
@@ -7622,6 +7643,12 @@ message AnswerReactionResponse {
   // open and no slot or reaction is spent. The master is asked too when he answers for the player, and answers after the
   // player's first 10 s.
   HeldRollOffer held_roll_offer = 3;
+  // What the release of a readied action rolled, as RollAttack or CastSpell showed it to the same caller: the attack roll
+  // and the pending damage of a readied attack (a held spell attack too), the cast of a readied spell. Unset for any other
+  // answer, and while a roll a reaction window holds has not rolled yet.
+  AttackRoll attack_roll = 4;
+  PendingDamage pending_damage = 5;
+  SpellCast cast = 6;
 }
 
 // ReactionResult is what an answered window did, read by the reactor and the

@@ -215,7 +215,7 @@ func (s *Service) MarkReactionRolling(
 	// The window's own id is the key: no event is written, so it is never looked up as one.
 	res, err := s.write(ctx, combatWrite{m: m, key: winID, kind: eventReactionAnswered, encounterID: encID}, func(c *combatTx) (any, error) {
 		var err error
-		changed, err = s.markRolling(ctx, c, m, winID, req.Msg.GetClear())
+		changed, err = s.markRolling(ctx, c, m, winID, req.Msg.GetClear(), req.Msg.GetBusy())
 		return nil, err
 	})
 	if err != nil {
@@ -242,8 +242,9 @@ func (s *Service) MarkReactionRolling(
 // markRolling is the write of MarkReactionRolling: the mark on, or off when asked to. The mark is the reactor
 // player's own: the master reads it, never sets it or takes it off. It returns no payload: the change is kept and nothing
 // is written to the log; changed says the mark was a change, and one already as asked writes nothing (a retry or a second
-// tab only sets or clears the same mark).
-func (s *Service) markRolling(ctx context.Context, c *combatTx, m authz.Membership, winID string, off bool) (changed bool, err error) {
+// tab only sets or clears the same mark). busy is what the player is busy with (unspecified is the map): a mark that only
+// changes it while the window is marked updates it and leaves the wait as the first mark began it.
+func (s *Service) markRolling(ctx context.Context, c *combatTx, m authz.Membership, winID string, off bool, busy playv1.ReactionBusy) (changed bool, err error) {
 	if err := notEnded(c.enc); err != nil {
 		return false, err
 	}
@@ -255,10 +256,16 @@ func (s *Service) markRolling(ctx context.Context, c *combatTx, m authz.Membersh
 		return false, err
 	}
 	t := windowTriggerOf(w)
-	if t.Rolling == !off && (off || t.WaitBegan != nil) {
+	if busy == playv1.ReactionBusy_REACTION_BUSY_UNSPECIFIED {
+		busy = playv1.ReactionBusy_REACTION_BUSY_MAP
+	}
+	if t.Rolling == !off && (off || (t.WaitBegan != nil && busyOf(t) == busy)) {
 		return false, nil
 	}
-	t.Rolling = !off
+	t.Rolling, t.Busy = !off, busy
+	if off {
+		t.Busy = playv1.ReactionBusy_REACTION_BUSY_UNSPECIFIED
+	}
 	if !off && t.WaitBegan == nil {
 		now := c.now // the transaction's clock; the first mark starts the wait and nothing after it moves it
 		t.WaitBegan = &now

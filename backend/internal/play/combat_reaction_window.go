@@ -87,6 +87,9 @@ type windowTrigger struct {
 	// Rolling says the reactor's player is using the reaction and rolling its die
 	// (MarkReactionRolling): the master's clock waits longer before it passes the window.
 	Rolling bool `json:"rolling,omitempty"`
+	// Busy is what the player is busy with while Rolling: the map or the dice. A mark kept before the choice existed has none
+	// and reads as the map (busyOf).
+	Busy playv1.ReactionBusy `json:"busy,omitempty"`
 	// WaitBegan is when the reactor's player first marked the window: the wait of 120 s began then. It is set
 	// once, at the first mark, and no later mark or clear changes it.
 	WaitBegan *time.Time `json:"wait_began,omitempty"`
@@ -672,3 +675,15 @@ func (s *Service) discardReactions(ctx context.Context, c *combatTx) error {
 
 // newGroup is the id of a new trigger, shared by the windows it opens.
 func newGroup() string { return uuid.New().String() }
+
+// busyOf is what the player of a marked window is busy with: unspecified when the window is not marked, the map for a mark
+// that names nothing.
+func busyOf(t windowTrigger) playv1.ReactionBusy {
+	switch {
+	case !t.Rolling:
+		return playv1.ReactionBusy_REACTION_BUSY_UNSPECIFIED
+	case t.Busy == playv1.ReactionBusy_REACTION_BUSY_UNSPECIFIED:
+		return playv1.ReactionBusy_REACTION_BUSY_MAP
+	}
+	return t.Busy
+}

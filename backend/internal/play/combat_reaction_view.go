@@ -361,7 +361,7 @@ func (wv *windowView) window(w playdb.ReactionWindow, reactor *playdb.Combatant,
 	mark := windowTriggerOf(w) // the master's and the reactor's player's alone: only they are given this window
 	out := &playv1.ReactionWindow{
 		Id: w.ID, Kind: reactionKindProto[kind], Status: playv1.ReactionWindowStatus_REACTION_WINDOW_STATUS_OPEN, GroupId: w.GroupID,
-		ForYou: true, SecondStep: w.Step == stepSecond, Rolling: mark.Rolling, WaitBeganAt: timestampOrNil(mark.WaitBegan), WaitedMs: waitedMs(mark.WaitBegan, wv.s.now()),
+		ForYou: true, SecondStep: w.Step == stepSecond, Rolling: mark.Rolling, Busy: busyOf(mark), WaitBeganAt: timestampOrNil(mark.WaitBegan), WaitedMs: waitedMs(mark.WaitBegan, wv.s.now()),
 	}
 	if reactor != nil {
 		out.ReactorId, out.ReactorLabel, out.ReactorIsPlayer = reactor.ID, reactor.Label, reactor.Kind == kindPlayer

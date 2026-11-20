@@ -62,7 +62,7 @@ func (w *world) waitBeganOf(p *person) *timestamppb.Timestamp {
 
 // sameWaitAs fails unless p, who does not answer the READIED window, reads of it the same as before: no window, and the
 // wait line equal to the one read before the reactor's player marked the window, whatever the marks since (set, cleared,
-// set again). It also fails when any of p's reads, or the TV's answer, holds a `rolling`, a `waitBeganAt` or a `waitedMs` field:
+// set again). It also fails when any of p's reads, or the TV's answer, holds a `rolling`, a `busy`, a `waitBeganAt` or a `waitedMs` field:
 // the mark, the beginning of the wait and how long it has run are the master's and the reactor's player's alone.
 func (w *world) sameWaitAs(t *testing.T, when string, p *person, before waitRead, title string, tv *playv1.GetTableScreenResponse) {
 	t.Helper()
@@ -73,7 +73,7 @@ func (w *world) sameWaitAs(t *testing.T, when string, p *person, before waitRead
 	if !proto.Equal(now.wait, before.wait) {
 		t.Errorf("%s: %s reads the wait %v, want the one read before the mark, %v", when, p.name, now.wait, before.wait)
 	}
-	for _, field := range []string{`"rolling"`, `"waitBeganAt"`, `"waitedMs"`} {
+	for _, field := range []string{`"rolling"`, `"busy"`, `"waitBeganAt"`, `"waitedMs"`} {
 		if w.readsHold(p, field) {
 			t.Errorf("%s: %s reads a %s field of the window", when, p.name, field)
 		}
@@ -209,4 +209,11 @@ func TestTheConcentrationAReadiedSpellEndedIsTheOwnersAndTheMasters(t *testing.T
 	if got := w.combatantOf(must(w.ana.combat.GetEncounter(t.Context(), rq(&playv1.GetEncounterRequest{CampaignId: w.campaign}))).GetEncounter(), w.toren.GetId()).GetConcentrationSpell(); got != "" {
 		t.Errorf("Ana reads Toren's concentration %q after the Ready, want it blank", got)
 	}
+}
+
+// markBusy calls MarkReactionRolling as p, naming what the player is busy with.
+func (w *world) markBusy(p *person, windowID string, busy playv1.ReactionBusy) reply {
+	return p.call(playv1connect.CombatServiceMarkReactionRollingProcedure, &playv1.MarkReactionRollingRequest{
+		CampaignId: w.campaign, EncounterId: w.encounter.GetId(), WindowId: windowID, Busy: busy,
+	})
 }

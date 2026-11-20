@@ -6,7 +6,7 @@ The rules for the table are in [RN-31](../../product/rules.md#rn-31-reactions-an
 
 ## Model
 
-A readied action is a `readied_actions` row (migration 00334).
+A readied action is a `readied_actions` row.
 It holds the readier, the trigger text (1 to 200 characters), the kind, the held action and its name, the target named at Ready and the move.
 A spell row also holds its slot level (`slot_level`, 0 for a cantrip) and the cast id of its Ready (`spell_cast_id`).
 The kinds are `attack`, `move`, `other` and `spell`.
@@ -241,6 +241,10 @@ It is two events, one to the master and one to the reactor's player, each an enc
 On a fog map the player's copy is blind (revision 0), as every player's hint is there; the master's carries the real revision.
 The server records when the wait began, once, in the window's trigger, and no later mark or clear changes it.
 An undo that reopens the window (of a spell release, a move release or a pass) starts the wait clean: `rolling` false and no `wait_began_at`, so the next mark begins a new wait.
+The mark also says what the player is busy with (`busy`: the map or the dice), stored beside the flag in the window's trigger.
+A mark that names nothing is the map (old clients).
+A mark that only changes `busy` while the flag is on updates it and does not restart the wait, which is counted once from the first mark; the clear takes `rolling` and `busy` off.
+The view fills `busy` where it fills `rolling` (`busyOf`): the master and the reactor's player read it, and it is unspecified whenever `rolling` is false.
 The master's row reads whether the player is on the map now (`rolling`), when the wait began (`wait_began_at`) and how long it has run (`waited_ms`).
 `waited_ms` is the server's clock, worked out at each read as now minus `wait_began_at`, 0 before the first mark: a screen with a wrong clock still counts the wait right.
 The master's screen passes the window when the 120 s end, with `AnswerReaction` PASS: the server runs no timer.
@@ -297,6 +301,12 @@ The answer carries the table's dice as the cast and the attack do.
 Every check of the cast or the attack applies: the number and range of the faces, the mode rules, the table's dice mode (`mustRollThisWay`).
 The answer refuses what the released action does not use (`releaseFieldsOf`, `castFlow.checkReleaseDice`, `diceNotUsed`) with `invalid_argument`, and the window stays open.
 `ray_rolls` (the physical d20s of each attack roll of a spell with several, the rays of Scorching Ray, one entry per attack roll in the order of the targets and of the rays each target takes) is copied too, into `CastSpellRequest.ray_rolls`, and the cast checks it (`readRayRolls`, `checkRayRolls`): a held Scorching Ray is released at a physical-dice table with one entry per ray, and `invalid_argument` on a pass, another kind of window, a non-spell row, a readied attack, a single-attack-roll spell or a roll beside it (`diceNotUsed`, `releaseFieldsOf`).
+`extra_die_faces` (the faces of the dice an effect adds to the attack roll: Bênção, Perdição, a maneuver die) is copied into `RollAttackRequest.extra_die_faces`, and the attack checks it as it checks its own.
+It is `invalid_argument` on a pass, another kind of window, a readied action that is not released through `useReadiedAttack` (a readied cast takes none: `CastSpellRequest` has no such field), in `diceNotUsed` and `releaseFieldsOf`.
+The answer carries what the release rolled, taken from the response of the call the release makes and not built a second way: `attack_roll` and `pending_damage` from `RollAttackResponse` for a readied attack (a held spell attack too), `cast` from `CastSpellResponse` for a readied cast.
+Those calls build their responses for the caller, so the answer shows the caller what RollAttack or CastSpell would have shown the same caller.
+They are unset for a pass, for the release of another action and while a roll a reaction window holds has not rolled.
+A hit off the readier's turn opens a pending damage that the readier's player and the master roll with `RollDamage` (the turn does not matter).
 A pool sum outside the range of the dice the spell rolls at its slot is refused in `prepare` (`checkPool`), before a Counterspell can hold the release, so nothing is spent and no window opens.
 The count of faces of a ray depends on that ray's mode, which is read when the ray is rolled (`d20With`): an earlier ray spends what it used, and the windows may change the mode, so a wrong count is met only at the replay of a held release.
 The replay runs in a savepoint (`releaseHold`): a refusal drops the held cast and takes with it everything the replay had written, so the slot, the action and the damage of the rays rolled are not spent and the readied row stays waiting with its READIED window open, for the readier to answer again.

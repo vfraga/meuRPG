@@ -180,11 +180,11 @@ func fieldsNotUsed(msg *playv1.AnswerReactionRequest) error {
 	return diceNotUsed(msg)
 }
 
-// diceNotUsed refuses the table's dice (pool_sum, d20_faces, a mode) where the answer rolls nothing of its own: a pass,
+// diceNotUsed refuses the table's dice (pool_sum, d20_faces, extra_die_faces, a mode) where the answer rolls nothing of its own: a pass,
 // another kind of window, a readied action that is not an attack or a spell. An answer never drops what it carries.
 func diceNotUsed(msg *playv1.AnswerReactionRequest) error {
-	if _, pool := msg.GetRoll().(*playv1.AnswerReactionRequest_PoolSum); pool || len(msg.GetD20Faces()) > 0 || len(msg.GetRayRolls()) > 0 || msg.GetRollMode() != playv1.RollMode_ROLL_MODE_UNSPECIFIED || msg.GetModeReason() != "" {
-		return connect.NewError(connect.CodeInvalidArgument, errors.New("pool_sum, d20_faces, ray_rolls and the roll mode are for the release of a readied attack or spell"))
+	if _, pool := msg.GetRoll().(*playv1.AnswerReactionRequest_PoolSum); pool || len(msg.GetD20Faces()) > 0 || len(msg.GetRayRolls()) > 0 || len(msg.GetExtraDieFaces()) > 0 || msg.GetRollMode() != playv1.RollMode_ROLL_MODE_UNSPECIFIED || msg.GetModeReason() != "" {
+		return connect.NewError(connect.CodeInvalidArgument, errors.New("pool_sum, d20_faces, ray_rolls, extra_die_faces and the roll mode are for the release of a readied attack or spell"))
 	}
 	return nil
 }
@@ -199,6 +199,9 @@ func releaseFieldsOf(msg *playv1.AnswerReactionRequest, row playdb.ReadiedAction
 	}
 	if kind != readiedAttack && kind != readiedSpell {
 		return diceNotUsed(msg)
+	}
+	if kind == readiedSpell && len(msg.GetExtraDieFaces()) > 0 { // a cast takes no effect's die: CastSpellRequest has no such field
+		return connect.NewError(connect.CodeInvalidArgument, errors.New("extra_die_faces are for the release of a readied attack"))
 	}
 	if msg.GetRoll() != nil && len(msg.GetD20Faces()) > 0 {
 		return connect.NewError(connect.CodeInvalidArgument, errors.New("set one of roll_in_app, typed, pool_sum or d20_faces"))
@@ -300,6 +303,7 @@ func (s *Service) useReadiedAttack(ctx context.Context, m authz.Membership, in a
 		req.Roll, req.D20Faces = nil, msg.GetD20Faces()
 	}
 	req.RollMode, req.ModeReason = msg.GetRollMode(), msg.GetModeReason()
+	req.ExtraDieFaces = msg.GetExtraDieFaces() // the faces of the dice an effect adds: the attack checks them as it checks its own
 	res, err := s.rollAttack(ctx, m, connect.NewRequest(req))
 	if err != nil {
 		return nil, err
@@ -311,6 +315,7 @@ func (s *Service) useReadiedAttack(ctx context.Context, m authz.Membership, in a
 			Used: !res.Msg.GetRoll().GetHeldForReaction(), // a roll held by a Cutting Words or a Protection is used once it rolls
 		},
 		HeldRollOffer: res.Msg.GetHeldRollOffer(),
+		AttackRoll:    res.Msg.GetRoll(), PendingDamage: res.Msg.GetPendingDamage(), // what RollAttack shows this caller
 	}), nil
 }
 
@@ -587,7 +592,7 @@ func (u *undoer) readiedWaitsAgain(ctx context.Context, r *readiedEvent) error {
 	if !t.Rolling && t.WaitBegan == nil {
 		return nil
 	}
-	t.Rolling, t.WaitBegan = false, nil
+	t.Rolling, t.Busy, t.WaitBegan = false, playv1.ReactionBusy_REACTION_BUSY_UNSPECIFIED, nil
 	return setWindowTrigger(ctx, u.c.q, w.ID, t)
 }
 

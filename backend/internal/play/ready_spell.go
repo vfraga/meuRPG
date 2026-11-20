@@ -306,6 +306,7 @@ func (s *Service) useReadiedSpell(ctx context.Context, m authz.Membership, in an
 			Used: res.Msg.GetCast() != nil, // a cast held by a Counterspell is used once it happens
 		},
 		HeldRollOffer: res.Msg.GetHeldRollOffer(),
+		Cast:          res.Msg.GetCast(), // what CastSpell shows this caller
 	}), nil
 }
 
