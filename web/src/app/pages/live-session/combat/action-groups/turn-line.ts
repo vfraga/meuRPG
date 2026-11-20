@@ -33,22 +33,25 @@ export function turnLineOf(
 export function movementOf(
   own: Combatant,
   grappled: boolean,
+  /** The mount the rider directs: the figures are its, as the walker's are. */
+  mount?: Combatant,
 ): { readonly left: number; readonly pill: string; readonly text: string } {
-  const left = own.movementLeftFt;
+  const who = mount && !grappled ? mount : own;
+  const left = who.movementLeftFt;
   if (grappled) {
     // Grappled: the speed is 0 (SRD 5.1, Conditions), and the line says why.
     return { left: 0, pill: 'Sem movimento', text: `Indisponível: ${grappledWord()}.` };
   }
   // Tenths of a foot, metres with one decimal ("Restam 6,9 m").
-  const leftM = metersFixed(own.movementLeftDft / 10);
+  const leftM = metersFixed(who.movementLeftDft / 10);
   const sentence = `${leftM} (${squaresText(reachSquares(left))})`;
   let text = 'Você já usou todo o movimento deste turno.';
-  if (left > 0 && own.disengaged) {
+  if (left > 0 && who.disengaged) {
     text = tight(`Dá para andar até ${sentence} sem provocar.`);
   } else if (left > 0) {
     text = tight(
-      own.movementUsedDft > 0
-        ? `Você já andou ${metersFixed(own.movementUsedDft / 10)}. Dá para andar mais ${sentence}.`
+      who.movementUsedDft > 0
+        ? `Você já andou ${metersFixed(who.movementUsedDft / 10)}. Dá para andar mais ${sentence}.`
         : `Você ainda não andou. Dá para andar até ${sentence}.`,
     );
   }

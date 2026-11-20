@@ -408,7 +408,9 @@ export class ActionGroups {
       mount: directedMount(this.combatants(), this.own()),
     }),
   );
-  protected readonly movement = computed(() => movementOf(this.own(), this.grappled()));
+  protected readonly movement = computed(() =>
+    movementOf(this.own(), this.grappled(), directedMount(this.combatants(), this.own())),
+  );
 
   /** The word on the Ação header: with Extra Attack, once the first attack
    * spent the action, "1 ataque restante" (an open circle: it is not over). */

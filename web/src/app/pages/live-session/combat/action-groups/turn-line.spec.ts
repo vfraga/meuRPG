@@ -1,7 +1,7 @@
 import { create } from '@bufbuild/protobuf';
 
 import { CombatantSchema } from '../../../../../gen/meurpg/play/v1/combat_pb';
-import { turnLineOf } from './turn-line';
+import { movementOf, turnLineOf } from './turn-line';
 
 const rider = create(CombatantSchema, {
   label: 'Isolda',
@@ -29,5 +29,24 @@ describe('turnLineOf', () => {
     const text = line.shapes.map((s) => s.text).join('|');
     expect(text).toContain('10,1');
     expect(text).not.toContain('4,5');
+  });
+});
+
+const plain = (t: string) => t.replace(/\u00a0/g, ' ');
+
+describe('movementOf', () => {
+  it('reads the rider’s own feet when it walks', () => {
+    expect(plain(movementOf(rider, false).pill)).toBe('Restam 4,5 m');
+  });
+
+  it('reads the mount’s feet while the rider directs it', () => {
+    const m = movementOf(rider, false, horse);
+    expect(m.left).toBe(33);
+    expect(plain(m.pill)).toBe('Restam 10,1 m');
+    expect(m.text).not.toContain('4,5');
+  });
+
+  it('a grapple still stops the rider on the mount', () => {
+    expect(movementOf(rider, true, horse).pill).toBe('Sem movimento');
   });
 });

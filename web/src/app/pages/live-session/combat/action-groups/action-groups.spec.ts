@@ -407,6 +407,41 @@ describe('ActionGroups: the movement without a map (RN-25, E10-04 state 7)', () 
     expect(moves.length).toBe(0);
   });
 
+  it('spends the mount’s movement while the rider directs it, whatever the rider has left', () => {
+    const fixture = TestBed.createComponent(ActionGroups);
+    fixture.componentRef.setInput('options', create(TurnOptionsSchema, {}));
+    const horse = create(CombatantSchema, {
+      id: 'h',
+      label: 'Cavalo de guerra',
+      mountKind: 'controlled',
+      movementLeftFt: 33,
+      movementLeftDft: 335,
+      speedDft: 335,
+    });
+    fixture.componentRef.setInput(
+      'own',
+      create(CombatantSchema, {
+        id: 'i',
+        mountedOnId: 'h',
+        movementLeftFt: 0,
+        movementLeftDft: 0,
+        speedDft: 300,
+      }),
+    );
+    fixture.componentRef.setInput('combatants', [horse]);
+    fixture.componentRef.setInput('theatre', true);
+    const moves: number[] = [];
+    fixture.componentInstance.move.subscribe(() => moves.push(1));
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    const spend = el.querySelector('.spend') as HTMLButtonElement;
+    expect(spend.getAttribute('aria-disabled')).not.toBe('true');
+    expect(text(el)).toContain('Sem mapa, você diz quanto andou.');
+    expect(text(el)).not.toContain('Você já gastou todo o movimento deste turno.');
+    spend.click();
+    expect(moves.length).toBe(1);
+  });
+
   it('keeps "Mover" on a map', () => {
     const { el } = setup(30, false);
     expect(el.querySelector('.spend')).toBeNull();
