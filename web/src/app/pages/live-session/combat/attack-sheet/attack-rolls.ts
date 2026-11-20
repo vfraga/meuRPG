@@ -226,6 +226,11 @@ export class AttackRolls {
     return this.rollDamage({ parts: true }, typedEntries(this.damage.typed(), sums));
   }
 
+  /** The sum asked again after the master took an extra out of a group: that damage type alone. */
+  rollAwaitedSum(sums: number[], typeKey: string): Promise<void> {
+    return this.rollDamage({ parts: true }, [{ damageType: typeKey, sum: sums[0] }]);
+  }
+
   /** What a roll answered: the result and, for a hit, the damage; or, for a held roll, the d20 and its question (Lucky
    * about a 1 first, then the Bardic Inspiration die): no result is told before the answer. */
   settle(res: {

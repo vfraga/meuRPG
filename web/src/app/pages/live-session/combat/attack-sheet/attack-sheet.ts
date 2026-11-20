@@ -15,11 +15,7 @@ import { DiceMode, DicePreference } from '../../../../../gen/meurpg/campaigns/v1
 import { effectivePreference } from '../../../../core/campaigns/dice-labels';
 import { awaitsReaction, steps } from '../../../../core/combat/attack-flow';
 import { CombatClient } from '../../../../core/combat/combat-client';
-import {
-  type AttackDie,
-  type DamageDie,
-  type PairDie,
-} from '../../../../core/combat/combat-client-types';
+import { type AttackDie, type PairDie } from '../../../../core/combat/combat-client-types';
 import {
   attackDetail,
   attackMarksOf,
@@ -30,7 +26,6 @@ import { combatantInitial, isPlayer } from '../../../../core/combat/combat-view'
 import { isCreature } from '../../../../core/combat/creature-names';
 import { isTheatre } from '../../../../core/combat/theatre';
 import { initialPicks } from '../../../../core/combat/damage-parts';
-import type { TypedEntry } from '../../../../core/combat/typed-fields';
 import { HeldRollController } from '../../../../core/held-rolls/held-roll-controller';
 import { heldOfferOf } from '../../../../core/held-rolls/held-roll-offer';
 import { HeldVanishWatch } from '../../../../core/held-rolls/held-vanish';
@@ -44,8 +39,7 @@ import { RollAnimator } from '../../../../shared/roll-overlay/roll-animator';
 import { RollPicker } from '../../../../shared/roll-picker/roll-picker';
 import { injectSheet } from '../../../../shared/sheet/sheet-host';
 import { ExtraDice } from '../../effects/extra-dice/extra-dice';
-import { DamageParts } from '../damage-parts/damage-parts';
-import { GroupSumParts } from './group-sum-parts';
+import { AttackDamageStep } from './attack-damage-step';
 import { watchGroupSum } from './group-sum-follow';
 import { headingSubtitle, headingTitle } from './attack-heading';
 import { MultiRoll, type RollField } from '../../../../shared/multi-roll/multi-roll';
@@ -100,10 +94,9 @@ export type { AttackSheetData } from './attack-sheet-types';
     BonusChip,
     AttackSteps,
     CombatantToken,
-    DamageParts,
+    AttackDamageStep,
     ExtraDice,
     FavorSpendBox,
-    GroupSumParts,
     MatButtonModule,
     MatIconModule,
     MultiRoll,
@@ -170,7 +163,7 @@ export class AttackSheet {
   );
   /** "Troca do talento": the power attack trades the weapon lists, off at the start of every attack. */
   protected readonly trade = new PowerTrade(this.attack, this.data.powerAttacks ?? []);
-  private readonly rolls: AttackRolls = new AttackRolls(this.s, this.dmg, this.question, {
+  protected readonly rolls: AttackRolls = new AttackRolls(this.s, this.dmg, this.question, {
     api: this.api,
     trade: this.trade,
     animator: this.animator,
@@ -447,26 +440,6 @@ export class AttackSheet {
   /** Two physical d20, in the order they were rolled. */
   protected rollAttackPair(faces: number[]): Promise<void> {
     return this.rolls.rollAttack({ faces });
-  }
-
-  protected rollDamage(
-    die: DamageDie | { readonly parts: true },
-    typedParts?: readonly TypedEntry[],
-  ): Promise<void> {
-    return this.rolls.rollDamage(die, typedParts);
-  }
-
-  protected rollDamageTyped(sum: number): Promise<void> {
-    return this.rolls.rollDamage({ sum });
-  }
-
-  /** The sum asked again after the master took an extra out of a group: that damage type alone. */
-  protected rollAwaitedSum(sums: number[], typeKey: string): Promise<void> {
-    return this.rolls.rollDamage({ parts: true }, [{ damageType: typeKey, sum: sums[0] }]);
-  }
-
-  protected rollDamageParts(sums: number[]): Promise<void> {
-    return this.rolls.rollDamageParts(sums);
   }
 
   protected close(): void {

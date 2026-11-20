@@ -665,10 +665,10 @@ describe('AttackSheet: the damage', () => {
   it('rolls nothing without a pending damage, or while busy', async () => {
     const rollDamage = vi.fn();
     const none = await open({ api: { rollDamage } });
-    await none.sheet.rollDamageTyped(5);
+    await none.sheet.rolls.rollDamage({ sum: 5 });
     const busy = await open({ api: { rollDamage }, data: resume() });
     busy.sheet.busy.set(true);
-    await busy.sheet.rollDamageTyped(5);
+    await busy.sheet.rolls.rollDamage({ sum: 5 });
     expect(rollDamage).not.toHaveBeenCalled();
   });
 
@@ -679,7 +679,7 @@ describe('AttackSheet: the damage', () => {
     });
     const { sheet } = await open({ api: { rollDamage }, data: resume() });
     const play = vi.spyOn(sheet.animator, 'play');
-    await sheet.rollDamageTyped(5);
+    await sheet.rolls.rollDamage({ sum: 5 });
     expect(play).not.toHaveBeenCalled();
     expect(sheet.stage()).toBe('done');
     sheet.close();

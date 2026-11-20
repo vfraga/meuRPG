@@ -15,8 +15,9 @@ import {
   modeStatus,
   modeWord,
   orNormal,
-  sourceWord,
 } from '../../../../core/combat/roll-mode';
+
+import { RollModeSources } from './roll-mode-sources';
 
 let nextId = 0;
 
@@ -32,7 +33,7 @@ let nextId = 0;
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-roll-mode-picker',
-  imports: [MatButtonModule, MatIconModule],
+  imports: [MatButtonModule, MatIconModule, RollModeSources],
   templateUrl: './roll-mode-picker.html',
   styleUrl: './roll-mode-picker.scss',
 })
@@ -88,7 +89,6 @@ export class RollModePicker {
   );
 
   protected word = modeWord;
-  protected sourceWord = sourceWord;
 
   protected pick(mode: RollMode): void {
     if (!this.pending() && !this.answered() && !this.lock()) {

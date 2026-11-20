@@ -54,55 +54,6 @@
   line-height: 24px;
 }
 
-.sources {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.source {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 4px 8px;
-}
-
-.source__text {
-  min-width: 0;
-  overflow-wrap: anywhere;
-}
-
-.tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-  padding: 1px 8px 1px 4px;
-  border: 1px solid var(--mr-control-line);
-  border-radius: var(--mr-radius-pill);
-  font-size: var(--mr-font-14);
-  font-weight: 700;
-  line-height: 20px;
-
-  .mat-icon {
-    width: 16px;
-    height: 16px;
-    font-size: var(--mr-font-16);
-  }
-}
-
-.tag--adv {
-  background: var(--mr-success-surface);
-  color: var(--mr-success-ink);
-}
-
-.tag--dis {
-  background: var(--mr-warning-surface);
-  color: var(--mr-warning-ink);
-}
-
 .radios {
   display: flex;
   flex-wrap: wrap;

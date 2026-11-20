@@ -1,0 +1,73 @@
+  <div class="dmg">
+    @if (damage().brutalCard(); as card) {
+      @if (!typing() && canApp()) {
+        <div class="crit">
+          <span class="crit__cap">Dano do crítico</span>
+          <b class="crit__sum">{{ card.sum }}</b>
+          <span class="crit__text">{{ card.sentence }}</span>
+        </div>
+      }
+    } @else if (!damage().awaited()) {
+      <p class="dmg__what">
+        {{ damage().showCritical() ? damage().intro() : (state().pending()?.critical ? 'Acerto crítico: o dano segue a regra da mesa.' : 'Acertou: role o dano.') }}
+      </p>
+    }
+    @if (damage().awaited(); as a) {
+      <!-- The master took an extra out of a group (#835): only the notice, the parts and the one sum that is asked again. -->
+      <app-group-sum-parts [notice]="damage().groupNotice()" [awaited]="a" [kept]="damage().kept()" [removal]="damage().removal()" />
+      <app-multi-roll
+        [fields]="[{ key: a.typeKey, label: a.label, hint: a.hint + ' ' + damage().bonusLine(), min: a.min, max: a.max }]"
+        [canApp]="canApp()"
+        [canType]="canType()"
+        [preferApp]="preferApp()"
+        [modifier]="damage().groupModifier()"
+        [formula]="damage().groupFormula()"
+        [wide]="true"
+        [confirmLabel]="damage().applyLabel"
+        [appLabel]="'Rolar ' + a.dice + ' no app'"
+        [busy]="state().busy()"
+        [(typing)]="typing"
+        (app)="actions().rollDamage({ inApp: true })"
+        (typed)="actions().rollAwaitedSum($event, a.typeKey)"
+      />
+    } @else if (damage().parts().length) {
+      <app-damage-parts [parts]="damage().parts()" [(picks)]="picks" [disabled]="state().busy()" />
+      <app-multi-roll
+        [fields]="damage().fields()"
+        [canApp]="canApp()"
+        [canType]="canType()"
+        [preferApp]="preferApp()"
+        [modifier]="damage().flat()"
+        [wide]="true"
+        [note]="damage().bonusLine()"
+        [confirmLabel]="damage().applyLabel"
+        [appLabel]="damage().partsLabel()"
+        [busy]="state().busy()"
+        [(typing)]="typing"
+        (app)="actions().rollDamage({ inApp: true })"
+        (typed)="actions().rollDamageParts($event)"
+      />
+    } @else {
+      <app-roll-picker
+        [canApp]="canApp()"
+        [canType]="canType()"
+        [preferApp]="preferApp()"
+        [label]="damage().label()"
+        [hint]="damage().hint()"
+        [totalNote]="damage().totalNote()"
+        [typedFormula]="damage().typedFormula()"
+        [min]="damage().range().min"
+        [max]="damage().range().max"
+        [modifier]="damage().modifier()"
+        [confirmTotal]="true"
+        [fixedText]="damage().fixedText()"
+        [busy]="state().busy()"
+        [appLabel]="damage().appLabel()"
+        [sticky]="true"
+        [typeOutlined]="true"
+        [(typing)]="typing"
+        (app)="actions().rollDamage({ inApp: true })"
+        (typed)="actions().rollDamage({ sum: $event })"
+      />
+    }
+  </div>

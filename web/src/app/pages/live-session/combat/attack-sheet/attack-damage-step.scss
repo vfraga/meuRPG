@@ -1,0 +1,47 @@
+:host {
+  display: block;
+}
+
+.dmg {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.dmg__what {
+  margin: 0;
+  font-size: var(--mr-font-15);
+  color: var(--mr-ink-muted);
+}
+
+// "Dano do crítico" with a feature's extra dice: the whole sum, then which part is whose.
+.crit {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 14px;
+  border: 1px solid var(--mr-control-line);
+  border-radius: var(--mr-radius-lg);
+  background: var(--mr-surface);
+}
+
+.crit__cap {
+  font-size: var(--mr-font-13);
+  line-height: 16px;
+  color: var(--mr-ink-muted);
+}
+
+.crit__sum {
+  font-family: var(--mr-font-display);
+  font-size: var(--mr-font-28);
+  font-weight: 800;
+  line-height: 34px;
+  // The sum is one line, even at 320px: it breaks only between the terms.
+  overflow-wrap: anywhere;
+}
+
+.crit__text {
+  font-size: var(--mr-font-14);
+  line-height: 19px;
+  color: var(--mr-ink);
+}

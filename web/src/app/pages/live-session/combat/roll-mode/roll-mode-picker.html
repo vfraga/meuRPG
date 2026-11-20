@@ -8,16 +8,7 @@
   </div>
 
   @if (sources().length) {
-    <ul class="sources" [attr.aria-label]="'Por que o app sugere ' + word(suggested())">
-      @for (s of sources(); track $index) {
-        <li class="source">
-          <span class="tag" [class.tag--adv]="s.effect === Mode.ADVANTAGE" [class.tag--dis]="s.effect === Mode.DISADVANTAGE">
-            <mat-icon aria-hidden="true">{{ s.effect === Mode.ADVANTAGE ? 'arrow_upward' : 'arrow_downward' }}</mat-icon>{{ sourceWord(s) }}
-          </span>
-          <span class="source__text">{{ s.textPt }}</span>
-        </li>
-      }
-    </ul>
+    <app-roll-mode-sources [sources]="sources()" [label]="'Por que o app sugere ' + word(suggested())" />
   } @else if (suggestedMode() !== Mode.NORMAL) {
     <p class="note">O app sugere {{ word(suggested()) }}.</p>
   }

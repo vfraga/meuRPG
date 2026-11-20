@@ -218,80 +218,15 @@
         </div>
       }
 
-      @if (s.stage() === 'damage' && dmg.dice(); as d) {
-        <div class="dmg">
-          @if (dmg.brutalCard(); as card) {
-            @if (!s.typing() && canApp) {
-              <div class="crit">
-                <span class="crit__cap">Dano do crítico</span>
-                <b class="crit__sum">{{ card.sum }}</b>
-                <span class="crit__text">{{ card.sentence }}</span>
-              </div>
-            }
-          } @else if (!dmg.awaited()) {
-            <p class="dmg__what">
-              {{ dmg.showCritical() ? dmg.intro() : (s.pending()?.critical ? 'Acerto crítico: o dano segue a regra da mesa.' : 'Acertou: role o dano.') }}
-            </p>
-          }
-          @if (dmg.awaited(); as a) {
-            <!-- The master took an extra out of a group (#835): only the notice, the parts and the one sum that is asked again. -->
-            <app-group-sum-parts [notice]="dmg.groupNotice()" [awaited]="a" [kept]="dmg.kept()" [removal]="dmg.removal()" />
-            <app-multi-roll
-              [fields]="[{ key: a.typeKey, label: a.label, hint: a.hint + ' ' + dmg.bonusLine(), min: a.min, max: a.max }]"
-              [canApp]="canApp"
-              [canType]="canType"
-              [preferApp]="preferApp"
-              [modifier]="dmg.groupModifier()"
-              [formula]="dmg.groupFormula()"
-              [wide]="true"
-              [confirmLabel]="dmg.applyLabel"
-              [appLabel]="'Rolar ' + a.dice + ' no app'"
-              [busy]="s.busy()"
-              [(typing)]="s.typing"
-              (app)="rollDamage({ inApp: true })"
-              (typed)="rollAwaitedSum($event, a.typeKey)"
-            />
-          } @else if (dmg.parts().length) {
-            <app-damage-parts [parts]="dmg.parts()" [(picks)]="s.picks" [disabled]="s.busy()" />
-            <app-multi-roll
-              [fields]="dmg.fields()"
-              [canApp]="canApp"
-              [canType]="canType"
-              [preferApp]="preferApp"
-              [modifier]="dmg.flat()"
-              [wide]="true"
-              [note]="dmg.bonusLine()"
-              [confirmLabel]="dmg.applyLabel"
-              [appLabel]="dmg.partsLabel()"
-              [busy]="s.busy()"
-              [(typing)]="s.typing"
-              (app)="rollDamage({ inApp: true })"
-              (typed)="rollDamageParts($event)"
-            />
-          } @else {
-            <app-roll-picker
-              [canApp]="canApp"
-              [canType]="canType"
-              [preferApp]="preferApp"
-              [label]="dmg.label()"
-              [hint]="dmg.hint()"
-              [totalNote]="dmg.totalNote()"
-              [typedFormula]="dmg.typedFormula()"
-              [min]="dmg.range().min"
-              [max]="dmg.range().max"
-              [modifier]="dmg.modifier()"
-              [confirmTotal]="true"
-              [fixedText]="dmg.fixedText()"
-              [busy]="s.busy()"
-              [appLabel]="dmg.appLabel()"
-              [sticky]="true"
-              [typeOutlined]="true"
-              [(typing)]="s.typing"
-              (app)="rollDamage({ inApp: true })"
-              (typed)="rollDamageTyped($event)"
-            />
-          }
-        </div>
+      @if (s.stage() === 'damage' && dmg.dice()) {
+        <app-attack-damage-step
+          [state]="s"
+          [damage]="dmg"
+          [actions]="rolls"
+          [canApp]="canApp"
+          [canType]="canType"
+          [preferApp]="preferApp"
+        />
       }
 
       @if (s.stage() === 'done') {

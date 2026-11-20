@@ -83,11 +83,10 @@ describe('AttackSheet: the idempotency key follows the request', () => {
       ],
     });
     const sheet = TestBed.createComponent(AttackSheet).componentInstance as unknown as {
-      rollDamage(d: object): Promise<void>;
-      rollDamageTyped(n: number): Promise<void>;
+      rolls: { rollDamage(d: object): Promise<void> };
     };
-    await sheet.rollDamage({}); // "Rolar no app": the answer is lost
-    await sheet.rollDamageTyped(9); // then "Digitar o resultado"
+    await sheet.rolls.rollDamage({}); // "Rolar no app": the answer is lost
+    await sheet.rolls.rollDamage({ sum: 9 }); // then "Digitar o resultado"
     expect(keys.length).toBe(2);
     expect(keys[1]).not.toBe(keys[0]);
   });
