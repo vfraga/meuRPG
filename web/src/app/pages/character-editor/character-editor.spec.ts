@@ -830,12 +830,13 @@ describe('CharacterEditor', () => {
   });
 
   describe('the skills the sheet sources allow', () => {
-    async function openCut() {
+    async function openCut(master = false) {
       configure({ id: 'camp-1' });
       fake.loadCatalogFn = () => {
         const c = catalog();
         return Promise.resolve({
           ...c,
+          viewerIsMaster: master,
           skills: [...c.skills, { key: 'skill:stealth', namePt: 'Furtividade', ability: 'dex' }],
         });
       };
@@ -951,6 +952,33 @@ describe('CharacterEditor', () => {
         fixture.detectChanges();
         expect(problems(el)).toEqual([]);
         expect(names()).toEqual(['Arcanismo', 'História']);
+      });
+
+      const askedAbout = async (cut: Awaited<ReturnType<typeof openCut>>) => {
+        fake.previewCharacterFn = () => Promise.reject(refusal());
+        serverAllows(['skill:arcana']);
+        vi.useFakeTimers();
+        cut.cmp.picks.toggleSkill('skill:stealth');
+        cut.fixture.detectChanges();
+        await vi.advanceTimersByTimeAsync(PAUSE);
+        cut.fixture.detectChanges();
+        await vi.advanceTimersByTimeAsync(PAUSE);
+        cut.fixture.detectChanges();
+        return cut.cmp.server.pickFit.answer();
+      };
+
+      it('puts no sentence on a pick for the master, who is never refused for the fit', async () => {
+        expect(await askedAbout(await openCut(true))).toBeNull();
+      });
+
+      it('puts no sentence on a skill the saved sheet already held', async () => {
+        const cut = await openCut();
+        cut.cmp.picks.heldAtOpen.set(new Set(['skill:stealth']));
+        expect(await askedAbout(cut)).toBeNull();
+      });
+
+      it('puts the sentence on a new skill for a player', async () => {
+        expect(await askedAbout(await openCut())).not.toBeNull();
       });
 
       it('shows no sentence while every held skill is on a list, whatever the server would say of the draft', async () => {

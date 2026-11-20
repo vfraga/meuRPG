@@ -143,7 +143,12 @@ export class EditorServerDraft {
     // The server says which pick of the draft it cannot place when the lists it answered leave a held pick out.
     effect(() => {
       const s = this.host.state();
-      const ready = s.status === 'ready' && isFullSheetKind(s.kind) && this.draftReady();
+      // The master is never refused for the fit of a pick, so the server has no sentence to give.
+      const ready =
+        s.status === 'ready' &&
+        isFullSheetKind(s.kind) &&
+        !s.catalog.viewerIsMaster &&
+        this.draftReady();
       const leftOut = this.holdsPickOutsideLists();
       untracked(() => this.pickFit.draftChanged(ready && leftOut));
     });
@@ -166,7 +171,7 @@ export class EditorServerDraft {
     });
   }
 
-  /** Whether the draft holds a skill or an expertise that the lists of the server's last answer do not allow. */
+  /** Whether the draft holds a new skill or expertise (one the saved sheet did not have) that the lists of the server's last answer do not allow. */
   private holdsPickOutsideLists(): boolean {
     const answer = this.choicesAnswer();
     if (!answer) {
@@ -179,9 +184,13 @@ export class EditorServerDraft {
       allowed !== null &&
       !allowed.any &&
       Array.from(held).some((key) => !allowed.keys.includes(key));
+    const { picks, views } = this.host;
+    const newSkills = Array.from(views.chosenSkills()).filter((k) => !picks.heldAtOpen().has(k));
+    const newExpertise = Array.from(picks.expertiseSkills()).filter(
+      (k) => !picks.expertiseHeldAtOpen().has(k),
+    );
     return (
-      outside(this.host.views.chosenSkills(), answer.skillsAllowed) ||
-      outside(this.host.picks.expertiseSkills(), answer.expertiseAllowed)
+      outside(newSkills, answer.skillsAllowed) || outside(newExpertise, answer.expertiseAllowed)
     );
   }
 

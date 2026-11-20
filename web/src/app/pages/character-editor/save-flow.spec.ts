@@ -263,11 +263,15 @@ describe('SaveFlow', () => {
       full: () =>
         ({
           ...FULL,
-          featureChoiceKeys: ['fighting-style:archery', 'tool:herbalism-kit'],
+          featureChoiceKeys: ['fighting-style:archery', 'f1#tool=tool:herbalism-kit'],
         }) as CharacterFormValue,
     });
     await save.run(ready(), false);
-    expect(save.pickRefusal()).toEqual({ kind: 'tool', key: 'tool:herbalism-kit', sentence });
+    expect(save.pickRefusal()).toEqual({
+      kind: 'tool',
+      key: 'f1#tool=tool:herbalism-kit',
+      sentence,
+    });
     expect(opened).toEqual(['escolhas']);
     expect(save.state()).toEqual({ status: 'error', message: 'Veja o passo Escolhas.' });
   });

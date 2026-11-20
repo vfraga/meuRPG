@@ -1294,6 +1294,7 @@ As escolhas cobrem as seções do SRD 5.1 Fighting Style, Draconic Ancestry e Br
   Quando várias escolhas novas ficam sem vaga, a frase nomeia uma escolha que nenhuma lista tem antes de uma que só disputa vaga.
   O editor oferece as listas da ficha como ela está: quando a classe muda, os seletores mostram as listas da nova classe e as escolhas que deixaram de caber continuam marcadas, para o jogador poder desmarcá-las.
   Cada uma delas mostra a frase do servidor no próprio campo, uma escolha de cada vez, e o salvamento a recusa.
+  Uma ferramenta, e uma perícia ou especialização sem vaga dentro das listas, recebem a frase da recusa do salvamento, no campo da escolha.
   Uma perícia que a ficha guardada tinha automaticamente (de um antecedente, por exemplo) é uma escolha nova quando um salvamento a torna escolha.
   Uma lista cujas perícias o personagem já tem automaticamente deixa o jogador escolher qualquer outra perícia no lugar (SRD 5.1: a mesma proficiência de duas fontes é trocada por outra do mesmo tipo).
   O mestre nunca é recusado por isso: a escolha é salva, e o mestre lê o aviso.

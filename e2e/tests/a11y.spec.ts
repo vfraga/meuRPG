@@ -176,7 +176,7 @@ async function campaignWithNpc(page: Page): Promise<{ campaignId: string; npcId:
   });
   expect(created.ok()).toBeTruthy();
   const campaignId = (await created.json()).campaign.id as string;
-  const reserved = await createCharacterRPC(page, campaignId, characterRpcBody('ENEMY', { ...pensantus, name: 'Capitão Goblin' }));
+  const npc = await createCharacterRPC(page, campaignId, characterRpcBody('ENEMY', { ...pensantus, name: 'Capitão Goblin' }));
   expect(npc.ok()).toBeTruthy();
   return { campaignId, npcId: (await npc.json()).character.id as string };
 }
@@ -2006,7 +2006,7 @@ async function scanXpScreens(browser: Browser, colorScheme: 'light' | 'dark', wi
     await expectScreenPasses(p, `Ficha por marcos, o bloco de subir de nível ${where}`);
 
     // The NPC: the minion's section with the list open, "Usar 50 XP", and the enemy's header fields.
-    const reserved = await createEnemyRPC(m, campaignId, 'Capitão Goblin', '1', 200);
+    const npc = await createEnemyRPC(m, campaignId, 'Capitão Goblin', '1', 200);
     await open(m, `/campaigns/${campaignId}/npcs/new/minion`);
     await expectScreenPasses(m, `NPC curto com Ao ser derrotado ${where}`);
     const nd = m.getByRole('combobox', { name: 'Nível de desafio (ND)' });
@@ -8360,7 +8360,7 @@ async function scanMonsterScreens(browser: Browser, colorScheme: 'light' | 'dark
     await expectScreenPasses(m, `Encontros, ${await m.locator('.head-xp').innerText()} ${where}`);
 
     await m.getByRole('button', { name: 'Pôr um NPC no grupo' }).click();
-    const reserved = m.getByRole('dialog', { name: 'Pôr um NPC no grupo' });
+    const npc = m.getByRole('dialog', { name: 'Pôr um NPC no grupo' });
     await expect(npc.locator('.budget__n')).toContainText('Baixa');
     await expectScreenPasses(m, `Pôr um NPC no grupo ${where}`);
     await npc.getByRole('radio', { name: 'Só um nome' }).check({ force: true });
@@ -12986,7 +12986,7 @@ async function scanConversationScreens(browser: Browser, colorScheme: 'light' | 
     await expect(lineOf(m, narration)).toBeVisible();
     await m.getByRole('combobox', { name: 'Falar como' }).click();
     await m.getByRole('option', { name: /^Capitão Goblin/ }).click();
-    const reserved = `Quem ousa entrar no meu covil? ${Date.now()}`;
+    const npc = `Quem ousa entrar no meu covil? ${Date.now()}`;
     await say(m, npc);
     await expect(lineOf(m, npc)).toContainText('Capitão Goblin');
     await expectScreenPasses(m, `Conversa, do mestre com as linhas ${where}`);

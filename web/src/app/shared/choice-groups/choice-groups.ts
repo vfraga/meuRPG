@@ -83,7 +83,7 @@ export class ChoiceGroups {
   /** Whether "Escolher X agora" is offered on an option that asks for a spell the sheet lacks (a locked sheet cannot add one). */
   readonly offerCantrips = input(true);
 
-  /** The server's sentence for a pick it cannot place, by option key: shown on the option's card while it is picked. */
+  /** The server's sentence for a pick it cannot place, by the key the sheet stores for the option (`ChoiceOption.stored_key`): shown on the option's card while it is picked. */
   readonly problems = input<ReadonlyMap<string, string>>(new Map());
 
   readonly selected = output<ChoiceSelection>();
@@ -177,7 +177,9 @@ export class ChoiceGroups {
 
   /** The server's sentence for a picked option no list has room for; empty when it has none. */
   protected problem(choice: Choice, option: ChoiceOption): string {
-    return this.isPicked(choice, option) ? (this.problems().get(option.key) ?? '') : '';
+    return this.isPicked(choice, option)
+      ? (this.problems().get(option.storedKey || option.key) ?? '')
+      : '';
   }
 
   protected isPicked(choice: Choice, option: ChoiceOption): boolean {

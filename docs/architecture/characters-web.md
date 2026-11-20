@@ -46,11 +46,14 @@ What a page or a list shows is a pure function of the catalogue and the form, ea
 **The skill step's list.**
 The server says which skills the sheet's sources allow, and which skills expertise may go on.
 The step offers those, and every skill the sheet holds, is given, or held when the editor opened.
-A held skill that no list allows stays ticked and can be taken off; the step says nothing of it.
+A skill the saved sheet held that no list allows stays ticked and can be taken off; the step says nothing of it.
+A new pick that the new lists leave out (the class changed under it) stays ticked and shows the server's sentence on its own row.
+That sentence is the refusal of `PreviewCharacter` for the draft, asked only for a player while such a pick is held; it names one pick at a time.
 Until the first answer, or when a source takes any skill, nothing is cut.
 The browser works out no rule of this.
-A save the server refuses for a pick that cannot be placed shows the server's sentence on the step, with the step marked, and a short pointer above the buttons.
-Both go when a skill, an expertise or a class changes.
+A tool pick, and a skill or expertise with no room left inside the lists, get their sentence from the save refusal.
+That sentence shows on the field of the pick (the row, or the card of the tool), with the step marked and a short pointer above the buttons.
+Both go when a skill, an expertise, a tool or a class changes.
 
 State several parts share lives in `EditorPicks` and `SpellPicks`, which the component builds first and hands to the other plain classes through `EditorCore`; the page itself keeps only the route, the step and choice-group view children, two effects (the subclass waiting for its level, the starting XP) and the class-block handlers.
 `EditorStepper` builds a step's content the first time it opens and keeps it; the `eager` step ("Habilidades" under table rules) comes from the start.

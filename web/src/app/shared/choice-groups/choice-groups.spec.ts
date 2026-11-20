@@ -79,6 +79,37 @@ describe('ChoiceGroups', () => {
     expect(el.querySelector('.card__problem')).toBeNull(); // C is not picked
   });
 
+  it('finds the sentence of a tool pick by the key the sheet stores, "<owner>#tool=<tool>"', () => {
+    const scoped = (k: string) =>
+      create(ChoiceOptionSchema, { key: k, storedKey: `f1#tool=${k}`, namePt: k.toUpperCase() });
+    const g = create(ChoiceGroupSchema, {
+      origin: ChoiceOrigin.CLASS,
+      sourceNamePt: 'Ferramentas',
+      level: 1,
+      choices: [
+        create(ChoiceSchema, {
+          key: 'f1#tool',
+          featureKey: 'f1',
+          kind: ChoiceKind.OPTIONS,
+          titlePt: 'Ferramenta',
+          labelPt: 'Ferramenta',
+          picks: 1,
+          picked: ['tool:herbalism-kit'],
+          options: [scoped('tool:herbalism-kit'), scoped('tool:thieves-tools')],
+        }),
+      ],
+    });
+    const { fixture, el } = setup(g);
+    fixture.componentRef.setInput(
+      'problems',
+      new Map([['f1#tool=tool:herbalism-kit', 'Não há vaga para a ferramenta X.']]),
+    );
+    fixture.detectChanges();
+    expect(el.querySelector('.card__problem')?.textContent?.trim()).toBe(
+      'Não há vaga para a ferramenta X.',
+    );
+  });
+
   it('keeps a blocked option focusable, disabled and described by its reason', () => {
     const { cards, sent } = setup();
     const blocked = cards()[2];

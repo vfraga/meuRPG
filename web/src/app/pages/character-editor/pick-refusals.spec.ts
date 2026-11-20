@@ -3,7 +3,7 @@ import { pickSentenceOf, sentencesOf } from './pick-refusals';
 const SENT = {
   skillProficiencies: ['skill:arcana', 'skill:stealth'],
   expertiseSkillKeys: ['skill:stealth'],
-  featureChoiceKeys: ['fighting-style:archery', 'tool:herbalism-kit'],
+  featureChoiceKeys: ['fighting-style:archery', 'f1#tool=tool:herbalism-kit'],
 };
 
 describe('pickSentenceOf', () => {
@@ -17,7 +17,7 @@ describe('pickSentenceOf', () => {
       'skill:stealth',
     );
     expect(pickSentenceOf({ kind: 'tool', index: 1, sentence: 'c' }, SENT)?.key).toBe(
-      'tool:herbalism-kit',
+      'f1#tool=tool:herbalism-kit',
     );
   });
 
