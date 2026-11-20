@@ -31,6 +31,11 @@ export class SkillPicker {
   /** The skills expertise may go on; `null` when it is not cut. A skill that already holds expertise stays enabled. */
   readonly expertiseAllowed = input<ReadonlySet<string> | null>(null);
 
+  /** The server's sentence for a skill it cannot place, by skill key: shown on the skill's own row. */
+  readonly skillSentences = input<ReadonlyMap<string, string>>(new Map());
+  /** The same for an expertise. */
+  readonly expertiseSentences = input<ReadonlyMap<string, string>>(new Map());
+
   readonly toggleSkill = output<string>();
   readonly toggleExpertise = output<string>();
 

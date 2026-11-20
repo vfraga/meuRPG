@@ -468,16 +468,31 @@ func checkCreatorKind(m authz.Membership, kind string) error {
 // PreviewCharacter share it, so a preview never shows a sheet the save
 // refuses.
 func checkNewSheet(content *rules.Content, m authz.Membership, kind string, raw *charactersv1.CharacterSheet) (*charactersv1.CharacterSheet, error) {
-	return checkNewSheetOf(content, m, kind, raw, false)
+	return checkNewSheetOf(content, m, kind, raw, sheetFits)
+}
+
+// checkDraftSheet is checkNewSheet without the fit of the picks to their lists: PreviewChoices answers a draft whose
+// picks no longer fit (the class changed under them) with the lists it has now, and the save is what refuses them.
+func checkDraftSheet(content *rules.Content, m authz.Membership, kind string, raw *charactersv1.CharacterSheet) (*charactersv1.CharacterSheet, error) {
+	return checkNewSheetOf(content, m, kind, raw, sheetDraft)
 }
 
 // checkImportedSheet is checkNewSheet for a sheet a package brings: its picks are not made now, so they count as held
 // when the fit of the picks to their lists is checked.
 func checkImportedSheet(content *rules.Content, m authz.Membership, kind string, raw *charactersv1.CharacterSheet) (*charactersv1.CharacterSheet, error) {
-	return checkNewSheetOf(content, m, kind, raw, true)
+	return checkNewSheetOf(content, m, kind, raw, sheetImported)
 }
 
-func checkNewSheetOf(content *rules.Content, m authz.Membership, kind string, raw *charactersv1.CharacterSheet, imported bool) (*charactersv1.CharacterSheet, error) {
+// sheetCheck is how far the check of a new sheet goes into the fit of its picks to their lists.
+type sheetCheck int
+
+const (
+	sheetFits     sheetCheck = iota // the picks are new: a pick no list allows is refused
+	sheetImported                   // the picks are held, as the stored picks of a sheet are
+	sheetDraft                      // the fit is not asked: the draft is only read
+)
+
+func checkNewSheetOf(content *rules.Content, m authz.Membership, kind string, raw *charactersv1.CharacterSheet, mode sheetCheck) (*charactersv1.CharacterSheet, error) {
 	sheet, err := checkSheet(content, raw)
 	if err != nil {
 		return nil, invalidArgument(err)
@@ -496,9 +511,12 @@ func checkNewSheetOf(content *rules.Content, m authz.Membership, kind string, ra
 	if err := refuseNewKeys(content, m, "", nil, sheet.GetFull()); err != nil {
 		return nil, err
 	}
+	if mode == sheetDraft {
+		return sheet, nil
+	}
 	// The fit comes after the answers that name a closed entry.
 	held := noSheet
-	if imported {
+	if mode == sheetImported {
 		held = func() *charactersv1.FullSheet { return sheet.GetFull() }
 	}
 	if err := refuseUnfitPick(content, m, held, sheet.GetFull()); err != nil {

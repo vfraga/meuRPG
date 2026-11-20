@@ -58,6 +58,7 @@ import { createFullForm, patchFirstClass } from './full-form';
 import { EditorCatalog } from './editor-catalog';
 import { EditorDraft } from './editor-draft';
 import { EditorPicks } from './editor-picks';
+import { sentencesOf } from './pick-refusals';
 import { basicFormToValue, createBasicForm } from './npc-short-form/basic-form';
 import { SaveFlow } from './save-flow';
 import { filterByName } from './spell-views';
@@ -247,6 +248,23 @@ export class CharacterEditor {
     bottomSheet: inject(MatBottomSheet),
   });
 
+  /**
+   * The pick the server cannot place, with its sentence: the save's refusal, else what the server says of the draft on
+   * screen. The pickers show it on the field of the pick, for as long as the draft holds the pick.
+   */
+  private readonly pickRefusal = computed(
+    () => this.saving.pickRefusal() ?? this.server.pickFit.answer(),
+  );
+  protected readonly skillSentences = computed(() =>
+    sentencesOf(this.pickRefusal(), 'skill', (key) => this.picks.selectedSkills().has(key)),
+  );
+  protected readonly expertiseSentences = computed(() =>
+    sentencesOf(this.pickRefusal(), 'expertise', (key) => this.picks.expertiseSkills().has(key)),
+  );
+  protected readonly toolSentences = computed(() =>
+    sentencesOf(this.pickRefusal(), 'tool', (key) => this.picks.featureChoiceKeys().includes(key)),
+  );
+
   protected readonly cuttingWordsOptions = CUTTING_WORDS_OPTIONS;
   protected readonly isFullSheetKind = isFullSheetKind;
   protected readonly weaponDetail = weaponDetail;
@@ -310,10 +328,11 @@ export class CharacterEditor {
         untracked(() => control.setValue(xp));
       }
     });
-    // The refusal of a pick on the Perícias step goes when the skills, the expertise or the classes change.
+    // The save's refusal of a pick goes when the skills, the expertise or the classes change.
     effect(() => {
       this.picks.selectedSkills();
       this.picks.expertiseSkills();
+      this.picks.featureChoiceKeys();
       this.picks.extraClasses();
       this.views.selectedClass();
       untracked(() => this.saving.clearPickProblem());

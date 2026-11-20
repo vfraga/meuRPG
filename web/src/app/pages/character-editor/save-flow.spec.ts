@@ -218,19 +218,58 @@ describe('SaveFlow', () => {
           ],
         ),
       );
-    const save = flow({ openStep: (step) => opened.push(step) });
+    const save = flow({
+      openStep: (step) => opened.push(step),
+      full: () =>
+        ({
+          ...FULL,
+          skillProficiencies: ['skill:arcana', 'skill:history', 'skill:stealth'],
+        }) as CharacterFormValue,
+    });
     await save.run(ready(), false);
-    expect(save.pickProblem()).toBe(sentence);
+    expect(save.pickRefusal()).toEqual({ kind: 'skill', key: 'skill:stealth', sentence });
     expect(opened).toEqual(['pericias']);
     expect(save.state()).toEqual({ status: 'error', message: 'Veja o passo Perícias.' });
     save.clearPickProblem();
-    expect(save.pickProblem()).toBe('');
+    expect(save.pickRefusal()).toBeNull();
     expect(save.state()).toEqual({ status: 'idle' });
     // A save that is refused another way is not cleared by it.
     createResult = () => Promise.reject(new Error('down'));
     await save.run(ready(), false);
     save.clearPickProblem();
     expect(save.state().status).toBe('error');
+  });
+
+  it('keeps the server sentence for a tool on its key, opens the Escolhas step and names it', async () => {
+    const opened: string[] = [];
+    const sentence =
+      'A ferramenta Kit de herbalismo não está em nenhuma das escolhas de ferramenta do personagem.';
+    createResult = () =>
+      Promise.reject(
+        new ConnectError(
+          `sheet.full.feature_choice_keys[1] ${sentence}`,
+          Code.InvalidArgument,
+          undefined,
+          [
+            {
+              desc: InvalidFieldSchema,
+              value: create(InvalidFieldSchema, { field: 'sheet.full.feature_choice_keys[1]' }),
+            },
+          ],
+        ),
+      );
+    const save = flow({
+      openStep: (step) => opened.push(step),
+      full: () =>
+        ({
+          ...FULL,
+          featureChoiceKeys: ['fighting-style:archery', 'tool:herbalism-kit'],
+        }) as CharacterFormValue,
+    });
+    await save.run(ready(), false);
+    expect(save.pickRefusal()).toEqual({ kind: 'tool', key: 'tool:herbalism-kit', sentence });
+    expect(opened).toEqual(['escolhas']);
+    expect(save.state()).toEqual({ status: 'error', message: 'Veja o passo Escolhas.' });
   });
 
   it('saves nothing for an edit with no character, and is idle', async () => {

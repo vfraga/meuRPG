@@ -35,6 +35,33 @@ describe('SkillPicker', () => {
     expect(el.textContent).toContain('Nenhuma perícia marcada');
   });
 
+  it('shows the server sentence of a pick on its row, tied to the checkbox that holds it', () => {
+    const { fixture, el } = render(['skill:arcana'], ['skill:arcana']);
+    fixture.componentRef.setInput(
+      'skillSentences',
+      new Map([['skill:arcana', 'A perícia Arcanismo não está em nenhuma das listas.']]),
+    );
+    fixture.componentRef.setInput(
+      'expertiseSentences',
+      new Map([['skill:arcana', 'A especialização em Arcanismo não está em nenhuma das listas.']]),
+    );
+    fixture.detectChanges();
+
+    const rows = Array.from(el.querySelectorAll('.skill__problem'));
+    expect(rows.map((r) => r.textContent?.trim())).toEqual([
+      'A perícia Arcanismo não está em nenhuma das listas.',
+      'A especialização em Arcanismo não está em nenhuma das listas.',
+    ]);
+    expect(rows.map((r) => r.id)).toEqual([
+      'skill-problem-skill:arcana',
+      'expertise-problem-skill:arcana',
+    ]);
+    const boxes = Array.from(el.querySelectorAll<HTMLInputElement>('.skill input'));
+    expect(boxes[2].getAttribute('aria-describedby')).toBe('skill-problem-skill:arcana');
+    expect(boxes[3].getAttribute('aria-describedby')).toBe('expertise-problem-skill:arcana');
+    expect(el.querySelectorAll('.skill__problem')).toHaveLength(2);
+  });
+
   it('names each expertise box by its skill and only enables it on a proficient skill', () => {
     const { el } = render(['skill:arcana'], ['skill:arcana']);
 

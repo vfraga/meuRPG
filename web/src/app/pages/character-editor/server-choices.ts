@@ -18,16 +18,17 @@ export function sameAnswer<T>(a: T | null, b: T): boolean {
  * choices a race and a class ask, what each option stores and what is still open are the server's answer. Each
  * change of the draft asks once, after a pause; only the newest answer counts; while one is on the way the last
  * stays; a draft the server cannot read yet (no race or class) shows none; a call that fails keeps the last answer
- * (the save is still checked by the server, which refuses what is open).
+ * (the save is still checked by the server, which refuses what is open). The same asking serves any answer the server
+ * gives about the draft (`T`).
  */
-export class ServerChoices {
+export class ServerChoices<T = ChoicesPreviewVm> {
   /** The newest answer, `null` while the draft has none to show. */
-  readonly answer = signal<ChoicesPreviewVm | null>(null);
+  readonly answer = signal<T | null>(null);
 
   private timer: ReturnType<typeof setTimeout> | null = null;
   private version = 0;
 
-  constructor(private readonly ask: () => Promise<ChoicesPreviewVm>) {}
+  constructor(private readonly ask: () => Promise<T>) {}
 
   /** The draft changed. `ready` is false while it lacks what the server needs (a race and a class). */
   draftChanged(ready: boolean): void {

@@ -153,6 +153,12 @@
   font-size: 0.875rem;
 }
 
+// The server's sentence for a picked option it cannot place.
+.card__problem {
+  font-size: 0.875rem;
+  color: var(--mr-danger-ink);
+}
+
 .card__add {
   font: inherit;
   align-self: flex-start;
