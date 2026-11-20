@@ -1293,6 +1293,7 @@ The choices cover the SRD 5.1 sections Fighting Style, Draconic Ancestry and Bre
   A skill the stored sheet had from its background is a new pick when the background changes.
   A stored sheet whose picks do not fit still saves, levels up and plays, and its picks still count and give what they give.
   The master alone reads an issue about it.
+  The choices preview answers the lists of the draft as it is: after a class change, the picks the new class's lists no longer place stay ticked, can be taken off, and are refused only by the save, at their own field. A key that is no tool, or whose owner is hidden, is still refused by the preview.
   A new pick that no list allows is refused for a player, and the sentence names only that pick; the master saves it, on create, save, preview, complete-choices and level-up, and reads the issue on the sheet (a key that is not a tool, or whose owner is hidden or missing, is refused for the master too).
   A level up asks for as many new skills as the sheet after the level may pick, held picks counted, and refuses a new skill that no list of the sheet after the level has room for.
 - **Creation.** A player's sheet with an open choice is refused ("Criar personagem" explains what is missing), and the editor has a step "Escolhas". The master's NPCs and the table sheets are not held to it.

@@ -10215,6 +10215,11 @@ export const CharacterService: GenService<{
    * with a character_id and no sheet, the character's stored sheet is the one read.
    * A basic sheet has no choices (`invalid_argument`).
    *
+   * A skill, expertise or tool pick that no list of the sheet places is not refused here:
+   * the answer carries the lists of the draft as it is, and the picks stay for the editor
+   * to show and remove; the save refuses them. A key that is no tool, an entry kept out
+   * of the player's view and a closed entry are still refused.
+   *
    * @generated from rpc meurpg.characters.v1.CharacterService.PreviewChoices
    */
   previewChoices: {

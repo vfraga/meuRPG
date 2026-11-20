@@ -788,6 +788,11 @@ type CharacterServiceClient interface {
 	// Who may call it, the sheet it takes and the errors are those of PreviewCharacter;
 	// with a character_id and no sheet, the character's stored sheet is the one read.
 	// A basic sheet has no choices (`invalid_argument`).
+	//
+	// A skill, expertise or tool pick that no list of the sheet places is not refused here:
+	// the answer carries the lists of the draft as it is, and the picks stay for the editor
+	// to show and remove; the save refuses them. A key that is no tool, an entry kept out
+	// of the player's view and a closed entry are still refused.
 	PreviewChoices(context.Context, *connect.Request[v1.PreviewChoicesRequest]) (*connect.Response[v1.PreviewChoicesResponse], error)
 	// CompleteCharacterChoices makes the choices a sheet left open, on a sheet that is
 	// locked for the player (RN-01) as well as on a draft: it writes only the picks of
@@ -2165,6 +2170,11 @@ type CharacterServiceHandler interface {
 	// Who may call it, the sheet it takes and the errors are those of PreviewCharacter;
 	// with a character_id and no sheet, the character's stored sheet is the one read.
 	// A basic sheet has no choices (`invalid_argument`).
+	//
+	// A skill, expertise or tool pick that no list of the sheet places is not refused here:
+	// the answer carries the lists of the draft as it is, and the picks stay for the editor
+	// to show and remove; the save refuses them. A key that is no tool, an entry kept out
+	// of the player's view and a closed entry are still refused.
 	PreviewChoices(context.Context, *connect.Request[v1.PreviewChoicesRequest]) (*connect.Response[v1.PreviewChoicesResponse], error)
 	// CompleteCharacterChoices makes the choices a sheet left open, on a sheet that is
 	// locked for the player (RN-01) as well as on a draft: it writes only the picks of

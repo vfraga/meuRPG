@@ -899,6 +899,24 @@ describe('CharacterEditor', () => {
       expect(names()).toEqual(['Arcanismo', 'Furtividade']);
     });
 
+    it("answers the new class's list after a class change, keeps the old picks ticked and lets them be taken off", async () => {
+      const { cmp, names, answer, fixture, el } = await openCut();
+      answer({ any: false, keys: ['skill:stealth', 'skill:history', 'skill:arcana'] });
+      cmp.picks.toggleSkill('skill:stealth');
+      cmp.picks.toggleSkill('skill:history');
+      fixture.detectChanges();
+      cmp.fullForm.patchValue({ className: 'class:wizard' });
+      answer({ any: false, keys: ['skill:arcana'] });
+      expect(names()).toEqual(['Arcanismo', 'História', 'Furtividade']);
+      const boxes = () =>
+        Array.from(el.querySelectorAll<HTMLInputElement>('app-skill-picker .skill__name input'));
+      expect(boxes().map((b) => b.checked)).toEqual([false, true, true]);
+      boxes()[2].click();
+      fixture.detectChanges();
+      expect(names()).toEqual(['Arcanismo', 'História']);
+      expect(boxes().map((b) => b.checked)).toEqual([false, true]);
+    });
+
     it('clears the refusal on the step when a skill or an expertise is toggled or the class changes', async () => {
       const { cmp, fixture } = await openCut();
       const refuse = () => {
