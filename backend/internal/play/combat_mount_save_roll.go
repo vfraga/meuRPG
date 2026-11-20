@@ -86,8 +86,8 @@ func (s *Service) RollMountSave(ctx context.Context, req *connect.Request[playv1
 	if err != nil {
 		return nil, s.dbError(ctx, "roll a mount save", err)
 	}
-	if run.asked() { // nothing was written: the question is the whole answer
-		out, err := s.finish(ctx, call.m, res, nil)
+	if run.asked() { // only the held roll was written: the question is the whole answer, and the combat's screens read it
+		out, err := s.finish(ctx, call.m, res, s.changed(call.m.CampaignID))
 		if err != nil {
 			return nil, err
 		}

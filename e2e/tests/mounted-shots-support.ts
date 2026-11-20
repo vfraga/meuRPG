@@ -329,7 +329,7 @@ async function riderScreens(t: MountedTable, l: Look): Promise<void> {
   const wait = m.getByTestId('mount-save-wait');
   await expect(wait).toBeVisible();
   // The master's sheet reads the kept d20 when it opens, so the master's table has to hold the player's question first.
-  await expect(m.getByText(/Tirou 1: rolar de novo/).first()).toBeVisible({ timeout: 40_000 });
+  await expect(m.getByText(/Tirou 1: rolar de novo/).first()).toBeVisible();
   await wait.getByRole('button', { name: 'Rolar por Isolda' }).click();
   const answer = m.locator('app-mount-save-sheet');
   // The server lets the master answer only after the player's first seconds: the sheet counts them down ("responde primeiro")

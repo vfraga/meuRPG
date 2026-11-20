@@ -387,6 +387,30 @@ func TestMountedCombat_TheSaveAsksLuckyAndTheBardicDie(t *testing.T) {
 	})
 }
 
+// A held mount save writes only the held roll, yet the table's combat changed (the rider's d20 is kept and asked about): every
+// screen is told, so the master reads the question at once instead of on the next change.
+func TestMountedCombat_AHeldMountSavePublishesTheEncounterChange(t *testing.T) {
+	t.Parallel()
+	c := riddenCave(t)
+	c.giveCombatantDie(t, "Toren", c.get(t, c.master))
+	c.askSave(t, "Toren", causePushed)
+	masterStream := c.master.watch(t, c.campaignID)
+	masterStream.ready(t)
+	res := c.mustRollSave(t, c.caio, "Toren", saveFace(3))
+	if res.GetHeldRollOffer() == nil {
+		t.Fatalf("answer = %v, want the question of a mount save", res)
+	}
+	var changed int
+	for _, ev := range c.streamHeard(t, masterStream) {
+		if ev.GetEncounterChanged() != nil {
+			changed++
+		}
+	}
+	if changed != 1 {
+		t.Errorf("the master heard %d encounter_changed after the held question, want 1", changed)
+	}
+}
+
 // A question kept for the rider (the Bardic die, Lucky) does not outlive the window it was asked for: when the window closes by itself,
 // the held roll goes with it and asks nothing of the rider any more.
 func TestMountedCombat_TheHeldQuestionGoesWithItsWindow(t *testing.T) {
