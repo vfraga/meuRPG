@@ -64,6 +64,52 @@ describe('ChoiceGroups', () => {
     expect(cards()[1].getAttribute('aria-checked')).toBe('true');
   });
 
+  it('shows the server sentence of a picked option on its card, and on no other', () => {
+    const { fixture, el, cards } = setup(group(2, ['a', 'b']));
+    fixture.componentRef.setInput('problems', new Map([['a', 'Não há vaga para A.']]));
+    fixture.detectChanges();
+
+    const problem = el.querySelector<HTMLElement>('.card__problem');
+    expect(problem?.textContent?.trim()).toBe('Não há vaga para A.');
+    expect(cards()[0].getAttribute('aria-describedby')).toContain(problem?.id);
+    expect(el.querySelectorAll('.card__problem')).toHaveLength(1);
+
+    fixture.componentRef.setInput('problems', new Map([['c', 'Não há vaga para C.']]));
+    fixture.detectChanges();
+    expect(el.querySelector('.card__problem')).toBeNull(); // C is not picked
+  });
+
+  it('finds the sentence of a tool pick by the key the sheet stores, "<owner>#tool=<tool>"', () => {
+    const scoped = (k: string) =>
+      create(ChoiceOptionSchema, { key: k, storedKey: `f1#tool=${k}`, namePt: k.toUpperCase() });
+    const g = create(ChoiceGroupSchema, {
+      origin: ChoiceOrigin.CLASS,
+      sourceNamePt: 'Ferramentas',
+      level: 1,
+      choices: [
+        create(ChoiceSchema, {
+          key: 'f1#tool',
+          featureKey: 'f1',
+          kind: ChoiceKind.OPTIONS,
+          titlePt: 'Ferramenta',
+          labelPt: 'Ferramenta',
+          picks: 1,
+          picked: ['tool:herbalism-kit'],
+          options: [scoped('tool:herbalism-kit'), scoped('tool:thieves-tools')],
+        }),
+      ],
+    });
+    const { fixture, el } = setup(g);
+    fixture.componentRef.setInput(
+      'problems',
+      new Map([['f1#tool=tool:herbalism-kit', 'Não há vaga para a ferramenta X.']]),
+    );
+    fixture.detectChanges();
+    expect(el.querySelector('.card__problem')?.textContent?.trim()).toBe(
+      'Não há vaga para a ferramenta X.',
+    );
+  });
+
   it('keeps a blocked option focusable, disabled and described by its reason', () => {
     const { cards, sent } = setup();
     const blocked = cards()[2];

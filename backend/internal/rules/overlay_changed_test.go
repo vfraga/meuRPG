@@ -193,7 +193,7 @@ func TestChangedClassSentences(t *testing.T) {
 		t.Parallel()
 		b := sweepBase(t, c1, none, "subclass:gen-none-a@mesa")
 		b.BaseScores = map[Ability]int{STR: 14, DEX: 14, CON: 14, INT: 14, WIS: 14, CHA: 14}
-		b = addClass(c1, b, "class:gen-half-prepared@mesa", 2)
+		b = addClass(t, c1, b, "class:gen-half-prepared@mesa", 2)
 		if issues := Derive(b, c1).Issues; len(issues) != 0 {
 			t.Fatalf("the multiclass sheet has issues: %v", issues)
 		}

@@ -1,5 +1,6 @@
 import { type Signal, computed, effect, untracked } from '@angular/core';
 
+import { pickRefusalOf } from '../../core/characters/character-errors';
 import { isFullSheetKind } from '../../core/characters/characters.types';
 import { missingSentence, pendingLabels } from '../../shared/choice-groups/choice-picks';
 import type {
@@ -11,6 +12,7 @@ import type { EditorCatalog } from './editor-catalog';
 import { EDITOR_STEP_LABELS } from './editor-labels';
 import type { EditorPicks } from './editor-picks';
 import { type PageState, previewInputOf } from './editor-state';
+import { type PickSentence, pickSentenceOf } from './pick-refusals';
 import { choicesAfterAnswer, serverDraftNeeded } from './full-draft';
 import { ServerHitPoints } from './hit-points-server';
 import { ServerChoices } from './server-choices';
@@ -51,6 +53,26 @@ export class EditorServerDraft {
     return s.status === 'ready'
       ? this.host.source.previewChoices(previewInputOf(s, this.host.build(), false))
       : pageNotReady();
+  });
+  /**
+   * The pick of the draft the server cannot place, with its sentence (`PreviewCharacter` refuses the draft with one
+   * such pick); `null` when the draft fits, or the server refuses it for another reason. Asked only while the
+   * draft holds a skill or an expertise that the lists `PreviewChoices` answers leave out (the class changed under the
+   * pick): that answer no longer refuses such a draft, so the sentence comes from here.
+   */
+  readonly pickFit = new ServerChoices<PickSentence | null>(async () => {
+    const s = this.host.state();
+    if (s.status !== 'ready') {
+      return pageNotReady();
+    }
+    const input = previewInputOf(s, this.host.build(), true);
+    try {
+      await this.host.source.previewCharacter(input);
+    } catch (err) {
+      const refusal = pickRefusalOf(err);
+      return refusal ? pickSentenceOf(refusal, input.full) : null;
+    }
+    return null;
   });
   /** What the server said about the draft's feats (a prerequisite not met), by feat key. */
   readonly featIssues = computed(() => this.hitPoints.answer()?.featIssues ?? {});
@@ -118,6 +140,18 @@ export class EditorServerDraft {
       const ready = this.draftReady();
       untracked(() => this.choices.draftChanged(ready));
     });
+    // The server says which pick of the draft it cannot place when the lists it answered leave a held pick out.
+    effect(() => {
+      const s = this.host.state();
+      // The master is never refused for the fit of a pick, so the server has no sentence to give.
+      const ready =
+        s.status === 'ready' &&
+        isFullSheetKind(s.kind) &&
+        !s.catalog.viewerIsMaster &&
+        this.draftReady();
+      const leftOut = this.holdsPickOutsideLists();
+      untracked(() => this.pickFit.draftChanged(ready && leftOut));
+    });
     // A pick the draft stores that no choice offers any more (the class or the race changed) goes, with its texts.
     effect(() => {
       const answer = this.choicesAnswer();
@@ -137,9 +171,33 @@ export class EditorServerDraft {
     });
   }
 
+  /** Whether the draft holds a new skill or expertise (one the saved sheet did not have) that the lists of the server's last answer do not allow. */
+  private holdsPickOutsideLists(): boolean {
+    const answer = this.choicesAnswer();
+    if (!answer) {
+      return false;
+    }
+    const outside = (
+      held: Iterable<string>,
+      allowed: { readonly any: boolean; readonly keys: readonly string[] } | null,
+    ): boolean =>
+      allowed !== null &&
+      !allowed.any &&
+      Array.from(held).some((key) => !allowed.keys.includes(key));
+    const { picks, views } = this.host;
+    const newSkills = Array.from(views.chosenSkills()).filter((k) => !picks.heldAtOpen().has(k));
+    const newExpertise = Array.from(picks.expertiseSkills()).filter(
+      (k) => !picks.expertiseHeldAtOpen().has(k),
+    );
+    return (
+      outside(newSkills, answer.skillsAllowed) || outside(newExpertise, answer.expertiseAllowed)
+    );
+  }
+
   /** The page is gone: nothing more is asked, and no late answer lands. */
   stop(): void {
     this.choices.stop();
+    this.pickFit.stop();
     this.hitPoints.stop();
   }
 

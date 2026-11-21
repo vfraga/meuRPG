@@ -7,7 +7,6 @@ import (
 
 	charactersv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/characters/v1"
 	"github.com/PuraFome/meuRPG/backend/internal/authz"
-	"github.com/PuraFome/meuRPG/backend/internal/characters/charactersdb"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/uid"
 	"github.com/PuraFome/meuRPG/backend/internal/rules"
 )
@@ -46,7 +45,7 @@ func (s *Service) PreviewCharacter(
 		if sheet, err = checkNewSheet(content, m, kind, req.Msg.GetSheet()); err != nil {
 			return nil, err
 		}
-	} else if sheet, r.name, err = s.checkEditedSheet(ctx, m, content, req.Msg.GetCharacterId(), req.Msg.GetSheet()); err != nil {
+	} else if sheet, r.name, err = s.checkEditedSheet(ctx, m, content, req.Msg.GetCharacterId(), req.Msg.GetSheet(), sheetFits); err != nil {
 		return nil, err
 	}
 	var derived rules.Derived
@@ -75,10 +74,11 @@ func (s *Service) previewDerived(ctx context.Context, content *rules.Content, ch
 
 // checkEditedSheet is what UpdateCharacter checks before it writes, for the
 // character id: the caller sees it (otherwise not_found), may edit its sheet
-// now (RN-01), the sheet fits the row's kind, and no choice is new that is
-// archived or switched off, judged against the stored sheet. It returns the
+// now (RN-01), the sheet fits the row's kind, no choice is new that is
+// archived or switched off, judged against the stored sheet, and (unless mode
+// is sheetDraft) no new pick is one that no list allows. It returns the
 // checked sheet.
-func (s *Service) checkEditedSheet(ctx context.Context, m authz.Membership, content *rules.Content, characterID string, raw *charactersv1.CharacterSheet) (*charactersv1.CharacterSheet, string, error) {
+func (s *Service) checkEditedSheet(ctx context.Context, m authz.Membership, content *rules.Content, characterID string, raw *charactersv1.CharacterSheet, mode sheetCheck) (*charactersv1.CharacterSheet, string, error) {
 	id, ok := uid.Canonical(characterID)
 	if !ok {
 		return nil, "", errCharacterNotFound()
@@ -87,10 +87,13 @@ func (s *Service) checkEditedSheet(ctx context.Context, m authz.Membership, cont
 	if err != nil {
 		return nil, "", invalidArgument(err)
 	}
-	if err := refuseKeptOutPick(content, m, s.storedSheetOf(ctx, m, id), sheet.GetFull()); err != nil {
+	// The stored row is read once, whenever a check first needs it; the fit of the picks to their lists is
+	// refuseNewChoices's, after the permission answers and the answers that name a closed entry.
+	stored := s.storedReadOf(ctx, m, id)
+	if err := refuseKeptOutPick(content, m, stored.Visible(), sheet.GetFull()); err != nil {
 		return nil, "", err
 	}
-	row, err := s.queries.GetCharacter(ctx, charactersdb.GetCharacterParams{CampaignID: m.CampaignID, ID: id})
+	row, err := stored.Row()
 	if err != nil {
 		return nil, "", s.dbError(ctx, "read a character to preview its sheet", err)
 	}
@@ -103,11 +106,15 @@ func (s *Service) checkEditedSheet(ctx context.Context, m authz.Membership, cont
 	if err := checkSheetKind(row.Kind, sheet); err != nil {
 		return nil, "", invalidArgument(err)
 	}
-	stored, err := loadSheet(row.ID, row.Sheet)
+	storedSheet, err := stored.Sheet()
 	if err != nil {
 		return nil, "", s.dbError(ctx, "read a character to preview its sheet", err)
 	}
-	if err := refuseNewChoices(content, m, row.ID, stored.GetFull(), sheet.GetFull()); err != nil {
+	refuse := refuseNewChoices
+	if mode == sheetDraft {
+		refuse = refuseNewKeys
+	}
+	if err := refuse(content, m, row.ID, storedSheet.GetFull(), sheet.GetFull()); err != nil {
 		return nil, "", err
 	}
 	return sheet, row.Name, nil

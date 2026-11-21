@@ -50,9 +50,12 @@ type deriver struct {
 	automaticSkills map[string]bool
 
 	// owned are the keys of the features, traits, feats and background the sheet has, set by collectEffects;
-	// pickedLanguages and pickedTools are the picks that give a language or a tool (proficiency_picks.go).
+	// pickedLanguages and pickedTools are the picks that give a language or a tool (proficiency_picks.go); pickedTools
+	// holds the ones no placement takes too, which still count and still give their proficiency.
 	owned                        map[string]bool
 	pickedLanguages, pickedTools []proficiencyPick
+	// unplacedTools are the tool picks of pickedTools that the placement in the owner's choices leaves out (pickfit.go).
+	unplacedTools []proficiencyPick
 	// groups are the picks of the background's groups (background_groups.go), read once; groupTyped are the labels of the
 	// typed gaming sets they gave.
 	groups     []groupPick
@@ -179,6 +182,11 @@ func (c *content) addNewlyLost(lost *map[string]*LostPrerequisite, b Build, d De
 // deriveWith is derive with the feats and options in lost (by key) listed but not applied; each is told with what
 // it lacks as the sheet with them in place had it.
 func deriveWith(b Build, c *content, lost map[string]*LostPrerequisite) Derived {
+	return *deriverOf(b, c, lost).d
+}
+
+// deriverOf is the deriver of deriveWith after it has made the sheet.
+func deriverOf(b Build, c *content, lost map[string]*LostPrerequisite) *deriver {
 	d := &Derived{ContentVersion: c.version}
 	var inactive map[string]bool
 	for k := range lost {
@@ -226,7 +234,7 @@ func deriveWith(b Build, c *content, lost map[string]*LostPrerequisite) Derived 
 			d.Issues[i].ChangeMessage, d.Issues[i].ChangeSubject = "", ""
 		}
 	}
-	return *d
+	return x
 }
 
 // dropReplacedTiers takes out of Features the lower tiers that a higher one
@@ -369,7 +377,7 @@ type issueGroups struct {
 // issueGroupsOf is the groups of an issue code; a code not listed has none.
 func issueGroupsOf(code string) issueGroups {
 	switch code {
-	case IssueSkillCount, IssueExpertise, IssueMulticlass, IssueSubclassLevel, IssueArmorProficiency:
+	case IssueSkillCount, IssueExpertise, IssuePickFit, IssueMulticlass, IssueSubclassLevel, IssueArmorProficiency:
 		return issueGroups{classes: true, race: true, background: true}
 	case IssueSpellCount, IssueSpellLevel, IssueSpellNotOnList, IssueHitPointRolls, IssueLevel:
 		return issueGroups{classes: true}

@@ -112,7 +112,15 @@ function answer(input: PreviewCharacterInput): ChoicesPreviewVm {
           }),
         ]
       : [];
-  return { groups, done: total - open, total, notOffered: [], spellSources };
+  return {
+    groups,
+    done: total - open,
+    total,
+    notOffered: [],
+    spellSources,
+    skillsAllowed: null,
+    expertiseAllowed: null,
+  };
 }
 
 function catalog(): RulesCatalogVm {

@@ -13,6 +13,7 @@
             class="skill__name"
             [checked]="isProficient(skill.key)"
             [disabled]="granted().has(skill.key)"
+            [aria-describedby]="skillSentences().has(skill.key) ? 'skill-problem-' + skill.key : ''"
             (change)="toggleSkill.emit(skill.key)"
           >
             {{ skill.namePt }}
@@ -24,10 +25,17 @@
           <mat-checkbox
             class="skill__expertise"
             [checked]="expertise().has(skill.key)"
-            [disabled]="!isProficient(skill.key)"
+            [disabled]="expertiseDisabled(skill.key)"
             [aria-label]="'Especialização em ' + skill.namePt"
+            [aria-describedby]="expertiseSentences().has(skill.key) ? 'expertise-problem-' + skill.key : ''"
             (change)="toggleExpertise.emit(skill.key)"
           />
+          @if (skillSentences().get(skill.key); as sentence) {
+            <p class="skill__problem" role="alert" [id]="'skill-problem-' + skill.key">{{ sentence }}</p>
+          }
+          @if (expertiseSentences().get(skill.key); as sentence) {
+            <p class="skill__problem" role="alert" [id]="'expertise-problem-' + skill.key">{{ sentence }}</p>
+          }
         </div>
       }
     </div>

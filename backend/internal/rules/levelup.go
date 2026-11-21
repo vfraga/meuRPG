@@ -188,6 +188,8 @@ type LevelUpOffer struct {
 	// college, the Rogue's Expertise).
 	SkillChoices     int
 	ExpertiseChoices int
+	// SkillSources are the lists the new skills come from (see LevelSkillSources).
+	SkillSources []LevelSkillSource
 	// LateChoices are the choices an earlier level left open (a sheet written
 	// before they were asked, or saved with one skipped): the level up asks for
 	// them first and refuses without them. NewChoices are the new level's choices
@@ -240,6 +242,8 @@ type LevelUpSubclass struct {
 	// expertise. The top-level counts of the offer leave them out until the
 	// subclass is chosen.
 	Cantrips, SkillChoices, ExpertiseChoices int
+	// SkillSources are the lists the subclass's skills come from.
+	SkillSources []LevelSkillSource
 	// Spells is how many spells a third caster's subclass adds (known ones, with
 	// SpellsKind PreparationKnown); the table's subclass that casts is the only one.
 	Spells     int
@@ -474,7 +478,9 @@ func levelUpOptionsWith(b Build, idx int, classKey string, c *content, sub *srd5
 	// What the class gives, and the subclass when it is already chosen.
 	gains := c.levelGains(classKey, sub, newLevel)
 	o.FeatureChoices = c.namedChoices(bare, gains.choices)
-	o.SkillChoices, o.ExpertiseChoices = gains.skills, gains.expertise
+	o.SkillChoices, o.ExpertiseChoices = c.levelAsk(b, bare)
+	o.splitMulticlassAsk()
+	o.SkillSources = c.levelSkillSources(classKey, gains, o.Multiclass)
 
 	// A subclass that is due: each candidate's own part. It is read before the
 	// spells below, so a third caster's part compares with counts still at zero.
@@ -549,9 +555,11 @@ func (o *LevelUpOffer) addFeatureNotes(c *content, features []string) {
 // with its own part of the level, sorted by name.
 func (o *LevelUpOffer) addSubclasses(c *content, b Build, idx int, class *srd51.Class, sub *srd51.Subclass) {
 	o.SubclassDue = true
+	var base levelAsked
+	base.skills, base.expertise = c.levelAsk(b, bareLevelUp(b, idx, o.Class, o.ToLevel, nil))
 	for _, key := range class.Subclasses {
 		if s, ok := c.subclasses[key]; ok {
-			o.Subclasses = append(o.Subclasses, o.subclassPart(c, b, idx, s, sub))
+			o.Subclasses = append(o.Subclasses, o.subclassPart(c, b, idx, s, sub, base))
 		}
 	}
 	slices.SortFunc(o.Subclasses, func(a, b LevelUpSubclass) int { return comparePT(a.NamePT, b.NamePT) })
@@ -560,12 +568,13 @@ func (o *LevelUpOffer) addSubclasses(c *content, b Build, idx int, class *srd51.
 // subclassPart is what candidate subclass s adds to the level: its feature
 // choices and counts and, for a third caster when no subclass is assumed (sub
 // nil), its casting numbers.
-func (o *LevelUpOffer) subclassPart(c *content, b Build, idx int, s, sub *srd51.Subclass) LevelUpSubclass {
+func (o *LevelUpOffer) subclassPart(c *content, b Build, idx int, s, sub *srd51.Subclass, base levelAsked) LevelUpSubclass {
 	key := s.Key
 	g := c.subclassGains(s, o.ToLevel)
+	skills, expertise := c.levelAsk(b, bareLevelUp(b, idx, o.Class, o.ToLevel, s))
 	ls := LevelUpSubclass{
 		Key: key, NamePT: c.namePT(key), Archived: c.archived[key], Off: c.off[key], FeatureChoices: c.namedChoices(bareLevelUp(b, idx, o.Class, o.ToLevel, s), g.choices),
-		Cantrips: g.cantrips, SkillChoices: g.skills, ExpertiseChoices: g.expertise,
+		Cantrips: g.cantrips, SkillChoices: max(skills-base.skills, 0), ExpertiseChoices: max(expertise-base.expertise, 0), SkillSources: c.levelSkillSources("", g, nil),
 	}
 	if _, third := c.subCasting[key]; third && sub == nil {
 		// A third caster's table starts with the subclass: what it adds to
@@ -831,13 +840,54 @@ type levelGains struct {
 	skills    int
 	expertise int
 	cantrips  int
+	// skillSources are the lists the level's skills come from, one per choice.
+	skillSources []pickSource
 }
 
 func (g levelGains) plus(o levelGains) levelGains {
 	return levelGains{
 		choices: slices.Concat(g.choices, o.choices), skills: g.skills + o.skills,
 		expertise: g.expertise + o.expertise, cantrips: g.cantrips + o.cantrips,
+		skillSources: slices.Concat(g.skillSources, o.skillSources),
 	}
+}
+
+// levelAsked is how many skills and how much expertise a sheet asks.
+type levelAsked struct{ skills, expertise int }
+
+// levelAsk is how many skills and how much expertise the level asks: what the sheet after the level (bare, nothing chosen
+// at the level) may pick in all, as the sheet reads it (skillAllowance, with the picks held counted and the feats and
+// options the sheet loses left out), less what the sheet before had: its own allowance or, when it holds more picks
+// than that, the picks it holds. A level never asks for less than none.
+func (c *content) levelAsk(before, bare Build) (skills, expertise int) {
+	x := c.deriverFor(bare)
+	allowed, expertiseAllowed := x.skillAllowance()
+	was := c.deriverFor(before)
+	wasSkills, wasExpertise := was.skillAllowance()
+	heldSkills := map[string]bool{}
+	for _, k := range before.SkillProficiencies {
+		if _, ok := c.skills[k]; ok && !was.automaticSkills[k] {
+			heldSkills[k] = true
+		}
+	}
+	heldExpertise := map[string]bool{}
+	for _, k := range before.Expertise {
+		if _, ok := c.skills[k]; ok {
+			heldExpertise[k] = true
+		}
+	}
+	return max(allowed-max(wasSkills, len(heldSkills)), 0), max(expertiseAllowed-max(wasExpertise, len(heldExpertise)), 0)
+}
+
+// splitMulticlassAsk gives the multiclass pick of a new class the part of the level's skills it can take, and leaves the
+// rest to the level's own choices.
+func (o *LevelUpOffer) splitMulticlassAsk() {
+	if o.Multiclass == nil || o.Multiclass.Skills == nil {
+		return
+	}
+	pick := min(o.Multiclass.Skills.Choose, o.SkillChoices)
+	o.Multiclass.Skills.Choose = pick
+	o.SkillChoices -= pick
 }
 
 // featureGains reads the choices of the features with these keys: their
@@ -885,6 +935,7 @@ func (g *levelGains) addChoiceEffect(fk string, e *Effect, choose int) int {
 		}
 	case "skill":
 		g.skills += e.Count
+		g.skillSources = append(g.skillSources, pickSource{Owner: fk, Count: e.Count, From: e.From, Any: len(e.From) == 0})
 	case "cantrip":
 		g.cantrips += e.Count
 	}
@@ -1168,10 +1219,21 @@ func CheckLevelUp(before, after Build, c *Content) error {
 // excused only by a swap of a table feature's options that ch sent for it (or by the warlock's invocation swap), not
 // by one the offer merely allows.
 func CheckLevelUpOf(before, after Build, ch LevelUpChoices, c *Content) error {
+	return checkLevelUpOf(before, after, ch, c, false)
+}
+
+// CheckLevelUpOfMaster is CheckLevelUpOf for the master: the count of the new skills and expertise is the level's, as for
+// a player, but a new pick no source of the sheet places is not refused (the master reads the fit issue about it).
+func CheckLevelUpOfMaster(before, after Build, ch LevelUpChoices, c *Content) error {
+	return checkLevelUpOf(before, after, ch, c, true)
+}
+
+// checkLevelUpOf is the check of both; master holds no new skill or expertise to the sheet's lists.
+func checkLevelUpOf(before, after Build, ch LevelUpChoices, c *Content, master bool) error {
 	if ch.SwapInvocation != "" && ch.Class != classWarlock {
 		return refuse(levelUpChoicesField, LevelUpReasonFeatureChoice, "an option was removed")
 	}
-	if err := checkLevelUp(before, after, sentSwaps{known: true, swaps: ch.FeatureSwaps}, c.c); err != nil {
+	if err := checkLevelUp(before, after, sentSwaps{known: true, swaps: ch.FeatureSwaps, anyList: master}, c.c); err != nil {
 		return err
 	}
 	return nil
@@ -1182,6 +1244,8 @@ func CheckLevelUpOf(before, after Build, ch LevelUpChoices, c *Content) error {
 type sentSwaps struct {
 	known bool
 	swaps []PickSwap
+	// anyList is the master's check: a new skill or expertise is held to no list, so the sheet's sources need not place it.
+	anyList bool
 }
 
 // groups are the feature groups of the offer that removals may be excused by.
@@ -1243,13 +1307,12 @@ func checkLevelUp(before, after Build, sent sentSwaps, c *content) *LevelUpError
 	if lerr != nil {
 		return lerr
 	}
-	gains := c.levelGains(classKey, sub, newLevel)
 
 	// Options, skills and expertise.
 	if lerr := checkLevelUpChoices(before, after, classKey, swaps, c); lerr != nil {
 		return lerr
 	}
-	if lerr := c.checkLevelUpSkills(before, after, mc, gains); lerr != nil {
+	if lerr := c.checkLevelUpSkills(before, after, offer, mc, !sent.anyList); lerr != nil {
 		return lerr
 	}
 	return checkNewIssues(dBefore, dAfter, offOwnList)
@@ -1339,37 +1402,66 @@ func duplicatesOf(before, after Build, newClass bool) Build {
 }
 
 // checkLevelUpSkills checks the new skills (the multiclass pick of a new class, mc
-// not nil) and the new expertise against what the level gives.
-func (c *content) checkLevelUpSkills(before, after Build, mc *MulticlassOffer, gains levelGains) *LevelUpError {
-	wantSkills, wantExpertise := gains.skills, gains.expertise
+// not nil) and the new expertise against what the offer of the level asks, and, when placed, that the sheet's sources place the new picks.
+func (c *content) checkLevelUpSkills(before, after Build, offer LevelUpOffer, mc *MulticlassOffer, placed bool) *LevelUpError {
+	wantSkills, wantExpertise := offer.SkillChoices, offer.ExpertiseChoices
 	got, removedSkills := added(before.SkillProficiencies, after.SkillProficiencies)
 	switch {
 	case removedSkills:
-		return refuse("full.skill_proficiency_keys", LevelUpReasonSkills, "a skill was removed")
+		return refuse(skillsField, LevelUpReasonSkills, "a skill was removed")
 	case mc != nil:
-		if lerr := c.checkMulticlassSkills(mc, got, wantSkills); lerr != nil {
+		if lerr := c.checkMulticlassSkills(askedPick(mc, offer.Multiclass), got, wantSkills); lerr != nil {
 			return lerr
 		}
 	case len(got) != wantSkills:
-		return refuse("full.skill_proficiency_keys", LevelUpReasonSkills, "the new level lets the player choose %d skills", wantSkills)
+		return refuse(skillsField, LevelUpReasonSkills, "the new level lets the player choose %d skills", wantSkills)
 	}
-	if got, removed := added(before.Expertise, after.Expertise); removed || len(got) != wantExpertise {
-		return refuse("full.expertise_skill_keys", LevelUpReasonExpertise, "the new level gives %d expertise", wantExpertise)
+	got, removed := added(before.Expertise, after.Expertise)
+	if removed || len(got) != wantExpertise {
+		return refuse(expertiseField, LevelUpReasonExpertise, "the new level gives %d expertise", wantExpertise)
 	}
-	return nil
+	if !placed {
+		return nil
+	}
+	return c.checkNewPicksPlaced(before, after)
+}
+
+// askedPick is the multiclass offer mc with the multiclass skill pick the level's offer asks.
+func askedPick(mc, asked *MulticlassOffer) *MulticlassOffer {
+	if mc.Skills == nil || asked == nil || asked.Skills == nil {
+		return mc
+	}
+	skills := *mc.Skills
+	skills.Choose = asked.Skills.Choose
+	out := *mc
+	out.Skills = &skills
+	return &out
+}
+
+// checkNewPicksPlaced refuses a new skill or expertise that the sources of the sheet after cannot place with the others.
+func (c *content) checkNewPicksPlaced(before, after Build) *LevelUpError {
+	x, xs := c.deriverFor(after), c.deriverFor(before)
+	field, key, found := c.unplacedNewSkillPick(x, xs, before, after)
+	switch {
+	case !found:
+		return nil
+	case strings.HasPrefix(field, skillsField):
+		return refuse(skillsField, LevelUpReasonSkills, "no choice of the new level lets the player choose %s", key)
+	}
+	return refuse(expertiseField, LevelUpReasonExpertise, "no choice of the new level lets the player double %s", key)
 }
 
 // checkNewIssues refuses the first problem the sheet after has and the sheet
 // before did not: it must not end up with one. Magical Secrets spells
-// (offOwnList) are off the class list on purpose.
+// (offOwnList) are off the class list on purpose. The fit issue is the master's advisory and is never one.
 func checkNewIssues(dBefore, dAfter Derived, offOwnList map[string]bool) *LevelUpError {
 	had := map[string]bool{}
 	for _, is := range dBefore.Issues {
 		had[is.ID()] = true
 	}
 	for _, is := range dAfter.Issues {
-		if is.Code == IssueSpellNotOnList && offOwnList[is.Field] {
-			continue
+		if is.Code == IssueSpellNotOnList && offOwnList[is.Field] || is.Code == IssuePickFit {
+			continue // the master's fit issue never blocks a level: a new pick is judged by checkNewPicksPlaced
 		}
 		if !had[is.ID()] {
 			return &LevelUpError{Field: is.Field, Reason: LevelUpReasonSheetIssue, Code: is.Code, Message: is.Message}
@@ -1811,8 +1903,8 @@ func checkDuplicates(b Build) *LevelUpError {
 		{"full.prepared_spell_keys", LevelUpReasonPrepared, b.SpellsPrepared},
 		{"full.feature_choice_keys", LevelUpReasonFeatureChoice, b.FeatureChoices},
 		{"full.feat_keys", LevelUpReasonFeat, b.Feats},
-		{"full.skill_proficiency_keys", LevelUpReasonSkills, b.SkillProficiencies},
-		{"full.expertise_skill_keys", LevelUpReasonExpertise, b.Expertise},
+		{skillsField, LevelUpReasonSkills, b.SkillProficiencies},
+		{expertiseField, LevelUpReasonExpertise, b.Expertise},
 	} {
 		seen := map[string]bool{}
 		for i, k := range l.keys {

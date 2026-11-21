@@ -35,6 +35,33 @@ describe('SkillPicker', () => {
     expect(el.textContent).toContain('Nenhuma perícia marcada');
   });
 
+  it('shows the server sentence of a pick on its row, tied to the checkbox that holds it', () => {
+    const { fixture, el } = render(['skill:arcana'], ['skill:arcana']);
+    fixture.componentRef.setInput(
+      'skillSentences',
+      new Map([['skill:arcana', 'A perícia Arcanismo não está em nenhuma das listas.']]),
+    );
+    fixture.componentRef.setInput(
+      'expertiseSentences',
+      new Map([['skill:arcana', 'A especialização em Arcanismo não está em nenhuma das listas.']]),
+    );
+    fixture.detectChanges();
+
+    const rows = Array.from(el.querySelectorAll('.skill__problem'));
+    expect(rows.map((r) => r.textContent?.trim())).toEqual([
+      'A perícia Arcanismo não está em nenhuma das listas.',
+      'A especialização em Arcanismo não está em nenhuma das listas.',
+    ]);
+    expect(rows.map((r) => r.id)).toEqual([
+      'skill-problem-skill:arcana',
+      'expertise-problem-skill:arcana',
+    ]);
+    const boxes = Array.from(el.querySelectorAll<HTMLInputElement>('.skill input'));
+    expect(boxes[2].getAttribute('aria-describedby')).toBe('skill-problem-skill:arcana');
+    expect(boxes[3].getAttribute('aria-describedby')).toBe('expertise-problem-skill:arcana');
+    expect(el.querySelectorAll('.skill__problem')).toHaveLength(2);
+  });
+
   it('names each expertise box by its skill and only enables it on a proficient skill', () => {
     const { el } = render(['skill:arcana'], ['skill:arcana']);
 
@@ -46,6 +73,25 @@ describe('SkillPicker', () => {
     ]);
     expect(expertise.map((i) => i.disabled)).toEqual([true, false, true]);
     expect(el.textContent).toContain('1 perícia marcada, 1 com especialização');
+  });
+
+  it('only enables expertise on a skill the expertise list allows, or one that already holds it', () => {
+    const { fixture, el } = render(
+      ['skill:acrobatics', 'skill:arcana', 'skill:history'],
+      ['skill:history'],
+    );
+    fixture.componentRef.setInput('expertiseAllowed', new Set(['skill:arcana']));
+    fixture.detectChanges();
+
+    const expertise = Array.from(el.querySelectorAll<HTMLInputElement>('.skill__expertise input'));
+    expect(expertise.map((i) => i.disabled)).toEqual([true, false, false]);
+  });
+
+  it('shows a held skill no list allows like any other, with no mark', () => {
+    const { el } = render(['skill:history']);
+    const boxes = Array.from(el.querySelectorAll<HTMLInputElement>('.skill__name input'));
+    expect(boxes.map((i) => i.checked)).toEqual([false, false, true]);
+    expect(boxes.every((i) => !i.disabled)).toBe(true);
   });
 
   it('reports clicks without changing anything itself', () => {

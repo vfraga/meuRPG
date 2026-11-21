@@ -27,6 +27,10 @@ export class EditorPicks {
   readonly customBackgroundProficiencies = signal<readonly string[]>([]);
   /** The classes after the first (multiclass at creation): one block each, see `ClassBlockFields`. */
   readonly extraClasses = signal<readonly ExtraClassValue[]>([]);
+  /** The skills and the expertise the saved sheet held when the editor opened: their rows stay in the list for the session, so a
+   * skill no list allows that is taken off can be ticked again and the focus stays where it was. */
+  readonly heldAtOpen = signal<ReadonlySet<string>>(new Set());
+  readonly expertiseHeldAtOpen = signal<ReadonlySet<string>>(new Set());
   /** Expertise doubles a skill's proficiency bonus — always a subset of `selectedSkills` (integrator fix, phase 2b). */
   readonly expertiseSkills = signal<ReadonlySet<string>>(new Set());
   /** One roll per level after the first, index 0 = level 2. Only sent when `hitPointsMethod` is "rolled" (integrator
@@ -52,6 +56,8 @@ export class EditorPicks {
   /** A reused page starts from nothing. */
   reset(): void {
     this.selectedSkills.set(new Set());
+    this.heldAtOpen.set(new Set());
+    this.expertiseHeldAtOpen.set(new Set());
     this.customBackgroundSkills.set(new Set());
     this.customBackgroundProficiencies.set([]);
     this.extraClasses.set([]);
@@ -69,6 +75,8 @@ export class EditorPicks {
   /** The saved sheet's picks (an edit). */
   load(full: CharacterFormValue): void {
     this.selectedSkills.set(new Set(full.skillProficiencies));
+    this.heldAtOpen.set(new Set(full.skillProficiencies));
+    this.expertiseHeldAtOpen.set(new Set(full.expertiseSkillKeys));
     this.customBackgroundSkills.set(new Set(full.customBackgroundSkills ?? []));
     this.customBackgroundProficiencies.set(full.customBackgroundProficiencies);
     this.extraClasses.set(full.extraClasses);

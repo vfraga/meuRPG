@@ -556,6 +556,7 @@ func packagePartVariants(t *testing.T, base []packagePartEntry) map[string][]pac
 			f := c.GetSheet().GetFull()
 			f.Classes = []*charactersv1.ClassLevel{{ClassKey: class.GetKey(), Level: 1}}
 			f.CantripKeys, f.KnownSpellKeys, f.PreparedSpellKeys = nil, nil, nil
+			f.SkillProficiencyKeys = []string{"skill:medicine", "skill:nature"} // the two the table class lists (arcana and history come with the background)
 		}),
 		charEntry("characters/0101.json", func(c *pkgv1.PackageCharacter) { c.Id, c.Name = id(31), "" }),
 		packagePartEntry{kind: charKind, name: "characters/0102.json", data: []byte("{")},

@@ -173,8 +173,14 @@ func (s *Service) planLevelUp(ctx context.Context, tx pgx.Tx, q *charactersdb.Qu
 		return levelUpPlan{}, err
 	}
 	markRetiredChoices(t, m, &plan)
-	if err := checkPlannedLevel(t, &plan); err != nil {
+	if err := checkPlannedLevel(t, m, &plan); err != nil {
 		return levelUpPlan{}, err
+	}
+	// The level's own refusal of a skill comes first, so a pick is never refused twice with two sentences.
+	if plan.refusal == nil {
+		if err := refuseUnfitPick(t.content, m, func() *charactersv1.FullSheet { return t.full }, plan.sheet); err != nil {
+			return levelUpPlan{}, err
+		}
 	}
 	return plan, nil
 }
@@ -345,11 +351,15 @@ func (p *levelUpPlan) markRetired(field string, reason charactersv1.LevelUpRefus
 
 // checkPlannedLevel runs the rules of the level on the new sheet, when nothing
 // was refused before.
-func checkPlannedLevel(t levelUpTarget, plan *levelUpPlan) error {
+func checkPlannedLevel(t levelUpTarget, m authz.Membership, plan *levelUpPlan) error {
 	if plan.refusal != nil {
 		return nil
 	}
-	err := rules.CheckLevelUpOf(t.build, t.buildOf(plan.sheet), plan.applied, t.content)
+	check := rules.CheckLevelUpOf
+	if isMaster(m) {
+		check = rules.CheckLevelUpOfMaster // the master's new picks are held to no list
+	}
+	err := check(t.build, t.buildOf(plan.sheet), plan.applied, t.content)
 	if err == nil {
 		return nil
 	}

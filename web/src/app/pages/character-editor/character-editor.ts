@@ -58,6 +58,7 @@ import { createFullForm, patchFirstClass } from './full-form';
 import { EditorCatalog } from './editor-catalog';
 import { EditorDraft } from './editor-draft';
 import { EditorPicks } from './editor-picks';
+import { sentencesOf } from './pick-refusals';
 import { basicFormToValue, createBasicForm } from './npc-short-form/basic-form';
 import { SaveFlow } from './save-flow';
 import { filterByName } from './spell-views';
@@ -222,6 +223,7 @@ export class CharacterEditor {
     stillHere: () => this.loader.stillHere(),
     nameOfKey: (key) => this.views.nameOfKey(key),
     markSwitchedOff: (key) => this.submitting.markSwitchedOff(key),
+    openStep: (step) => this.submitting.openStep(step),
     refreshCatalog: () => this.refreshCatalog(),
   });
   /** The class block a refusal points at (`full.classes[i]`), so the block says so. */
@@ -245,6 +247,23 @@ export class CharacterEditor {
     dialog: inject(MatDialog),
     bottomSheet: inject(MatBottomSheet),
   });
+
+  /**
+   * The pick the server cannot place, with its sentence: the save's refusal, else what the server says of the draft on
+   * screen. The pickers show it on the field of the pick, for as long as the draft holds the pick.
+   */
+  private readonly pickRefusal = computed(
+    () => this.saving.pickRefusal() ?? this.server.pickFit.answer(),
+  );
+  protected readonly skillSentences = computed(() =>
+    sentencesOf(this.pickRefusal(), 'skill', (key) => this.picks.selectedSkills().has(key)),
+  );
+  protected readonly expertiseSentences = computed(() =>
+    sentencesOf(this.pickRefusal(), 'expertise', (key) => this.picks.expertiseSkills().has(key)),
+  );
+  protected readonly toolSentences = computed(() =>
+    sentencesOf(this.pickRefusal(), 'tool', (key) => this.picks.featureChoiceKeys().includes(key)),
+  );
 
   protected readonly cuttingWordsOptions = CUTTING_WORDS_OPTIONS;
   protected readonly isFullSheetKind = isFullSheetKind;
@@ -308,6 +327,15 @@ export class CharacterEditor {
       if (xp !== null && !control.dirty) {
         untracked(() => control.setValue(xp));
       }
+    });
+    // The save's refusal of a pick goes when the skills, the expertise or the classes change.
+    effect(() => {
+      this.picks.selectedSkills();
+      this.picks.expertiseSkills();
+      this.picks.featureChoiceKeys();
+      this.picks.extraClasses();
+      this.views.selectedClass();
+      untracked(() => this.saving.clearPickProblem());
     });
     this.destroyRef.onDestroy(() => {
       this.loader.destroy();
