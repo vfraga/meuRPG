@@ -586,6 +586,16 @@ func (s *Service) tellMasterVitalsAgain(ctx context.Context, say func(string, li
 	}
 }
 
+// keyAuthorOnly refuses a stored event to anyone but the user who made the first call. A key is its author's: another
+// member, the master, or whoever plays the character now, replaying it would be handed the answer to a change that was not
+// theirs (the vitals of someone else's character, a roll). It is `invalid_argument`, like any key used for another change.
+func keyAuthorOnly(done playdb.GetSessionEventByIdempotencyKeyRow, userID string) error {
+	if done.ActorUserID == nil || *done.ActorUserID != userID {
+		return errKeyReused()
+	}
+	return nil
+}
+
 // replayOfKey says whether the key was used for this very change already, and then
 // leaves the first try's payload in res: a retry changes nothing. A key used for
 // another change is refused.
@@ -607,11 +617,8 @@ func (s *Service) replayOfKey(ctx context.Context, q *playdb.Queries, session pl
 	if hashDiffers(done.IdempotencyHash, w.hash) && (w.sameHeld == nil || !w.sameHeld(ctx, q, done.IdempotencyHash)) {
 		return false, errKeyReused()
 	}
-	// A key is its author's: another member replaying it would be handed the
-	// answer to a change that was not theirs (the vitals of someone else's
-	// character, a roll).
-	if done.ActorUserID == nil || *done.ActorUserID != w.m.UserID {
-		return false, errKeyReused()
+	if err := keyAuthorOnly(done, w.m.UserID); err != nil {
+		return false, err
 	}
 	res.repeated = true // a retry of a change already made
 	res.payload = done.Payload

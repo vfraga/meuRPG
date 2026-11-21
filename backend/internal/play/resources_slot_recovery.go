@@ -182,7 +182,7 @@ func (s *Service) useRecovery(ctx context.Context, rec slotRecovery, req slotRec
 	return run.after, run.ev.Levels, nil
 }
 
-// recoveryTx is the transaction of a slot recovery (the session is locked): retry, who may, the
+// recoveryTx is the transaction of a slot recovery (the session is locked): the retry (its author only), who may, the
 // keeper's recovery, the short rest it needs, the event, and the vitals it tells.
 func (s *Service) recoveryTx(ctx context.Context, tx pgx.Tx, h *hints, session playdb.GameSession, rec slotRecovery, call recoveryCall, run *recoveryRun) error {
 	q := s.queries.WithTx(tx)
@@ -191,6 +191,9 @@ func (s *Service) recoveryTx(ctx context.Context, tx pgx.Tx, h *hints, session p
 		return err
 	}
 	if again {
+		if err := keyAuthorOnly(done, call.m.UserID); err != nil {
+			return err
+		}
 		run.repeated = true
 		return s.tellCharacterAgain(h, call.m.CampaignID, call.charText, replayCharacterEvent(done, call.charText, rec.name, &run.ev))
 	}

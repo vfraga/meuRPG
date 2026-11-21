@@ -707,3 +707,81 @@ func TestALongRestEndsAidAndAShortRestDoesNot(t *testing.T) {
 		t.Errorf("after a long rest: bonus %d, %d/%d hit points, want Aid ended and %d/%d", v.GetHitPointsMaxBonus(), v.GetHitPointsCurrent(), v.GetHitPointsMax(), sheetMax, sheetMax)
 	}
 }
+
+// keyReusedMessage is what a key refused as reused says.
+const keyReusedMessage = "idempotency_key was already used for another change"
+
+// wantKeyReused checks that err refuses a key that is not the caller's.
+func wantKeyReused(t *testing.T, call string, err error) {
+	t.Helper()
+	wantRefusal(t, call, err, connect.CodeInvalidArgument, keyReusedMessage)
+}
+
+// giveCharacter makes `to` the character's player, as a gift of the master does.
+func (h *harness) giveCharacter(t *testing.T, characterID string, to *user) {
+	t.Helper()
+	if _, err := h.pool.Exec(t.Context(), `UPDATE characters SET player_user_id = $1 WHERE id = $2`, to.id, characterID); err != nil {
+		t.Fatalf("give the character to the new player: %v", err)
+	}
+}
+
+// eventsOfKind counts the events of a kind in the campaign's sessions.
+func (h *harness) eventsOfKind(t *testing.T, campaignID, kind string) int {
+	t.Helper()
+	var n int
+	if err := h.pool.QueryRow(t.Context(), `SELECT count(*) FROM session_events WHERE kind = $1 AND game_session_id IN (SELECT id FROM game_sessions WHERE campaign_id = $2)`, kind, campaignID).Scan(&n); err != nil {
+		t.Fatalf("count the %s events: %v", kind, err)
+	}
+	return n
+}
+
+// A stored answer goes to the user who made the first call: another member, the master and the character's new player are
+// refused as a reused key and nothing is spent again, while the first caller's retry gets the answer, also after the
+// character changed hands.
+func TestSpendHitDiceAnswersAStoredCallToItsAuthorOnly(t *testing.T) {
+	t.Parallel()
+	r := newRestTable(t)
+	r.use(t, r.fighter, func(q *playv1.AdjustCharacterVitalsRequest) { q.HitPointsCurrent = proto.Int32(2) })
+	r.h.roller.queue(5)
+	key := newKey()
+	withKey := func(q *playv1.SpendHitDiceRequest) { q.IdempotencyKey = key }
+	first, err := r.spend(t, r.ana, r.fighter, 10, withKey)
+	if err != nil {
+		t.Fatalf("SpendHitDice() error = %v", err)
+	}
+	r.h.roller.queue(9) // a second roll would show
+	check := func(step string) {
+		t.Helper()
+		if got := r.vitals(t, r.master, r.fighter).GetHitDiceUsed(); got != 1 {
+			t.Errorf("%s: hit dice used = %d, want 1", step, got)
+		}
+		if n := r.h.eventsOfKind(t, r.campaign, eventHitDiceSpent); n != 1 {
+			t.Errorf("%s: the session has %d hit_dice_spent events, want 1", step, n)
+		}
+	}
+	retry := func(step string) {
+		t.Helper()
+		again, err := r.spend(t, r.ana, r.fighter, 10, withKey)
+		if err != nil {
+			t.Fatalf("%s: SpendHitDice() error = %v", step, err)
+		}
+		if again.GetFace() != first.GetFace() || again.GetHealed() != first.GetHealed() {
+			t.Errorf("%s: answer = face %d healed %d; first = face %d healed %d", step, again.GetFace(), again.GetHealed(), first.GetFace(), first.GetHealed())
+		}
+	}
+	_, err = r.spend(t, r.bia, r.fighter, 10, withKey)
+	wantKeyReused(t, "another member's SpendHitDice with the key", err)
+	check("another member")
+	_, err = r.spend(t, r.master, r.fighter, 10, withKey)
+	wantKeyReused(t, "the master's SpendHitDice with the key", err)
+	check("the master")
+	retry("the author")
+	dora := r.h.newUser("Dora")
+	r.h.join(r.master, r.campaign, dora)
+	r.h.giveCharacter(t, r.fighter.GetId(), dora)
+	_, err = r.spend(t, dora, r.fighter, 10, withKey)
+	wantKeyReused(t, "the new player's SpendHitDice with the key", err)
+	check("the new player")
+	retry("the author after the gift")
+	check("the author's retry")
+}

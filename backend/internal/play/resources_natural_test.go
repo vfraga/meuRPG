@@ -240,3 +240,55 @@ func TestNaturalRecoveryCountsOnlyTheDruidLevel(t *testing.T) {
 		t.Errorf("one 1st-level slot: err = %v, levels = %d, used = %d; want nil, 1 and 1", err, out.GetRecoveredLevels(), slotsUsed(out.GetVitals(), 1))
 	}
 }
+
+// A stored answer goes to the user who made the first call: another member, the master and the character's new player are
+// refused as a reused key and no slot is given back again, while the first caller's retry gets the answer, also after the
+// character changed hands.
+func TestNaturalRecoveryAnswersAStoredCallToItsAuthorOnly(t *testing.T) {
+	t.Parallel()
+	r := newRecoveryTable(t)
+	druid := r.landDruid(t, r.ana, "Silvana", 3)
+	r.expend(t, druid, map[int32]int32{1: 2})
+	r.shortRest(t)
+	key := newKey()
+	slots := map[int32]int32{1: 1}
+	first, err := r.recoverNatural(t, r.ana, druid, key, slots)
+	if err != nil {
+		t.Fatalf("UseNaturalRecovery() error = %v", err)
+	}
+	check := func(step string) {
+		t.Helper()
+		v := r.vitals(t, r.master, druid)
+		if slotsUsed(v, 1) != 1 || usedOf(v, "natural_recovery") != 1 {
+			t.Errorf("%s: slots used = %d, use = %d, want 1 and 1", step, slotsUsed(v, 1), usedOf(v, "natural_recovery"))
+		}
+		if n := r.h.eventsOfKind(t, r.campaign, eventNaturalRecovery); n != 1 {
+			t.Errorf("%s: the session has %d natural_recovery_used events, want 1", step, n)
+		}
+	}
+	retry := func(step string) {
+		t.Helper()
+		again, err := r.recoverNatural(t, r.ana, druid, key, slots)
+		if err != nil {
+			t.Fatalf("%s: UseNaturalRecovery() error = %v", step, err)
+		}
+		if again.GetRecoveredLevels() != first.GetRecoveredLevels() || slotsUsed(again.GetVitals(), 1) != 1 {
+			t.Errorf("%s: answer = %d levels, %d used; first = %d levels", step, again.GetRecoveredLevels(), slotsUsed(again.GetVitals(), 1), first.GetRecoveredLevels())
+		}
+	}
+	_, err = r.recoverNatural(t, r.bia, druid, key, slots)
+	wantKeyReused(t, "another member's UseNaturalRecovery with the key", err)
+	check("another member")
+	_, err = r.recoverNatural(t, r.master, druid, key, slots)
+	wantKeyReused(t, "the master's UseNaturalRecovery with the key", err)
+	check("the master")
+	retry("the author")
+	dora := r.h.newUser("Dora")
+	r.h.join(r.master, r.campaign, dora)
+	r.h.giveCharacter(t, druid.GetId(), dora)
+	_, err = r.recoverNatural(t, dora, druid, key, slots)
+	wantKeyReused(t, "the new player's UseNaturalRecovery with the key", err)
+	check("the new player")
+	retry("the author after the gift")
+	check("the author's retry")
+}

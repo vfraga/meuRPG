@@ -822,3 +822,161 @@ func TestRecoveringAmmunitionSkipsALaterCombatThatFiredNothing(t *testing.T) {
 	_, err = c.recoverAmmo(t, c.ana, newKey())
 	wantChargesBlocked(t, "a second recovery", err, playv1.ChargesBlockedReason_CHARGES_BLOCKED_REASON_ALREADY_RECOVERED)
 }
+
+// A stored answer goes to the user who made the first call: another member, the master and the character's new player are
+// refused as a reused key and no charge is spent again, while the first caller's retry gets the answer, also after the
+// character changed hands.
+func TestSpendChargesAnswersAStoredCallToItsAuthorOnly(t *testing.T) {
+	t.Parallel()
+	c := newCharged(t, chargeWand)
+	key := newKey()
+	withKey := func(r *playv1.SpendChargesRequest) { r.IdempotencyKey = key }
+	first, err := c.spend(c.ana, chargeWand, 2, withKey)(t)
+	if err != nil {
+		t.Fatalf("SpendCharges() error = %v", err)
+	}
+	check := func(step string) {
+		t.Helper()
+		if got := c.itemOf(t, c.master, chargeWand).GetChargesLeft(); got != 5 {
+			t.Errorf("%s: the wand has %d charges, want 5", step, got)
+		}
+		if n := c.countEvents(t, eventItemChargeSpent); n != 1 {
+			t.Errorf("%s: the session has %d item_charge_spent events, want 1", step, n)
+		}
+	}
+	retry := func(step string) {
+		t.Helper()
+		again, err := c.spend(c.ana, chargeWand, 2, withKey)(t)
+		if err != nil {
+			t.Fatalf("%s: SpendCharges() error = %v", step, err)
+		}
+		if again.GetItem().GetChargesLeft() != first.GetItem().GetChargesLeft() {
+			t.Errorf("%s: the answer left %d, the first left %d", step, again.GetItem().GetChargesLeft(), first.GetItem().GetChargesLeft())
+		}
+	}
+	_, err = c.spend(c.bia, chargeWand, 2, withKey)(t)
+	wantKeyReused(t, "another member's SpendCharges with the key", err)
+	check("another member")
+	_, err = c.spend(c.master, chargeWand, 2, withKey)(t)
+	wantKeyReused(t, "the master's SpendCharges with the key", err)
+	check("the master")
+	retry("the author")
+	dora := c.h.newUser("Dora")
+	c.h.join(c.master, c.campaignID, dora)
+	c.h.giveCharacter(t, c.pens.GetId(), dora)
+	_, err = c.spend(dora, chargeWand, 2, withKey)(t)
+	wantKeyReused(t, "the new player's SpendCharges with the key", err)
+	check("the new player")
+	retry("the author after the gift")
+	check("the author's retry")
+}
+
+// A stored answer goes to the user who made the first call: another member, the master and the character's new player are
+// refused as a reused key and nothing is rolled again, while the first caller's retry gets the roll, also after the
+// character changed hands.
+func TestRollLastChargeAnswersAStoredCallToItsAuthorOnly(t *testing.T) {
+	t.Parallel()
+	c := newCharged(t, chargeStaff)
+	c.mustSpend(t, c.ana, chargeStaff, 20)
+	key := newKey()
+	withKey := func(r *playv1.RollLastChargeRequest) { r.IdempotencyKey = key }
+	c.h.roller.queue(20, 5)
+	first, err := c.roll(t, c.ana, chargeStaff, withKey)
+	if err != nil {
+		t.Fatalf("RollLastCharge() error = %v", err)
+	}
+	c.h.roller.queue(1, 1) // a second roll would show
+	check := func(step string) {
+		t.Helper()
+		if got := c.itemOf(t, c.master, chargeStaff).GetChargesLeft(); got != first.GetItem().GetChargesLeft() {
+			t.Errorf("%s: the staff has %d charges, want %d", step, got, first.GetItem().GetChargesLeft())
+		}
+		if n := c.countEvents(t, eventItemChargesRestored); n != 1 {
+			t.Errorf("%s: the session has %d item_charges_restored events, want 1", step, n)
+		}
+	}
+	retry := func(step string) {
+		t.Helper()
+		again, err := c.roll(t, c.ana, chargeStaff, withKey)
+		if err != nil {
+			t.Fatalf("%s: RollLastCharge() error = %v", step, err)
+		}
+		if again.GetD20() != 20 || again.GetRegained() != first.GetRegained() || again.GetItem().GetChargesLeft() != first.GetItem().GetChargesLeft() {
+			t.Errorf("%s: the answer = %v, want the first roll's numbers", step, again)
+		}
+	}
+	_, err = c.roll(t, c.bia, chargeStaff, withKey)
+	wantKeyReused(t, "another member's RollLastCharge with the key", err)
+	check("another member")
+	_, err = c.roll(t, c.master, chargeStaff, withKey)
+	wantKeyReused(t, "the master's RollLastCharge with the key", err)
+	check("the master")
+	retry("the author")
+	dora := c.h.newUser("Dora")
+	c.h.join(c.master, c.campaignID, dora)
+	c.h.giveCharacter(t, c.pens.GetId(), dora)
+	_, err = c.roll(t, dora, chargeStaff, withKey)
+	wantKeyReused(t, "the new player's RollLastCharge with the key", err)
+	check("the new player")
+	retry("the author after the gift")
+	check("the author's retry")
+}
+
+// A stored answer goes to the user who made the first call: another member, the master and the character's new player are
+// refused as a reused key and nothing is recovered again, while the first caller's retry gets the answer, also after the
+// character changed hands.
+func TestRecoverAmmunitionAnswersAStoredCallToItsAuthorOnly(t *testing.T) {
+	t.Parallel()
+	c := newCharged(t)
+	_, err := c.master.charges.SetAmmunition(t.Context(), connect.NewRequest(&playv1.SetAmmunitionRequest{CampaignId: c.campaignID, CharacterId: c.pens.GetId(), AmmoKey: arrowAmmo, Quantity: 20}))
+	if err != nil {
+		t.Fatalf("SetAmmunition() error = %v", err)
+	}
+	e := c.start(t, plan{
+		npcs:     []*playv1.Participant{{CharacterId: c.goblin.GetId()}},
+		npcRolls: []int{3},
+		players:  map[string]int32{"Toren": 10, "Pensantus": 18, "Brisa": 1},
+		at:       map[string][2]int32{"Toren": {3, 3}, "Goblin": {4, 3}, "Pensantus": {10, 3}, "Brisa": {8, 8}},
+	})
+	c.fire(t, e.GetId(), 5)
+	c.endEncounter(t, e)
+	key := newKey()
+	first, err := c.recoverAmmo(t, c.ana, key)
+	if err != nil {
+		t.Fatalf("RecoverAmmunition() error = %v", err)
+	}
+	if got := first.GetAmmunition(); len(got) != 1 || got[0].GetQuantity() != 17 {
+		t.Fatalf("the recovery = %v, want 17 arrows", got)
+	}
+	check := func(step string) {
+		t.Helper()
+		if n := c.countEvents(t, eventAmmunitionRecovered); n != 1 {
+			t.Errorf("%s: the session has %d ammunition_recovered events, want 1", step, n)
+		}
+	}
+	retry := func(step string) {
+		t.Helper()
+		again, err := c.recoverAmmo(t, c.ana, key)
+		if err != nil {
+			t.Fatalf("%s: RecoverAmmunition() error = %v", step, err)
+		}
+		if got := again.GetAmmunition(); len(got) != 1 || got[0].GetKey() != arrowAmmo || got[0].GetQuantity() != 17 || !got[0].GetRecovered() {
+			t.Errorf("%s: the answer = %v, want the first one (17 arrows)", step, got)
+		}
+	}
+	_, err = c.recoverAmmo(t, c.bia, key)
+	wantKeyReused(t, "another member's RecoverAmmunition with the key", err)
+	check("another member")
+	_, err = c.recoverAmmo(t, c.master, key)
+	wantKeyReused(t, "the master's RecoverAmmunition with the key", err)
+	check("the master")
+	retry("the author")
+	dora := c.h.newUser("Dora")
+	c.h.join(c.master, c.campaignID, dora)
+	c.h.giveCharacter(t, c.pens.GetId(), dora)
+	_, err = c.recoverAmmo(t, dora, key)
+	wantKeyReused(t, "the new player's RecoverAmmunition with the key", err)
+	check("the new player")
+	retry("the author after the gift")
+	check("the author's retry")
+}

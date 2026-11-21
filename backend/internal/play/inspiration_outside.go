@@ -110,8 +110,8 @@ func (s *Service) giveOutsideTx(ctx context.Context, m authz.Membership, key str
 // replayGive answers a key the caller already used: the bard, and nothing written. It tells again what the first call told, which
 // may have died before it sent: the dice held, and the vitals of the bard and the target as they stand.
 func (s *Service) replayGive(ctx context.Context, tx pgx.Tx, h *hints, m authz.Membership, done playdb.GetSessionEventByIdempotencyKeyRow, target string, given *outsideGiven) error {
-	if done.ActorUserID == nil || *done.ActorUserID != m.UserID {
-		return errKeyReused()
+	if err := keyAuthorOnly(done, m.UserID); err != nil {
+		return err
 	}
 	bard, _, err := s.myCharacter(ctx, tx, m)
 	given.bard = bard

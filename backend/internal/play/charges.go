@@ -308,7 +308,7 @@ func (s *Service) SpendCharges(ctx context.Context, req *connect.Request[playv1.
 	return connect.NewResponse(&playv1.SpendChargesResponse{Item: run.item}), nil
 }
 
-// spendChargesTx is the transaction of SpendCharges (the session is locked): retry, who may, spend, write, tell.
+// spendChargesTx is the transaction of SpendCharges (the session is locked): the retry (its author only), who may, spend, write, tell.
 func (s *Service) spendChargesTx(ctx context.Context, tx pgx.Tx, h *hints, session playdb.GameSession, call chargeCall, req *playv1.SpendChargesRequest, run *chargeRun) error {
 	q := s.queries.WithTx(tx)
 	done, again, err := chargeEventByKey(ctx, q, session.ID, call, chargeKinds...)
@@ -316,6 +316,9 @@ func (s *Service) spendChargesTx(ctx context.Context, tx pgx.Tx, h *hints, sessi
 		return err
 	}
 	if again {
+		if err := keyAuthorOnly(done, call.m.UserID); err != nil {
+			return err
+		}
 		return s.chargeRetry(ctx, tx, h, call, done, req.GetEntryId(), run)
 	}
 	if _, err := s.requireItemCharacter(ctx, tx, call.m, call.charText); err != nil {
@@ -424,7 +427,7 @@ func regainedOf(ev itemUseEvent) int32 {
 	return 0
 }
 
-// rollLastChargeTx is the transaction of RollLastCharge (the session is locked): retry, who may, the way of rolling, the
+// rollLastChargeTx is the transaction of RollLastCharge (the session is locked): the retry (its author only), who may, the way of rolling, the
 // dice, the keeper's settling, the event.
 func (s *Service) rollLastChargeTx(ctx context.Context, tx pgx.Tx, h *hints, session playdb.GameSession, call chargeCall, entryID string, input rollLastChargeInput, run *chargeRun) error {
 	q := s.queries.WithTx(tx)
@@ -433,6 +436,9 @@ func (s *Service) rollLastChargeTx(ctx context.Context, tx pgx.Tx, h *hints, ses
 		return err
 	}
 	if again {
+		if err := keyAuthorOnly(done, call.m.UserID); err != nil {
+			return err
+		}
 		return s.chargeRetry(ctx, tx, h, call, done, entryID, run)
 	}
 	if _, err := s.requireItemCharacter(ctx, tx, call.m, call.charText); err != nil {
@@ -639,7 +645,7 @@ func (s *Service) RecoverAmmunition(ctx context.Context, req *connect.Request[pl
 	return connect.NewResponse(&playv1.RecoverAmmunitionResponse{Ammunition: out}), nil
 }
 
-// recoverAmmunitionTx is the transaction of RecoverAmmunition: retry, who may, the combat the pieces were fired in, the keeper's
+// recoverAmmunitionTx is the transaction of RecoverAmmunition: the retry (its author only), who may, the combat the pieces were fired in, the keeper's
 // recovery, the event.
 func (s *Service) recoverAmmunitionTx(ctx context.Context, tx pgx.Tx, h *hints, session playdb.GameSession, call chargeCall) ([]*charactersv1.SheetAmmunition, bool, error) {
 	q := s.queries.WithTx(tx)
@@ -648,6 +654,9 @@ func (s *Service) recoverAmmunitionTx(ctx context.Context, tx pgx.Tx, h *hints, 
 		return nil, false, err
 	}
 	if again {
+		if err := keyAuthorOnly(done, call.m.UserID); err != nil {
+			return nil, false, err
+		}
 		var ev ammunitionRecoveredEvent
 		if err := replayCharacterEvent(done, call.charText, "ammunition recovery", &ev); err != nil {
 			return nil, false, err

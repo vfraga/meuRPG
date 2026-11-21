@@ -620,7 +620,7 @@ func (s *Service) SpendHitDice(
 	return connect.NewResponse(spendResponse(run.after, run.ev)), nil
 }
 
-// spendHitDiceTx is the transaction of SpendHitDice (the session is locked): retry, who may, roll, spend, write, and tell the vitals.
+// spendHitDiceTx is the transaction of SpendHitDice (the session is locked): the retry (its author only), who may, roll, spend, write, and tell the vitals.
 func (s *Service) spendHitDiceTx(ctx context.Context, tx pgx.Tx, h *hints, session playdb.GameSession, call hitDiceCall, run *hitDiceRun) error {
 	q := s.queries.WithTx(tx)
 	done, again, err := eventByKey(ctx, q, session.ID, call.keyText, eventHitDiceSpent, call.hash)
@@ -628,6 +628,9 @@ func (s *Service) spendHitDiceTx(ctx context.Context, tx pgx.Tx, h *hints, sessi
 		return err
 	}
 	if again {
+		if err := keyAuthorOnly(done, call.m.UserID); err != nil {
+			return err
+		}
 		run.repeated = true
 		return s.tellCharacterAgain(h, call.m.CampaignID, call.charText, replayCharacterEvent(done, call.charText, "hit die", &run.ev))
 	}

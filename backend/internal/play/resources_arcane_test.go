@@ -256,3 +256,55 @@ func TestArcaneRecoveryCountsOnlyTheWizardLevel(t *testing.T) {
 		t.Errorf("one 1st-level slot: err = %v, levels = %d, used = %d; want nil, 1 and 1", err, out.GetRecoveredLevels(), slotsUsed(out.GetVitals(), 1))
 	}
 }
+
+// A stored answer goes to the user who made the first call: another member, the master and the character's new player are
+// refused as a reused key and no slot is given back again, while the first caller's retry gets the answer, also after the
+// character changed hands.
+func TestArcaneRecoveryAnswersAStoredCallToItsAuthorOnly(t *testing.T) {
+	t.Parallel()
+	r := newRecoveryTable(t)
+	mage := r.wizard(t, r.ana, "Elora", 3)
+	r.expend(t, mage, map[int32]int32{1: 2})
+	r.shortRest(t)
+	key := newKey()
+	slots := map[int32]int32{1: 1}
+	first, err := r.recoverSlots(t, r.ana, mage, key, slots)
+	if err != nil {
+		t.Fatalf("UseArcaneRecovery() error = %v", err)
+	}
+	check := func(step string) {
+		t.Helper()
+		v := r.vitals(t, r.master, mage)
+		if slotsUsed(v, 1) != 1 || usedOf(v, "arcane_recovery") != 1 {
+			t.Errorf("%s: slots used = %d, use = %d, want 1 and 1", step, slotsUsed(v, 1), usedOf(v, "arcane_recovery"))
+		}
+		if n := r.h.eventsOfKind(t, r.campaign, eventArcaneRecovery); n != 1 {
+			t.Errorf("%s: the session has %d arcane_recovery_used events, want 1", step, n)
+		}
+	}
+	retry := func(step string) {
+		t.Helper()
+		again, err := r.recoverSlots(t, r.ana, mage, key, slots)
+		if err != nil {
+			t.Fatalf("%s: UseArcaneRecovery() error = %v", step, err)
+		}
+		if again.GetRecoveredLevels() != first.GetRecoveredLevels() || slotsUsed(again.GetVitals(), 1) != 1 {
+			t.Errorf("%s: answer = %d levels, %d used; first = %d levels", step, again.GetRecoveredLevels(), slotsUsed(again.GetVitals(), 1), first.GetRecoveredLevels())
+		}
+	}
+	_, err = r.recoverSlots(t, r.bia, mage, key, slots)
+	wantKeyReused(t, "another member's UseArcaneRecovery with the key", err)
+	check("another member")
+	_, err = r.recoverSlots(t, r.master, mage, key, slots)
+	wantKeyReused(t, "the master's UseArcaneRecovery with the key", err)
+	check("the master")
+	retry("the author")
+	dora := r.h.newUser("Dora")
+	r.h.join(r.master, r.campaign, dora)
+	r.h.giveCharacter(t, mage.GetId(), dora)
+	_, err = r.recoverSlots(t, dora, mage, key, slots)
+	wantKeyReused(t, "the new player's UseArcaneRecovery with the key", err)
+	check("the new player")
+	retry("the author after the gift")
+	check("the author's retry")
+}
