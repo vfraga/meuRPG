@@ -29,7 +29,7 @@ The d20 follows the table's dice mode ([Table rules](table-rules.md)): the app r
 A 1 loses the item as the catalog says, and a 20 on an item that regains charges gives back a die of them, rolled the same way.
 A typed 20 without the regain die's face is refused with `ChargesBlocked` `REGAIN_FACE_NEEDED`.
 Any other face only ends the wait.
-Two calls with the same idempotency key give one roll: the second reads the first one's answer.
+Two calls with the same idempotency key give one roll: the second reads the first one's answer when it is the same caller's, and another caller gets `invalid_argument`.
 Two calls with different keys give one success: the one that gets the lock second finds no wait and is refused with `invalid_argument` "the item has no last charge to roll", with no blocked reason, also when the first roll destroyed the item.
 
 ## Undo

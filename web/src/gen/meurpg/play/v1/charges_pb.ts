@@ -786,7 +786,8 @@ export const ConsumableTargetStateSchema: GenEnum<ConsumableTargetState> = /*@__
  * the caller is not a member of, and for a character that is not in the campaign, methods answer `not_found`.
  * A rule's refusal is `failed_precondition` with a CharacterBlocked detail (characters.proto) or a
  * ChargesBlocked detail. Every method that writes an event carries an idempotency key; the same key with
- * another request is `invalid_argument`.
+ * another request is `invalid_argument`. The key is the caller's: the same key from another caller, the master
+ * included, is `invalid_argument`, and a retry answers its author only.
  *
  * @generated from service meurpg.play.v1.ChargesService
  */

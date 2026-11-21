@@ -189,11 +189,7 @@ func wantChargesBlocked(t *testing.T, call string, err error, want playv1.Charge
 // countEvents counts the session's events of a kind.
 func (a *armed) countEvents(t *testing.T, kind string) int {
 	t.Helper()
-	var n int
-	if err := a.h.pool.QueryRow(t.Context(), `SELECT count(*) FROM session_events WHERE kind = $1 AND game_session_id IN (SELECT id FROM game_sessions WHERE campaign_id = $2)`, kind, a.campaignID).Scan(&n); err != nil {
-		t.Fatalf("count the %s events: %v", kind, err)
-	}
-	return n
+	return a.h.eventsOfKind(t, a.campaignID, kind)
 }
 
 func TestSpendingChargesTakesThemForTheOwnerAndTheMaster(t *testing.T) {

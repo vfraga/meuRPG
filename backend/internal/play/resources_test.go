@@ -708,13 +708,10 @@ func TestALongRestEndsAidAndAShortRestDoesNot(t *testing.T) {
 	}
 }
 
-// keyReusedMessage is what a key refused as reused says.
-const keyReusedMessage = "idempotency_key was already used for another change"
-
 // wantKeyReused checks that err refuses a key that is not the caller's.
 func wantKeyReused(t *testing.T, call string, err error) {
 	t.Helper()
-	wantRefusal(t, call, err, connect.CodeInvalidArgument, keyReusedMessage)
+	wantRefusal(t, call, err, connect.CodeInvalidArgument, searchKeyReused)
 }
 
 // giveCharacter makes `to` the character's player, as a gift of the master does.

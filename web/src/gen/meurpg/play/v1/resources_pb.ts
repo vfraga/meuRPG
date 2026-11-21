@@ -2374,6 +2374,8 @@ export const ResourceService: GenService<{
    * that many hit points (SRD 5.1, "Short Rest"). The player decides whether to
    * spend another one after each roll, so one call spends one die. The
    * character's player or the master.
+   * The key is the caller's: the same key from another caller, the master included, is
+   * `invalid_argument`, and a retry answers its author only.
    *
    * Song of Rest (SRD 5.1, Bard 2): when the latest rest of the open session is a
    * short rest, a bard of the party with at least 1 hit point has the feature, and
@@ -2404,7 +2406,8 @@ export const ResourceService: GenService<{
    * spellcasting slots count, never the pact slots. "Once per day" is once per
    * long rest: the use is the `arcane_recovery` resource, which a long rest gives
    * back. It is allowed only while the latest rest of the open session is a short
-   * rest. The character's player or the master.
+   * rest. The character's player or the master. The key is the caller's: the same key from
+   * another caller, the master included, is `invalid_argument`, and a retry answers its author only.
    *
    * With `feature_key` the call is the table feature's slot_recovery effect instead:
    * it spends a use of the effect's resource and keeps to the effect's highest slot level
@@ -2433,7 +2436,7 @@ export const ResourceService: GenService<{
    * spell slots of a combined level up to half the druid level (rounded up) come back
    * after a short rest, none of the 6th level or higher, once per long rest (the
    * `natural_recovery` resource). The pact slots never count. The character's player
-   * or the master.
+   * or the master. The key is the caller's, as in UseArcaneRecovery.
    *
    * Errors: as UseArcaneRecovery, with NOT_AVAILABLE for a character that has no
    * Natural Recovery (not a druid of the Circle of the Land).

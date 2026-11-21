@@ -482,7 +482,10 @@ On the map, `PartyVision` sends `link.PartyMember.Eyes` (the creature and its se
 If the familiar is dismissed with the eyes on outside a combat, the sight ends by itself; in a combat, dismissing it ends the sight in the same transaction (`CreaturesLeaving`, called by the characters module inside `play.Service.InSession`, with the session's row held; the dismissal moves the session's number once and the streams hear `creatures_changed` and `encounter_changed` with it, after the commit), the conditions it gave go back, the vitals forget it and a `familiar_sight` stop event has the reason `gone`.
 Only the familiar, and only while its eyes are on, sees through the owner; the other creatures appear to the group (their token belongs to the group, never hidden) but see through nobody.
 
-**Idempotency keys and sheet reads.** An idempotency key belongs to whoever used it: `write()` (and the scene roll) refuses with `invalid_argument` a key repeated by another member, and the Wild Shape and familiar calls also refuse a key repeated for another character.
+**Idempotency keys and sheet reads.** An idempotency key belongs to whoever used it.
+A stored answer goes only to the user who made the first call: another user's retry, the master's and the character's new player's included, is refused with `invalid_argument`.
+This holds for `write()`, the scene roll, `replayGive`, `SpendHitDice`, `UseArcaneRecovery`, `UseNaturalRecovery`, `SpendCharges`, `RollLastCharge` and `RecoverAmmunition`.
+The Wild Shape and familiar calls also refuse a key repeated for another character.
 `CombatSheet`, `CombatTurnOptions` and `CombatSpell` (`play.CombatRoster`) receive the caller's transaction (`nil`: the pool): a change that wrote the vitals or the form and then reads the sheet must read it inside the transaction, or the read waits for its own transaction's write.
 When the form or the familiar's sight changes by any path, `write()` publishes the vitals and notifies the fog after the commit (`combatTx.told`).
 

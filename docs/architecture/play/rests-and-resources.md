@@ -101,7 +101,7 @@ Sorcery points are the resource `sorcery_points`, whose maximum is the sorcerer 
 
 ### Arcane Recovery (wizard 1) and Natural Recovery (Circle of the Land druid 2)
 
-After a short rest, `UseArcaneRecovery(character, slots)` spends the resource `arcane_recovery` (one use, recharge `long_rest`) and lowers `used` of the chosen slots, in one transaction that locks the session, checks the key (scoped to the character) and writes the vitals and the `arcane_recovery_used` event (levels and counts only).
+After a short rest, `UseArcaneRecovery(character, slots)` spends the resource `arcane_recovery` (one use, recharge `long_rest`) and lowers `used` of the chosen slots, in one transaction that locks the session, checks the key (scoped to the character, and a retry answers its author only) and writes the vitals and the `arcane_recovery_used` event (levels and counts only).
 `UseNaturalRecovery` is the same call for the resource `natural_recovery` and the DRUID level, and writes `natural_recovery_used`.
 Both run one path (`useRecovery`, `characters.UseSlotRecovery`) parameterised by a `rules.SlotRecovery` (resource key and class key).
 Only the levels of that class count in a multiclass character, and the pact slots never do.

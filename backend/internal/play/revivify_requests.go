@@ -48,7 +48,8 @@ func errRevivifyRequestNotFound() error {
 }
 
 // castersCharacter finds the living character that casts outside a combat, a player's own for a
-// player. not_found for any other, as the same answer for one that is not there.
+// player. A character that is not there or is no player's is not_found, the same answer for both;
+// another player's character is permission_denied.
 func (s *Service) castersCharacter(ctx context.Context, tx pgx.Tx, m authz.Membership, characterID string) (link.Character, error) {
 	id, err := uuid.Parse(characterID)
 	if err != nil {
