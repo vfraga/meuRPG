@@ -69,8 +69,10 @@ const (
 	imagesHiddenWhy    = "requireGenerationMaster answers a player not_found: nothing tells a player that the campaign generates images"
 	encounterHiddenWhy = "requireBuilder answers a player not_found: neither the builder nor the saved encounters are known to exist (RN-10)"
 	revivifyHiddenWhy  = "the role is checked first and a player gets \"revivify request not found\": a player is not told that a request waits for the master"
-	conditionsWhy      = "the conditions are the master's, and the combatant's owner ends their own concentration through it"
 )
+
+// conditionsWhy is the reason of the playerAction of SetCombatantConditions.
+const conditionsWhy = "the conditions are the master's, and the combatant's owner ends their own concentration through it"
 
 var notReads = map[string]classified{
 	campaignpackagev1connect.CampaignPackageServiceBeginCampaignImportProcedure:      {notACampaignCall, "starts the caller's own upload; it names no campaign"},

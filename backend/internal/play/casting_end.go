@@ -212,7 +212,7 @@ func finishInputOf(msg *playv1.ConfirmCastTimePassedRequest) (castFinishInput, e
 	return castFinishInput{in: in, rolled: rolled, pick: msg.GetSummon()}, nil
 }
 
-// finishCastTx is ConfirmCastTimePassed inside the transaction: the cast and who may finish it, the characters it
+// finishCastTx is ConfirmCastTimePassed inside the transaction: the cast, the characters it
 // is about, the plan rebuilt from the sheet, the dice, the time that passed and the effect.
 func (s *Service) finishCastTx(ctx context.Context, c *combatTx, m authz.Membership, castID string, input castFinishInput) (castOutcome, error) {
 	row, caster, err := s.castRowFor(ctx, c, m, castID)

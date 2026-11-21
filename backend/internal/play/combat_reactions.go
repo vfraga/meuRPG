@@ -380,7 +380,7 @@ func (s *Service) UseReaction(
 }
 
 // parseReactionCall reads the caller's membership and the ids of a Shield answer. The member comes
-// first, so a stranger gets permission_denied before any id is parsed.
+// first, so a stranger and a pending member get not_found (memberCall) before any id is parsed.
 func parseReactionCall(ctx context.Context, campaignID, keyRaw, encounterRaw, pendingRaw string) (m authz.Membership, key string, encID, pendingID string, err error) {
 	if m, key, encID, err = memberCall(ctx, campaignID, keyRaw, encounterRaw); err != nil {
 		return m, key, "", "", err

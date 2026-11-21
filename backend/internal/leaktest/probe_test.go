@@ -95,6 +95,9 @@ func (w *world) creatureNotOf(p *person) string {
 // requests do not reach the owner check, so actions_test.go and the per-service matrices
 // cover the owner.
 //
+// The probe does not reach the path that a held roll runs again: that path takes its caller
+// from the hold (play/held_caller.go).
+//
 // The requests are built from the names of the fields and are rarely valid in the rest, so
 // a call that is a player's own usually fails its validation: that is why the player's own
 // actions are also scripted (actions_test.go), where the answers are real.
@@ -104,8 +107,7 @@ func checkNotReads(t *testing.T, w *world, got *answers) {
 	anon := w.anonymous()
 	for _, procedure := range probedProcedures() {
 		c := probedClass(procedure)
-		// The probe does not reach a path that a held roll runs again: that path takes its
-		// caller from the hold (play/held_caller.go).
+		// A call that names no campaign and a stream are not probed.
 		if c.class == notACampaignCall || c.class == streamed {
 			continue
 		}

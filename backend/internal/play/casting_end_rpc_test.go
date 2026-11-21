@@ -68,8 +68,6 @@ func TestCastEndConfirmRefusals(t *testing.T) {
 	err = castEndConfirm(t, a, a.bia, prayer, noEdit)
 	wantRefusal(t, "the caster's player", err, connect.CodePermissionDenied, "only the campaign's master can do this")
 
-	// A cast aimed at a creature the players do not see is not found for a player (RN-10).
-
 	// A cast that is not being cast.
 	done := a.mustCastOut(t, a.ana, a.pens, mageArmorKey, slotOfLevel(1), false, []*charactersv1.Character{a.toren}).GetCast().GetId()
 	err = castEndConfirm(t, a, a.master, done, noEdit)

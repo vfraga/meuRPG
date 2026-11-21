@@ -114,8 +114,8 @@ func TestNewValidatesItsConfig(t *testing.T) {
 	}
 }
 
-// mountedServices are the services of the module, read from the proto files that
-// Mount registers handlers for, so that no service is typed by hand in the tests.
+// mountedServices are the services of the module: the four proto files named here are the ones
+// of the services that Mount registers, and the services are read from them.
 func mountedServices() []protoreflect.ServiceDescriptor {
 	var out []protoreflect.ServiceDescriptor
 	for _, file := range []protoreflect.FileDescriptor{

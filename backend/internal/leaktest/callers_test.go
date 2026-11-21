@@ -10,32 +10,32 @@ import (
 	"google.golang.org/protobuf/types/dynamicpb"
 
 	campaignsv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/campaigns/v1"
+	charactersv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/characters/v1"
+	mapsv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/maps/v1"
 )
 
 // callerVariant is one of the five requests the probe sends to a procedure, as each caller.
 type callerVariant struct {
 	name  string
 	empty bool // every field empty: no campaign exists
-	build func(w *world, p *person, method protoreflect.MethodDescriptor, other string) *dynamicpb.Message
+	build func(w *world, p *person, method protoreflect.MethodDescriptor, other otherCampaign) *dynamicpb.Message
 }
 
 var callerVariants = []callerVariant{
-	{"the probe's request", false, func(w *world, p *person, m protoreflect.MethodDescriptor, _ string) *dynamicpb.Message {
+	{"the probe's request", false, func(w *world, p *person, m protoreflect.MethodDescriptor, _ otherCampaign) *dynamicpb.Message {
 		return w.probeRequest(p, m)
 	}},
-	{"every field empty", true, func(_ *world, _ *person, m protoreflect.MethodDescriptor, _ string) *dynamicpb.Message {
+	{"every field empty", true, func(_ *world, _ *person, m protoreflect.MethodDescriptor, _ otherCampaign) *dynamicpb.Message {
 		return dynamicpb.NewMessage(m.Input())
 	}},
-	{"only campaign_id", false, func(w *world, _ *person, m protoreflect.MethodDescriptor, _ string) *dynamicpb.Message {
+	{"only campaign_id", false, func(w *world, _ *person, m protoreflect.MethodDescriptor, _ otherCampaign) *dynamicpb.Message {
 		return setStrings(dynamicpb.NewMessage(m.Input()), func(name string) (string, bool) { return w.campaign, name == "campaign_id" })
 	}},
-	{"an idempotency key that is not a UUID", false, func(w *world, p *person, m protoreflect.MethodDescriptor, _ string) *dynamicpb.Message {
+	{"an idempotency key that is not a UUID", false, func(w *world, p *person, m protoreflect.MethodDescriptor, _ otherCampaign) *dynamicpb.Message {
 		return setStrings(w.probeRequest(p, m), func(name string) (string, bool) { return "not-a-uuid", name == "idempotency_key" })
 	}},
-	{"ids of another campaign", false, func(w *world, p *person, m protoreflect.MethodDescriptor, other string) *dynamicpb.Message {
-		return setStrings(w.probeRequest(p, m), func(name string) (string, bool) {
-			return other, name != "campaign_id" && strings.HasSuffix(name, "_id")
-		})
+	{"ids of another campaign", false, func(w *world, p *person, m protoreflect.MethodDescriptor, other otherCampaign) *dynamicpb.Message {
+		return setStrings(w.probeRequest(p, m), other.idFor)
 	}},
 }
 
@@ -54,12 +54,46 @@ func setStrings(m *dynamicpb.Message, pick func(name string) (string, bool)) *dy
 	return m
 }
 
-// secondCampaign creates a campaign whose master is the stranger: the "other campaign" of
-// the ids that the probe sends in place of the fixture's.
-func (w *world) secondCampaign(t *testing.T) string {
+// otherCampaign is a campaign whose master is the stranger, with the objects of it that the
+// probe's ids can name.
+type otherCampaign struct{ id, mapID, pointID, characterID, imageID string }
+
+// idFor is the id of the other campaign for the field called name: the map, the point, the
+// character or the image that exists there for the fields that name one, the campaign's own
+// id for any other *_id field, and none for the rest (campaign_id keeps the fixture's).
+func (o otherCampaign) idFor(name string) (string, bool) {
+	switch name {
+	case "campaign_id":
+		return "", false
+	case "map_id", "target_map_id":
+		return o.mapID, true
+	case "map_point_id", "point_id", "scene_point_id":
+		return o.pointID, true
+	case "character_id", "caster_character_id", "as_character_id":
+		return o.characterID, true
+	case "image_id", "portrait_image_id":
+		return o.imageID, true
+	}
+	return o.id, strings.HasSuffix(name, "_id")
+}
+
+// secondCampaign creates a campaign whose master is the stranger, with a map, a point on it,
+// an NPC and a gallery image: the "other campaign" of the ids that the probe sends in place
+// of the fixture's.
+func (w *world) secondCampaign(t *testing.T) otherCampaign {
 	t.Helper()
-	res := must(w.stranger.campaigns.CreateCampaign(t.Context(), rq(&campaignsv1.CreateCampaignRequest{Name: "Other", XpMode: campaignsv1.XpMode_XP_MODE_MILESTONES})))
-	return res.GetCampaign().GetId()
+	ctx := t.Context()
+	s := w.stranger
+	id := must(s.campaigns.CreateCampaign(ctx, rq(&campaignsv1.CreateCampaignRequest{Name: "Other", XpMode: campaignsv1.XpMode_XP_MODE_MILESTONES}))).GetCampaign().GetId()
+	img := s.upload(id, "img.png", pngOf(40, 40, 1))
+	mapID := must(s.maps.CreateMap(ctx, rq(&mapsv1.CreateMapRequest{CampaignId: id, Name: "Outro mapa", ImageId: img}))).GetMap().GetId()
+	x, y := at(2, 2)
+	point := must(s.maps.CreateMapPoint(ctx, rq(&mapsv1.CreateMapPointRequest{CampaignId: id, MapId: mapID, Kind: mapsv1.MapPointKind_MAP_POINT_KIND_BATTLE, Name: "Outro ponto", XBp: x, YBp: y}))).GetPoint().GetId()
+	npc := must(s.characters.CreateCharacter(ctx, rq(&charactersv1.CreateCharacterRequest{
+		CampaignId: id, Kind: charactersv1.CharacterKind_CHARACTER_KIND_MINION, Name: "Outro NPC",
+		Sheet: &charactersv1.CharacterSheet{Content: &charactersv1.CharacterSheet_Basic{Basic: &charactersv1.BasicSheet{HitPointsMax: 10, ArmorClass: 10, SpeedFt: 30}}},
+	}))).GetCharacter().GetId()
+	return otherCampaign{id: id, mapID: mapID, pointID: point, characterID: npc, imageID: img}
 }
 
 // errorOf is the Connect error code and message of a failed call, empty for a successful one.
@@ -80,9 +114,11 @@ func (w *world) wantCode(procedure string, c class, p, anon *person, v callerVar
 		return "unauthenticated", true
 	case c == signedInCall:
 		return "", false
+	case v.empty:
+		return "not_found", true // no campaign exists, for a pending member too
 	case p == w.pending && authz.PendingMayCall(procedure):
 		return "", false
-	case p == w.pending || p == w.stranger || v.empty:
+	case p == w.pending || p == w.stranger:
 		return "not_found", true
 	case c == masterWrite:
 		return "permission_denied", true
