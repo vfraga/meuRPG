@@ -651,6 +651,17 @@ func (c *content) asPlayer() *content {
 	return &x
 }
 
+// ForMasterPicks is the same content for the table's master, whom a new skill or expertise that no list places never
+// refuses at a level-up: the fit issue tells it on the sheet, as on a save. It shares the data with c.
+func (c *Content) ForMasterPicks() *Content {
+	if c.c.unlisted {
+		return c
+	}
+	x := *c.c
+	x.unlisted = true
+	return &Content{c: &x}
+}
+
 // StoredIssues are the things a stored entry holds that the content leaves out while the entry loads: a key a choice of
 // tools lists that no tool choice offers. The master reads them on the entry; a write that holds one is refused.
 func (c *Content) StoredIssues() []*OverlayError { return slices.Clone(c.c.kept) }

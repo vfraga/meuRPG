@@ -200,6 +200,90 @@ describe('SaveFlow', () => {
     expect(updated[1]).toMatchObject({ name: 'Lacaio', full: null, basic: BASIC });
   });
 
+  it('keeps the server sentence for the field of the pick, opens its step, says only where to look above the buttons, and clears together', async () => {
+    const opened: string[] = [];
+    const sentence =
+      'Não há vaga para a perícia Furtividade: as listas que a oferecem já estão preenchidas pelas outras perícias marcadas. Desmarque uma delas para marcar Furtividade.';
+    createResult = () =>
+      Promise.reject(
+        new ConnectError(
+          `sheet.full.skill_proficiency_keys[2] ${sentence}`,
+          Code.InvalidArgument,
+          undefined,
+          [
+            {
+              desc: InvalidFieldSchema,
+              value: create(InvalidFieldSchema, { field: 'sheet.full.skill_proficiency_keys[2]' }),
+            },
+          ],
+        ),
+      );
+    const save = flow({
+      openStep: (step) => opened.push(step),
+      full: () =>
+        ({
+          ...FULL,
+          skillProficiencies: ['skill:a', 'skill:b', 'skill:stealth'],
+        }) as CharacterFormValue,
+    });
+    await save.run(ready(), false);
+    expect(save.pickProblems()).toEqual(new Map([['skill:skill:stealth', sentence]]));
+    expect(save.skillProblem()).toBe(true);
+    expect(save.toolProblems().size).toBe(0);
+    expect(opened).toEqual(['pericias']);
+    expect(save.state()).toEqual({ status: 'error', message: 'Veja o passo Perícias.' });
+    save.clearPickProblem();
+    expect(save.pickProblems().size).toBe(0);
+    expect(save.state()).toEqual({ status: 'idle' });
+    // A save that is refused another way is not cleared by it.
+    createResult = () => Promise.reject(new Error('down'));
+    await save.run(ready(), false);
+    save.clearPickProblem();
+    expect(save.state().status).toBe('error');
+  });
+
+  it('names the pick the request sent, not the one now at that place when the person edited meanwhile', async () => {
+    const sentence =
+      'Não há vaga para a perícia Furtividade: as listas que a oferecem já estão preenchidas pelas outras perícias marcadas. Desmarque uma delas para marcar Furtividade.';
+    const field = 'sheet.full.skill_proficiency_keys[1]';
+    let picks = ['skill:a', 'skill:stealth'];
+    createResult = () => {
+      picks = ['skill:a', 'skill:other'];
+      return Promise.reject(
+        new ConnectError(`${field} ${sentence}`, Code.InvalidArgument, undefined, [
+          { desc: InvalidFieldSchema, value: create(InvalidFieldSchema, { field }) },
+        ]),
+      );
+    };
+    const save = flow({
+      full: () => ({ ...FULL, skillProficiencies: picks }) as CharacterFormValue,
+    });
+    await save.run(ready(), false);
+    expect(save.pickProblems()).toEqual(new Map([['skill:skill:stealth', sentence]]));
+  });
+
+  it('puts the sentence of a refused tool pick on the Escolhas step, by the key of the tool', async () => {
+    const opened: string[] = [];
+    const sentence =
+      'A ferramenta Alaúde não está em nenhuma das escolhas de ferramenta do personagem.';
+    const field = 'sheet.full.feature_choice_keys[1]';
+    createResult = () =>
+      Promise.reject(
+        new ConnectError(`${field} ${sentence}`, Code.InvalidArgument, undefined, [
+          { desc: InvalidFieldSchema, value: create(InvalidFieldSchema, { field }) },
+        ]),
+      );
+    const save = flow({
+      openStep: (step) => opened.push(step),
+      full: () => ({ ...FULL, featureChoiceKeys: ['a', 'tool:lute'] }) as CharacterFormValue,
+    });
+    await save.run(ready(), false);
+    expect(save.toolProblems()).toEqual(new Map([['tool:lute', sentence]]));
+    expect(save.skillProblem()).toBe(false);
+    expect(opened).toEqual(['escolhas']);
+    expect(save.state()).toEqual({ status: 'error', message: 'Veja o passo Escolhas.' });
+  });
+
   it('saves nothing for an edit with no character, and is idle', async () => {
     const save = flow();
     await save.run(ready({ mode: 'edit', characterId: null }), false);

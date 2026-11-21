@@ -102,6 +102,26 @@ func (c *content) toolSpec(owner string) (picks int, from []string, open, ok boo
 	return picks, from, open, ok
 }
 
+// toolSources are the lists the owner's tool choices offer, one source each: the tools the choice lists, its filter names
+// or (with no list) every tool.
+func (c *content) toolSources(owner string) []pickSource {
+	var out []pickSource
+	for _, e := range c.effectChoices(owner, "tool") {
+		var from []string
+		open := false
+		switch {
+		case e.Filter != nil:
+			from = c.proficiencyKeysOfKinds(e.Filter.ProficiencyKinds...)
+		case len(e.From) == 0:
+			open = true
+		default:
+			from = e.From
+		}
+		out = append(out, pickSource{Owner: owner, Count: max(e.Count, 1), From: c.toolsOffered(from, open)})
+	}
+	return out
+}
+
 // toolsOffered are the proficiencies a tool choice offers: the listed ones that a tool choice may name and, when it
 // is open, every tool. Each once.
 func (c *content) toolsOffered(from []string, open bool) []string {

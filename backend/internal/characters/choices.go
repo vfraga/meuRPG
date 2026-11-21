@@ -65,7 +65,7 @@ func (s *Service) PreviewChoices(
 		if err := checkCreatorKind(m, kind); err != nil {
 			return nil, err
 		}
-		if sheet, err = checkNewSheet(content, m, kind, req.Msg.GetSheet()); err != nil {
+		if sheet, err = checkNewSheetOf(content, m, kind, req.Msg.GetSheet(), false, false); err != nil {
 			return nil, err
 		}
 	} else if sheet, notOffered, err = s.sheetForChoices(ctx, m, content, req.Msg.GetCharacterId(), req.Msg.GetSheet()); err != nil {
@@ -110,7 +110,7 @@ func (s *Service) sheetForChoices(ctx context.Context, m authz.Membership, conte
 		return stored, nil, nil
 	}
 	if mayEditSheet(m, row) && row.Status != statusDead {
-		sheet, _, err := s.checkEditedSheet(ctx, m, content, characterID, raw)
+		sheet, _, err := s.checkEditedSheetFor(ctx, m, content, characterID, raw, false)
 		return sheet, nil, err
 	}
 	full := stored.GetFull()
@@ -129,7 +129,7 @@ func (s *Service) sheetForChoices(ctx context.Context, m authz.Membership, conte
 	fresh := newKeptOutPicks(viewContent(content, m), func() *charactersv1.FullSheet { return full }, over)
 	over.FeatureChoiceKeys = slices.DeleteFunc(over.FeatureChoiceKeys, func(k string) bool { return slices.Contains(fresh, k) })
 	// A pick is new when the stored sheet lacks it: what the master archived or switched off is not a new choice.
-	if err := refuseNewChoices(content, m, row.ID, full, over); err != nil {
+	if err := refuseNewChoicesFor(content, m, row.ID, full, over, false); err != nil {
 		return nil, nil, err
 	}
 	return &charactersv1.CharacterSheet{Content: &charactersv1.CharacterSheet_Full{Full: over}}, fresh, nil
@@ -141,6 +141,9 @@ func choicesToProto(content *rules.Content, b rules.Build) *charactersv1.Preview
 	set := content.Choices(b)
 	done, total := set.Counts()
 	res := &charactersv1.PreviewChoicesResponse{Done: i32(done), Total: i32(total), NotOffered: set.NotOffered}
+	skills, expertise := content.PickLists(b)
+	res.SkillsAllowed = pickAllowedToProto(&skills)
+	res.ExpertiseAllowed = pickAllowedToProto(expertise)
 	for _, g := range set.Groups {
 		res.Groups = append(res.Groups, choiceGroupToProto(g))
 	}
@@ -155,6 +158,13 @@ func choicesToProto(content *rules.Content, b rules.Build) *charactersv1.Preview
 		res.SpellSources = append(res.SpellSources, out)
 	}
 	return res
+}
+
+func pickAllowedToProto(p *rules.PickAllowed) *charactersv1.PickAllowed {
+	if p == nil {
+		return nil
+	}
+	return &charactersv1.PickAllowed{Any: p.Any, Keys: p.Keys}
 }
 
 var (

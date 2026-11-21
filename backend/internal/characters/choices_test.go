@@ -617,3 +617,43 @@ func TestTheLevelUpAsksForTheChoicesAnEarlierLevelLeftOpen(t *testing.T) {
 		t.Errorf("after the level: picks %v, level %d", got, done.GetDerived().GetTotalLevel())
 	}
 }
+
+// A wizard draft of a class changed after two skills were ticked from the old class's list: the preview answers the lists of the
+// draft's sources, not a refusal of the picks that no longer fit (the save is what refuses them), so the pickers show the new
+// class's list. The refusals of what a player may not have stay (a key the content does not have).
+func TestPreviewChoicesAnswersTheListsOfADraftWhoseOldPicksNoLongerFit(t *testing.T) {
+	t.Parallel()
+	tb := newChoiceTable(t)
+	draft := func(class string, skills []string, picks ...string) *charactersv1.CharacterSheet {
+		sheet := choiceSheet("race:human", "", class, "", 1, picks...)
+		sheet.GetFull().SkillProficiencyKeys = skills
+		return sheet
+	}
+	ticked := []string{"skill:athletics", "skill:acrobatics"}
+	check := func(t *testing.T, res *charactersv1.PreviewChoicesResponse, err error) {
+		t.Helper()
+		if err != nil {
+			t.Fatalf("the preview of a draft with picks that no longer fit: %v", err)
+		}
+		keys := res.GetSkillsAllowed().GetKeys()
+		if !slices.Contains(keys, "skill:arcana") || slices.Contains(keys, "skill:athletics") || slices.Contains(keys, "skill:acrobatics") {
+			t.Errorf("skills allowed = %v, want the wizard's list without the picked athletics and acrobatics", keys)
+		}
+	}
+	t.Run("a new draft", func(t *testing.T) {
+		t.Parallel()
+		res, err := tb.preview(tb.ana, "", draft("class:wizard", ticked))
+		check(t, res, err)
+	})
+	t.Run("a character of the player", func(t *testing.T) {
+		t.Parallel()
+		c := tb.ana.create(t, tb.campaign, charactersv1.CharacterKind_CHARACTER_KIND_PLAYER, "Mutante", draft("class:fighter", []string{"skill:perception", "skill:survival"}, "feature:fighter-fighting-style-defense"))
+		res, err := tb.preview(tb.ana, c.GetId(), draft("class:wizard", ticked))
+		check(t, res, err)
+		if res.GetDone() != 3 || res.GetTotal() != 3 {
+			t.Errorf("done %d of %d, want 3 of 3 for the wizard draft", res.GetDone(), res.GetTotal())
+		}
+		_, err = tb.ana.update(t, c, "Mutante", draft("class:wizard", ticked))
+		wantUnfit(t, err, "sheet.full.skill_proficiency_keys[0]", "Atletismo")
+	})
+}

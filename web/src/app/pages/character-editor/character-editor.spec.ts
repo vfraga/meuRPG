@@ -63,7 +63,15 @@ class FakeCharacterEditorSource {
   /** `PreviewChoices`: a draft that asks nothing, unless a spec says otherwise. */
   previewChoicesCalls: PreviewCharacterInput[] = [];
   previewChoicesFn: (input: PreviewCharacterInput) => Promise<ChoicesPreviewVm> = () =>
-    Promise.resolve({ groups: [], done: 0, total: 0, notOffered: [], spellSources: [] });
+    Promise.resolve({
+      groups: [],
+      done: 0,
+      total: 0,
+      notOffered: [],
+      spellSources: [],
+      skillsAllowed: null,
+      expertiseAllowed: null,
+    });
   previewChoices(input: PreviewCharacterInput): Promise<ChoicesPreviewVm> {
     this.previewChoicesCalls.push(input);
     return this.previewChoicesFn(input);
@@ -814,6 +822,121 @@ describe('CharacterEditor', () => {
 
       expect(chosenLines(el)).toContain('Nenhum truque escolhido');
       expect(el.querySelector('.picker__warn')).toBeNull();
+    });
+  });
+
+  describe('the skills the sheet sources allow', () => {
+    async function openCut() {
+      configure({ id: 'camp-1' });
+      fake.loadCatalogFn = () => {
+        const c = catalog();
+        return Promise.resolve({
+          ...c,
+          skills: [...c.skills, { key: 'skill:stealth', namePt: 'Furtividade', ability: 'dex' }],
+        });
+      };
+      const view = await render();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const cmp = view.fixture.componentInstance as any;
+      cmp.fullForm.patchValue({ race: 'race:gnome', className: 'class:wizard' });
+      view.fixture.detectChanges();
+      await openStep(view.fixture, 'Perícias');
+      const names = () =>
+        Array.from(view.el.querySelectorAll('app-skill-picker .skill__name')).map((r) =>
+          r.textContent?.replace(/\s+/g, ' ').trim(),
+        );
+      const answer = (skills: { any: boolean; keys: string[] } | null) => {
+        cmp.server.choices.answer.set({
+          groups: [],
+          done: 0,
+          total: 0,
+          notOffered: [],
+          spellSources: [],
+          skillsAllowed: skills,
+          expertiseAllowed: null,
+        });
+        view.fixture.detectChanges();
+      };
+      return { ...view, cmp, names, answer };
+    }
+
+    it('offers every skill until the server answers, and when a source takes any', async () => {
+      const { names, answer } = await openCut();
+      expect(names()).toEqual(['Arcanismo', 'História', 'Furtividade']);
+      answer({ any: true, keys: [] });
+      expect(names()).toEqual(['Arcanismo', 'História', 'Furtividade']);
+    });
+
+    it('cuts the list to the allowed skills and keeps one the sheet holds, so it can be taken off', async () => {
+      const { cmp, names, answer, fixture } = await openCut();
+      cmp.picks.toggleSkill('skill:stealth');
+      answer({ any: false, keys: ['skill:arcana'] });
+      expect(names()).toEqual(['Arcanismo', 'Furtividade']);
+      cmp.picks.toggleSkill('skill:stealth');
+      fixture.detectChanges();
+      expect(names()).toEqual(['Arcanismo']);
+    });
+
+    it('keeps the row of a skill the sheet held when it was opened after it is taken off, so it can be ticked again', async () => {
+      const { cmp, names, answer, fixture, el } = await openCut();
+      cmp.picks.toggleSkill('skill:stealth');
+      cmp.picks.heldAtOpen.set(new Set(['skill:stealth']));
+      cmp.picks.toggleSkill('skill:stealth');
+      answer({ any: false, keys: ['skill:arcana'] });
+      expect(names()).toEqual(['Arcanismo', 'Furtividade']);
+      const box = () =>
+        Array.from(el.querySelectorAll<HTMLInputElement>('app-skill-picker .skill__name input'))[1];
+      expect(box().checked).toBe(false);
+      box().click();
+      fixture.detectChanges();
+      expect(box().checked).toBe(true);
+    });
+
+    it('says nothing of a held skill no list allows: its row reads as its name alone', async () => {
+      const { cmp, names, answer } = await openCut();
+      cmp.picks.toggleSkill('skill:stealth');
+      answer({ any: false, keys: ['skill:arcana'] });
+      expect(names()).toEqual(['Arcanismo', 'Furtividade']);
+    });
+
+    it("answers the new class's list after a class change, keeps the old picks ticked and lets them be taken off", async () => {
+      const { cmp, names, answer, fixture, el } = await openCut();
+      answer({ any: false, keys: ['skill:stealth', 'skill:history', 'skill:arcana'] });
+      cmp.picks.toggleSkill('skill:stealth');
+      cmp.picks.toggleSkill('skill:history');
+      fixture.detectChanges();
+      cmp.fullForm.patchValue({ className: 'class:wizard' });
+      answer({ any: false, keys: ['skill:arcana'] });
+      expect(names()).toEqual(['Arcanismo', 'História', 'Furtividade']);
+      const boxes = () =>
+        Array.from(el.querySelectorAll<HTMLInputElement>('app-skill-picker .skill__name input'));
+      expect(boxes().map((b) => b.checked)).toEqual([false, true, true]);
+      boxes()[2].click();
+      fixture.detectChanges();
+      expect(names()).toEqual(['Arcanismo', 'História']);
+      expect(boxes().map((b) => b.checked)).toEqual([false, true]);
+    });
+
+    it('clears the refusal on the step when a pick, a tool pick or the class, race or background changes', async () => {
+      const { cmp, fixture } = await openCut();
+      const refuse = () => {
+        cmp.saving.pickProblems.set(new Map([['skill:stealth', 'Uma frase do servidor.']]));
+        cmp.saving.state.set({ status: 'error', message: 'Veja o passo Perícias.' });
+      };
+      for (const act of [
+        () => cmp.picks.toggleSkill('skill:arcana'),
+        () => cmp.picks.toggleExpertise('skill:arcana'),
+        () => cmp.fullForm.patchValue({ className: 'class:rogue' }),
+        () => cmp.picks.featureChoiceKeys.set(['trait:x@mesa#tool=proficiency:lute']),
+        () => cmp.fullForm.patchValue({ race: '', subrace: '' }),
+        () => cmp.fullForm.patchValue({ background: 'background:acolyte' }),
+      ]) {
+        refuse();
+        act();
+        fixture.detectChanges();
+        expect(cmp.saving.pickProblems().size).toBe(0);
+        expect(cmp.saving.state().status).toBe('idle');
+      }
     });
   });
 

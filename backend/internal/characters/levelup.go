@@ -424,6 +424,11 @@ func levelUpOptionsFor(m authz.Membership, r levelUpOptionsRead) *charactersv1.L
 	out := levelUpOptionsToProto(r.offer)
 	out.ClassChoices = classChoicesToProto(t.content, m, rules.LevelUpClasses(t.build, t.content))
 	out.Feats = featOptionsToProto(r.offer.Feats, t.rules.FeatsAllowed, isMaster(m))
+	view := viewContent(t.content, m)
+	out.SkillSources = skillSourcesToProto(view, t.build, r.offer.SkillSources)
+	for i, sub := range r.offer.Subclasses {
+		out.Subclasses[i].SkillSources = skillSourcesToProto(view, t.build, sub.SkillSources)
+	}
 	if !t.rules.PickSwapAllowed {
 		out.SwapGroups = nil // the table does not use the swap rule
 	}
@@ -440,6 +445,20 @@ func levelUpOptionsFor(m authz.Membership, r levelUpOptionsRead) *charactersv1.L
 	return out
 }
 
+// skillSourcesToProto is the level's skill sources as the reader sees them: the names are the content's visible ones and each
+// option says whether the sheet has the skill.
+func skillSourcesToProto(view *rules.Content, b rules.Build, in []rules.LevelSkillSource) []*charactersv1.LevelUpSkillSource {
+	var out []*charactersv1.LevelUpSkillSource
+	for _, src := range in {
+		p := &charactersv1.LevelUpSkillSource{OwnerKey: src.Owner, NamePt: view.NamePT(src.Owner), Count: i32(src.Count)}
+		for _, k := range src.From {
+			p.From = append(p.From, &charactersv1.LevelUpProficiencyOption{Key: k, NamePt: view.NamePT(k), AlreadyHave: slices.Contains(b.SkillProficiencies, k)})
+		}
+		out = append(out, p)
+	}
+	return out
+}
+
 // hideFromPlayer takes out of a player's options what the master retired or
 // switched off (RN-23), unless the character's own sheet already uses it.
 func hideFromPlayer(out *charactersv1.LevelUpOptions, t levelUpTarget) {
@@ -447,6 +466,8 @@ func hideFromPlayer(out *charactersv1.LevelUpOptions, t levelUpTarget) {
 	out.Subclasses = slices.DeleteFunc(out.Subclasses, func(sub *charactersv1.LevelUpSubclass) bool {
 		return (sub.GetArchived() || sub.GetOff()) && !slices.ContainsFunc(t.build.Classes, func(c rules.ClassLevel) bool { return c.Subclass == sub.GetKey() })
 	})
+	// Nor a source of skills that is an entry the master retired or switched off, unless the sheet uses it.
+	out.SkillSources = slices.DeleteFunc(out.SkillSources, func(src *charactersv1.LevelUpSkillSource) bool { return hiddenOption(t, src.GetOwnerKey()) })
 	// Nor an option to swap to that the master retired or switched off.
 	for _, g := range out.SwapGroups {
 		g.Pool = slices.DeleteFunc(g.Pool, func(k *charactersv1.LevelUpNamedKey) bool { return hiddenOption(t, k.GetKey()) })

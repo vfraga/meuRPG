@@ -57,11 +57,14 @@ func (c *content) isToolKey(key string) bool {
 // proficiencyPick is a language or a tool picked through a choice, and the owner that granted it.
 type proficiencyPick struct{ Value, Owner string }
 
-// pickedProficiencies are the languages and the tools the picks of Build.FeatureChoices give: the ones whose owner
-// is on the sheet (owned) and grants a pick with room left, that the owner offers, none picked before. In the order
-// of the picks.
-func (c *content) pickedProficiencies(b Build, owned func(string) bool) (languages, tools []proficiencyPick) {
+// pickedProficiencies are the languages and the tools the picks of Build.FeatureChoices give.
+// A pick counts when its owner is on the sheet, the owner offers it, and none before it was the same.
+// A language pick also needs room left under languageGrant.
+// The tools of an owner are placed in its tool choices, and the picks of the third result are the ones no placement takes.
+// Those count, up to the slots the placed picks leave the owner; the rest are over the count and count for nothing.
+func (c *content) pickedProficiencies(b Build, owned func(string) bool) (languages, tools, unplaced []proficiencyPick) {
 	taken := map[string]int{}
+	var offered []proficiencyPick
 	for _, stored := range b.FeatureChoices {
 		choiceKey, value, ok := SplitScopedChoice(stored)
 		if !ok {
@@ -73,32 +76,88 @@ func (c *content) pickedProficiencies(b Build, owned func(string) bool) (languag
 				languages = append(languages, proficiencyPick{Value: value, Owner: owner})
 			}
 		} else if owner, isTool := strings.CutSuffix(choiceKey, toolPickSuffix); isTool {
-			if owned(owner) && c.toolPickFits(owner, value, taken[choiceKey]) && !hasPick(tools, value) {
-				taken[choiceKey]++
-				tools = append(tools, proficiencyPick{Value: value, Owner: owner})
+			if owned(owner) && c.toolOffers(owner, value) && !hasPick(offered, value) {
+				offered = append(offered, proficiencyPick{Value: value, Owner: owner})
 			}
 		}
 	}
-	return languages, tools
+	tools, left := c.placeToolPicks(offered)
+	return languages, tools, c.unplacedWithinCount(tools, left)
+}
+
+// toolSlots is how many tool picks the owner's choices take in all.
+func (c *content) toolSlots(owner string) int {
+	n := 0
+	for _, s := range c.toolSources(owner) {
+		n += s.Count
+	}
+	return n
+}
+
+// unplacedWithinCount keeps, of the picks the placement left out, as many of each owner as the owner has slots left.
+func (c *content) unplacedWithinCount(placed, left []proficiencyPick) []proficiencyPick {
+	room := map[string]int{}
+	for _, p := range left {
+		room[p.Owner] = c.toolSlots(p.Owner)
+	}
+	for _, p := range placed {
+		room[p.Owner]--
+	}
+	var out []proficiencyPick
+	for _, p := range left {
+		if room[p.Owner] > 0 {
+			room[p.Owner]--
+			out = append(out, p)
+		}
+	}
+	return out
 }
 
 func hasPick(picks []proficiencyPick, value string) bool {
 	return slices.ContainsFunc(picks, func(p proficiencyPick) bool { return p.Value == value })
 }
 
-// toolPickFits says the owner grants a tool pick with room left (taken are the ones made already) and offers the tool.
-func (c *content) toolPickFits(owner, tool string, taken int) bool {
-	picks, from, open, ok := c.toolSpec(owner)
-	if !ok || taken >= picks {
-		return false
+// toolOffers says some tool choice of the owner offers the tool.
+func (c *content) toolOffers(owner, tool string) bool {
+	_, from, open, ok := c.toolSpec(owner)
+	return ok && slices.Contains(c.toolsOffered(from, open), tool)
+}
+
+// placeToolPicks splits the picks into the ones an owner's tool choices take (each choice takes its count of the tools it
+// lists) and the ones left over, each in the order of the picks.
+func (c *content) placeToolPicks(picks []proficiencyPick) (placed, unplaced []proficiencyPick) {
+	byOwner := map[string][]int{}
+	next := map[string]int{}
+	for _, p := range picks {
+		if _, done := byOwner[p.Owner]; done {
+			continue
+		}
+		var values []string
+		for _, q := range picks {
+			if q.Owner == p.Owner {
+				values = append(values, q.Value)
+			}
+		}
+		byOwner[p.Owner] = matchPicks(c.toolSources(p.Owner), values)
 	}
-	return slices.Contains(c.toolsOffered(from, open), tool)
+	for _, p := range picks {
+		i := next[p.Owner]
+		next[p.Owner]++
+		if byOwner[p.Owner][i] >= 0 {
+			placed = append(placed, p)
+		} else {
+			unplaced = append(unplaced, p)
+		}
+	}
+	return placed, unplaced
 }
 
 // proficiencyPicks reads the language and tool picks of the sheet, once the effects are collected.
 func (x *deriver) proficiencyPicks() {
 	onSheet := ownedBy(x.b, *x.d)
-	x.pickedLanguages, x.pickedTools = x.c.pickedProficiencies(x.b, func(k string) bool { return x.owned[k] || onSheet(k) })
+	var placed []proficiencyPick
+	x.pickedLanguages, placed, x.unplacedTools = x.c.pickedProficiencies(x.b, func(k string) bool { return x.owned[k] || onSheet(k) })
+	x.pickedTools = slices.Concat(placed, x.unplacedTools)
 }
 
 // listedNames adds to the sheet's list the names the player typed in a free field, once each: a name the sheet

@@ -164,3 +164,9 @@
   color: var(--mat-sys-primary);
   cursor: pointer;
 }
+
+.choice__error {
+  display: block;
+  margin: 8px 0 0;
+  font: var(--mat-sys-body-small);
+}

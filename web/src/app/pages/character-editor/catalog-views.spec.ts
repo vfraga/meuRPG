@@ -11,6 +11,7 @@ import {
   bonusWords,
   catalogNameOf,
   chosenSkillsOf,
+  pickableSkillsOf,
   choiceBonusesHintOf,
   sizeChoicesOf,
   choicesSubtitleOf,
@@ -269,6 +270,23 @@ describe('the skills the lists give', () => {
     expect([...chosenSkillsOf(new Set(['skill:arcana', 'skill:history']), granted)]).toEqual([
       'skill:history',
     ]);
+  });
+});
+
+describe('pickableSkillsOf', () => {
+  const all = [{ key: 'skill:arcana' }, { key: 'skill:history' }, { key: 'skill:stealth' }];
+
+  it('offers every skill until the server has answered, and when a source takes any', () => {
+    expect(pickableSkillsOf(all, null, new Set())).toEqual(all);
+    expect(pickableSkillsOf(all, { any: true, keys: [] }, new Set())).toEqual(all);
+  });
+
+  it('cuts the list to the allowed keys and keeps every skill the sheet holds or is given', () => {
+    const allowed = { any: false, keys: ['skill:arcana'] };
+    expect(pickableSkillsOf(all, allowed, new Set())).toEqual([all[0]]);
+    expect(pickableSkillsOf(all, allowed, new Set(['skill:stealth', 'skill:history']))).toEqual(
+      all,
+    );
   });
 });
 

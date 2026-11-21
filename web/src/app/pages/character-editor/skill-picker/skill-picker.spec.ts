@@ -48,6 +48,26 @@ describe('SkillPicker', () => {
     expect(el.textContent).toContain('1 perícia marcada, 1 com especialização');
   });
 
+  it('only enables expertise on a skill the expertise list allows, or one that already holds it', () => {
+    const { fixture, el } = render(
+      ['skill:acrobatics', 'skill:arcana', 'skill:history'],
+      ['skill:history'],
+    );
+    fixture.componentRef.setInput('expertiseAllowed', new Set(['skill:arcana']));
+    fixture.detectChanges();
+
+    const expertise = Array.from(el.querySelectorAll<HTMLInputElement>('.skill__expertise input'));
+    expect(expertise.map((i) => i.disabled)).toEqual([true, false, false]);
+  });
+
+  it('shows a held skill no list allows like any other, with no mark', () => {
+    const { el } = render(['skill:history']);
+    expect(el.textContent).not.toContain('fora das listas');
+    const boxes = Array.from(el.querySelectorAll<HTMLInputElement>('.skill__name input'));
+    expect(boxes.map((i) => i.checked)).toEqual([false, false, true]);
+    expect(boxes.every((i) => !i.disabled)).toBe(true);
+  });
+
   it('reports clicks without changing anything itself', () => {
     const { fixture, el } = render([]);
     const toggled: string[] = [];
@@ -83,5 +103,31 @@ describe('SkillPicker', () => {
 
     const expertise = Array.from(el.querySelectorAll<HTMLInputElement>('.skill__expertise input'));
     expect(expertise.map((i) => i.disabled)).toEqual([true, true, false]);
+  });
+
+  it('shows the server sentence of a refused skill or expertise under its row, as an error', () => {
+    const { fixture, el } = render(['skill:arcana'], ['skill:arcana']);
+    fixture.componentRef.setInput(
+      'problems',
+      new Map([
+        ['skill:skill:arcana', 'Não há vaga para a perícia Arcanismo.'],
+        ['expertise:skill:arcana', 'A especialização em Arcanismo não está em lista.'],
+      ]),
+    );
+    fixture.detectChanges();
+
+    const errors = Array.from(el.querySelectorAll('mat-error'));
+    expect(errors.map((e) => e.textContent?.trim())).toEqual([
+      'Não há vaga para a perícia Arcanismo.',
+      'A especialização em Arcanismo não está em lista.',
+    ]);
+    expect(el.querySelectorAll('.skill ~ mat-error').length).toBe(2);
+    // The sentence describes the focusable input inside the checkbox, not only its host.
+    const described = (selector: string) =>
+      Array.from(el.querySelectorAll<HTMLInputElement>(selector))
+        .map((i) => i.getAttribute('aria-describedby'))
+        .filter((id) => !!id);
+    expect(described('.skill__name input')).toEqual(['pick-error-skill:skill:arcana']);
+    expect(described('.skill__expertise input')).toEqual(['pick-error-expertise:skill:arcana']);
   });
 });

@@ -29,6 +29,10 @@ type content struct {
 	// builds for a card name no hidden race, feat or feature (RN-23).
 	player bool
 
+	// unlisted says the reader is the table's master, whom the pick fit never refuses: a new skill or expertise no list
+	// allows is saved with the fit issue (Content.ForMasterPicks).
+	unlisted bool
+
 	abilities     map[Ability]srd51.AbilityScore
 	skills        map[string]*srd51.Skill
 	skillOrder    []string

@@ -1,8 +1,9 @@
-import { signal } from '@angular/core';
+import { computed, signal } from '@angular/core';
 
 import {
   describeCharacterError,
   invalidFieldPath,
+  pickRefusalAt,
   switchedOffKey,
 } from '../../core/characters/character-errors';
 import { ActionKey } from '../../core/connect/idempotency';
@@ -16,6 +17,7 @@ import type {
   UpdateCharacterInput,
 } from './character-editor.types';
 import type { ReadyState } from './editor-state';
+import type { EditorStepKey } from './editor-labels';
 
 /** The class block a refusal points at (`full.classes[i]`), so the block says so; `null` for any other refusal. */
 export function classBlockOfRefusal(err: unknown): number | null {
@@ -68,6 +70,8 @@ export interface SaveFlowContext {
   /** Gives the field holding a switched-off key its error; false when no field holds it. */
   readonly markSwitchedOff: (key: string) => boolean;
   readonly refreshCatalog: () => Promise<void>;
+  /** Opens a step of the editor, so a refusal that is about its field is on screen. */
+  readonly openStep?: (step: EditorStepKey) => void;
 }
 
 /**
@@ -78,21 +82,52 @@ export class SaveFlow {
   readonly state = signal<SavingState>(IDLE_SAVING);
   /** The class block a refusal points at (`full.classes[i]`), so the block says so. */
   readonly classProblem = signal<number | null>(null);
+  /**
+   * The server's sentence for a skill, an expertise or a tool no list allows, by the pick it is about (`skill:<key>`,
+   * `expertise:<key>` or `tool:<key>`); each shows on the field of its pick. Empty when none.
+   */
+  readonly pickProblems = signal<ReadonlyMap<string, string>>(new Map());
+  /** The "Perícias" step holds a refused pick: a skill or an expertise. */
+  readonly skillProblem = computed(() =>
+    [...this.pickProblems().keys()].some((k) => !k.startsWith('tool:')),
+  );
+  /** The "Escolhas" step holds a refused tool pick. */
+  readonly toolProblems = computed(
+    () =>
+      new Map(
+        [...this.pickProblems()]
+          .filter(([k]) => k.startsWith('tool:'))
+          .map(([k, v]) => [k.slice('tool:'.length), v] as const),
+      ),
+  );
   private readonly createKey = new ActionKey();
 
   constructor(private readonly host: SaveFlowContext) {}
 
+  /** The refusal of a pick goes, and so does the notice that points to it. */
+  clearPickProblem(): void {
+    if (this.pickProblems().size === 0) {
+      return;
+    }
+    this.pickProblems.set(new Map());
+    this.state.update((s) => (s.status === 'error' ? { status: 'idle' } : s));
+  }
+
   /** A reused page starts from nothing. */
   reset(): void {
     this.classProblem.set(null);
+    this.pickProblems.set(new Map());
     this.state.set({ status: 'idle' });
   }
 
   /** Saves; the person may have left meanwhile, and then the save still ends on the server but nothing else happens. */
   async run(s: ReadyState, isBasic: boolean): Promise<void> {
     this.state.set({ status: 'saving' });
+    this.pickProblems.set(new Map());
     // The save finishes on the server whatever the person does meanwhile; only the navigation depends on still being here.
     const stillHere = this.host.stillHere();
+    // The picks the request sends: a refusal names a pick by its place in them, whatever the person changes while it travels.
+    const sent = isBasic ? null : this.host.full();
     try {
       if (!(await this.persist(s, isBasic, stillHere))) {
         return;
@@ -102,7 +137,7 @@ export class SaveFlow {
       if (!stillHere()) {
         return;
       }
-      this.refused(err);
+      this.refused(err, sent);
     }
   }
 
@@ -153,9 +188,42 @@ export class SaveFlow {
     };
   }
 
+  /** The pick a refusal is about, found in the lists the request sent; `null` when it is another refusal or the list moved on. */
+  private pickRefused(
+    err: unknown,
+    full: CharacterFormValue | null,
+  ): { id: string; sentence: string; step: EditorStepKey } | null {
+    const at = pickRefusalAt(err);
+    if (!at) {
+      return null;
+    }
+    if (!full) {
+      return null;
+    }
+    const list =
+      at.kind === 'skill'
+        ? full.skillProficiencies
+        : at.kind === 'expertise'
+          ? full.expertiseSkillKeys
+          : full.featureChoiceKeys;
+    const key = list[at.index];
+    return key === undefined
+      ? null
+      : {
+          id: `${at.kind}:${key}`,
+          sentence: at.sentence,
+          step: at.kind === 'tool' ? 'escolhas' : 'pericias',
+        };
+  }
+
   /** The server refused: a refusal that names a key says it by name; one that points at a class block marks that block. */
-  private refused(err: unknown): void {
+  private refused(err: unknown, sent: CharacterFormValue | null): void {
     this.classProblem.set(classBlockOfRefusal(err));
+    const pick = this.pickRefused(err, sent);
+    this.pickProblems.set(pick ? new Map([[pick.id, pick.sentence]]) : new Map());
+    if (pick) {
+      this.host.openStep?.(pick.step);
+    }
     // An option the master switched off after the lists were read is an error on its field (E10-01 state 5). The name is
     // taken before the lists are read again, because the entry may be gone from them.
     const refused = switchedOffKey(err);
@@ -165,7 +233,9 @@ export class SaveFlow {
     }
     this.state.set({
       status: 'error',
-      message: describeCharacterError(err, (key) => this.host.nameOfKey(key)),
+      message: pick
+        ? `Veja o passo ${pick.step === 'escolhas' ? 'Escolhas' : 'Perícias'}.`
+        : describeCharacterError(err, (key) => this.host.nameOfKey(key)),
     });
   }
 }

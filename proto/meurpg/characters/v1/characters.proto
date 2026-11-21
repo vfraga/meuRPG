@@ -724,6 +724,11 @@ service CharacterService {
   // Who may call it, the sheet it takes and the errors are those of PreviewCharacter;
   // with a character_id and no sheet, the character's stored sheet is the one read.
   // A basic sheet has no choices (`invalid_argument`).
+  //
+  // A skill, expertise or tool pick that no list of the sheet places is not refused here:
+  // the answer carries the lists of the draft as it is, and the picks stay for the editor
+  // to show and remove; the save refuses them. A key that is no tool, an entry kept out
+  // of the player's view and a closed entry are still refused.
   rpc PreviewChoices(PreviewChoicesRequest) returns (PreviewChoicesResponse) {
     option idempotency_level = IDEMPOTENT;
   }
@@ -2889,6 +2894,13 @@ message LevelUpOptions {
   // the rule and whether the level has an Ability Score Improvement: `group` is the feature's key.
   // Their swap is LevelUpChoices.swap_feature_options.
   repeated LevelUpSwapGroup swap_groups = 44;
+  // The lists the level's new skills come from: the class's multiclass pick when the
+  // level takes a new class, and each feature of the level that lets the player choose
+  // skills. skill_choices stays the total.
+  // LevelUpCharacter judges the sources of the sheet after the level and refuses a player's
+  // new skill that none of them has room for (SKILLS). The master's level is not refused for a pick no
+  // list places; a wrong count or a removed skill still is.
+  repeated LevelUpSkillSource skill_sources = 45;
 
   // Multiclassing (SRD 5.1, "Multiclassing"). is_new_class says the character
   // does not have class_key: the level is the class's first (from_level 0), the hit
@@ -3041,6 +3053,19 @@ message LevelUpSubclass {
   // counts it after the pick).
   bool prepares = 12;
   int32 prepared_max_after = 13;
+  // The lists the subclass's new skills come from, as LevelUpOptions.skill_sources.
+  // skill_choices stays the total.
+  repeated LevelUpSkillSource skill_sources = 15;
+}
+
+// LevelUpSkillSource is a list the level's new skills come from: the class or the
+// feature that lets the player choose `count` of them.
+// An empty `from` means any skill. The options mark the skills the character already has.
+message LevelUpSkillSource {
+  string owner_key = 1;
+  string name_pt = 2;
+  int32 count = 3;
+  repeated LevelUpProficiencyOption from = 4;
 }
 
 // LevelUpFeatureChoice is "choose `choose` of `options`" for a feature the
@@ -3954,6 +3979,21 @@ message PreviewChoicesResponse {
   repeated string not_offered = 4;
   // For each casting class, the spells outside its list.
   repeated ChoiceSpellSource spell_sources = 5;
+  // The skills the sheet's skill sources allow: the starting class, a multiclass pick,
+  // the traits and the effects that let the player choose skills.
+  // The editor offers only these, and the ones the sheet already holds.
+  PickAllowed skills_allowed = 6;
+  // The skills expertise may go on, when every expertise source of the sheet names a list.
+  // Unset when a source takes any skill or the sheet has none: the editor does not cut.
+  PickAllowed expertise_allowed = 7;
+}
+
+// PickAllowed is the keys the sources of a kind of pick allow.
+message PickAllowed {
+  // A source takes any key: nothing is cut and `keys` is empty.
+  bool any = 1;
+  // The keys some source lists, each once.
+  repeated string keys = 2;
 }
 
 // ChoicePick is the player's answer to one choice.

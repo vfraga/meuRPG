@@ -222,6 +222,7 @@ export class CharacterEditor {
     stillHere: () => this.loader.stillHere(),
     nameOfKey: (key) => this.views.nameOfKey(key),
     markSwitchedOff: (key) => this.submitting.markSwitchedOff(key),
+    openStep: (step) => this.submitting.openStep(step),
     refreshCatalog: () => this.refreshCatalog(),
   });
   /** The class block a refusal points at (`full.classes[i]`), so the block says so. */
@@ -308,6 +309,18 @@ export class CharacterEditor {
       if (xp !== null && !control.dirty) {
         untracked(() => control.setValue(xp));
       }
+    });
+    // The refusal of a pick goes when a pick, the class, the race or the background changes.
+    effect(() => {
+      this.picks.selectedSkills();
+      this.picks.expertiseSkills();
+      this.picks.featureChoiceKeys();
+      this.picks.extraClasses();
+      this.views.selectedClass();
+      this.views.selectedRaceKey();
+      this.views.selectedSubraceKey();
+      this.views.selectedBackground();
+      untracked(() => this.saving.clearPickProblem());
     });
     this.destroyRef.onDestroy(() => {
       this.loader.destroy();

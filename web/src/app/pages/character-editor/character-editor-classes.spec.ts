@@ -215,7 +215,15 @@ class FakeSource {
     return Promise.reject(new Error('unused'));
   }
   previewChoices() {
-    return Promise.resolve({ groups: [], done: 0, total: 0, notOffered: [], spellSources: [] });
+    return Promise.resolve({
+      groups: [],
+      done: 0,
+      total: 0,
+      notOffered: [],
+      spellSources: [],
+      skillsAllowed: null,
+      expertiseAllowed: null,
+    });
   }
   createCharacter(input: CreateCharacterInput) {
     this.created.push(input);

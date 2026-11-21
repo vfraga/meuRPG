@@ -43,6 +43,19 @@ What a page or a list shows is a pure function of the catalogue and the form, ea
 | `character-editor-catalog-map.ts`, `character-editor-sheet-map.ts` | The wire to view-model mappers for the catalogue and for the sheet (the form and the init it sends back). |
 | `class-blocks.ts` | The arithmetic only of splitting what the catalogue gives: total level, each level's die after the first (in class order, the order of `HitPoints.rolls`), and the spell sections (one per casting class or casting third-caster subclass, with the list, which class it comes from, and the highest spell level at its level). No prerequisite, hit point or slot is computed there. |
 
+**The skill step's list.**
+The server says which skills the sheet's sources allow, and which skills expertise may go on.
+The step offers those, and every skill the sheet holds, is given, or held when the editor opened.
+A held skill that no list allows stays ticked and can be taken off; the step says nothing of it.
+After a class change `PreviewChoices` answers the new class's lists and counts, and does not refuse the picks that no longer fit (it still refuses an unknown key, a kept-out or a closed entry).
+They stay ticked and removable.
+The save refuses them, at their field, with the server's sentence.
+Until the first answer, or when a source takes any skill, nothing is cut.
+The browser works out no rule of this.
+A save the server refuses for a pick that cannot be placed shows the server's sentence as the error of that pick's own field, for a skill, an expertise or a tool.
+The step is marked, and a short pointer sits above the buttons.
+They go when a pick, the class, the race, the subrace or the background changes.
+
 State several parts share lives in `EditorPicks` and `SpellPicks`, which the component builds first and hands to the other plain classes through `EditorCore`; the page itself keeps only the route, the step and choice-group view children, two effects (the subclass waiting for its level, the starting XP) and the class-block handlers.
 `EditorStepper` builds a step's content the first time it opens and keeps it; the `eager` step ("Habilidades" under table rules) comes from the start.
 

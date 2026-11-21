@@ -173,8 +173,15 @@ func (s *Service) planLevelUp(ctx context.Context, tx pgx.Tx, q *charactersdb.Qu
 		return levelUpPlan{}, err
 	}
 	markRetiredChoices(t, m, &plan)
-	if err := checkPlannedLevel(t, &plan); err != nil {
+	if err := checkPlannedLevel(t, m, &plan); err != nil {
 		return levelUpPlan{}, err
+	}
+	// The level's own refusal of a skill comes first, so a pick is never refused twice with two sentences.
+	if plan.refusal == nil {
+		// The level counts every feature of the level, archived or off ones too, as main does: the fit is read on the same content.
+		if err := refuseUnfitPickIn(t.content, isMaster(m), func() *charactersv1.FullSheet { return t.full }, plan.sheet); err != nil {
+			return levelUpPlan{}, err
+		}
 	}
 	return plan, nil
 }
@@ -343,13 +350,21 @@ func (p *levelUpPlan) markRetired(field string, reason charactersv1.LevelUpRefus
 	}
 }
 
+// levelContent is the content the rules of the level are run on: the master's never refuses a pick no list places.
+func levelContent(c *rules.Content, m authz.Membership) *rules.Content {
+	if isMaster(m) {
+		return c.ForMasterPicks()
+	}
+	return c
+}
+
 // checkPlannedLevel runs the rules of the level on the new sheet, when nothing
 // was refused before.
-func checkPlannedLevel(t levelUpTarget, plan *levelUpPlan) error {
+func checkPlannedLevel(t levelUpTarget, m authz.Membership, plan *levelUpPlan) error {
 	if plan.refusal != nil {
 		return nil
 	}
-	err := rules.CheckLevelUpOf(t.build, t.buildOf(plan.sheet), plan.applied, t.content)
+	err := rules.CheckLevelUpOf(t.build, t.buildOf(plan.sheet), plan.applied, levelContent(t.content, m))
 	if err == nil {
 		return nil
 	}

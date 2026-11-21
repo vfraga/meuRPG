@@ -467,4 +467,49 @@ describe('ChoiceGroups', () => {
       expect(head(el).origin).toBe('Raça · Corujeiro · 1 escolha');
     });
   });
+
+  it('finds the sentence of a refused tool pick by its stored key, owner and all', () => {
+    const owner = 'trait:treinamento@mesa';
+    const g = group(1, ['proficiency:lute']);
+    g.choices[0].options = [
+      create(ChoiceOptionSchema, {
+        key: 'proficiency:lute',
+        storedKey: `${owner}#tool=proficiency:lute`,
+        namePt: 'Alaúde',
+      }),
+      create(ChoiceOptionSchema, {
+        key: 'proficiency:flute',
+        storedKey: `${owner}#tool=proficiency:flute`,
+        namePt: 'Flauta',
+      }),
+    ];
+    const { fixture, el } = setup(g);
+    const sentence =
+      'A ferramenta Alaúde não está em nenhuma das escolhas de ferramenta do personagem.';
+    fixture.componentRef.setInput(
+      'problems',
+      new Map([[`${owner}#tool=proficiency:lute`, sentence]]),
+    );
+    fixture.detectChanges();
+    expect(Array.from(el.querySelectorAll('mat-error')).map((e) => e.textContent?.trim())).toEqual([
+      sentence,
+    ]);
+  });
+
+  it('shows the server sentence of a refused pick as an error under the options of its choice', () => {
+    const { fixture, el } = setup(group(1, ['b']));
+    fixture.componentRef.setInput(
+      'problems',
+      new Map([
+        ['b', 'A ferramenta B não está em nenhuma das escolhas de ferramenta do personagem.'],
+        ['a', 'Sentença de uma opção que não está marcada.'],
+      ]),
+    );
+    fixture.detectChanges();
+
+    const errors = Array.from(el.querySelectorAll('mat-error'));
+    expect(errors.map((e) => e.textContent?.trim())).toEqual([
+      'A ferramenta B não está em nenhuma das escolhas de ferramenta do personagem.',
+    ]);
+  });
 });

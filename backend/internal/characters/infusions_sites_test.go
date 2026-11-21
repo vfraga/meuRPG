@@ -43,6 +43,10 @@ var infusionSites = map[string]string{
 	"combatCharacter": "none: it reads the initiative, the speeds, the size, the hit points and the jumps",
 	"partyMember":     "none: it reads the senses and the passive Perception",
 
+	// The checks of a new pick.
+	"unknownToolPick":       "none: it reads the keys of the picks and the owner of a tool pick, no number an infusion changes",
+	"refuseUnknownNewTools": "none: it reads the keys of the picks and the owner of a tool pick, no number an infusion changes",
+
 	// Reads of the sheet that read a number no infusion changes.
 	"maxima":                      "none: it reads the hit points, the hit dice, the slots, the resources and the states",
 	"fullReactionStats":           "none: it reads whether a shield counts, from the equipped keys",
@@ -79,6 +83,7 @@ var infusionSites = map[string]string{
 	"applyChoicePicksFor":     "none: it reads the choice engine's keys (option keys and the kept-out list) and only appends feature-choice keys and texts; Choices() derives a Build with no Infusions, and applyInfusions only adds item bonuses to AC, attacks and the spell attack, which none of these helpers read",
 	"newKeptOutPicks":         "none: it compares the choice engine's kept-out keys with the stored feature_choice_keys; Choices() derives a Build with no Infusions, and applyInfusions only adds item bonuses to AC, attacks and the spell attack, which none of these helpers read",
 	"newKeptOutField":         "none: it names a field from the rules' build keys (rules.BuildKeys); Choices() derives a Build with no Infusions, and applyInfusions only adds item bonuses to AC, attacks and the spell attack, which none of these helpers read",
+	"refusePickIn":            "none: it places the sheet's skill, expertise and tool picks in their sources; infusions only add item bonuses to AC, attacks and the spell attack, which no source reads",
 	"carryFlags":              "none: it reads the flags of the table's content",
 	"issuesTiedTo":            "none: it reads the flags of the table's content",
 	"newArchivedChoice":       "none: it reads the keys of the sheet",

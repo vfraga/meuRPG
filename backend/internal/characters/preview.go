@@ -76,9 +76,17 @@ func (s *Service) previewDerived(ctx context.Context, content *rules.Content, ch
 // checkEditedSheet is what UpdateCharacter checks before it writes, for the
 // character id: the caller sees it (otherwise not_found), may edit its sheet
 // now (RN-01), the sheet fits the row's kind, and no choice is new that is
-// archived or switched off, judged against the stored sheet. It returns the
-// checked sheet.
+// kept out, closed, unfit or archived or switched off, judged against the stored
+// sheet. The permission answers come first and the stored sheet is read once; the
+// picks are checked once, by refuseNewChoicesFor.
+// It returns the checked sheet.
 func (s *Service) checkEditedSheet(ctx context.Context, m authz.Membership, content *rules.Content, characterID string, raw *charactersv1.CharacterSheet) (*charactersv1.CharacterSheet, string, error) {
+	return s.checkEditedSheetFor(ctx, m, content, characterID, raw, true)
+}
+
+// checkEditedSheetFor is checkEditedSheet where fit says whether a new pick no list places is refused. PreviewChoices passes
+// false: it answers the lists of the draft, and the save refuses the pick.
+func (s *Service) checkEditedSheetFor(ctx context.Context, m authz.Membership, content *rules.Content, characterID string, raw *charactersv1.CharacterSheet, fit bool) (*charactersv1.CharacterSheet, string, error) {
 	id, ok := uid.Canonical(characterID)
 	if !ok {
 		return nil, "", errCharacterNotFound()
@@ -86,9 +94,6 @@ func (s *Service) checkEditedSheet(ctx context.Context, m authz.Membership, cont
 	sheet, err := checkSheet(content, raw)
 	if err != nil {
 		return nil, "", invalidArgument(err)
-	}
-	if err := refuseKeptOutPick(content, m, s.storedSheetOf(ctx, m, id), sheet.GetFull()); err != nil {
-		return nil, "", err
 	}
 	row, err := s.queries.GetCharacter(ctx, charactersdb.GetCharacterParams{CampaignID: m.CampaignID, ID: id})
 	if err != nil {
@@ -107,7 +112,7 @@ func (s *Service) checkEditedSheet(ctx context.Context, m authz.Membership, cont
 	if err != nil {
 		return nil, "", s.dbError(ctx, "read a character to preview its sheet", err)
 	}
-	if err := refuseNewChoices(content, m, row.ID, stored.GetFull(), sheet.GetFull()); err != nil {
+	if err := refuseNewChoicesFor(content, m, row.ID, stored.GetFull(), sheet.GetFull(), fit); err != nil {
 		return nil, "", err
 	}
 	return sheet, row.Name, nil

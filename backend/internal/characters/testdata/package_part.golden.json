@@ -1831,8 +1831,8 @@
                 ],
                 "race_key": "race:gnome",
                 "skill_proficiency_keys": [
-                  "skill:investigation",
-                  "skill:insight"
+                  "skill:medicine",
+                  "skill:nature"
                 ],
                 "subrace_key": "subrace:rock-gnome",
                 "weapon_keys": [
