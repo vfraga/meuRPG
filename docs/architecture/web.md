@@ -2,7 +2,7 @@
 
 `web/` is the Angular app.
 The Go server serves its build on the same origin as the API, so the browser needs no CORS and the session cookie is first-party (ADR-0006).
-This page covers how the app is served and secured, how it is organised, how it talks to the server, and the screens of sign-in, campaigns, invites and claim links.
+This page covers how the app is served and secured, how it is organized, how it talks to the server, and the screens of sign-in, campaigns, invites and claim links.
 How a screen is designed and reviewed is in [Design](../design/README.md).
 
 ## How it is served
