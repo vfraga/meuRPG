@@ -10,7 +10,7 @@ on:
   # No paths filter: the `changes` job selects, so a train (refactor/train-*) always runs the full gate.
   pull_request:
   push:
-    branches: [main]
+    branches: [main, throwaway/train-148-cache-old]
     paths:
       - "backend/**"
       - "proto/**"
@@ -66,7 +66,7 @@ jobs:
   # and manual runs run.
   changes:
     name: changes (what runs)
-    if: ${{ github.repository == 'PuraFome/meuRPG' || github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch' }}
+    if: ${{ true }}
     runs-on: ubuntu-26.04
     timeout-minutes: 5
     env:
@@ -123,7 +123,9 @@ jobs:
         with:
           go-version-file: backend/go.mod
           cache: true
-          cache-dependency-path: backend/go.sum
+          cache-dependency-path: |
+            backend/go.sum
+            backend/zz-nonce.txt
 
       - name: Install buf
         # setup_only: install the pinned buf CLI and nothing else. The steps
@@ -209,7 +211,9 @@ jobs:
         with:
           go-version-file: backend/go.mod
           cache: true
-          cache-dependency-path: backend/go.sum
+          cache-dependency-path: |
+            backend/go.sum
+            backend/zz-nonce.txt
 
       - name: Choose what the linters judge (the ratchet)
         # The linters added on 07/10/2026 (complexity, magic values, test
@@ -288,7 +292,9 @@ jobs:
         with:
           go-version-file: backend/go.mod
           cache: true
-          cache-dependency-path: backend/go.sum
+          cache-dependency-path: |
+            backend/go.sum
+            backend/zz-nonce.txt
 
       - name: govulncheck
         # Invoked directly (rather than golang/govulncheck-action) so the
@@ -364,7 +370,9 @@ jobs:
         with:
           go-version-file: backend/go.mod
           cache: true
-          cache-dependency-path: backend/go.sum
+          cache-dependency-path: |
+            backend/go.sum
+            backend/zz-nonce.txt
 
       - name: Load the test database image
         # The image the `database-image` job pulled: this job does not touch the registry.
@@ -462,7 +470,9 @@ jobs:
         with:
           go-version-file: backend/go.mod
           cache: true
-          cache-dependency-path: backend/go.sum
+          cache-dependency-path: |
+            backend/go.sum
+            backend/zz-nonce.txt
 
       - name: Check that the groups cover every package
         # A new package falls into "rest" on its own; this fails if a package named in a group was renamed or deleted.
@@ -492,7 +502,9 @@ jobs:
         with:
           go-version-file: backend/go.mod
           cache: true
-          cache-dependency-path: backend/go.sum
+          cache-dependency-path: |
+            backend/go.sum
+            backend/zz-nonce.txt
 
       - name: Check the names
         run: .github/scripts/cockroach-only.sh check-names
@@ -574,7 +586,9 @@ jobs:
         with:
           go-version-file: backend/go.mod
           cache: true
-          cache-dependency-path: backend/go.sum
+          cache-dependency-path: |
+            backend/go.sum
+            backend/zz-nonce.txt
 
       - name: Download the groups' profiles
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
