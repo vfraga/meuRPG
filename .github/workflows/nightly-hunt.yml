@@ -174,11 +174,7 @@ jobs:
           persist-credentials: false
 
       - name: Set up Go
-        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
-        with:
-          go-version-file: backend/go.mod
-          cache: true
-          cache-dependency-path: backend/go.sum
+        uses: ./.github/actions/go-modules
 
       - name: Install gotestsum (pinned)
         run: go install "gotest.tools/gotestsum@${GOTESTSUM_VERSION}"

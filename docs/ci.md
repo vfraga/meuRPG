@@ -8,7 +8,7 @@ How to run the same checks locally is in [CONTRIBUTING.md](../CONTRIBUTING.md); 
 
 | Workflow | Runs on | Jobs |
 | --- | --- | --- |
-| `backend` | PRs (all of a train) and pushes to `main` touching `backend/`, `proto/`, `web/`, the `Makefile`, `.node-version` or the Go CI files; nightly; manual | `changes`, `proto`, `go`, `govulncheck`, `go-db` (nine groups, a group check, a list check and a gate), `go-coverage`, `report` |
+| `backend` | PRs (all of a train) and pushes to `main` touching `backend/`, `proto/`, `web/`, the `Makefile`, `.node-version` or the Go CI files; nightly; manual | `changes`, `go modules`, `proto`, `go`, `govulncheck`, `go-db` (nine groups, a group check, a list check and a gate), `go-coverage`, `report` |
 | `web` | `web/`, `proto/error-reasons.json`, `.node-version`, the workflow; every pull request of a train | `test and build`, `coverage` |
 | `e2e` | `backend/`, `proto/`, `web/`, `e2e/`, `deploy/local/`, the `Makefile`, `.node-version`, the workflow; never for a Markdown-only change, except in a train; nightly; manual | `plan`, `lint and typecheck`, `images`, `database`, `playwright` shards, `playwright mobile`, `playwright (every shard passed)`, `report` |
 | `codeql` | PRs (all of a train) touching `backend/`, `web/src/`, `e2e/` or workflows; every push to `main`; weekly | Go (built from `backend/`), JavaScript/TypeScript and GitHub Actions, with the `security-extended` queries; findings go to the Security tab |
@@ -50,6 +50,7 @@ A pull request that touches no file of a workflow still starts it, and its jobs 
 
 | Job | Checks |
 | --- | --- |
+| `go modules` | On `main` only: downloads the Go modules and saves the [module cache](#the-go-module-cache) the other Go jobs restore |
 | `proto` | `buf lint`, `buf format`, `buf breaking` against `main`, and that `buf generate` and `make sqlc` leave the committed generated code unchanged |
 | `go (lint)` | `golangci-lint` as a ratchet, the [complexity limits](#complexity-limits), the [`//nolint` cap](#the-nolint-cap) and the [`play` size cap](#the-play-size-cap). It runs no `go test`: `go-db` runs every package |
 | `govulncheck (called vulnerabilities)` | `govulncheck ./...` (version pinned): fails on a known vulnerability in a module or in the Go standard library that the code actually calls. See [Vulnerability scans](#vulnerability-scans) |
@@ -286,6 +287,23 @@ When `plan` selected nothing, it passes if every one of them was skipped.
 It fails when `plan` failed, or when a shard was cancelled or skipped while the plan selected it.
 A run that starts nothing on a fork skips the gate too.
 
+## The Go module cache
+
+Every Go job except `flake-check`'s sets up Go through `.github/actions/go-modules`.
+That action turns `setup-go`'s own cache off and restores the module cache (`go env GOMODCACHE`) with `actions/cache/restore`.
+The key holds the runner image, the Go version that was set up and the hash of `backend/go.sum`, so a change of either gives a new key.
+Only the `go modules` job of `backend.yml` saves the cache.
+It runs on `main` (a push, the nightly run or a manual run) whenever a Go job runs, downloads the modules (`go mod download`) when the key is not found, and saves them.
+No other job saves, so a job that downloads nothing cannot leave an empty entry under the key.
+A job that does not find the entry downloads the modules it needs.
+`flake-check` sets up Go itself with no cache.
+The cost:
+
+- A pull request never saves, and the `go modules` job does not run on one.
+- A pull request that changes `backend/go.sum` or the Go version finds no entry, so each of its Go jobs downloads what it needs.
+- The Go build cache is not saved, so every job compiles from scratch.
+- The tools some jobs run with `go run` or `go install` (`gocyclo`, `gocognit`, `govulncheck`, `gotestsum`) are not in the saved cache.
+
 ## Vulnerability scans
 
 Two scans look for known vulnerabilities, and they answer different questions.
@@ -316,6 +334,8 @@ What a change can reach from CI, and why a pull request from anywhere can run it
 - **A cache written by a pull request belongs to that pull request.**
   `main` restores only caches written on `main`, so a branch cannot change what `main` builds with.
   `flake-check` runs refs that are not `main`'s and writes no cache ([flake-check](#flake-check)).
+- **Only the `go modules` job saves the Go module cache, and only on `main`.**
+  Every other job that uses the cache restores it only ([The Go module cache](#the-go-module-cache)).
 
 ## Pinning and dependencies
 

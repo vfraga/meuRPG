@@ -5,10 +5,10 @@
   "description": "ESLint for e2e/. A separate package because e2e/ type-checks with TypeScript 7 (the native compiler), which typescript-eslint cannot use yet: it needs the TypeScript 5.x JavaScript API.",
   "devDependencies": {
     "@eslint/js": "10.0.1",
-    "eslint": "10.14.0",
+    "eslint": "10.15.0",
     "eslint-plugin-playwright": "2.12.2",
     "typescript": "5.9.3",
-    "typescript-eslint": "8.72.1"
+    "typescript-eslint": "8.73.0"
   },
   "overrides": {
     "eslint": {

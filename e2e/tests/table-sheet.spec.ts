@@ -5,6 +5,7 @@ import { endOpenSessionRPC } from './live-session-support';
 import { archiveEntryRPC } from './spells-support';
 import { newSignedInContext, showAllPicks, fillChoicesStep } from './support';
 import { passClassStep } from './levelup-support';
+import { method } from './table-rules-support';
 import {
   changeGuardianSkillsRPC,
   createGuardianRPC,
@@ -41,9 +42,9 @@ async function pick(page: Page, label: string, option: string | RegExp): Promise
 /** The "Habilidades" step with the typed way ("Digitar"), the scores given. */
 async function typeScores(page: Page, scores: Record<string, number>): Promise<void> {
   await page.getByRole('tab', { name: 'Habilidades' }).click();
-  await page.locator('.seg__item').filter({ hasText: 'Digitar' }).click();
+  await method(page, 'Digitar');
   for (const [label, value] of Object.entries(scores)) {
-    await page.getByLabel(label, { exact: true }).fill(String(value));
+    await page.locator('input').and(page.getByLabel(label, { exact: true })).fill(String(value));
   }
 }
 

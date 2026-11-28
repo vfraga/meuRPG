@@ -63,9 +63,17 @@ export function wallSquares(): { col: number; row: number }[] {
   ];
 }
 
-/** A way of making scores: the segments are labels over hidden radios, so the label takes the click. */
+/**
+ * A way of making scores: the segments are labels over hidden radios, so the label takes the click.
+ * The browser checks the radio at the click, before the page switches the fields.
+ * So it returns only once the page shows the way as the chosen one: until then, the previous way's fields still answer
+ * to the ability names, and a fill by label can land on one of them.
+ */
 export async function method(page: Page, name: string): Promise<void> {
-  await pickRadio(page.locator('app-table-ability-scores'), new RegExp(`^\\s*(check)?\\s*${name}\\s*$`));
+  const scores = page.locator('app-table-ability-scores');
+  const label = new RegExp(`^\\s*(check)?\\s*${name}\\s*$`);
+  await pickRadio(scores, label);
+  await expect(scores.locator('label.seg__item--on', { hasText: label })).toBeVisible();
 }
 
 /** A value of "Cada quadrado deste desenho vale": a card over a hidden radio, named by its title ("3 m", with a no-break space). */

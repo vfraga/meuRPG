@@ -54,7 +54,7 @@ jobs:
         if: env.DIFF == 'true'
         uses: ./.github/actions/select
         with:
-          pattern: '^(backend/|web/src/|e2e/|\.github/workflows/)'
+          pattern: '^(backend/|web/src/|e2e/|\.github/workflows/|\.github/actions/go-modules/)'
 
   analyze:
     needs: select
@@ -86,10 +86,7 @@ jobs:
 
       - name: Set up Go
         if: matrix.language == 'go'
-        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
-        with:
-          go-version-file: backend/go.mod
-          cache-dependency-path: backend/go.sum
+        uses: ./.github/actions/go-modules
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3

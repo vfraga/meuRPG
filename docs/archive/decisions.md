@@ -341,6 +341,7 @@ These decisions used to open and close the roadmap page.
 
 ### Product: rules RN-01 to RN-12
 
+- **Rules limits (standing rule)** — A rules limit that no signed decision covers follows SRD 5.1, unless following it would reveal hidden information to the players, take the master's authority, or the SRD says nothing on it; any other reason to keep a limit, cost included, is asked of Vinicius. A signed decision is an entry here that names Vinicius or Samuel and decides that limit itself. Vinicius decided 24/11/2026 (status page question 130).
 - **RN-01 (exception: guided level-up)** — while the character "Pode subir de nível", the player may edit the sheet only to add the next level (MR-040, before the MVP). Samuel answered 03/10/2026, question 48. Delivered in Etapa 8 (slice 8.13 server, 8.15 screen).
 - **RN-01 (created-later character, story lock)** — a character created later stays editable until the next session; the story has its own lock released by the master. Vinicius answered 29/09/2026. Status: Decidido.
 - **RN-01 (delivery)** — sheet lock and `CharacterBlocked` delivered in Etapa 4.
@@ -371,6 +372,12 @@ These decisions used to open and close the roadmap page.
 - **RN-12 (question 48)** — before the MVP the player may also level up through the guided sheet edit allowed by RN-01; the full MR-017 screen stays after the MVP. Samuel decided 03/10/2026.
 - **RN-12 (question 49)** — who sees the level-up notice: the master and the player. Samuel decided 03/10/2026.
 - **RN-12 (delivery)** — `next_level_xp` slice 7.1; `can_level_up` / `level_up_reason` slice 7.2; screens slice 7.4; guided level-up slice 8.13; level-up screen slice 8.15 (Etapa 8).
+- **RN-02 (the master's change of a condition)** — The master's own change of a creature's condition is not blocked by the creature's immunity: the master's authority. Kept under the standing rule; Vinicius decided 24/11/2026 (question 130).
+- **RN-03 (Revivify)** — Revivify is refused while the player has another living character; the SRD says nothing of players and their characters. Kept under the standing rule of 24/11/2026 (question 130), named on Vinicius's status page log 24/11/2026.
+- **RN-02 (Aid on a fallen NPC)** — Aid on an NPC or creature at 0 hit points raises only its maximum, since whether a fallen NPC is dead is the master's call. Kept under the standing rule; Vinicius decided 24/11/2026 (question 130).
+- **RN-10 (Sneak Attack's ally)** — Sneak Attack counts an ally next to the target only when the player's character sees that ally. Vinicius decided 23/11/2026 (question 128).
+- **RN-10 (darkvision without fog)** — On a map without fog, and in a combat without a map, nobody is in the dark, so darkvision does nothing; the master chooses the fog and the mode. Kept under the standing rule of 24/11/2026 (question 130), named on Vinicius's status page log 24/11/2026.
+- **RN-10 (the bullseye lantern)** — The bullseye lantern is left out of the lights, since the app lights circles only and its 60-foot cone is new map work for one item. Kept out for now, for cost, outside session zero, and tracked by #1192 until a decision lifts it. Vinicius decided 24/11/2026 (question 132, with his note "Make sure bullseye lantern is tracked correctly.").
 
 ### Product: rules RN-13 to RN-19 and flows
 
@@ -389,6 +396,7 @@ These decisions used to open and close the roadmap page.
 - **RN-19** — Shared turn for combatants with the same total (players and NPCs). Samuel decided 04/10/2026 (question 56), Etapa 8.
 - **"Discussões que podem mudar estas regras" (section dropped)** — nothing open. The 28/09/2026 conversation about classes and races closed on 29/09/2026: the table uses all base D&D 5e classes and races, and Samuel accepted the rules as data, with formulas in the Expr library (ADR-0008). The automatic HP and spell-slot calculation (part of RN-02), MR-004, MR-013, MR-014, MR-015, MR-016 and MR-017 use that engine.
 - **RN-13..RN-19 "Situação" column** — all marked "Decidido pelo Samuel" (RN-13, 14, 16, 17, 18 on 29/09/2026; RN-15 on 29/09/2026 plus 02/10/2026 details; RN-19 on 02/10/2026, question 33).
+- **RN-19 (40 combatants a combat)** — A combat holds at most 40 combatants, and a summon past it is refused; the SRD sets no such bound. Kept for cost, a bound a table rarely meets; it can be lifted later. Vinicius decided 24/11/2026 (question 132).
 
 ### Product: rule RN-20
 
@@ -414,6 +422,8 @@ These decisions used to open and close the roadmap page.
 - **RN-21 (difficult terrain, walls, other creatures, opportunity attack, cover on the map)** — Official rules apply: difficult terrain +1.5 m per square, painted walls block movement and sight, passing through a non-enemy costs as difficult terrain, an enemy's space only with two sizes of difference, nobody ends a move in another's space, leaving an enemy's reach provokes an opportunity attack (not after Disengage), cover half +2 / three-quarters +5 computed per attack. Vinicius, answering for Samuel, 04/10/2026 (questions 68 to 70).
 - **RN-22 (conditions and concentration)** — MVP only marks conditions and concentration and reminds the concentration check; effects are not applied automatically. Samuel answered 02/10/2026 (question 42).
 - **RN-22 (condition name)** — `condition:prone` is called "Derrubado". Samuel answered 03/10/2026 (question 43).
+- **RN-21 (cover from hidden creatures)** — A creature hidden from the players gives no cover against a player's attack, since giving it would reveal the creature. Kept under the standing rule; Vinicius decided 24/11/2026 (question 130).
+- **RN-22 (NPC armor)** — An NPC is always proficient in the armor it wears; the SRD's stat blocks give armor class with no proficiency. Kept under the standing rule; Vinicius decided 24/11/2026 (question 130).
 
 ### Product: rules RN-23 to RN-25
 
@@ -431,6 +441,7 @@ These decisions used to open and close the roadmap page.
 - **RN-24** — Manual ability bonuses may not get around the way (`EXTRA_BONUSES`). Decided 06/10/2026.
 - **RN-25** — The grid calibration and combat without a grid decided. Vinicius decided 05/10/2026.
 - **RN-25** — Grid calibration (question 84) accepted 05/10/2026.
+- **RN-23 (area shapes on a map)** — An area spell's shape is placed from the caster in eight directions only; the SRD says nothing of squares. Kept under the standing rule; Vinicius decided 24/11/2026 (question 130).
 
 ### Product: rules RN-26 to RN-30
 
@@ -443,7 +454,13 @@ These decisions used to open and close the roadmap page.
 - **RN-29** — Monsters in combat as hidden NPCs, with RN-20 unchanged. Vinicius decided 05/10/2026.
 - **RN-29** — Average hit points for monsters (question 81) accepted. Vinicius answered 05/10/2026, question 81.
 - **RN-30** — Status "Proposta" (security audit of 07/10/2026, items S3 and S4): the numbers (10 campaigns per account, 100 images per day, the `CAMPAIGN_CREATORS` list) are ours; Samuel confirms or changes them. Still open. Origin: security audit 07/10/2026.
+
+### Product: rules RN-31 to RN-44
+
 - **RN-31** — The Ready tie inside a shared turn (a readier tied with its trigger acts until its own part ends, so its Ready waits) was decided by Vinicius on 14/11/2026 for #582.
+- **RN-31 (hidden creatures stay unoffered)** — Feather Fall's window, Misty Step onto a mount and Revivify's target leave out a creature hidden from the players, since offering it would reveal it. Kept under the standing rule of 24/11/2026 (question 130), named on Vinicius's status page log 24/11/2026.
+- **RN-34 (dragging on a map)** — A drag on a map needs a free square behind the grappler; the SRD says nothing of squares. Kept under the standing rule; Vinicius decided 24/11/2026 (question 130).
+- **RN-37 (Wall of Fire's line on a map)** — Wall of Fire's straight wall is placed in eight directions, as area shapes are; the SRD says nothing of squares. Kept under the standing rule of 24/11/2026 (question 130), named on Vinicius's status page log 24/11/2026.
 
 ### Product: glossary
 

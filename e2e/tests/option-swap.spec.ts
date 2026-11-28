@@ -153,11 +153,15 @@ test(
       await passClassStep(p);
       await expect(p.getByText('Passo 2 de 4 · Habilidades')).toBeVisible();
       await p.locator('label.row').filter({ hasText: 'Força' }).click();
+      // The preview's answer fills "O que muda com Força" above the panel and pushes it down: wait for it, so no click
+      // reaches the panel while it moves.
+      await expect(p.getByText('Escolha uma habilidade para ver o que muda.')).toBeHidden();
       const panel = p.getByRole('region', { name: 'Trocar escolhas' });
       // The panel comes after "O que muda com o aumento".
       const order = await p.locator('h2').allTextContents();
       expect(order.indexOf('Trocar escolhas')).toBeGreaterThan(order.findIndex((t) => t.startsWith('O que muda com')));
       await panel.locator('label.opt').filter({ hasText: 'Posturas' }).click();
+      await expect(panel.getByRole('radio', { name: /Posturas/ })).toBeChecked();
       await panel.getByRole('radiogroup', { name: 'Abrir mão de' }).getByText('Postura do Touro').click();
       await panel.getByRole('radiogroup', { name: 'Pegar no lugar' }).getByText('Postura do Urso').click();
       await panel.getByText('Estilo de luta', { exact: true }).click();

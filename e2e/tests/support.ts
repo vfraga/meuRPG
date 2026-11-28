@@ -634,17 +634,24 @@ export async function fillChoicesStep(page: Page): Promise<void> {
       continue;
     }
     const cards = pending.locator('.card[aria-checked="false"]:not([aria-disabled="true"])');
-    const names = await cards.locator('.card__name').allTextContents();
+    // Name and id are read in one go, so the pick below is the card read here, whatever the page moves meanwhile.
+    const found = await cards.evaluateAll((els) =>
+      els.map((el, i) => ({ i, id: el.id, text: (el.querySelector('.card__name')?.textContent ?? '').trim() })),
+    );
     const numeric = /Arquearia|Defesa|Duelo|Duelismo|Proteção|Duas Armas|Rajada|Influência|Visão do Diabo|Matador de Gigantes|Evasão|Esquiva/;
-    const best = names
-      .map((text, i) => ({ i, text: text.trim(), r: numeric.test(text) ? 1 : 0 }))
+    const best = found
+      .map((c) => ({ ...c, r: numeric.test(c.text) ? 1 : 0 }))
       .filter((c) => !taken.has(c.text))
       .sort((a, b) => a.r - b.r || a.i - b.i)[0];
     if (!best) {
       break;
     }
     taken.add(best.text);
-    await cards.nth(best.i).click();
+    // The card by its own id, never by its place in a list that the page may have changed since the read; and the next
+    // round starts only once the page shows this one picked.
+    const card = page.locator(`[id="${best.id}"]`);
+    await card.click();
+    await expect(card).toHaveAttribute('aria-checked', 'true');
   }
 }
 

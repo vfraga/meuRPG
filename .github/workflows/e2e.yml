@@ -28,6 +28,7 @@ on:
       - ".github/scripts/install-webkit.sh"
       - ".github/actions/build-e2e-images/**"
       - ".github/actions/start-e2e-stack/**"
+      - ".github/actions/go-modules/**"
       - ".node-version"
       - "!**/*.md"
   # The nightly run and a manual run test everything, with no path filter
@@ -94,7 +95,7 @@ jobs:
         if: env.DIFF == 'true'
         uses: ./.github/actions/select
         with:
-          pattern: '^(backend/|proto/|web/|e2e/|deploy/local/|\.dockerignore$|Makefile$|\.github/workflows/e2e\.yml$|\.github/scripts/(e2e-no-retries\.sh|e2e-shards\.mjs|e2e-list-reporter\.mjs|playwright-report\.mjs|install-webkit\.sh)$|\.github/actions/(build-e2e-images|start-e2e-stack)/|\.node-version$)'
+          pattern: '^(backend/|proto/|web/|e2e/|deploy/local/|\.dockerignore$|Makefile$|\.github/workflows/e2e\.yml$|\.github/scripts/(e2e-no-retries\.sh|e2e-shards\.mjs|e2e-list-reporter\.mjs|playwright-report\.mjs|install-webkit\.sh)$|\.github/actions/(build-e2e-images|start-e2e-stack|go-modules)/|\.node-version$)'
           ignore-md: "true"
 
       - name: Are the accessibility shards selected
@@ -222,11 +223,7 @@ jobs:
           persist-credentials: false
 
       - name: Set up Go
-        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
-        with:
-          go-version-file: backend/go.mod
-          cache: true
-          cache-dependency-path: backend/go.sum
+        uses: ./.github/actions/go-modules
 
       - name: Build migrate
         working-directory: backend
@@ -443,7 +440,7 @@ jobs:
 
       - name: Restore the WebKit cache
         id: webkit-cache
-        uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
             ${{ runner.temp }}/webkit-debs
@@ -461,7 +458,7 @@ jobs:
       # Only main writes the cache (docs/ci.md, "The mobile job"); a ref that is not main never does.
       - name: Save the WebKit cache
         if: ${{ github.ref == 'refs/heads/main' && steps.webkit-cache.outputs.cache-hit != 'true' }}
-        uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
             ${{ runner.temp }}/webkit-debs
