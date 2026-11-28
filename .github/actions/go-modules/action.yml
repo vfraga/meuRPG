@@ -33,7 +33,7 @@ runs:
       run: |
         set -euo pipefail
         echo "path=$(go env GOMODCACHE)" >> "$GITHUB_OUTPUT"
-        echo "key=gomod-${RUNNER_OS}-${RUNNER_ARCH}-${ImageOS}-go${GO_VERSION}-${GO_SUM}" >> "$GITHUB_OUTPUT"
+        echo "key=gomod-${RUNNER_OS}-${RUNNER_ARCH}-${ImageOS}-go${GO_VERSION}-${GO_SUM}-282f630e2b25" >> "$GITHUB_OUTPUT"
 
     - name: Restore the module cache
       id: restore
